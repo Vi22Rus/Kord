@@ -165,7 +165,10 @@ local function makeDisplay(parent)
         local isPanelFlag = key == "showPanel" or key == "testMode" or key == "locked"
         KR.displayRows[#KR.displayRows+1] = UI:ToggleRow(control, item[1],
             15, -67-(i-1)*39, 510,
-            function() return isPanelFlag and KR:GetPanelFlag(key) or KR:GetPanelLayout(key) end,
+            function()
+                if isPanelFlag then return KR:GetPanelFlag(key) end
+                return KR:GetPanelLayout(key)
+            end,
             function(value)
                 if isPanelFlag then KR:SetPanelFlag(key, value)
                 else KR:SetPanelLayout(key, value) end
@@ -337,6 +340,7 @@ function KR:CreateMainWindow()
         elseif key == "abilities" then page.build = function(container) KR.Pages:Abilities(container) end
         elseif key == "indicators" then page.build = function(container) KR.Pages:Indicators(container) end
         elseif key == "profiles" then page.build = function(container) KR.Pages:Profiles(container) end
+        elseif key == "advanced" then page.build = function(container) KR.Pages:Advanced(container) end
         else
             local plannedName = name
             page.build = function(container) makePlanned(container, plannedName) end

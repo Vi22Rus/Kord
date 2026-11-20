@@ -138,11 +138,14 @@ function KR.RotationDisplay:ShouldShow()
     if not p.showPanel or not p.testMode then return false end
     local combat = safeBoolean(InCombatLockdown)
     if combat == nil then combat = safeBoolean(UnitAffectingCombat, "player") end
-    if combat ~= nil then
+    if combat == nil then
+        -- Missing combat APIs must not bypass an explicitly restricted visibility mode.
+        if not p.showInCombat or not p.showOutOfCombat then return false end
+    else
         if combat and not p.showInCombat then return false end
         if not combat and not p.showOutOfCombat then return false end
     end
-    if p.requireTarget and safeBoolean(UnitExists, "target") == false then return false end
+    if p.requireTarget and safeBoolean(UnitExists, "target") ~= true then return false end
     if p.hideWhenDead and safeBoolean(UnitIsDeadOrGhost, "player") == true then return false end
     if p.hideMounted and safeBoolean(IsMounted) == true then return false end
     return true
