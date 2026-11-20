@@ -1068,6 +1068,9 @@ translations["ruRU"] = {
 
 -- frFR translation; missing strings fall back to enUS.
 translations["frFR"] = {
+    ["TIP_ROT_SAVE_RESOURCES"] = "Conserver des ressources pour les capacités importantes dans la future rotation. Préférence enregistrée, sans effet actuellement.",
+    ["TIP_ROT_ONLY_COMBAT"] = "Réserver les temps de recharge offensifs aux combats. Préférence enregistrée ; moteur de combat encore inactif.",
+    ["TIP_ROT_PREBUFFS"] = "Prévoir les améliorations utiles avant le combat. Préférence enregistrée ; aucun sort n'est encore recommandé.",
     ["TIP_HOME_COMMANDS"] = "Cette aide explique cet élément d'interface et sa fonction actuelle ; aucune automatisation du combat.",
     ["TIP_HOME_QUICK_TITLE"] = "Cette aide explique cet élément d'interface et sa fonction actuelle ; aucune automatisation du combat.",
     ["TIP_HOME_QUICK_NOTE"] = "Cette aide explique cet élément d'interface et sa fonction actuelle ; aucune automatisation du combat.",
@@ -1595,6 +1598,9 @@ translations["frFR"] = {
 
 -- deDE translation; missing strings fall back to enUS.
 translations["deDE"] = {
+    ["TIP_ROT_SAVE_RESOURCES"] = "Ressourcen für wichtige Fähigkeiten zurückhalten: eine Einstellung für die künftige Rotation, derzeit ohne Einfluss auf Empfehlungen.",
+    ["TIP_ROT_ONLY_COMBAT"] = "Schadens-Cooldowns nur im Kampf berücksichtigen. Diese Präferenz wird gespeichert; die Kampf-Engine ist noch nicht aktiv.",
+    ["TIP_ROT_PREBUFFS"] = "Vor dem Kampf nützliche Stärkungszauber bevorzugen. Gespeicherte Präferenz; aktuell werden keine Zauber empfohlen.",
     ["TIP_HOME_COMMANDS"] = "Dieser Hinweis erläutert das Bedienelement und seine aktuelle Funktion; keine Kampfautomatisierung.",
     ["TIP_HOME_QUICK_TITLE"] = "Dieser Hinweis erläutert das Bedienelement und seine aktuelle Funktion; keine Kampfautomatisierung.",
     ["TIP_HOME_QUICK_NOTE"] = "Dieser Hinweis erläutert das Bedienelement und seine aktuelle Funktion; keine Kampfautomatisierung.",
@@ -2122,6 +2128,9 @@ translations["deDE"] = {
 
 -- ptBR translation; missing strings fall back to enUS.
 translations["ptBR"] = {
+    ["TIP_ROT_SAVE_RESOURCES"] = "Reservar recursos para habilidades importantes na futura rotação. Preferência salva, sem efeito no momento.",
+    ["TIP_ROT_ONLY_COMBAT"] = "Usar recargas ofensivas apenas em combate. Preferência salva; mecanismo de combate ainda inativo.",
+    ["TIP_ROT_PREBUFFS"] = "Priorizar efeitos benéficos antes do combate. Preferência salva; ainda não há recomendações de feitiços.",
     ["TIP_HOME_COMMANDS"] = "Esta ajuda explica o elemento da interface e sua função atual; não automatiza o combate.",
     ["TIP_HOME_QUICK_TITLE"] = "Esta ajuda explica o elemento da interface e sua função atual; não automatiza o combate.",
     ["TIP_HOME_QUICK_NOTE"] = "Esta ajuda explica o elemento da interface e sua função atual; não automatiza o combate.",
@@ -2649,6 +2658,9 @@ translations["ptBR"] = {
 
 -- esES translation; missing strings fall back to enUS.
 translations["esES"] = {
+    ["TIP_ROT_SAVE_RESOURCES"] = "Reservar recursos para habilidades importantes en la futura rotación. Preferencia guardada, sin efecto por ahora.",
+    ["TIP_ROT_ONLY_COMBAT"] = "Usar los tiempos de reutilización ofensivos solo en combate. Preferencia guardada; motor de combate inactivo.",
+    ["TIP_ROT_PREBUFFS"] = "Priorizar beneficios útiles antes del combate. Preferencia guardada; aún no hay recomendaciones de hechizos.",
     ["TIP_HOME_COMMANDS"] = "Esta ayuda explica el elemento de interfaz y su función actual; no automatiza el combate.",
     ["TIP_HOME_QUICK_TITLE"] = "Esta ayuda explica el elemento de interfaz y su función actual; no automatiza el combate.",
     ["TIP_HOME_QUICK_NOTE"] = "Esta ayuda explica el elemento de interfaz y su función actual; no automatiza el combate.",
