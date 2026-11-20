@@ -58,11 +58,12 @@ local function makeHome(parent)
     setText(card, KR:L("DESCRIPTION"), 241, -91, nil, C.muted, 340)
     setText(card, KR:L("LOGO_PENDING"), 241, -146, nil, C.muted, 345)
 
-    local status = makeCard(parent, -226, 125)
+    local status = makeCard(parent, -213, 136)
     setText(status, KR:L("PROJECT_STATUS"), 16, -17, "title", C.text, 460)
     setText(status, KR:Format("VERSION_STATUS", KR.version), 16, -52, nil, C.cyan, 440)
-    local identity = setText(status, KR:L("IDENTITY_PENDING"), 16, -78, nil, C.muted, 535)
-    KR.homeIdentityLabel = identity
+    KR.homeIdentityLabel = setText(status, KR:L("IDENTITY_PENDING"), 16, -74, nil, C.muted, 535)
+    KR.homeTalentsLabel = setText(status, KR:L("IDENTITY_PENDING"), 16, -96, nil, C.muted, 535)
+    KR.homeProfileLabel = setText(status, KR:L("PROFILE_NOT_IMPLEMENTED"), 16, -116, nil, C.muted, 535)
 
     local footer = makeCard(parent, -356, 120)
     setText(footer, KR:L("HELP"), 16, -11, "title", C.text, 430)
@@ -126,6 +127,43 @@ function KR:UpdatePanelControls()
     btn[1]:SetText(self:L(p.testMode and "PANEL_TEST_OFF" or "PANEL_TEST_ON"))
     btn[2]:SetText(self:L(p.locked ~= false and "PANEL_UNLOCK" or "PANEL_LOCK"))
     btn[3]:SetText(self:L("PANEL_RESET"))
+    for _, row in ipairs(self.displayRows or {}) do row:Refresh() end
+    if self.displayPositionLabel then
+        local x, y = tonumber(p.x) or 0, tonumber(p.y) or -120
+        self.displayPositionLabel:SetText(self:Format("DISPLAY_POSITION_VALUES",
+            math.floor(x + 0.5), math.floor(y + 0.5)))
+    end
+end
+
+-- Functional display-page toggles (layout/alpha controls follow in 0.1.4).
+local function makeDisplay(parent)
+    local card = makeCard(parent, -18, 237)
+    setText(card, KR:L("DISPLAY_PANEL_TITLE"), 17, -16, "title", C.text, 530)
+    setText(card, KR:L("DISPLAY_PANEL_NOTE"), 17, -48, nil, C.muted, 535)
+    local items = {
+        { "DISPLAY_SHOW_PANEL", "showPanel" },
+        { "DISPLAY_TEST_MODE", "testMode" },
+        { "DISPLAY_PANEL_LOCK", "locked" },
+    }
+    KR.displayRows = {}
+    for i, item in ipairs(items) do
+        local flag = item[2]
+        KR.displayRows[i] = UI:ToggleRow(card, item[1], 16, -76 - (i-1)*48, 525,
+            function() return KR:GetPanelFlag(flag) end,
+            function(value) KR:SetPanelFlag(flag, value) end)
+    end
+    local position = makeCard(parent, -272, 186)
+    setText(position, KR:L("DISPLAY_POSITION_TITLE"), 17, -16, "title", C.text, 510)
+    KR.displayPositionLabel = setText(position, KR:L("DISPLAY_POSITION_DEFAULT"), 17, -50, nil, C.muted, 510)
+    local reset = CreateFrame("Button", nil, position, "UIPanelButtonTemplate")
+    reset:SetPoint("TOPLEFT", 16, -85)
+    reset:SetSize(177, 29)
+    reset:SetText(KR:L("PANEL_RESET"))
+    reset:SetScript("OnClick", function()
+        KR.RotationDisplay:ResetPosition()
+        KR:UpdatePanelControls()
+    end)
+    setText(position, KR:L("DISPLAY_ADVANCED_PENDING"), 17, -128, nil, C.muted, 530)
 end
 
 function KR:CreateMainWindow()
@@ -197,10 +235,15 @@ function KR:CreateMainWindow()
         page:Hide()
         pages[key] = page
 
-        if key == "home" then makeHome(page)
-        elseif key == "about" then makeAbout(page)
-        elseif key == "diagnostics" then makeDiagnostics(page)
-        else makePlanned(page, name) end
+        -- Register all nine pages; build their contents on first selection only.
+        if key == "home" then page.build = makeHome
+        elseif key == "about" then page.build = makeAbout
+        elseif key == "diagnostics" then page.build = makeDiagnostics
+        elseif key == "display" then page.build = makeDisplay
+        else
+            local plannedName = name
+            page.build = function(container) makePlanned(container, plannedName) end
+        end
 
         button:SetScript("OnClick", function() KR:SelectPage(key) end)
     end
@@ -208,6 +251,7 @@ function KR:CreateMainWindow()
     self.mainWindow = frame
     self.pages = pages
     self.pageButtons = buttons
+    self:UpdatePanelControls()
     self:SelectPage("home")
     self:RefreshCharacterUI()
     frame:Hide()
@@ -216,6 +260,13 @@ end
 
 function KR:SelectPage(key)
     if not self.pages or not self.pages[key] then return end
+    local target = self.pages[key]
+    if not target.initialized then
+        target.initialized = true
+        target.build(target)
+        self:UpdatePanelControls()
+        self:RefreshCharacterUI()
+    end
     for pageKey, page in pairs(self.pages) do
         if pageKey == key then page:Show() else page:Hide() end
         local button = self.pageButtons[pageKey]
@@ -237,6 +288,12 @@ function KR:RefreshCharacterUI()
     local counts = t.counts and table.concat(t.counts, " / ") or self:L("NO_DATA")
     if self.homeIdentityLabel then
         self.homeIdentityLabel:SetText(self:Format("CHARACTER_LINE", class, spec, self:L("STATUS_"..s.status)))
+    end
+    if self.homeTalentsLabel then
+        self.homeTalentsLabel:SetText(self:Format("HOME_TALENT_TOTAL", counts, self:L(t.method and "METHOD_"..t.method or "NOT_AVAILABLE")))
+    end
+    if self.homeProfileLabel then
+        self.homeProfileLabel:SetText(self:Format("HOME_PROFILE_UNAVAILABLE", s.profileID or "-"))
     end
     local l = self.diagnosticLabels
     if l then

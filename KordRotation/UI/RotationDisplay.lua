@@ -83,17 +83,14 @@ end
 function KR.RotationDisplay:ToggleTest()
     self:Create()
     local p = ensurePosition(KR.db)
-    p.testMode = not p.testMode
-    self:Refresh()
-    if KR.UpdatePanelControls then KR:UpdatePanelControls() end
+    KR:SetPanelFlag("testMode", not p.testMode)
     return p.testMode
 end
 
 function KR.RotationDisplay:ToggleLock()
     self:Create()
     local p = ensurePosition(KR.db)
-    p.locked = not p.locked
-    if KR.UpdatePanelControls then KR:UpdatePanelControls() end
+    KR:SetPanelFlag("locked", not p.locked)
     return p.locked
 end
 
@@ -103,6 +100,7 @@ function KR.RotationDisplay:ResetPosition()
     p.x, p.y = 0, -120
     self.frame:ClearAllPoints()
     self.frame:SetPoint("CENTER", UIParent, "CENTER", p.x, p.y)
+    if KR.UpdatePanelControls then KR:UpdatePanelControls() end
 end
 
 -- Copyright notice (3/3): (c) 2026 Vi22Rus; see root LICENSE.

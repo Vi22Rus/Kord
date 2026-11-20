@@ -9,6 +9,7 @@ local defaults = {
     schemaVersion = 1,
     window = { point = "CENTER", x = 0, y = 0, width = 880, height = 570 },
     showAtLogin = false,
+    panel = { x = 0, y = -120, showPanel = true, testMode = false, locked = true },
 }
 
 local function copyMissing(destination, source)
@@ -36,8 +37,28 @@ function KR:InitializeSettings()
         KordRotationDB.window = {}
         copyMissing(KordRotationDB.window, defaults.window)
     end
+    if type(KordRotationDB.panel) ~= "table" then KordRotationDB.panel = {} end
+    copyMissing(KordRotationDB.panel, defaults.panel)
     self.db = KordRotationDB
     self.charDB = KordRotationCharDB
+end
+
+-- Shared UI API: commands and both settings pages update the same flags.
+local panelFlags = {showPanel = true, testMode = true, locked = true}
+function KR:SetPanelFlag(key, value)
+    if not panelFlags[key] or type(value) ~= "boolean" or not self.db then return false end
+    if type(self.db.panel) ~= "table" then self.db.panel = {} end
+    self.db.panel[key] = value
+    if self.RotationDisplay and self.RotationDisplay.Refresh then self.RotationDisplay:Refresh() end
+    if self.UpdatePanelControls then self:UpdatePanelControls() end
+    return true
+end
+
+function KR:GetPanelFlag(key)
+    if not panelFlags[key] then return nil end
+    local panel = self.db and self.db.panel
+    if type(panel) == "table" and type(panel[key]) == "boolean" then return panel[key] end
+    return defaults.panel[key]
 end
 
 function KR:GetWindowSettings()
