@@ -129,7 +129,11 @@ function KR.Pages:Profiles(parent)
     end)
     local function updateList()
         local shown=items
-        current:SetText(KR:Format("APP_CURRENT",AP:Active()))
+        local activeName=AP:Active()
+        for _,entry in ipairs(items) do
+            if entry.id==activeName then activeName=entry.name;break end
+        end
+        current:SetText(KR:Format("APP_CURRENT",activeName))
         for i,b in ipairs(listButtons) do
             local item=shown[listing.offset+i-1]
             if item then
@@ -198,7 +202,10 @@ function KR.Pages:Profiles(parent)
     local confirmationLabel=raw(confirmation,17,-55,350)
     local pending
     button(confirmation,"APP_DELETE_YES",16,-103,167,function()
-        if pending then AP:Delete(pending) end
+        if pending then
+            local ok=AP:Delete(pending)
+            feedback:SetText(KR:L(ok and "APP_SUCCESS" or "APP_FAILURE"))
+        end
         pending=nil;confirmation:Hide();selectRefresh()
     end)
     button(confirmation,"APP_DELETE_NO",200,-103,168,function()

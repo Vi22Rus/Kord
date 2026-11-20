@@ -6,17 +6,25 @@ local addonName, KR = ...
 KR.AppearanceProfiles = KR.AppearanceProfiles or {}
 local M=KR.AppearanceProfiles
 local panelKeys={"slotCount","primarySize","secondarySize","gap","scale","alpha",
-    "secondaryAlpha","direction","primaryAtEnd","borderStyle","showNumbers"}
+    "secondaryAlpha","direction","primaryAtEnd","borderStyle","showNumbers",
+    "showIconBackground","showKeybind","showSpellName","showCooldown",
+    "showCharges","showUnavailable","showGCD","textSize"}
 local presets={
     Classic={slotCount=3,primarySize=72,secondarySize=52,gap=6,scale=100,
         alpha=100,secondaryAlpha=100,direction="horizontal",primaryAtEnd=false,
-        borderStyle="standard",showNumbers=true},
+        borderStyle="standard",showNumbers=true,showIconBackground=true,
+        showKeybind=true,showSpellName=false,showCooldown=true,showCharges=true,
+        showUnavailable=true,showGCD=true,textSize=12},
     Minimal={slotCount=1,primarySize=60,secondarySize=44,gap=4,scale=100,
         alpha=90,secondaryAlpha=90,direction="horizontal",primaryAtEnd=false,
-        borderStyle="none",showNumbers=false},
+        borderStyle="none",showNumbers=false,showIconBackground=false,
+        showKeybind=false,showSpellName=false,showCooldown=false,showCharges=false,
+        showUnavailable=true,showGCD=false,textSize=11},
     Compact={slotCount=3,primarySize=52,secondarySize=38,gap=3,scale=90,
         alpha=95,secondaryAlpha=95,direction="horizontal",primaryAtEnd=false,
-        borderStyle="minimal",showNumbers=false},
+        borderStyle="minimal",showNumbers=false,showIconBackground=true,
+        showKeybind=true,showSpellName=false,showCooldown=true,showCharges=true,
+        showUnavailable=true,showGCD=true,textSize=10},
 }
 local function snapshot()
     local panel=KR.db and KR.db.panel or {}
@@ -98,7 +106,13 @@ function M:Delete(id)
     local saved=storage()
     if not saved or not saved[id] or presets[id] then return false end
     saved[id]=nil
-    if KR.db.activeAppearance==id then KR.db.activeAppearance="Classic" end
+    if KR.db.activeAppearance==id then self:Apply("Classic") end
+    local bindings=KR.charDB and KR.charDB.appearanceBindings
+    if type(bindings)=="table" then
+        for tree,profileID in pairs(bindings) do
+            if profileID==id then bindings[tree]=nil end
+        end
+    end
     return true
 end
 function M:Apply(id)
@@ -109,6 +123,7 @@ function M:Apply(id)
         if source[key]~=nil then KR:SetPanelLayout(key,source[key]) end
     end
     KR.db.activeAppearance=id
+    if KR.UpdatePanelControls then KR:UpdatePanelControls() end
     return true
 end
 function M:Active()
@@ -137,7 +152,9 @@ function M:OnCharacterRefresh()
     local profile=KR.RotationSettings and KR.RotationSettings:GetProfileID()
     local bindings=KR.charDB.appearanceBindings
     local id=profile and type(bindings)=="table" and bindings[profile]
-    if id and id~=KR.db.activeAppearance then self:Apply(id) end
+    if id and id~=KR.db.activeAppearance then
+        if not self:Apply(id) and type(bindings)=="table" then bindings[profile]=nil end
+    end
 end
 function M:ResetAppearance()
     return self:Apply("Classic")
