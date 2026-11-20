@@ -42,5 +42,69 @@ function UI:ToggleRow(parent, labelKey, x, y, width, getValue, setValue)
     return row
 end
 
+
+-- Slider-free numeric stepper for supported UI builds; each click validates through Settings.
+function UI:StepRow(parent, labelKey, x, y, width, getter, setter, step, formatter)
+    local row = CreateFrame("Frame", nil, parent)
+    row:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    row:SetSize(width or 470, 39)
+    self:Background(row, C.sidebar)
+    local caption = self:Label(row, KR:L(labelKey), nil, C.text)
+    caption:SetPoint("LEFT", 12, 0)
+    caption:SetWidth((width or 470) - 190)
+    local value = self:Label(row, "", nil, C.cyan)
+    value:SetPoint("RIGHT", -79, 0)
+    value:SetWidth(78)
+    value:SetJustifyH("RIGHT")
+    function row:Refresh()
+        local n = getter()
+        value:SetText(formatter and formatter(n) or tostring(n))
+    end
+    local function addButton(label, offset, delta)
+        local button = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+        button:SetSize(29, 28)
+        button:SetPoint("RIGHT", offset, 0)
+        button:SetText(label)
+        button:SetScript("OnClick", function()
+            setter(getter() + delta)
+            row:Refresh()
+        end)
+    end
+    addButton("-", -42, -(step or 1))
+    addButton("+", -8, step or 1)
+    row:Refresh()
+    return row
+end
+
+function UI:ChoiceRow(parent, labelKey, x, y, width, getter, setter, choices)
+    local row = CreateFrame("Button", nil, parent)
+    row:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+    row:SetSize(width or 470, 39)
+    self:Background(row, C.sidebar)
+    local caption = self:Label(row, KR:L(labelKey), nil, C.text)
+    caption:SetPoint("LEFT", 12, 0)
+    caption:SetWidth((width or 470) - 220)
+    local chosen = self:Label(row, "", nil, C.cyan)
+    chosen:SetPoint("RIGHT", -13, 0)
+    chosen:SetWidth(205)
+    chosen:SetJustifyH("RIGHT")
+    function row:Refresh()
+        local selected = getter()
+        for _, entry in ipairs(choices) do
+            if entry[1] == selected then chosen:SetText(KR:L(entry[2])); return end
+        end
+        chosen:SetText("-")
+    end
+    row:SetScript("OnClick", function()
+        local selected = getter()
+        for i, entry in ipairs(choices) do
+            if entry[1] == selected then setter(choices[i % #choices + 1][1]); break end
+        end
+        row:Refresh()
+    end)
+    row:Refresh()
+    return row
+end
+
 -- Kord Rotation copyright notice (3/3): see root LICENSE.
 -- Original UI component code (c) 2026 Vi22Rus.

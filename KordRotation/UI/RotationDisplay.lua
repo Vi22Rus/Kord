@@ -55,27 +55,61 @@ function KR.RotationDisplay:Create()
     marker:SetText(KR:L("PANEL_TEST_BADGE"))
 
     local slots = {}
-    for i = 1, 3 do
+    for i = 1, 5 do
         local slot = KR.SpellIcon:Create(frame)
-        local size = i == 1 and 72 or 52
-        slot:SetSize(size, size)
-        if i == 1 then
-            slot:SetPoint("LEFT", frame, "LEFT", 0, 0)
-        else
-            slot:SetPoint("LEFT", slots[i - 1], "RIGHT", 6, 0)
-        end
         slot:SetTestSlot(i, i == 1)
         slots[i] = slot
     end
     self.frame, self.slots = frame, slots
     frame:Hide()
+    self:RefreshLayout()
     self:Refresh()
     return frame
+end
+
+-- Reuse all five placeholder frames; only apply layout and visibility.
+function KR.RotationDisplay:RefreshLayout()
+    if not self.frame then return end
+    local p = ensurePosition(KR.db)
+    local count = p.slotCount or 3
+    local vertical = p.direction == "vertical"
+    local mainSize = p.primarySize or 72
+    local otherSize = p.secondarySize or 52
+    local gap = p.gap or 6
+    local order = {}
+    for i = 1, count do
+        order[i] = self.slots[(p.primaryAtEnd and count > 1) and (count - i + 1) or i]
+    end
+    local extent = mainSize + otherSize * (count - 1) + gap * (count - 1)
+    self.frame:SetSize(vertical and math.max(mainSize, otherSize) or extent,
+        vertical and extent or math.max(mainSize, otherSize))
+    self.frame:SetScale((p.scale or 100) / 100)
+    self.frame:SetAlpha((p.alpha or 100) / 100)
+    for i, slot in ipairs(self.slots) do
+        slot:ClearAllPoints()
+        if i <= count then
+            local size = i == 1 and mainSize or otherSize
+            slot:SetSize(size, size)
+            slot:ApplyAppearance(p.borderStyle or "standard", p.showNumbers ~= false,
+                i == 1 and 100 or (p.secondaryAlpha or 100))
+            slot:Show()
+        else slot:Hide() end
+    end
+    for i, slot in ipairs(order) do
+        if i == 1 then
+            slot:SetPoint(vertical and "TOP" or "LEFT", self.frame, vertical and "TOP" or "LEFT", 0, 0)
+        elseif vertical then
+            slot:SetPoint("TOP", order[i-1], "BOTTOM", 0, -gap)
+        else
+            slot:SetPoint("LEFT", order[i-1], "RIGHT", gap, 0)
+        end
+    end
 end
 
 function KR.RotationDisplay:Refresh()
     if not self.frame then return end
     local p = ensurePosition(KR.db)
+    self:RefreshLayout()
     -- Without a real rotation engine, NEVER show a fictitious production queue.
     if p.showPanel and p.testMode then self.frame:Show() else self.frame:Hide() end
 end

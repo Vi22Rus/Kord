@@ -28,6 +28,15 @@ function KR.SpellIcon:Create(parent)
     slot.image = image
     slot.borderPieces = borders
 
+    function slot:ApplyAppearance(style, showNumbers, opacity)
+        self.index:SetShown(showNumbers)
+        self:SetAlpha((opacity or 100) / 100)
+        for _, edge in ipairs(self.borderPieces) do
+            edge:SetShown(style ~= "none")
+            edge:SetAlpha(style == "minimal" and 0.5 or 1)
+        end
+    end
+
     function slot:SetTestSlot(number, isPrimary)
         self.index:SetText(tostring(number))
         local tone = isPrimary and C.cyan or C.line

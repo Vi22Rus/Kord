@@ -137,33 +137,80 @@ end
 
 -- Functional display-page toggles (layout/alpha controls follow in 0.1.4).
 local function makeDisplay(parent)
-    local card = makeCard(parent, -18, 237)
-    setText(card, KR:L("DISPLAY_PANEL_TITLE"), 17, -16, "title", C.text, 530)
-    setText(card, KR:L("DISPLAY_PANEL_NOTE"), 17, -48, nil, C.muted, 535)
-    local items = {
-        { "DISPLAY_SHOW_PANEL", "showPanel" },
-        { "DISPLAY_TEST_MODE", "testMode" },
-        { "DISPLAY_PANEL_LOCK", "locked" },
+    local scroll = CreateFrame("ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -7)
+    scroll:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -27, 6)
+    local body = CreateFrame("Frame", nil, scroll)
+    body:SetSize(565, 1045)
+    scroll:SetScrollChild(body)
+
+    local control = makeCard(body, -16, 228)
+    setText(control, KR:L("DISPLAY_PANEL_TITLE"), 17, -16, "title", C.text, 510)
+    setText(control, KR:L("DISPLAY_PANEL_NOTE"), 17, -45, nil, C.muted, 507)
+    local flags = {
+        {"DISPLAY_SHOW_PANEL", "showPanel"},
+        {"DISPLAY_TEST_MODE", "testMode"},
+        {"DISPLAY_PANEL_LOCK", "locked"},
+        {"LAYOUT_NUMBERS", "showNumbers"},
     }
     KR.displayRows = {}
-    for i, item in ipairs(items) do
-        local flag = item[2]
-        KR.displayRows[i] = UI:ToggleRow(card, item[1], 16, -76 - (i-1)*48, 525,
-            function() return KR:GetPanelFlag(flag) end,
-            function(value) KR:SetPanelFlag(flag, value) end)
+    for i, item in ipairs(flags) do
+        local key = item[2]
+        local isPanelFlag = key == "showPanel" or key == "testMode" or key == "locked"
+        KR.displayRows[#KR.displayRows+1] = UI:ToggleRow(control, item[1],
+            15, -67-(i-1)*39, 510,
+            function() return isPanelFlag and KR:GetPanelFlag(key) or KR:GetPanelLayout(key) end,
+            function(value)
+                if isPanelFlag then KR:SetPanelFlag(key, value)
+                else KR:SetPanelLayout(key, value) end
+            end)
     end
-    local position = makeCard(parent, -272, 186)
-    setText(position, KR:L("DISPLAY_POSITION_TITLE"), 17, -16, "title", C.text, 510)
-    KR.displayPositionLabel = setText(position, KR:L("DISPLAY_POSITION_DEFAULT"), 17, -50, nil, C.muted, 510)
-    local reset = CreateFrame("Button", nil, position, "UIPanelButtonTemplate")
-    reset:SetPoint("TOPLEFT", 16, -85)
-    reset:SetSize(177, 29)
+
+    local layout = makeCard(body, -261, 404)
+    setText(layout, KR:L("LAYOUT_TITLE"), 17, -16, "title", C.text, 510)
+    local rows = {
+        {"LAYOUT_COUNT","slotCount",1},
+        {"LAYOUT_MAIN_SIZE","primarySize",4},
+        {"LAYOUT_OTHER_SIZE","secondarySize",4},
+        {"LAYOUT_GAP","gap",1},
+        {"LAYOUT_SCALE","scale",5},
+        {"LAYOUT_ALPHA","alpha",5},
+        {"LAYOUT_OTHER_ALPHA","secondaryAlpha",5},
+    }
+    for i, item in ipairs(rows) do
+        local key = item[2]
+        local step = item[3]
+        KR.displayRows[#KR.displayRows+1] = UI:StepRow(layout, item[1],
+            15, -47-(i-1)*47, 510,
+            function() return KR:GetPanelLayout(key) end,
+            function(value) KR:SetPanelLayout(key, value) end, step)
+    end
+
+    local options = makeCard(body, -683, 317)
+    setText(options, KR:L("LAYOUT_DIRECTION_TITLE"), 17, -16, "title", C.text, 510)
+    local choices = {
+        {"LAYOUT_DIRECTION","direction",{{"horizontal","LAYOUT_HORIZONTAL"},{"vertical","LAYOUT_VERTICAL"}}},
+        {"LAYOUT_FIRST_LAST","primaryAtEnd",{{false,"LAYOUT_MAIN_FIRST"},{true,"LAYOUT_MAIN_LAST"}}},
+        {"LAYOUT_BORDER","borderStyle",{{"standard","LAYOUT_BORDER_STANDARD"},{"minimal","LAYOUT_BORDER_MINIMAL"},{"none","LAYOUT_BORDER_NONE"}}},
+    }
+    for i, entry in ipairs(choices) do
+        local key = entry[2]
+        KR.displayRows[#KR.displayRows+1] = UI:ChoiceRow(options, entry[1],
+            15, -46-(i-1)*45, 510,
+            function() return KR:GetPanelLayout(key) end,
+            function(value) KR:SetPanelLayout(key, value) end, entry[3])
+    end
+    setText(options, KR:L("DISPLAY_POSITION_TITLE"), 17, -196, "title", C.text, 485)
+    KR.displayPositionLabel = setText(options, KR:L("DISPLAY_POSITION_DEFAULT"),
+        17, -221, nil, C.muted, 485)
+    local reset = CreateFrame("Button", nil, options, "UIPanelButtonTemplate")
+    reset:SetPoint("TOPLEFT", 16, -260)
+    reset:SetSize(185, 28)
     reset:SetText(KR:L("PANEL_RESET"))
     reset:SetScript("OnClick", function()
         KR.RotationDisplay:ResetPosition()
         KR:UpdatePanelControls()
     end)
-    setText(position, KR:L("DISPLAY_ADVANCED_PENDING"), 17, -128, nil, C.muted, 530)
 end
 
 function KR:CreateMainWindow()
