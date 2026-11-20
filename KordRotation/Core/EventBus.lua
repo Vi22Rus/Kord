@@ -5,21 +5,25 @@ KR.EventBus = KR.EventBus or {}
 local E = KR.EventBus
 
 local channels = {
-    PLAYER_LOGIN="identity", PLAYER_LEVEL_UP="identity",
+    PLAYER_LOGIN="identity", PLAYER_ENTERING_WORLD="identity", PLAYER_LEVEL_UP="identity",
     TRAIT_CONFIG_UPDATED="talents", PLAYER_TALENT_UPDATE="talents",
     ACTIVE_TALENT_GROUP_CHANGED="talents", SPELLS_CHANGED="spellbook",
     ACTIONBAR_SLOT_CHANGED="actionbar", ACTIONBAR_PAGE_CHANGED="actionbar",
     UPDATE_SHAPESHIFT_FORM="actionbar", UPDATE_BINDINGS="bindings",
     UPDATE_MACROS="actionbar", PLAYER_TARGET_CHANGED="target",
-    UNIT_AURA="auras", UNIT_POWER_UPDATE="resources",
-    UNIT_POWER_FREQUENT="resources", UNIT_SPELLCAST_START="cast",
+    UNIT_AURA="auras", UNIT_HEALTH="health", UNIT_MAXHEALTH="health",
+    UNIT_DISPLAYPOWER="resources", UNIT_MAXPOWER="resources", UNIT_POWER_UPDATE="resources",
+    UNIT_POWER_FREQUENT="resources", UNIT_FLAGS="combat",
+    UNIT_SPELLCAST_START="cast",
     UNIT_SPELLCAST_STOP="cast", UNIT_SPELLCAST_CHANNEL_START="cast",
     UNIT_SPELLCAST_CHANNEL_STOP="cast", UNIT_SPELLCAST_SUCCEEDED="cast",
     PLAYER_REGEN_ENABLED="combat", PLAYER_REGEN_DISABLED="combat",
     PLAYER_DEAD="combat", PLAYER_ALIVE="combat", PLAYER_UNGHOST="combat",
 }
 local unitEvents = {
-    UNIT_AURA=true, UNIT_POWER_UPDATE=true, UNIT_POWER_FREQUENT=true,
+    UNIT_AURA=true, UNIT_HEALTH=true, UNIT_MAXHEALTH=true,
+    UNIT_DISPLAYPOWER=true, UNIT_MAXPOWER=true, UNIT_POWER_UPDATE=true,
+    UNIT_POWER_FREQUENT=true, UNIT_FLAGS=true,
     UNIT_SPELLCAST_START=true, UNIT_SPELLCAST_STOP=true,
     UNIT_SPELLCAST_CHANNEL_START=true, UNIT_SPELLCAST_CHANNEL_STOP=true,
     UNIT_SPELLCAST_SUCCEEDED=true,

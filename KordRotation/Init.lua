@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.8.3-rc1"
+KR.version = "0.1.8.3-rc2"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then
@@ -66,6 +66,7 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
         if KR.MinimapButton then KR.MinimapButton:Create() end
         if KR.SafeActions then KR.SafeActions:Initialize() end
         if KR.EventBus then KR.EventBus:Initialize() end
+        if KR.GameState then KR.GameState:Initialize() end
         KR:RefreshCharacter("PLAYER_LOGIN")
         if KR.db.showAtLogin then KR:ToggleWindow(true) end
     elseif event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE"

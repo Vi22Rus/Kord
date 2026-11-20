@@ -6,7 +6,9 @@ local API = KR.GameAPI
 
 -- Explicit allowlist prevents callers from invoking protected actions via this adapter.
 local allowed = {
-    GetBuildInfo=true, UnitClass=true, UnitLevel=true,
+    GetBuildInfo=true, GetTime=true, UnitClass=true, UnitLevel=true,
+    UnitGUID=true, UnitIsUnit=true, UnitCanAssist=true,
+    UnitHealth=true, UnitHealthMax=true, UnitPowerType=true,
     UnitExists=true, UnitIsDeadOrGhost=true, UnitAffectingCombat=true,
     UnitCanAttack=true, UnitPower=true, UnitPowerMax=true,
     UnitCastingInfo=true, UnitChannelInfo=true, UnitAura=true,
