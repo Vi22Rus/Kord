@@ -36,6 +36,8 @@ local function click(parent,key,x,y,width,callback)
     b:SetSize(width,27)
     b:SetText(KR:L(key))
     b:SetScript("OnClick",callback)
+    b:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,key) end)
+    b:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     return b
 end
 local function scrolled(parent,height)

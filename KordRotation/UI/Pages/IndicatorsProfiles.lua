@@ -33,6 +33,8 @@ local function button(parent,key,x,y,w,callback)
     local b=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
     b:SetPoint("TOPLEFT",x,y);b:SetSize(w,27)
     b:SetText(KR:L(key));b:SetScript("OnClick",callback)
+    b:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,key) end)
+    b:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     return b
 end
 local function boolRow(parent,key,value,y)
