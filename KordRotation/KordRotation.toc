@@ -3,7 +3,7 @@
 ## Title: Kord Rotation
 ## Notes: WoW Forever rotation helper — game API foundation 0.1.8.3-rc3
 ## Author: Vi22Rus
-## Version: 0.1.8.3-rc2
+## Version: 0.1.8.3-rc3
 ## SavedVariables: KordRotationDB
 ## SavedVariablesPerCharacter: KordRotationCharDB
 
@@ -14,9 +14,9 @@ Core\Character.lua
 Core\Talents.lua
 Core\SpecDetector.lua
 Core\RotationSettings.lua
-Core\SpellCatalogue.lua
 Core\GameAPI.lua
 Core\EventBus.lua
+Core\SpellCatalogue.lua
 Core\GameState.lua
 Core\IndicatorSettings.lua
 Core\AppearanceProfiles.lua
