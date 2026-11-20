@@ -7,15 +7,15 @@ local UI = KR.UI
 local C = UI.colors
 
 local menu = {
-    { "Главная", "home" },
-    { "Отображение", "display" },
-    { "Ротация", "rotation" },
-    { "Способности", "abilities" },
-    { "Индикаторы", "indicators" },
-    { "Профили", "profiles" },
-    { "Дополнительно", "advanced" },
-    { "Диагностика", "diagnostics" },
-    { "О проекте", "about" },
+    { "HOME", "home" },
+    { "DISPLAY", "display" },
+    { "ROTATION", "rotation" },
+    { "ABILITIES", "abilities" },
+    { "INDICATORS", "indicators" },
+    { "PROFILES", "profiles" },
+    { "ADVANCED", "advanced" },
+    { "DIAGNOSTICS", "diagnostics" },
+    { "ABOUT", "about" },
 }
 
 local function setText(parent, value, x, y, font, color, width)
@@ -55,35 +55,34 @@ local function makeHome(parent)
 
     setText(card, "Kord Rotation", 241, -25, "title", C.text, 355)
     setText(card, "World of Warcraft Forever", 241, -60, nil, C.cyan, 355)
-    setText(card, "Помощник рекомендаций способностей. Девять классов и 27 будущих профилей ротаций.", 241, -91, nil, C.muted, 340)
-    setText(card, "Логотип: утверждённый оригинал будет подключён после подготовки игровой текстуры.", 241, -146, nil, C.muted, 345)
+    setText(card, KR:L("DESCRIPTION"), 241, -91, nil, C.muted, 340)
+    setText(card, KR:L("LOGO_PENDING"), 241, -146, nil, C.muted, 345)
 
     local status = makeCard(parent, -226, 125)
-    setText(status, "Состояние проекта", 16, -17, "title", C.text, 460)
-    setText(status, "Версия: 0.1.1 — определение персонажа", 16, -52, nil, C.cyan, 440)
-    local identity = setText(status, "Персонаж: ожидание данных...", 16, -78, nil, C.muted, 535)
+    setText(status, KR:L("PROJECT_STATUS"), 16, -17, "title", C.text, 460)
+    setText(status, KR:Format("VERSION_STATUS", KR.version), 16, -52, nil, C.cyan, 440)
+    local identity = setText(status, KR:L("IDENTITY_PENDING"), 16, -78, nil, C.muted, 535)
     KR.homeIdentityLabel = identity
 
     local footer = makeCard(parent, -369, 80)
-    setText(footer, "Справка", 16, -11, "title", C.text, 430)
-    setText(footer, "Команды: /kr — показать/скрыть, /kr config — открыть настройки.", 16, -43, nil, C.muted, 475)
+    setText(footer, KR:L("HELP"), 16, -11, "title", C.text, 430)
+    setText(footer, KR:L("HOME_COMMANDS"), 16, -43, nil, C.muted, 475)
 end
 
 local function makeAbout(parent)
     local card = makeCard(parent, -19, 245)
-    setText(card, "О Kord Rotation", 22, -22, "title", C.text, 445)
-    setText(card, "Разработка: Vi22Rus  |  Версия: 0.1.1", 22, -64, nil, C.cyan, 445)
-    setText(card, "Цель: 9 классов и 27 профилей. Класс и ветка талантов определяются автоматически; расчёт на Forever требует проверки.", 22, -105, nil, C.text, 470)
-    setText(card, "© 2026 Vi22Rus. Условия личного использования и ограничения копирования — в корневом файле LICENSE.", 22, -169, nil, C.muted, 475)
+    setText(card, KR:L("ABOUT_TITLE"), 22, -22, "title", C.text, 445)
+    setText(card, KR:Format("ABOUT_VERSION", KR.version), 22, -64, nil, C.cyan, 445)
+    setText(card, KR:L("ABOUT_TEXT"), 22, -105, nil, C.text, 470)
+    setText(card, KR:L("COPYRIGHT"), 22, -169, nil, C.muted, 475)
 end
 
 -- License notice (2/3): Copyright 2026 Vi22Rus. This window is protected under LICENSE.
 -- The source is intentionally readable; copyright notices do not restrict external AI behavior.
 local function makeDiagnostics(parent)
     local card = makeCard(parent, -19, 346)
-    setText(card, "Диагностика талантов", 20, -18, "title", C.text, 490)
-    local names = {"Класс: —", "Уровень: —", "Конфигурация: —", "Очки в ветках: —",
-                   "Метод разделения: —", "Ведущая ветка: —", "Статус: —", "Причина: —"}
+    setText(card, KR:L("DIAG_TITLE"), 20, -18, "title", C.text, 490)
+    local names = { KR:L("CLASS"), KR:L("LEVEL"), KR:L("CONFIG"), KR:L("POINTS"), KR:L("GROUP_METHOD"), KR:L("LEADING_TREE"), KR:L("STATUS"), KR:L("REASON") }
     KR.diagnosticLabels = {}
     for i, value in ipairs(names) do
         KR.diagnosticLabels[i] = setText(card, value, 20, -46 - i * 33, nil, i==7 and C.cyan or C.muted, 520)
@@ -91,18 +90,18 @@ local function makeDiagnostics(parent)
     local refresh = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
     refresh:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 20, 13)
     refresh:SetSize(215, 25)
-    refresh:SetText("Обновить данные")
+    refresh:SetText(KR:L("REFRESH"))
     refresh:SetScript("OnClick", function() KR:RefreshCharacter("manual") end)
     local tip = makeCard(parent, -380, 86)
-    setText(tip, "Для проверки: /kr debug, смена талантов, /reload.", 16, -13, nil, C.cyan, 520)
-    setText(tip, "Position fallback = предварительно: проверь порядок деревьев в игре.", 16, -42, nil, C.muted, 530)
+    setText(tip, KR:L("DIAG_HINT"), 16, -13, nil, C.cyan, 520)
+    setText(tip, KR:L("FALLBACK_HINT"), 16, -42, nil, C.muted, 530)
 end
 
 local function makePlanned(parent, name)
     local card = makeCard(parent, -19, 178)
     setText(card, name, 23, -24, "title", C.text, 450)
-    setText(card, "Запланировано согласно docs/STAGE_01_INTERFACE.md", 23, -65, nil, C.cyan, 480)
-    setText(card, "Эта страница пока не содержит рабочих настроек. Так мы не создаём видимость уже реализованной функции.", 23, -101, nil, C.muted, 480)
+    setText(card, KR:L("PLANNED"), 23, -65, nil, C.cyan, 480)
+    setText(card, KR:L("PLANNED_MORE"), 23, -101, nil, C.muted, 480)
 end
 
 function KR:CreateMainWindow()
@@ -138,7 +137,7 @@ function KR:CreateMainWindow()
     titlebar:SetHeight(60)
     UI:Background(titlebar, C.sidebar)
     local title = setText(titlebar, "KORD ROTATION", 23, -15, "title", C.text, 420)
-    local subtitle = setText(titlebar, "Modern Dark  •  0.1.0", 25, -39, nil, C.cyan, 350)
+    local subtitle = setText(titlebar, "Modern Dark - "..KR.version, 25, -39, nil, C.cyan, 350)
     subtitle:SetFontObject("GameFontDisableSmall")
 
     local close = CreateFrame("Button", nil, titlebar, "UIPanelCloseButton")
@@ -160,7 +159,7 @@ function KR:CreateMainWindow()
 
     local pages, buttons = {}, {}
     for index, info in ipairs(menu) do
-        local key, name = info[2], info[1]
+        local key, name = info[2], KR:L(info[1])
         local button = CreateFrame("Button", nil, sidebar)
         button:SetPoint("TOPLEFT", 10, -13 - (index - 1) * 51)
         button:SetPoint("TOPRIGHT", -10, -13 - (index - 1) * 51)
@@ -210,22 +209,22 @@ function KR:RefreshCharacterUI()
     if not s then return end
     local c, t = s.character, s.talents
     local class = c.className or c.classToken or "—"
-    local spec = s.specName or "не определена"
-    local counts = t.counts and table.concat(t.counts, " / ") or "нет данных"
+    local spec = s.index and self:GetLocalizedTree(s.classToken, s.index) or self:L("SPEC_UNKNOWN")
+    local counts = t.counts and table.concat(t.counts, " / ") or self:L("NO_DATA")
     if self.homeIdentityLabel then
-        self.homeIdentityLabel:SetText("Персонаж: "..class.." · "..spec.." ("..s.status..")")
+        self.homeIdentityLabel:SetText(self:Format("CHARACTER_LINE", class, spec, self:L("STATUS_"..s.status)))
     end
     local l = self.diagnosticLabels
     if l then
         local values = {
-            "Класс: "..class.." ["..(c.classToken or "?").."]",
-            "Уровень: "..tostring(c.level or "—"),
-            "Конфигурация: "..tostring(t.configID or "—"),
-            "Очки в ветках: "..counts,
-            "Метод разделения: "..tostring(t.method or "—"),
-            "Ведущая ветка: "..spec.." ["..(s.profileID or "—").."]",
-            "Статус: "..s.status,
-            "Причина/примечание: "..tostring(s.reason or s.detection or "—"),
+            self:L("CLASS")..": "..class.." ["..(c.classToken or "?").."]",
+            self:L("LEVEL")..": "..tostring(c.level or "-"),
+            self:L("CONFIG")..": "..tostring(t.configID or "-"),
+            self:L("POINTS")..": "..counts,
+            self:L("GROUP_METHOD")..": "..(t.method and self:L("METHOD_"..t.method) or "-"),
+            self:L("LEADING_TREE")..": "..spec.." ["..(s.profileID or "-").."]",
+            self:L("STATUS")..": "..self:L("STATUS_"..s.status),
+            self:L("REASON")..": "..(s.reason and self:L("REASON_"..s.reason) or s.detection and self:L("REASON_"..s.detection) or "-"),
         }
         for i, value in ipairs(values) do l[i]:SetText(value) end
     end

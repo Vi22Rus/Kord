@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.1"
+KR.version = "0.1.1.1"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then
@@ -40,17 +40,14 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                 KR:SelectPage("diagnostics")
             elseif message == "refresh" then
                 local state = KR:RefreshCharacter("slash_refresh")
-                KR:Print("Класс: "..tostring(state.classToken or "?")..
-                    ", ветка: "..tostring(state.specName or "?")..
-                    ", очки: "..(state.talents.counts and table.concat(state.talents.counts, "/") or "?")..
-                    ", статус: "..state.status)
+                KR:Print(KR:Format("CHAT_SUMMARY", tostring(state.classToken or "?"), state.index and KR:GetLocalizedTree(state.classToken, state.index) or KR:L("SPEC_UNKNOWN"), state.talents.counts and table.concat(state.talents.counts, "/") or "?", KR:L("STATUS_"..state.status)))
             elseif message == "help" then
-                KR:Print("/kr — окно; /kr config — открыть; /kr debug — диагностика; /kr refresh — перечитать данные")
+                KR:Print(KR:L("CHAT_HELP"))
             else
-                KR:Print("Неизвестная команда. /kr help")
+                KR:Print(KR:L("CHAT_UNKNOWN"))
             end
         end
-        KR:Print("0.1.1 загружен. /kr — окно, /kr debug — таланты.")
+        KR:Print(KR:Format("CHAT_LOADED", KR.version))
     elseif event == "PLAYER_LOGIN" then
         if not KR.db then KR:InitializeSettings() end
         KR:CreateMainWindow()
