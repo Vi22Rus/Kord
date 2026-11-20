@@ -8,8 +8,10 @@ local A=KR.Advanced
 local defaults={
     showAtLogin=false,showLoadMessage=true,showTooltips=true,
     showMinimap=false,updateRate=150,visualRate=100,scanRate=500,
+    talentScanRate=800,actionScanRate=500,settingsRate=250,language="auto",
 }
-local numeric={updateRate={50,1000},visualRate={50,1000},scanRate={200,5000}}
+local numeric={updateRate={50,1000},visualRate={50,1000},scanRate={200,5000},
+    talentScanRate={200,5000},actionScanRate={200,5000},settingsRate={100,2000}}
 local function defaultValue(key,value)
     local original=defaults[key]
     if original==nil then return nil end
@@ -18,6 +20,10 @@ local function defaultValue(key,value)
             or value==math.huge or value==-math.huge then value=original end
         local limits=numeric[key]
         return math.floor(math.max(limits[1],math.min(limits[2],value))+0.5)
+    end
+    if key=="language" then
+        if value=="auto" or value=="ruRU" or value=="enUS" then return value end
+        return original
     end
     if type(value)~="boolean" then return original end
     return value
@@ -50,9 +56,13 @@ function A:Set(key,value)
     if defaults[key]==nil then return false end
     if numeric[key] then
         if type(value)~="number" or value~=value then return false end
+    elseif key=="language" then
+        if value~="auto" and value~="ruRU" and value~="enUS" then return false end
     elseif type(value)~="boolean" then return false end
     if type(KR.db.advanced)~="table" then self:Initialize() end
     KR.db.advanced[key]=defaultValue(key,value)
+    if key=="showMinimap" and KR.MinimapButton then KR.MinimapButton:Refresh() end
+    if key=="language" and KR.Print then KR:Print(KR:L("ADV_LANGUAGE_RELOAD")) end
     return true
 end
 function A:ResetAppearance()
@@ -75,12 +85,14 @@ function A:ResetAll()
     -- Caller must present the dedicated confirmation dialog first.
     -- Do not discard data if the client cannot reload to release stale UI references.
     if not KR.db or type(ReloadUI)~="function" then return false end
-    KordRotationDB={}
-    KordRotationCharDB={}
-    KR:InitializeSettings()
-    self:Initialize()
-    if KR.IndicatorSettings then KR.IndicatorSettings:Initialize() end
-    ReloadUI()
-    return true
+    if not KR.SafeActions then return false end
+    return KR.SafeActions:Run("reset_all",function()
+        KordRotationDB={}
+        KordRotationCharDB={}
+        KR:InitializeSettings()
+        self:Initialize()
+        if KR.IndicatorSettings then KR.IndicatorSettings:Initialize() end
+        ReloadUI()
+    end)
 end
 -- Copyright notice (3/3): 2026 Vi22Rus; governed by root LICENSE.

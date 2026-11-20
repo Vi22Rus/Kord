@@ -61,6 +61,25 @@ function KR.RotationDisplay:Create()
         slots[i] = slot
     end
     self.frame, self.slots = frame, slots
+    local defense = {}
+    for i=1,3 do
+        local preview=KR.SpellIcon:Create(frame)
+        preview:SetTestSlot(i,false)
+        preview:Hide()
+        defense[i]=preview
+    end
+    self.defensePreview=defense
+    self.interruptPreview=KR.SpellIcon:Create(frame)
+    self.interruptPreview:SetTestSlot(1,false)
+    self.interruptPreview:Hide()
+    local resource=CreateFrame("Frame",nil,frame)
+    resource:SetSize(130,14)
+    KR.UI:Background(resource,C.sidebar)
+    local text=resource:CreateFontString(nil,"OVERLAY","GameFontNormalSmall")
+    text:SetPoint("CENTER",0,0)
+    text:SetText(KR:L("PANEL_TEST_BADGE"))
+    resource:Hide()
+    self.resourcePreview=resource
     frame:Hide()
     local visibility = CreateFrame("Frame", nil, UIParent)
     local events = {"PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "PLAYER_TARGET_CHANGED",
@@ -115,6 +134,36 @@ function KR.RotationDisplay:RefreshLayout()
                 i == 1 and 100 or (p.secondaryAlpha or 100), p)
             slot:Show()
         else slot:Hide() end
+    end
+    -- Extra areas are TEST-only empty previews, not actual defensive recommendations.
+    local pref=KR.IndicatorSettings
+    local testing=p.showPanel and p.testMode
+    local hasDefense=testing and pref and pref:Get("defensiveEnabled")==true
+    local countDefense=hasDefense and pref:Get("defensiveSlots") or 0
+    local defenseSize=pref and pref:Get("defensiveSize") or 52
+    for i,slot in ipairs(self.defensePreview or {}) do
+        slot:ClearAllPoints()
+        slot:SetSize(defenseSize,defenseSize)
+        slot:SetPoint("TOPLEFT",self.frame,"BOTTOMLEFT",(i-1)*(defenseSize+5),-25)
+        slot:ApplyAppearance("minimal",false,100,p)
+        slot:SetShown(i<=countDefense)
+    end
+    local interruptEnabled=testing and pref and pref:Get("interruptEnabled")==true
+    local interruptSize=pref and pref:Get("interruptSize") or 52
+    if self.interruptPreview then
+        self.interruptPreview:ClearAllPoints()
+        self.interruptPreview:SetSize(interruptSize,interruptSize)
+        self.interruptPreview:SetPoint("TOPLEFT",self.frame,"BOTTOMLEFT",0,
+            -(hasDefense and defenseSize+33 or 25))
+        self.interruptPreview:ApplyAppearance("minimal",false,100,p)
+        self.interruptPreview:SetShown(interruptEnabled)
+    end
+    if self.resourcePreview then
+        self.resourcePreview:ClearAllPoints()
+        self.resourcePreview:SetPoint("TOPLEFT",self.frame,"BOTTOMLEFT",0,
+            -(hasDefense and defenseSize+44 or 25)
+            -(interruptEnabled and interruptSize+10 or 0))
+        self.resourcePreview:SetShown(testing and pref and pref:Get("resourceEnabled")==true)
     end
     for i, slot in ipairs(order) do
         if i == 1 then

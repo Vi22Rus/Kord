@@ -65,6 +65,7 @@ function M:Set(key,value)
         value=math.floor(math.max(range[1],math.min(range[2],value))+0.5)
     end
     KR.db.indicators[key]=value
+    if KR.RotationDisplay and KR.RotationDisplay.Refresh then KR.RotationDisplay:Refresh() end
     if KR.indicatorsPageRefresh then KR.indicatorsPageRefresh() end
     return true
 end

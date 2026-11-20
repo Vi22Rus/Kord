@@ -97,7 +97,17 @@ function KR.Pages:Indicators(parent)
     local future=card(body,-1325,165)
     label(future,"IND_WIDGET_TITLE",15,-13,510,true)
     label(future,"IND_WIDGET_PENDING",15,-48,510)
-    label(future,"IND_SOUND_NO_PLAY",15,-97,510)
+    label(future,"IND_SOUND_NO_PLAY",15,-78,510)
+    button(future,"IND_SOUND_TEST",15,-122,180,function()
+        if type(PlaySound)~="function" then
+            KR:Print(KR:L("IND_SOUND_TEST_FAILED"))
+            return
+        end
+        local ok=pcall(PlaySound,"igMainMenuOptionCheckBoxOn")
+        if KR.Diagnostics then KR.Diagnostics:Log(ok and "INFO" or "WARN",
+            "Audio",ok and "Test sound API called" or "Test sound failed") end
+        KR:Print(KR:L(ok and "IND_SOUND_TEST_SENT" or "IND_SOUND_TEST_FAILED"))
+    end)
 end
 
 function KR.Pages:Profiles(parent)

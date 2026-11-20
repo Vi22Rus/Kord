@@ -51,6 +51,7 @@ function KR.SpellIcon:Create(parent)
     slot.gcdShade = gcd
     slot.iconBackground = background
     slot.displayFlags = {}
+    slot.isPrimary = false
 
     -- Every combat field is supplied explicitly by a future verified data provider.
     -- Nil/unknown fields hide their layer; they are never interpreted as live values.
@@ -80,13 +81,40 @@ function KR.SpellIcon:Create(parent)
         self.displayFlags = flags or self.displayFlags
         self.index:SetShown(showNumbers)
         self:SetAlpha((opacity or 100) / 100)
-        for _, edge in ipairs(self.borderPieces) do
-            edge:SetShown(style ~= "none")
-            edge:SetAlpha(style == "minimal" and 0.5 or 1)
-        end
+
         local options = self.displayFlags or {}
+        local colors={white={1,1,1},cyan={0.06,0.79,0.98},gold={1,0.78,0.28}}
+        local selected=colors[options.textColor] or colors.white
+        local tone=self.isPrimary and options.highlightMain~=false and
+            (colors[options.highlightColor] or colors.cyan) or C.line
+        local intensity=self.isPrimary and (options.highlightStrength or 100)/100 or 1
+        local thickness=options.borderThickness or 2
+        for i, edge in ipairs(self.borderPieces) do
+            edge:SetShown(style~="none" and thickness>0)
+            edge:SetAlpha((style=="minimal" and 0.5 or 1)*intensity)
+            edge:SetColorTexture(tone[1],tone[2],tone[3],1)
+            if i<=2 then edge:SetHeight(thickness) else edge:SetWidth(thickness) end
+        end
         self.iconBackground:SetShown(options.showIconBackground ~= false)
+        self.iconBackground:SetAlpha((options.backgroundAlpha or 100)/100)
         local size = options.textSize or 12
+        local centered=options.textPlacement=="centered"
+        self.keybind:ClearAllPoints()
+        self.keybind:SetPoint(centered and "TOP" or "TOPRIGHT", self,
+            centered and "TOP" or "TOPRIGHT",centered and 0 or -4,-4)
+        self.nameText:ClearAllPoints()
+        self.nameText:SetPoint(centered and "TOP" or "BOTTOM",self,
+            centered and "TOP" or "BOTTOM",0,centered and -18 or 5)
+        self.chargesText:ClearAllPoints()
+        self.chargesText:SetPoint(centered and "BOTTOM" or "BOTTOMLEFT",self,
+            centered and "BOTTOM" or "BOTTOMLEFT",centered and 0 or 5,4)
+        for _, f in ipairs({self.index,self.keybind,self.nameText,self.cooldownText,self.chargesText}) do
+            f:SetTextColor(selected[1],selected[2],selected[3],1)
+            if f.SetShadowOffset then
+                f:SetShadowOffset(options.textShadow == false and 0 or 1,
+                    options.textShadow == false and 0 or -1)
+            end
+        end
         for _, fontString in ipairs({self.keybind, self.nameText, self.chargesText, self.cooldownText}) do
             local font, _, styleFlags = fontString:GetFont()
             if font then fontString:SetFont(font, size, styleFlags or "") end
@@ -99,12 +127,10 @@ function KR.SpellIcon:Create(parent)
     end
 
     function slot:SetTestSlot(number, isPrimary)
+        self.isPrimary=isPrimary
         self.index:SetText(tostring(number))
         self:ClearDisplayData()
-        local tone = isPrimary and C.cyan or C.line
-        for _, border in ipairs(self.borderPieces) do
-            border:SetColorTexture(tone[1], tone[2], tone[3], tone[4])
-        end
+
     end
     return slot
 end

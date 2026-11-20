@@ -99,6 +99,7 @@ function KR.RotationSettings:SetFlag(key, value)
     if not profile or defaults[key] == nil or type(defaults[key]) ~= "boolean"
         or type(value) ~= "boolean" then return false end
     profile[key] = value
+    if KR.UpdateHomeStatus then KR:UpdateHomeStatus() end
     return true
 end
 
@@ -112,6 +113,7 @@ function KR.RotationSettings:SetTargetMode(value)
     local profile = self:GetProfile(true)
     if not profile then return false end
     profile.targetMode = value
+    if KR.UpdateHomeStatus then KR:UpdateHomeStatus() end
     return true
 end
 
@@ -125,6 +127,7 @@ function KR.RotationSettings:SetCategory(key, value)
     local profile = self:GetProfile(true)
     if not profile or not validCategory[key] or type(value) ~= "boolean" then return false end
     profile.categories[key] = value
+    if KR.UpdateHomeStatus then KR:UpdateHomeStatus() end
     return true
 end
 

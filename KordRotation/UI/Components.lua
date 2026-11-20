@@ -7,6 +7,14 @@ KR.UI = KR.UI or {}
 local UI = KR.UI
 local C = UI.colors
 
+function UI:ShowSettingTip(frame,key)
+    if not KR.Advanced or not KR.Advanced:Get("showTooltips") or not GameTooltip then return end
+    GameTooltip:SetOwner(frame,"ANCHOR_RIGHT")
+    GameTooltip:AddLine(KR:L(key))
+    GameTooltip:AddLine(KR:L("UI_TIP_NOTE"),1,1,1,true)
+    GameTooltip:Show()
+end
+
 -- License notice (2/3): Vi22Rus copyright applies to reusable UI components.
 -- Visual controls never cast spells or perform protected combat actions.
 function UI:ToggleRow(parent, labelKey, x, y, width, getValue, setValue)
@@ -32,10 +40,12 @@ function UI:ToggleRow(parent, labelKey, x, y, width, getValue, setValue)
         setValue(not getValue())
         row:Refresh()
     end)
-    row:SetScript("OnEnter", function()
+    row:SetScript("OnEnter", function(self)
+        UI:ShowSettingTip(self,labelKey)
         background:SetColorTexture(C.panel[1], C.panel[2], C.panel[3], C.panel[4])
     end)
     row:SetScript("OnLeave", function()
+        if GameTooltip then GameTooltip:Hide() end
         background:SetColorTexture(C.sidebar[1], C.sidebar[2], C.sidebar[3], C.sidebar[4])
     end)
     row:Refresh()
@@ -78,6 +88,9 @@ function UI:StepRow(parent, labelKey, x, y, width, getter, setter, step, formatt
     end
     addButton("-", -42, -(step or 1))
     addButton("+", -8, step or 1)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
+    row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     row:Refresh()
     return row
 end
@@ -108,6 +121,8 @@ function UI:ChoiceRow(parent, labelKey, x, y, width, getter, setter, choices)
         end
         row:Refresh()
     end)
+    row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
+    row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     row:Refresh()
     return row
 end

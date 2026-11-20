@@ -66,11 +66,15 @@ end
 -- License notice (2/3): advanced controls do not imply a real minimap icon,
 -- a running combat scheduler, or a completed protected-frame queue.
 function KR.Pages:Advanced(parent)
-    local body=scrolled(parent,1005)
-    local intro=panel(body,-14,104)
-    prose(intro,"ADV_TITLE",16,-14,510,true)
-    prose(intro,"ADV_LANGUAGE_AUTO",16,-49,510)
-    local options=panel(body,-136,345)
+    local body=scrolled(parent,1400)
+    local intro=panel(body,-14,126)
+    prose(intro,"ADV_TITLE",16,-12,510,true)
+    prose(intro,"ADV_LANGUAGE_AUTO",16,-39,510)
+    local choices={{"auto","ADV_LANG_AUTO"},{"ruRU","ADV_LANG_RU"},{"enUS","ADV_LANG_EN"}}
+    local language=UI:ChoiceRow(intro,"ADV_LANGUAGE_LABEL",13,-76,505,
+        function() return A:Get("language") end,
+        function(value) A:Set("language",value) end,choices)
+    local options=panel(body,-159,345)
     prose(options,"ADV_OPTIONS_TITLE",16,-13,510,true)
     local flags={
         {"ADV_SHOW_LOGIN","showAtLogin"},
@@ -78,42 +82,66 @@ function KR.Pages:Advanced(parent)
         {"ADV_TOOLTIPS","showTooltips"},
         {"ADV_MINIMAP","showMinimap"},
     }
+    local rows={}
     for i,item in ipairs(flags) do
         local key=item[2]
-        UI:ToggleRow(options,item[1],13,-44-(i-1)*44,505,
+        rows[#rows+1]=UI:ToggleRow(options,item[1],13,-44-(i-1)*44,505,
             function() return A:Get(key) end,
             function(v) A:Set(key,v) end)
     end
     prose(options,"ADV_UNSUPPORTED_NOTE",15,-251,506)
-    local rates=panel(body,-500,250)
+
+    local rates=panel(body,-524,385)
     prose(rates,"ADV_RATES_TITLE",15,-13,500,true)
     local items={
         {"ADV_RATE_LOGIC","updateRate",50},
         {"ADV_RATE_DRAW","visualRate",50},
         {"ADV_RATE_SCAN","scanRate",100},
+        {"ADV_RATE_TALENTS","talentScanRate",100},
+        {"ADV_RATE_ACTIONS","actionScanRate",100},
+        {"ADV_RATE_SETTINGS","settingsRate",50},
     }
     for i,item in ipairs(items) do
         local key=item[2]
-        UI:StepRow(rates,item[1],13,-47-(i-1)*47,505,
+        rows[#rows+1]=UI:StepRow(rates,item[1],13,-46-(i-1)*47,505,
             function() return A:Get(key) end,
             function(v) A:Set(key,v) end,item[3])
     end
-    prose(rates,"ADV_RATE_NOTE",15,-205,505)
-    local reset=panel(body,-770,213)
-    prose(reset,"ADV_RESET_TITLE",15,-14,510,true)
-    prose(reset,"ADV_RESET_CAUTION",15,-45,510)
-    local confirmation=confirm(parent,"ADV_RESET_ALL_CONFIRM",function()
-        A:ResetAll()
-    end)
-    click(reset,"ADV_RESET_APPEARANCE",15,-96,245,function()
-        A:ResetAppearance()
-    end)
-    click(reset,"ADV_RESET_BRANCH",270,-96,245,function()
-        if not A:ResetCurrentRotation() then
-            D:Log("WARN","Settings","No current tree for reset")
-        end
-    end)
-    click(reset,"ADV_RESET_ALL",15,-148,500,function()confirmation:Show()end)
+    prose(rates,"ADV_RATE_NOTE",15,-336,505)
+
+    local reset=panel(body,-928,209)
+    prose(reset,"ADV_RESET_TITLE",15,-12,510,true)
+    prose(reset,"ADV_RESET_CAUTION",15,-43,510)
+    local status=value(reset,15,-75,510)
+    local function resetAction(kind)
+        local ok, result
+        if kind=="appearance" then ok=A:ResetAppearance()
+        elseif kind=="branch" then ok=A:ResetCurrentRotation()
+        else ok,result=A:ResetAll() end
+        if not ok then D:Log("WARN","Settings","Reset "..kind.." not available") end
+        local queued=KR.SafeActions and KR.SafeActions:Status() or 0
+        status:SetText(KR:Format("ADV_PENDING_COUNT",queued))
+    end
+    local appearance=confirm(parent,"ADV_CONFIRM_APPEARANCE",function()resetAction("appearance")end)
+    local branch=confirm(parent,"ADV_CONFIRM_BRANCH",function()resetAction("branch")end)
+    local all=confirm(parent,"ADV_RESET_ALL_CONFIRM",function()resetAction("all")end)
+    click(reset,"ADV_RESET_APPEARANCE",15,-115,245,function()appearance:Show()end)
+    click(reset,"ADV_RESET_BRANCH",270,-115,245,function()branch:Show()end)
+    click(reset,"ADV_RESET_ALL",15,-162,500,function()all:Show()end)
+
+    local compat=panel(body,-1156,190)
+    prose(compat,"ADV_COMPAT_TITLE",15,-12,510,true)
+    local compatText=value(compat,15,-44,510)
+    prose(compat,"ADV_COMPAT_NOTE",15,-123,510)
+    local function refresh()
+        language:Refresh()
+        for _,row in ipairs(rows) do row:Refresh() end
+        status:SetText(KR:Format("ADV_PENDING_COUNT",
+            KR.SafeActions and KR.SafeActions:Status() or 0))
+        compatText:SetText(D:CompatibilityText())
+    end
+    parent.refresh=refresh
+    refresh()
 end
 
 function KR.Pages:Diagnostics(parent)
@@ -121,12 +149,18 @@ function KR.Pages:Diagnostics(parent)
     local summary=panel(body,-13,245)
     prose(summary,"DIAG_TITLE",15,-12,510,true)
     local status=value(summary,15,-45,520)
+    local details=value(summary,15,-147,520)
     local compat=panel(body,-277,213)
     prose(compat,"DIAG_API_TITLE",15,-12,520,true)
     local caps=value(compat,15,-43,515)
     local logFrame=panel(body,-508,227)
+    local refresh
     prose(logFrame,"DIAG_EVENTS",15,-12,500,true)
     local recent=value(logFrame,15,-41,518)
+    click(logFrame,"DIAG_TEST_UI",15,-185,170,function()
+        KR.RotationDisplay:ToggleTest()
+        refresh()
+    end)
     local export=panel(body,-754,346)
     prose(export,"DIAG_EXPORT_TITLE",15,-13,510,true)
     prose(export,"DIAG_COPY_HELP",15,-40,505)
@@ -137,16 +171,14 @@ function KR.Pages:Diagnostics(parent)
     field:SetAutoFocus(false)
     field:SetMaxLetters(0)
     field:SetScript("OnEscapePressed",function(self)self:ClearFocus()end)
-    local function refresh()
+    refresh=function()
         local snap=D:Snapshot()
         status:SetText(KR:Format("DIAG_SUMMARY",snap.class,snap.profile,snap.status,
             snap.counts,snap.trigger,snap.slots,snap.x,snap.y,snap.scale,
             snap.testMode and KR:L("UI_ENABLED") or KR:L("UI_DISABLED")))
-        local matches={}
-        for _,item in ipairs(D:Capabilities()) do
-            matches[#matches+1]=item.name..": "..(item.available and "+" or "-")
-        end
-        caps:SetText(table.concat(matches,"  "))
+        details:SetText(KR:Format("DIAG_DETAILS",tostring(snap.config),
+            tostring(snap.branch),tostring(snap.method),snap.certainty))
+        caps:SetText(D:ProbeReport())
         local lines=D.lines or {}
         local recentLines={}
         for i=math.max(1,#lines-5),#lines do

@@ -19,7 +19,10 @@ local defaults = {
         borderStyle = "standard", showNumbers = true,
         showKeybind = true, showSpellName = false, showCooldown = true,
         showCharges = true, showUnavailable = true, showGCD = true,
-        showIconBackground = true, textSize = 12,
+        showIconBackground = true, textSize = 12, backgroundAlpha = 100,
+        borderThickness = 2, highlightMain = true, highlightStrength = 100,
+        highlightColor = "cyan", textColor = "white", textPlacement = "standard",
+        textShadow = true,
     },
 }
 
@@ -62,15 +65,20 @@ end
 local numeric = {
     slotCount={1,5}, primarySize={32,128}, secondarySize={24,96},
     gap={0,30}, scale={50,200}, alpha={0,100}, secondaryAlpha={0,100},
-    textSize={8,20},
+    textSize={8,20},backgroundAlpha={0,100},borderThickness={0,4},
+    highlightStrength={0,100},
 }
 local choices = {
     direction={horizontal=true,vertical=true},
     borderStyle={standard=true,minimal=true,none=true},
+    highlightColor={cyan=true,gold=true,white=true},
+    textColor={white=true,cyan=true,gold=true},
+    textPlacement={standard=true,centered=true},
 }
 local booleanLayout = {primaryAtEnd=true,showNumbers=true,
     showKeybind=true,showSpellName=true,showCooldown=true,showCharges=true,
-    showUnavailable=true,showGCD=true,showIconBackground=true}
+    showUnavailable=true,showGCD=true,showIconBackground=true,
+    highlightMain=true,textShadow=true}
 
 local function normalize(panel)
     for key, range in pairs(numeric) do

@@ -147,7 +147,7 @@ local function makeDisplay(parent)
     scroll:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -7)
     scroll:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -27, 6)
     local body = CreateFrame("Frame", nil, scroll)
-    body:SetSize(565, 1760)
+    body:SetSize(565, 2190)
     scroll:SetScrollChild(body)
 
     local control = makeCard(body, -16, 228)
@@ -260,6 +260,38 @@ local function makeDisplay(parent)
         15,-366,510,
         function() return KR:GetPanelLayout("textSize") end,
         function(value) KR:SetPanelLayout("textSize",value) end,1)
+
+    local style=makeCard(body,-1740,397)
+    setText(style,KR:L("STYLE_TITLE"),17,-14,"title",C.text,510)
+    local rows={
+        {"STYLE_BACKGROUND_ALPHA","backgroundAlpha",5},
+        {"STYLE_BORDER_THICKNESS","borderThickness",1},
+        {"STYLE_HIGHLIGHT_STRENGTH","highlightStrength",5},
+    }
+    for i,item in ipairs(rows) do
+        local key=item[2]
+        KR.displayRows[#KR.displayRows+1]=UI:StepRow(style,item[1],
+            13,-47-(i-1)*43,505,
+            function()return KR:GetPanelLayout(key)end,
+            function(v)KR:SetPanelLayout(key,v)end,item[3])
+    end
+    KR.displayRows[#KR.displayRows+1]=UI:ToggleRow(style,"STYLE_HIGHLIGHT",
+        13,-177,505,function()return KR:GetPanelLayout("highlightMain")end,
+        function(v)KR:SetPanelLayout("highlightMain",v)end)
+    local palette={{"cyan","STYLE_CYAN"},{"gold","STYLE_GOLD"},{"white","STYLE_WHITE"}}
+    KR.displayRows[#KR.displayRows+1]=UI:ChoiceRow(style,"STYLE_HIGHLIGHT_COLOR",
+        13,-220,505,function()return KR:GetPanelLayout("highlightColor")end,
+        function(v)KR:SetPanelLayout("highlightColor",v)end,palette)
+    KR.displayRows[#KR.displayRows+1]=UI:ChoiceRow(style,"STYLE_TEXT_COLOR",
+        13,-263,505,function()return KR:GetPanelLayout("textColor")end,
+        function(v)KR:SetPanelLayout("textColor",v)end,palette)
+    local positions={{"standard","STYLE_STANDARD"},{"centered","STYLE_CENTERED"}}
+    KR.displayRows[#KR.displayRows+1]=UI:ChoiceRow(style,"STYLE_TEXT_POSITION",
+        13,-306,505,function()return KR:GetPanelLayout("textPlacement")end,
+        function(v)KR:SetPanelLayout("textPlacement",v)end,positions)
+    KR.displayRows[#KR.displayRows+1]=UI:ToggleRow(style,"STYLE_TEXT_SHADOW",
+        13,-349,505,function()return KR:GetPanelLayout("textShadow")end,
+        function(v)KR:SetPanelLayout("textShadow",v)end)
 end
 
 function KR:CreateMainWindow()

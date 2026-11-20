@@ -8,23 +8,31 @@ local M=KR.AppearanceProfiles
 local panelKeys={"slotCount","primarySize","secondarySize","gap","scale","alpha",
     "secondaryAlpha","direction","primaryAtEnd","borderStyle","showNumbers",
     "showIconBackground","showKeybind","showSpellName","showCooldown",
-    "showCharges","showUnavailable","showGCD","textSize"}
+    "showCharges","showUnavailable","showGCD","textSize",
+    "backgroundAlpha","borderThickness","highlightMain","highlightStrength",
+    "highlightColor","textColor","textPlacement","textShadow"}
 local presets={
     Classic={slotCount=3,primarySize=72,secondarySize=52,gap=6,scale=100,
         alpha=100,secondaryAlpha=100,direction="horizontal",primaryAtEnd=false,
         borderStyle="standard",showNumbers=true,showIconBackground=true,
         showKeybind=true,showSpellName=false,showCooldown=true,showCharges=true,
-        showUnavailable=true,showGCD=true,textSize=12},
+        showUnavailable=true,showGCD=true,textSize=12,backgroundAlpha=100,
+        borderThickness=2,highlightMain=true,highlightStrength=100,
+        highlightColor="cyan",textColor="white",textPlacement="standard",textShadow=true},
     Minimal={slotCount=1,primarySize=60,secondarySize=44,gap=4,scale=100,
         alpha=90,secondaryAlpha=90,direction="horizontal",primaryAtEnd=false,
         borderStyle="none",showNumbers=false,showIconBackground=false,
         showKeybind=false,showSpellName=false,showCooldown=false,showCharges=false,
-        showUnavailable=true,showGCD=false,textSize=11},
+        showUnavailable=true,showGCD=false,textSize=11,backgroundAlpha=0,
+        borderThickness=0,highlightMain=false,highlightStrength=0,
+        highlightColor="cyan",textColor="white",textPlacement="standard",textShadow=false},
     Compact={slotCount=3,primarySize=52,secondarySize=38,gap=3,scale=90,
         alpha=95,secondaryAlpha=95,direction="horizontal",primaryAtEnd=false,
         borderStyle="minimal",showNumbers=false,showIconBackground=true,
         showKeybind=true,showSpellName=false,showCooldown=true,showCharges=true,
-        showUnavailable=true,showGCD=true,textSize=10},
+        showUnavailable=true,showGCD=true,textSize=10,backgroundAlpha=95,
+        borderThickness=1,highlightMain=true,highlightStrength=70,
+        highlightColor="cyan",textColor="white",textPlacement="standard",textShadow=true},
 }
 local function snapshot()
     local panel=KR.db and KR.db.panel or {}
