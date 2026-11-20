@@ -50,20 +50,17 @@ local function makeHome(parent)
     UI:Background(logoPane, C.sidebar)
     UI:Border(logoPane, C.line, 1)
 
-    -- Visual placeholder until approved screenshots are converted to tested TGA/BLP.
-    -- Never attempt to SetTexture() on JPEG/SVG. Do not replace the approved art with improvised vectors.
-    local kr = setText(logoPane, "KR", 18, -18, "title", C.text, 175)
-    kr:SetFontObject("GameFontNormalHuge")
-    kr:SetJustifyH("CENTER")
-    local arrows = setText(logoPane, "  ↻  ↺", 13, -65, "title", C.cyan, 180)
-    arrows:SetJustifyH("CENTER")
-    local line = setText(logoPane, "KORD ROTATION", 12, -112, nil, C.cyan, 185)
-    line:SetJustifyH("CENTER")
+    -- Approved KR artwork, pre-encoded as a WoW BLP2 texture.
+    -- Keep the asset at Media/Logo.blp; JPEG is not a valid WoW UI texture.
+    local logo = logoPane:CreateTexture(nil, "ARTWORK")
+    logo:SetTexture("Interface\\AddOns\\KordRotation\\Media\\Logo.blp")
+    logo:SetPoint("CENTER", logoPane, "CENTER", 0, 0)
+    logo:SetSize(136, 136)
+    logo:SetTexCoord(0, 1, 0, 1)
 
     setText(card, "Kord Rotation", 241, -25, "title", C.text, 355)
     setText(card, "World of Warcraft Forever", 241, -60, nil, C.cyan, 355)
     setText(card, KR:L("DESCRIPTION"), 241, -91, nil, C.muted, 340)
-    setText(card, KR:L("LOGO_PENDING"), 241, -146, nil, C.muted, 345)
 
     local status = makeCard(parent, -213, 136)
     setText(status, KR:L("PROJECT_STATUS"), 16, -17, "title", C.text, 460)
