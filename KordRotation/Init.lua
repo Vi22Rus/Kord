@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.6"
+KR.version = "0.1.7"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then
@@ -27,6 +27,7 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
     if event == "ADDON_LOADED" and arg1 == addonName then
         KR:InitializeSettings()
         KR.IndicatorSettings:Initialize()
+        KR.Advanced:Initialize()
         SLASH_KORDROTATION1 = "/kr"
         SLASH_KORDROTATION2 = "/kordrotation"
         SlashCmdList["KORDROTATION"] = function(message)
@@ -57,7 +58,7 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                 KR:Print(KR:L("CHAT_UNKNOWN"))
             end
         end
-        KR:Print(KR:Format("CHAT_LOADED", KR.version))
+        if KR.Advanced:Get("showLoadMessage") then KR:Print(KR:Format("CHAT_LOADED", KR.version)) end
     elseif event == "PLAYER_LOGIN" then
         if not KR.db then KR:InitializeSettings() end
         KR:CreateMainWindow()

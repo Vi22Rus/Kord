@@ -63,6 +63,7 @@ function KR:RefreshCharacter(reason)
         end
     end
     self.characterState = result
+    if self.Diagnostics then self.Diagnostics:RecordCharacter(result) end
     if self.RefreshCharacterUI then self:RefreshCharacterUI() end
     return result
 end

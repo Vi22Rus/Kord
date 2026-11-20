@@ -84,34 +84,6 @@ local function makeHome(parent)
     KR:UpdatePanelControls()
 end
 
-local function makeAbout(parent)
-    local card = makeCard(parent, -19, 245)
-    setText(card, KR:L("ABOUT_TITLE"), 22, -22, "title", C.text, 445)
-    setText(card, KR:Format("ABOUT_VERSION", KR.version), 22, -64, nil, C.cyan, 445)
-    setText(card, KR:L("ABOUT_TEXT"), 22, -105, nil, C.text, 470)
-    setText(card, KR:L("COPYRIGHT"), 22, -169, nil, C.muted, 475)
-end
-
--- License notice (2/3): Copyright 2026 Vi22Rus. This window is protected under LICENSE.
--- The source is intentionally readable; copyright notices do not restrict external AI behavior.
-local function makeDiagnostics(parent)
-    local card = makeCard(parent, -19, 346)
-    setText(card, KR:L("DIAG_TITLE"), 20, -18, "title", C.text, 490)
-    local names = { KR:L("CLASS"), KR:L("LEVEL"), KR:L("CONFIG"), KR:L("POINTS"), KR:L("GROUP_METHOD"), KR:L("LEADING_TREE"), KR:L("STATUS"), KR:L("REASON") }
-    KR.diagnosticLabels = {}
-    for i, value in ipairs(names) do
-        KR.diagnosticLabels[i] = setText(card, value, 20, -46 - i * 33, nil, i==7 and C.cyan or C.muted, 520)
-    end
-    local refresh = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
-    refresh:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 20, 13)
-    refresh:SetSize(215, 25)
-    refresh:SetText(KR:L("REFRESH"))
-    refresh:SetScript("OnClick", function() KR:RefreshCharacter("manual") end)
-    local tip = makeCard(parent, -380, 86)
-    setText(tip, KR:L("DIAG_HINT"), 16, -13, nil, C.cyan, 520)
-    setText(tip, KR:L("FALLBACK_HINT"), 16, -42, nil, C.muted, 530)
-end
-
 local function makePlanned(parent, name)
     local card = makeCard(parent, -19, 178)
     setText(card, name, 23, -24, "title", C.text, 450)
@@ -284,8 +256,8 @@ function KR:CreateMainWindow()
 
         -- Register all nine pages; build their contents on first selection only.
         if key == "home" then page.build = makeHome
-        elseif key == "about" then page.build = makeAbout
-        elseif key == "diagnostics" then page.build = makeDiagnostics
+        elseif key == "about" then page.build = function(container) KR.Pages:About(container) end
+        elseif key == "diagnostics" then page.build = function(container) KR.Pages:Diagnostics(container) end
         elseif key == "display" then page.build = makeDisplay
         elseif key == "rotation" then page.build = function(container) KR.Pages:Rotation(container) end
         elseif key == "abilities" then page.build = function(container) KR.Pages:Abilities(container) end
@@ -351,6 +323,7 @@ function KR:RefreshCharacterUI()
     end
     if self.rotationPageRefresh then self.rotationPageRefresh() end
     if self.abilitiesPageRefresh then self.abilitiesPageRefresh() end
+    if self.RefreshDiagnosticsPage then self:RefreshDiagnosticsPage() end
     local l = self.diagnosticLabels
     if l then
         local values = {
