@@ -46,12 +46,28 @@ local function resolve(name)
     return _G[name]
 end
 
+-- Secret checks are deliberately conservative: never inspect a secret table
+-- or a value rejected by the client. Missing probes do not imply safety.
 local function secret(value)
-    local detect = type(_G) == "table" and _G.issecretvalue or nil
-    if type(detect) ~= "function" then return false end
-    local ok, result = pcall(detect, value)
-    -- A broken security probe cannot establish safe data.
-    return not ok or result == true
+    if type(value) == "nil" then return false end
+    local probe = type(_G) == "table" and _G.issecretvalue or nil
+    if type(probe) == "function" then
+        local ok, protected = pcall(probe, value)
+        if not ok or protected == true then return true end
+    end
+    if type(value) == "table" then
+        local tableProbe = type(_G) == "table" and _G.issecrettable or nil
+        if type(tableProbe) == "function" then
+            local ok, protected = pcall(tableProbe, value)
+            if not ok or protected == true then return true end
+        end
+    end
+    local accessible = type(_G) == "table" and _G.canaccessvalue or nil
+    if type(accessible) == "function" then
+        local ok, permitted = pcall(accessible, value)
+        if not ok or permitted ~= true then return true end
+    end
+    return false
 end
 
 local function safeTime()
@@ -149,6 +165,29 @@ function API:ReadValues(name, ...)
         end
     end
     return outcome("READY", name, nil, values)
+end
+
+-- All structured data must pass this reader before consumers inspect fields.
+-- expectedType can be omitted for optional fields, but missing/secret is UNKNOWN.
+function API:ReadField(record, key, expectedType)
+    if type(record) ~= "table" or secret(record) then
+        return outcome("UNKNOWN", "GameAPI.ReadField", "protected_or_invalid_table")
+    end
+    if type(key) ~= "string" and type(key) ~= "number" then
+        return outcome("UNAVAILABLE", "GameAPI.ReadField", "unsupported_key")
+    end
+    local ok, value = pcall(function() return record[key] end)
+    if not ok then return outcome("UNKNOWN", "GameAPI.ReadField", "field_access_failed") end
+    if secret(value) then return outcome("UNKNOWN", "GameAPI.ReadField", "protected_value") end
+    if value == nil then return outcome("UNKNOWN", "GameAPI.ReadField", "no_value") end
+    if expectedType and type(value) ~= expectedType then
+        return outcome("UNKNOWN", "GameAPI.ReadField", "unexpected_type")
+    end
+    if type(value) == "number" and
+        (value ~= value or value == math.huge or value == -math.huge) then
+        return outcome("UNKNOWN", "GameAPI.ReadField", "invalid_number")
+    end
+    return outcome("READY", "GameAPI.ReadField", nil, value)
 end
 
 function API:Probe(name)

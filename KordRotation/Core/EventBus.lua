@@ -8,7 +8,9 @@ local channels = {
     PLAYER_LOGIN="identity", PLAYER_ENTERING_WORLD="identity", PLAYER_LEVEL_UP="identity",
     TRAIT_CONFIG_UPDATED="talents", PLAYER_TALENT_UPDATE="talents",
     ACTIVE_TALENT_GROUP_CHANGED="talents", SPELLS_CHANGED="spellbook",
-    LEARNED_SPELL_IN_TAB="spellbook", SKILL_LINES_CHANGED="spellbook",
+    PLAYER_SPECIALIZATION_CHANGED="talents", CHARACTER_POINTS_CHANGED="talents",
+    LEARNED_SPELL_IN_TAB="spellbook", LEARNED_SPELL_IN_SKILL_LINE="spellbook",
+    SKILL_LINES_CHANGED="spellbook",
     ACTIONBAR_SLOT_CHANGED="actionbar", ACTIONBAR_PAGE_CHANGED="actionbar",
     UPDATE_SHAPESHIFT_FORM="actionbar", UPDATE_BINDINGS="bindings",
     UPDATE_MACROS="actionbar", PLAYER_TARGET_CHANGED="target",
@@ -119,8 +121,13 @@ function E:Initialize()
     if not ok or not frame then return false end
     self.registered={}
     for event in pairs(channels) do
-        local success=pcall(frame.RegisterEvent, frame, event)
-        self.registered[event]=success
+        local valid=true
+        local validator=type(C_EventUtils)=="table" and C_EventUtils.IsEventValid
+        if type(validator)=="function" then
+            local ok,available=pcall(validator,event)
+            valid=ok and available==true
+        end
+        self.registered[event]=valid and pcall(frame.RegisterEvent, frame, event) or false
     end
     frame:SetScript("OnEvent", function(_,event,unit)
         E:HandleEvent(event,unit)

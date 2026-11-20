@@ -97,4 +97,57 @@ KR.SpellCatalogue:Invalidate("bank_missing")
 local unavailable=KR.SpellCatalogue:Read()
 check(unavailable.status,"unavailable")
 check(#unavailable.entries,0)
-print("PASS stage 2.4 spell catalogue mock scenarios")
+
+-- Stage 2.4a: protected values/tables, invalid enums, zero book, event validity.
+local secretTable={itemType=1,spellID=444}
+issecrettable=function(v) return v==secretTable end
+canaccessvalue=function(v) return v~=secretTable and v~="NO_ACCESS" end
+check(KR.GameAPI:ReadField(secretTable,"spellID").status,"UNKNOWN","secret table")
+check(KR.GameAPI:ReadField({name="SECRET"},"name").status,"UNKNOWN","secret field")
+check(KR.GameAPI:ReadField({name="NO_ACCESS"},"name").status,"UNKNOWN","inaccessible field")
+check(KR.GameAPI:ReadField({spellID=123},"spellID","number").value,123,"plain field")
+C_SpellBook.GetSpellBookItemInfo=function() return secretTable end
+Enum.SpellBookSpellBank.Player=0
+KR.SpellCatalogue:Invalidate("secret_table")
+check(KR.SpellCatalogue:Read().status,"unavailable","protected spellbook item")
+C_SpellBook.GetSpellBookItemInfo=function() return {itemType=99,spellID=444} end
+KR.SpellCatalogue:Invalidate("unexpected_itemtype")
+local unknownKind=KR.SpellCatalogue:Read()
+check(unknownKind.status,"unavailable","unknown modern item type")
+check(#unknownKind.entries,0,"no partial results")
+C_SpellBook.GetNumSpellBookSkillLines=function() return 0 end
+KR.SpellCatalogue:Invalidate("modern_zero")
+check(KR.SpellCatalogue:Read().status,"unavailable","zero modern lines are ambiguous")
+GetNumSpellTabs=function() return 0 end
+C_SpellBook.GetNumSpellBookSkillLines=nil
+KR.SpellCatalogue:Invalidate("legacy_zero")
+check(KR.SpellCatalogue:Read().status,"unavailable","zero legacy tabs are ambiguous")
+-- Invalid client events must not reach RegisterEvent.
+local registered={}
+local oldFrame=CreateFrame
+C_EventUtils={IsEventValid=function(event) return event~="LEARNED_SPELL_IN_SKILL_LINE" end}
+KR.EventBus.frame=nil
+CreateFrame=function()
+    return { RegisterEvent=function(_,event)
+        registered[event]=true
+    end, SetScript=function() end }
+end
+KR.EventBus:Initialize()
+check(registered.LEARNED_SPELL_IN_SKILL_LINE,nil,"do not register invalid event")
+check(KR.EventBus.registered.LEARNED_SPELL_IN_SKILL_LINE,false,"explicit invalid registration")
+check(registered.SPELLS_CHANGED,true,"valid event registration")
+CreateFrame=oldFrame
+
+-- Even a nonzero line count with zero entries cannot prove a loaded book.
+C_SpellBook.GetNumSpellBookSkillLines=function() return 1 end
+C_SpellBook.GetSpellBookSkillLineInfo=function()
+    return {itemIndexOffset=0,numSpellBookItems=0}
+end
+KR.SpellCatalogue:Invalidate("empty_line")
+check(KR.SpellCatalogue:Read().status,"unavailable","empty modern line ambiguous")
+GetNumSpellTabs=function() return 1 end
+GetSpellTabInfo=function() return "General",nil,0,0 end
+C_SpellBook.GetNumSpellBookSkillLines=nil
+KR.SpellCatalogue:Invalidate("empty_tab")
+check(KR.SpellCatalogue:Read().status,"unavailable","empty legacy tab ambiguous")
+print("PASS stage 2.4 and 2.4a spell catalogue mock scenarios")

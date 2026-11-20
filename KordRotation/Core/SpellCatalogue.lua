@@ -15,14 +15,9 @@ local function nonnegative(n, max)
         and n>=0 and n<=max
 end
 local function safeField(value, key)
-    if type(value)~="table" then return nil end
-    local ok, field=pcall(function() return value[key] end)
-    if not ok then return nil end
-    if type(issecretvalue)=="function" then
-        local safe, isSecret=pcall(issecretvalue,field)
-        if not safe or isSecret then return nil end
-    end
-    return field
+    if not KR.GameAPI or type(KR.GameAPI.ReadField)~="function" then return nil end
+    local field=KR.GameAPI:ReadField(value,key)
+    return field.status=="READY" and field.value or nil
 end
 local function get(name,...)
     if not KR.GameAPI or type(KR.GameAPI.ReadValues)~="function" then
@@ -78,7 +73,7 @@ local function legacy()
     local tabs=single("GetNumSpellTabs","number")
     if not tabs then return nil,"legacy_api_unavailable" end
     if not nonnegative(tabs,MAX_LINES) then return nil,"invalid_spellbook_tabs" end
-    if tabs==0 then return freshResult("ready","spellbook_empty","legacy") end
+    if tabs==0 then return nil,"legacy_zero_tabs_unverified" end
     if not KR.GameAPI or KR.GameAPI:Probe("GetSpellTabInfo").status~="READY"
         or KR.GameAPI:Probe("GetSpellBookItemInfo").status~="READY" then
         return nil,"legacy_api_unavailable"
@@ -132,14 +127,15 @@ local function legacy()
             end
         end
     end
-    return freshResult("ready",#entries==0 and "spellbook_empty" or nil,"legacy",entries)
+    if #entries==0 then return nil,"legacy_empty_unverified" end
+    return freshResult("ready",nil,"legacy",entries)
 end
 
 local function modern()
     local count=single("C_SpellBook.GetNumSpellBookSkillLines","number")
     if count==nil then return nil,"modern_api_unavailable" end
     if not nonnegative(count,MAX_LINES) then return nil,"invalid_skill_line_count" end
-    if count==0 then return freshResult("ready","spellbook_empty","modern") end
+    if count==0 then return nil,"modern_zero_lines_unverified" end
     local enum=type(Enum)=="table" and safeField(Enum,"SpellBookSpellBank")
     local bank=enum and safeField(enum,"Player")
     if bank==nil then return nil,"modern_bank_unavailable" end
@@ -176,12 +172,20 @@ local function modern()
                 if not addEntry(entries,seen,id,name,texture,rank,nil,"modern") then
                     return nil,"modern_entry_invalid"
                 end
-            elseif kind==nil then
-                return nil,"modern_item_type_unknown"
+            else
+                -- Only explicitly recognized non-spell entries may be skipped.
+                -- Future spells are NOT learned; other client-specific types are
+                -- rejected rather than silently producing a partial "ready" book.
+                local future=enumType and safeField(enumType,"FutureSpell")
+                local flyout=enumType and safeField(enumType,"Flyout")
+                if kind==nil or (kind~=future and kind~=flyout) then
+                    return nil,"modern_item_type_unknown"
+                end
             end
         end
     end
-    return freshResult("ready",#entries==0 and "spellbook_empty" or nil,"modern",entries)
+    if #entries==0 then return nil,"modern_empty_unverified" end
+    return freshResult("ready",nil,"modern",entries)
 end
 
 local function sortEntries(entries)
