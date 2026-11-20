@@ -8,6 +8,16 @@ local translations = {}
 
 -- enUS translation; missing strings fall back to enUS.
 translations["enUS"] = {
+    ["HOME_QUICK_TITLE"] = "Quick controls",
+    ["HOME_QUICK_NOTE"] = "Preferences only: the rotation engine is not implemented.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Enable future recommendations",
+    ["HOME_GO_DISPLAY"] = "Open display settings",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Panel visibility conditions",
+    ["DISPLAY_IN_COMBAT"] = "Show in combat",
+    ["DISPLAY_OUT_COMBAT"] = "Show out of combat",
+    ["DISPLAY_TARGET_REQUIRED"] = "Require a target",
+    ["DISPLAY_HIDE_DEAD"] = "Hide when dead",
+    ["DISPLAY_HIDE_MOUNTED"] = "Hide when mounted",
     ["ADV_TITLE"] = "Advanced settings",
     ["ADV_LANGUAGE_AUTO"] = "Language: automatic (client locale); switching languages requires client settings.",
     ["ADV_OPTIONS_TITLE"] = "General preferences",
@@ -287,6 +297,16 @@ translations["enUS"] = {
 
 -- ruRU translation; missing strings fall back to enUS.
 translations["ruRU"] = {
+    ["HOME_QUICK_TITLE"] = "Быстрые настройки",
+    ["HOME_QUICK_NOTE"] = "Это настройки на будущее: движок ротаций пока не реализован.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Включить будущие рекомендации",
+    ["HOME_GO_DISPLAY"] = "Настройки отображения",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Условия видимости панели",
+    ["DISPLAY_IN_COMBAT"] = "Показывать в бою",
+    ["DISPLAY_OUT_COMBAT"] = "Показывать вне боя",
+    ["DISPLAY_TARGET_REQUIRED"] = "Требовать выбранную цель",
+    ["DISPLAY_HIDE_DEAD"] = "Скрывать при смерти",
+    ["DISPLAY_HIDE_MOUNTED"] = "Скрывать на транспорте",
     ["ADV_TITLE"] = "Дополнительные настройки",
     ["ADV_LANGUAGE_AUTO"] = "Язык: автоматически по клиенту; смена языка выполняется в настройках клиента.",
     ["ADV_OPTIONS_TITLE"] = "Общие параметры",
@@ -567,6 +587,16 @@ translations["ruRU"] = {
 
 -- frFR translation; missing strings fall back to enUS.
 translations["frFR"] = {
+    ["HOME_QUICK_TITLE"] = "Réglages rapides",
+    ["HOME_QUICK_NOTE"] = "Préférences futures : le moteur de rotation est absent.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Activer les futures recommandations",
+    ["HOME_GO_DISPLAY"] = "Options d'affichage",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Conditions de visibilité",
+    ["DISPLAY_IN_COMBAT"] = "Afficher en combat",
+    ["DISPLAY_OUT_COMBAT"] = "Afficher hors combat",
+    ["DISPLAY_TARGET_REQUIRED"] = "Exiger une cible",
+    ["DISPLAY_HIDE_DEAD"] = "Masquer si mort",
+    ["DISPLAY_HIDE_MOUNTED"] = "Masquer en monture",
     ["ADV_TITLE"] = "Options avancées",
     ["ADV_LANGUAGE_AUTO"] = "Langue automatique selon le client ; changer la langue dans le client.",
     ["ADV_OPTIONS_TITLE"] = "Préférences générales",
@@ -846,6 +876,16 @@ translations["frFR"] = {
 
 -- deDE translation; missing strings fall back to enUS.
 translations["deDE"] = {
+    ["HOME_QUICK_TITLE"] = "Schnelleinstellungen",
+    ["HOME_QUICK_NOTE"] = "Nur zukünftige Einstellungen; die Rotationsengine fehlt.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Künftige Empfehlungen aktivieren",
+    ["HOME_GO_DISPLAY"] = "Anzeigeeinstellungen",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Sichtbarkeitsbedingungen",
+    ["DISPLAY_IN_COMBAT"] = "Im Kampf anzeigen",
+    ["DISPLAY_OUT_COMBAT"] = "Außerhalb des Kampfs anzeigen",
+    ["DISPLAY_TARGET_REQUIRED"] = "Ziel erforderlich",
+    ["DISPLAY_HIDE_DEAD"] = "Bei Tod ausblenden",
+    ["DISPLAY_HIDE_MOUNTED"] = "Auf Reittier ausblenden",
     ["ADV_TITLE"] = "Erweiterte Einstellungen",
     ["ADV_LANGUAGE_AUTO"] = "Sprache automatisch vom Client; Änderungen in den Clientoptionen.",
     ["ADV_OPTIONS_TITLE"] = "Allgemein",
@@ -1125,6 +1165,16 @@ translations["deDE"] = {
 
 -- ptBR translation; missing strings fall back to enUS.
 translations["ptBR"] = {
+    ["HOME_QUICK_TITLE"] = "Configurações rápidas",
+    ["HOME_QUICK_NOTE"] = "Preferências futuras: motor de rotação ainda não implementado.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Ativar futuras recomendações",
+    ["HOME_GO_DISPLAY"] = "Opções de exibição",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Condições de visibilidade",
+    ["DISPLAY_IN_COMBAT"] = "Mostrar em combate",
+    ["DISPLAY_OUT_COMBAT"] = "Mostrar fora de combate",
+    ["DISPLAY_TARGET_REQUIRED"] = "Exigir alvo",
+    ["DISPLAY_HIDE_DEAD"] = "Ocultar quando morto",
+    ["DISPLAY_HIDE_MOUNTED"] = "Ocultar montado",
     ["ADV_TITLE"] = "Configurações avançadas",
     ["ADV_LANGUAGE_AUTO"] = "Idioma automático pelo cliente; altere nas opções do jogo.",
     ["ADV_OPTIONS_TITLE"] = "Preferências gerais",
@@ -1404,6 +1454,16 @@ translations["ptBR"] = {
 
 -- esES translation; missing strings fall back to enUS.
 translations["esES"] = {
+    ["HOME_QUICK_TITLE"] = "Ajustes rápidos",
+    ["HOME_QUICK_NOTE"] = "Preferencias futuras: el motor de rotación aún no existe.",
+    ["HOME_ENABLE_RECOMMENDATIONS"] = "Activar futuras recomendaciones",
+    ["HOME_GO_DISPLAY"] = "Ajustes de visualización",
+    ["DISPLAY_VISIBILITY_TITLE"] = "Condiciones de visibilidad",
+    ["DISPLAY_IN_COMBAT"] = "Mostrar en combate",
+    ["DISPLAY_OUT_COMBAT"] = "Mostrar fuera de combate",
+    ["DISPLAY_TARGET_REQUIRED"] = "Requerir objetivo",
+    ["DISPLAY_HIDE_DEAD"] = "Ocultar al morir",
+    ["DISPLAY_HIDE_MOUNTED"] = "Ocultar en montura",
     ["ADV_TITLE"] = "Configuración avanzada",
     ["ADV_LANGUAGE_AUTO"] = "Idioma automático según el cliente; cámbialo en los ajustes del juego.",
     ["ADV_OPTIONS_TITLE"] = "Preferencias generales",

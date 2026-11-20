@@ -36,6 +36,13 @@ local function makeCard(parent, top, height)
 end
 
 local function makeHome(parent)
+    local scroll = CreateFrame("ScrollFrame", nil, parent, "UIPanelScrollFrameTemplate")
+    scroll:SetPoint("TOPLEFT", 5, -7)
+    scroll:SetPoint("BOTTOMRIGHT", -27, 6)
+    local body = CreateFrame("Frame", nil, scroll)
+    body:SetSize(565, 775)
+    scroll:SetScrollChild(body)
+    parent = body
     local card = makeCard(parent, -19, 190)
     local logoPane = CreateFrame("Frame", nil, card)
     logoPane:SetPoint("TOPLEFT", 16, -14)
@@ -81,6 +88,35 @@ local function makeHome(parent)
         b:SetScript("OnClick", action[3])
         KR.panelButtons[i] = b
     end
+    local quick = makeCard(parent, -494, 259)
+    setText(quick, KR:L("HOME_QUICK_TITLE"), 16, -12, "title", C.text, 500)
+    setText(quick, KR:L("HOME_QUICK_NOTE"), 16, -42, nil, C.muted, 510)
+    KR.homeQuickRows = {}
+    local actions = {
+        {"HOME_ENABLE_RECOMMENDATIONS", "rotationEnabled"},
+        {"DISPLAY_SHOW_PANEL", "showPanel"},
+        {"DISPLAY_TEST_MODE", "testMode"},
+        {"DISPLAY_PANEL_LOCK", "locked"},
+    }
+    for i, item in ipairs(actions) do
+        local key = item[2]
+        local useRotation = key == "rotationEnabled"
+        local row = UI:ToggleRow(quick, item[1], 12, -66-(i-1)*41, 510,
+            function()
+                if useRotation then return KR.RotationSettings:GetFlag("enabled") or false end
+                return KR:GetPanelFlag(key)
+            end,
+            function(value)
+                if useRotation then KR.RotationSettings:SetFlag("enabled",value)
+                else KR:SetPanelFlag(key,value) end
+            end)
+        KR.homeQuickRows[#KR.homeQuickRows+1] = row
+    end
+    local jump = CreateFrame("Button",nil,quick,"UIPanelButtonTemplate")
+    jump:SetSize(202,26)
+    jump:SetPoint("TOPRIGHT",-16,-222)
+    jump:SetText(KR:L("HOME_GO_DISPLAY"))
+    jump:SetScript("OnClick",function() KR:SelectPage("display") end)
     KR:UpdatePanelControls()
 end
 
@@ -100,6 +136,7 @@ function KR:UpdatePanelControls()
     btn[2]:SetText(self:L(p.locked ~= false and "PANEL_UNLOCK" or "PANEL_LOCK"))
     btn[3]:SetText(self:L("PANEL_RESET"))
     for _, row in ipairs(self.displayRows or {}) do row:Refresh() end
+    for _, row in ipairs(self.homeQuickRows or {}) do row:Refresh() end
     if self.displayPositionLabel then
         local x, y = tonumber(p.x) or 0, tonumber(p.y) or -120
         self.displayPositionLabel:SetText(self:Format("DISPLAY_POSITION_VALUES",
@@ -113,7 +150,7 @@ local function makeDisplay(parent)
     scroll:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -7)
     scroll:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -27, 6)
     local body = CreateFrame("Frame", nil, scroll)
-    body:SetSize(565, 1045)
+    body:SetSize(565, 1305)
     scroll:SetScrollChild(body)
 
     local control = makeCard(body, -16, 228)
@@ -183,6 +220,22 @@ local function makeDisplay(parent)
         KR.RotationDisplay:ResetPosition()
         KR:UpdatePanelControls()
     end)
+    local visibility = makeCard(body, -1015, 267)
+    setText(visibility, KR:L("DISPLAY_VISIBILITY_TITLE"), 17, -16, "title", C.text, 510)
+    local flags = {
+        {"DISPLAY_IN_COMBAT", "showInCombat"},
+        {"DISPLAY_OUT_COMBAT", "showOutOfCombat"},
+        {"DISPLAY_TARGET_REQUIRED", "requireTarget"},
+        {"DISPLAY_HIDE_DEAD", "hideWhenDead"},
+        {"DISPLAY_HIDE_MOUNTED", "hideMounted"},
+    }
+    for i,item in ipairs(flags) do
+        local key = item[2]
+        KR.displayRows[#KR.displayRows+1] = UI:ToggleRow(visibility,item[1],15,
+            -43-(i-1)*43,510,
+            function()return KR:GetPanelFlag(key)end,
+            function(value)KR:SetPanelFlag(key,value)end)
+    end
 end
 
 function KR:CreateMainWindow()

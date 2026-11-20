@@ -11,6 +11,8 @@ local defaults = {
     showAtLogin = false,
     panel = {
         x = 0, y = -120, showPanel = true, testMode = false, locked = true,
+        showInCombat = true, showOutOfCombat = true, requireTarget = false,
+        hideWhenDead = true, hideMounted = false,
         slotCount = 3, primarySize = 72, secondarySize = 52, gap = 6,
         scale = 100, alpha = 100, secondaryAlpha = 100,
         direction = "horizontal", primaryAtEnd = false,
@@ -58,7 +60,7 @@ local function normalize(panel)
     for key in pairs(booleanLayout) do
         if type(panel[key]) ~= "boolean" then panel[key] = defaults.panel[key] end
     end
-    for _, key in ipairs({"showPanel","testMode","locked"}) do
+    for _, key in ipairs({"showPanel","testMode","locked","showInCombat","showOutOfCombat","requireTarget","hideWhenDead","hideMounted"}) do
         if type(panel[key]) ~= "boolean" then panel[key] = defaults.panel[key] end
     end
 end
@@ -102,7 +104,9 @@ function KR:InitializeSettings()
 end
 
 -- Shared UI API: commands and both settings pages update the same flags.
-local panelFlags = {showPanel = true, testMode = true, locked = true}
+local panelFlags = {showPanel = true, testMode = true, locked = true,
+    showInCombat = true, showOutOfCombat = true, requireTarget = true,
+    hideWhenDead = true, hideMounted = true}
 function KR:SetPanelFlag(key, value)
     if not panelFlags[key] or type(value) ~= "boolean" or not self.db then return false end
     if type(self.db.panel) ~= "table" then self.db.panel = {} end

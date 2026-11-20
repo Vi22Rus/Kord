@@ -62,6 +62,16 @@ function KR.RotationDisplay:Create()
     end
     self.frame, self.slots = frame, slots
     frame:Hide()
+    local visibility = CreateFrame("Frame", nil, UIParent)
+    local events = {"PLAYER_REGEN_ENABLED", "PLAYER_REGEN_DISABLED", "PLAYER_TARGET_CHANGED",
+        "PLAYER_DEAD", "PLAYER_ALIVE", "PLAYER_UNGHOST", "UNIT_FLAGS", "PLAYER_MOUNT_DISPLAY_CHANGED"}
+    for _, event in ipairs(events) do
+        pcall(visibility.RegisterEvent, visibility, event)
+    end
+    visibility:SetScript("OnEvent", function(_,event,unit)
+        if event ~= "UNIT_FLAGS" or unit == "player" then KR.RotationDisplay:Refresh() end
+    end)
+    self.visibilityFrame = visibility
     self:RefreshLayout()
     self:Refresh()
     return frame
@@ -106,12 +116,34 @@ function KR.RotationDisplay:RefreshLayout()
     end
 end
 
+local function safeBoolean(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local ok,value = pcall(fn, ...)
+    if ok and type(value) == "boolean" then return value end
+    return nil
+end
+
+function KR.RotationDisplay:ShouldShow()
+    local p = ensurePosition(KR.db)
+    if not p.showPanel or not p.testMode then return false end
+    local combat = safeBoolean(InCombatLockdown)
+    if combat == nil then combat = safeBoolean(UnitAffectingCombat, "player") end
+    if combat ~= nil then
+        if combat and not p.showInCombat then return false end
+        if not combat and not p.showOutOfCombat then return false end
+    end
+    if p.requireTarget and safeBoolean(UnitExists, "target") == false then return false end
+    if p.hideWhenDead and safeBoolean(UnitIsDeadOrGhost, "player") == true then return false end
+    if p.hideMounted and safeBoolean(IsMounted) == true then return false end
+    return true
+end
+
 function KR.RotationDisplay:Refresh()
     if not self.frame then return end
     local p = ensurePosition(KR.db)
     self:RefreshLayout()
     -- Without a real rotation engine, NEVER show a fictitious production queue.
-    if p.showPanel and p.testMode then self.frame:Show() else self.frame:Hide() end
+    if self:ShouldShow() then self.frame:Show() else self.frame:Hide() end
 end
 
 function KR.RotationDisplay:ToggleTest()
