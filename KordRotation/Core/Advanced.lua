@@ -7,11 +7,9 @@ KR.Advanced = KR.Advanced or {}
 local A=KR.Advanced
 local defaults={
     showAtLogin=false,showLoadMessage=true,showTooltips=true,
-    showMinimap=true,updateRate=150,visualRate=100,scanRate=500,
-    talentScanRate=800,actionScanRate=500,settingsRate=250,language="auto",
+    showMinimap=true,language="auto",
 }
-local numeric={updateRate={50,1000},visualRate={50,1000},scanRate={200,5000},
-    talentScanRate={200,5000},actionScanRate={200,5000},settingsRate={100,2000}}
+local numeric={}
 local function defaultValue(key,value)
     local original=defaults[key]
     if original==nil then return nil end
@@ -22,7 +20,7 @@ local function defaultValue(key,value)
         return math.floor(math.max(limits[1],math.min(limits[2],value))+0.5)
     end
     if key=="language" then
-        if value=="auto" or value=="ruRU" or value=="enUS" then return value end
+        if value=="auto" or value=="ruRU" or value=="enUS" or value=="deDE" or value=="frFR" or value=="esES" or value=="ptBR" then return value end
         return original
     end
     if type(value)~="boolean" then return original end
@@ -57,7 +55,7 @@ function A:Set(key,value)
     if numeric[key] then
         if type(value)~="number" or value~=value then return false end
     elseif key=="language" then
-        if value~="auto" and value~="ruRU" and value~="enUS" then return false end
+        if value~="auto" and value~="ruRU" and value~="enUS" and value~="deDE" and value~="frFR" and value~="esES" and value~="ptBR" then return false end
     elseif type(value)~="boolean" then return false end
     if type(KR.db.advanced)~="table" then self:Initialize() end
     KR.db.advanced[key]=defaultValue(key,value)

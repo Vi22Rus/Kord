@@ -55,46 +55,12 @@ function UI:ToggleRow(parent, labelKey, x, y, width, getValue, setValue)
 end
 
 
--- Slider-free numeric stepper for supported UI builds; each click validates through Settings.
-function UI:StepRow(parent, labelKey, x, y, width, getter, setter, step, formatter)
-    local row = CreateFrame("Frame", nil, parent)
-    row:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
-    row:SetSize(width or 470, 39)
-    self:Background(row, C.sidebar)
-    local caption = self:Label(row, KR:L(labelKey), nil, C.text)
-    caption:SetPoint("LEFT", 12, 0)
-    caption:SetWidth((width or 470) - 190)
-    local value = self:Label(row, "", nil, C.cyan)
-    value:SetPoint("RIGHT", -79, 0)
-    value:SetWidth(78)
-    value:SetJustifyH("RIGHT")
-    function row:Refresh()
-        local n = getter()
-        value:SetText(formatter and formatter(n) or tostring(n))
+-- Every numeric setting has a validated range, slider and numeric input.
+function UI:StepRow(parent,labelKey,x,y,width,getter,setter,step,formatter,minimum,maximum)
+    if type(minimum)~="number" or type(maximum)~="number" then
+        error("Missing numeric bounds for "..tostring(labelKey))
     end
-    local function addButton(label, offset, delta)
-        local button = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
-        button:SetSize(29, 28)
-        button:SetPoint("RIGHT", offset, 0)
-        button:SetText(label)
-        button:SetScript("OnClick", function()
-            local current = getter()
-            if type(current) ~= "number" or current ~= current
-                or current == math.huge or current == -math.huge then
-                row:Refresh()
-                return
-            end
-            setter(current + delta)
-            row:Refresh()
-        end)
-    end
-    addButton("-", -42, -(step or 1))
-    addButton("+", -8, step or 1)
-    row:EnableMouse(true)
-    row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
-    row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
-    row:Refresh()
-    return row
+    return self:SliderInputRow(parent,labelKey,x,y,width,getter,setter,minimum,maximum,step or 1)
 end
 
 -- Range slider and numeric edit share the same validated settings setter.
@@ -146,6 +112,10 @@ function UI:SliderInputRow(parent,labelKey,x,y,width,getter,setter,minValue,maxV
         input:ClearFocus()
     end
     input:SetScript("OnEnterPressed",commit)
+    slider:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
+    slider:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
+    input:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
+    input:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     input:SetScript("OnEditFocusLost",function() row:Refresh() end)
     input:SetScript("OnEscapePressed",function() row:Refresh();input:ClearFocus() end)
     row:EnableMouse(true)

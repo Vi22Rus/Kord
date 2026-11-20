@@ -1,7 +1,7 @@
 # Kord Rotation (c) 2026 Vi22Rus. All rights reserved; LICENSE in repository root.
 ## Interface: 16001
 ## Title: Kord Rotation
-## Notes: WoW Forever rotation helper — interface prototype 0.1.7.9-rc2
+## Notes: WoW Forever rotation helper — interface prototype 0.1.8.0-rc3
 ## Author: Vi22Rus
 ## Version: 0.1.7.8-rc1
 ## SavedVariables: KordRotationDB

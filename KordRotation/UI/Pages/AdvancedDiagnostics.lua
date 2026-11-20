@@ -66,11 +66,11 @@ end
 -- License notice (2/3): advanced controls do not imply a real minimap icon,
 -- a running combat scheduler, or a completed protected-frame queue.
 function KR.Pages:Advanced(parent)
-    local body=scrolled(parent,1400)
+    local body=scrolled(parent,1040)
     local intro=panel(body,-14,126)
     prose(intro,"ADV_TITLE",16,-12,510,true)
     prose(intro,"ADV_LANGUAGE_AUTO",16,-39,510)
-    local choices={{"auto","ADV_LANG_AUTO"},{"ruRU","ADV_LANG_RU"},{"enUS","ADV_LANG_EN"}}
+    local choices={{"auto","ADV_LANG_AUTO"},{"ruRU","ADV_LANG_RU"},{"enUS","ADV_LANG_EN"},{"deDE","ADV_LANG_DE"},{"frFR","ADV_LANG_FR"},{"esES","ADV_LANG_ES"},{"ptBR","ADV_LANG_PT"}}
     local language=UI:ChoiceRow(intro,"ADV_LANGUAGE_LABEL",13,-76,505,
         function() return A:Get("language") end,
         function(value) A:Set("language",value) end,choices)
@@ -91,25 +91,7 @@ function KR.Pages:Advanced(parent)
     end
     prose(options,"ADV_UNSUPPORTED_NOTE",15,-251,506)
 
-    local rates=panel(body,-524,385)
-    prose(rates,"ADV_RATES_TITLE",15,-13,500,true)
-    local items={
-        {"ADV_RATE_LOGIC","updateRate",50},
-        {"ADV_RATE_DRAW","visualRate",50},
-        {"ADV_RATE_SCAN","scanRate",100},
-        {"ADV_RATE_TALENTS","talentScanRate",100},
-        {"ADV_RATE_ACTIONS","actionScanRate",100},
-        {"ADV_RATE_SETTINGS","settingsRate",50},
-    }
-    for i,item in ipairs(items) do
-        local key=item[2]
-        rows[#rows+1]=UI:StepRow(rates,item[1],13,-46-(i-1)*47,505,
-            function() return A:Get(key) end,
-            function(v) A:Set(key,v) end,item[3])
-    end
-    prose(rates,"ADV_RATE_NOTE",15,-336,505)
-
-    local reset=panel(body,-928,209)
+    local reset=panel(body,-524,209)
     prose(reset,"ADV_RESET_TITLE",15,-12,510,true)
     prose(reset,"ADV_RESET_CAUTION",15,-43,510)
     local status=value(reset,15,-75,510)
@@ -129,7 +111,7 @@ function KR.Pages:Advanced(parent)
     click(reset,"ADV_RESET_BRANCH",270,-115,245,function()branch:Show()end)
     click(reset,"ADV_RESET_ALL",15,-162,500,function()all:Show()end)
 
-    local compat=panel(body,-1156,190)
+    local compat=panel(body,-752,190)
     prose(compat,"ADV_COMPAT_TITLE",15,-12,510,true)
     local compatText=value(compat,15,-44,510)
     prose(compat,"ADV_COMPAT_NOTE",15,-123,510)
