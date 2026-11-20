@@ -23,6 +23,24 @@ local defaults = {
     },
 }
 
+-- Clean stale or malformed SavedVariables before the values reach Frame APIs.
+-- The main window currently has a fixed nine-page layout, not a resize control.
+local function finiteOffset(value, fallback)
+    local number = tonumber(value)
+    if not number or number ~= number or number == math.huge or number == -math.huge then
+        return fallback
+    end
+    return math.max(-10000, math.min(10000, number))
+end
+
+local function normalizeWindow(window)
+    window.point = "CENTER"
+    window.x = finiteOffset(window.x, defaults.window.x)
+    window.y = finiteOffset(window.y, defaults.window.y)
+    window.width = defaults.window.width
+    window.height = defaults.window.height
+end
+
 local function copyMissing(destination, source)
     for key, value in pairs(source) do
         if destination[key] == nil then
@@ -102,9 +120,17 @@ function KR:InitializeSettings()
         KordRotationDB.window = {}
         copyMissing(KordRotationDB.window, defaults.window)
     end
+    -- Existing window tables may contain strings, NaN, or invalid anchors.
+    copyMissing(KordRotationDB.window, defaults.window)
+    normalizeWindow(KordRotationDB.window)
+    if type(KordRotationDB.showAtLogin) ~= "boolean" then
+        KordRotationDB.showAtLogin = defaults.showAtLogin
+    end
     if type(KordRotationDB.panel) ~= "table" then KordRotationDB.panel = {} end
     copyMissing(KordRotationDB.panel, defaults.panel)
     normalize(KordRotationDB.panel)
+    KordRotationDB.panel.x = finiteOffset(KordRotationDB.panel.x, defaults.panel.x)
+    KordRotationDB.panel.y = finiteOffset(KordRotationDB.panel.y, defaults.panel.y)
     self.db = KordRotationDB
     self.charDB = KordRotationCharDB
 end

@@ -73,13 +73,14 @@ function A:ResetCurrentRotation()
 end
 function A:ResetAll()
     -- Caller must present the dedicated confirmation dialog first.
-    if not KR.db then return false end
+    -- Do not discard data if the client cannot reload to release stale UI references.
+    if not KR.db or type(ReloadUI)~="function" then return false end
     KordRotationDB={}
     KordRotationCharDB={}
     KR:InitializeSettings()
     self:Initialize()
     if KR.IndicatorSettings then KR.IndicatorSettings:Initialize() end
-    if type(ReloadUI)=="function" then ReloadUI() end
+    ReloadUI()
     return true
 end
 -- Copyright notice (3/3): 2026 Vi22Rus; governed by root LICENSE.
