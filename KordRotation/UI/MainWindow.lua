@@ -60,8 +60,9 @@ local function makeHome(parent)
 
     local status = makeCard(parent, -226, 125)
     setText(status, "Состояние проекта", 16, -17, "title", C.text, 460)
-    setText(status, "Версия: 0.1.0 — интерфейсный прототип", 16, -52, nil, C.cyan, 440)
-    setText(status, "Определение талантов и боевые ротации будут добавлены по плану на следующих сборках.", 16, -78, nil, C.muted, 450)
+    setText(status, "Версия: 0.1.1 — определение персонажа", 16, -52, nil, C.cyan, 440)
+    local identity = setText(status, "Персонаж: ожидание данных...", 16, -78, nil, C.muted, 535)
+    KR.homeIdentityLabel = identity
 
     local footer = makeCard(parent, -369, 80)
     setText(footer, "Справка", 16, -11, "title", C.text, 430)
@@ -71,13 +72,32 @@ end
 local function makeAbout(parent)
     local card = makeCard(parent, -19, 245)
     setText(card, "О Kord Rotation", 22, -22, "title", C.text, 445)
-    setText(card, "Разработка: Vi22Rus  |  Версия: 0.1.0", 22, -64, nil, C.cyan, 445)
-    setText(card, "Цель: 9 классов и 27 профилей. Класс и специализация будут определяться автоматически по персонажу и талантам.", 22, -105, nil, C.text, 470)
+    setText(card, "Разработка: Vi22Rus  |  Версия: 0.1.1", 22, -64, nil, C.cyan, 445)
+    setText(card, "Цель: 9 классов и 27 профилей. Класс и ветка талантов определяются автоматически; расчёт на Forever требует проверки.", 22, -105, nil, C.text, 470)
     setText(card, "© 2026 Vi22Rus. Условия личного использования и ограничения копирования — в корневом файле LICENSE.", 22, -169, nil, C.muted, 475)
 end
 
 -- License notice (2/3): Copyright 2026 Vi22Rus. This window is protected under LICENSE.
 -- The source is intentionally readable; copyright notices do not restrict external AI behavior.
+local function makeDiagnostics(parent)
+    local card = makeCard(parent, -19, 346)
+    setText(card, "Диагностика талантов", 20, -18, "title", C.text, 490)
+    local names = {"Класс: —", "Уровень: —", "Конфигурация: —", "Очки в ветках: —",
+                   "Метод разделения: —", "Ведущая ветка: —", "Статус: —", "Причина: —"}
+    KR.diagnosticLabels = {}
+    for i, value in ipairs(names) do
+        KR.diagnosticLabels[i] = setText(card, value, 20, -46 - i * 33, nil, i==7 and C.cyan or C.muted, 520)
+    end
+    local refresh = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
+    refresh:SetPoint("BOTTOMLEFT", card, "BOTTOMLEFT", 20, 13)
+    refresh:SetSize(215, 25)
+    refresh:SetText("Обновить данные")
+    refresh:SetScript("OnClick", function() KR:RefreshCharacter("manual") end)
+    local tip = makeCard(parent, -380, 86)
+    setText(tip, "Для проверки: /kr debug, смена талантов, /reload.", 16, -13, nil, C.cyan, 520)
+    setText(tip, "Position fallback = предварительно: проверь порядок деревьев в игре.", 16, -42, nil, C.muted, 530)
+end
+
 local function makePlanned(parent, name)
     local card = makeCard(parent, -19, 178)
     setText(card, name, 23, -24, "title", C.text, 450)
@@ -156,6 +176,7 @@ function KR:CreateMainWindow()
 
         if key == "home" then makeHome(page)
         elseif key == "about" then makeAbout(page)
+        elseif key == "diagnostics" then makeDiagnostics(page)
         else makePlanned(page, name) end
 
         button:SetScript("OnClick", function() KR:SelectPage(key) end)
@@ -165,6 +186,7 @@ function KR:CreateMainWindow()
     self.pages = pages
     self.pageButtons = buttons
     self:SelectPage("home")
+    self:RefreshCharacterUI()
     frame:Hide()
     return frame
 end
@@ -180,6 +202,33 @@ function KR:SelectPage(key)
         button.label:SetTextColor(textColor[1], textColor[2], textColor[3], 1)
     end
     self.selectedPage = key
+end
+
+-- Presents the last safely classified state; no combat rotation is started here.
+function KR:RefreshCharacterUI()
+    local s = self.characterState
+    if not s then return end
+    local c, t = s.character, s.talents
+    local class = c.className or c.classToken or "—"
+    local spec = s.specName or "не определена"
+    local counts = t.counts and table.concat(t.counts, " / ") or "нет данных"
+    if self.homeIdentityLabel then
+        self.homeIdentityLabel:SetText("Персонаж: "..class.." · "..spec.." ("..s.status..")")
+    end
+    local l = self.diagnosticLabels
+    if l then
+        local values = {
+            "Класс: "..class.." ["..(c.classToken or "?").."]",
+            "Уровень: "..tostring(c.level or "—"),
+            "Конфигурация: "..tostring(t.configID or "—"),
+            "Очки в ветках: "..counts,
+            "Метод разделения: "..tostring(t.method or "—"),
+            "Ведущая ветка: "..spec.." ["..(s.profileID or "—").."]",
+            "Статус: "..s.status,
+            "Причина/примечание: "..tostring(s.reason or s.detection or "—"),
+        }
+        for i, value in ipairs(values) do l[i]:SetText(value) end
+    end
 end
 
 function KR:ToggleWindow(forceOpen)

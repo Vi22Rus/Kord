@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.0"
+KR.version = "0.1.1"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then
@@ -16,6 +16,10 @@ end
 local lifecycle = CreateFrame("Frame")
 lifecycle:RegisterEvent("ADDON_LOADED")
 lifecycle:RegisterEvent("PLAYER_LOGIN")
+lifecycle:RegisterEvent("TRAIT_CONFIG_UPDATED")
+lifecycle:RegisterEvent("PLAYER_TALENT_UPDATE")
+lifecycle:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
+lifecycle:RegisterEvent("PLAYER_LEVEL_UP")
 
 -- License notice (2/3): (c) 2026 Vi22Rus, all rights reserved; see root LICENSE.
 -- No license-file deletion checks: missing LICENSE does not change copyright or user rights.
@@ -30,17 +34,31 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                 KR:ToggleWindow()
             elseif message == "config" then
                 KR:ToggleWindow(true)
+            elseif message == "debug" then
+                KR:RefreshCharacter("slash_debug")
+                KR:ToggleWindow(true)
+                KR:SelectPage("diagnostics")
+            elseif message == "refresh" then
+                local state = KR:RefreshCharacter("slash_refresh")
+                KR:Print("Класс: "..tostring(state.classToken or "?")..
+                    ", ветка: "..tostring(state.specName or "?")..
+                    ", очки: "..(state.talents.counts and table.concat(state.talents.counts, "/") or "?")..
+                    ", статус: "..state.status)
             elseif message == "help" then
-                KR:Print("/kr — открыть/закрыть; /kr config — открыть; /kr help — помощь")
+                KR:Print("/kr — окно; /kr config — открыть; /kr debug — диагностика; /kr refresh — перечитать данные")
             else
                 KR:Print("Неизвестная команда. /kr help")
             end
         end
-        KR:Print("0.1.0 загружен. /kr — окно настроек.")
+        KR:Print("0.1.1 загружен. /kr — окно, /kr debug — таланты.")
     elseif event == "PLAYER_LOGIN" then
         if not KR.db then KR:InitializeSettings() end
         KR:CreateMainWindow()
+        KR:RefreshCharacter("PLAYER_LOGIN")
         if KR.db.showAtLogin then KR:ToggleWindow(true) end
+    elseif event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE"
+        or event == "ACTIVE_TALENT_GROUP_CHANGED" or event == "PLAYER_LEVEL_UP" then
+        if KR.db then KR:RefreshCharacter(event) end
     end
 end)
 
