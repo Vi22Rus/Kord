@@ -169,9 +169,9 @@ function KR.Pages:Diagnostics(parent)
         field:SetFocus()
         field:HighlightText()
     end)
+    parent.refresh=refresh
     KR.RefreshDiagnosticsPage=function()
-        if not parent:IsShown() then return end
-        refresh()
+        if parent:IsShown() then refresh() end
     end
     refresh()
 end

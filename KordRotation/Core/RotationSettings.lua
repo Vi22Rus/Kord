@@ -44,7 +44,8 @@ local function normalize(profile)
         if type(profile.categories[key]) ~= "boolean" then profile.categories[key] = value end
     end
     for spellID, item in pairs(profile.spells) do
-        if type(spellID) ~= "number" or spellID < 1 or spellID ~= math.floor(spellID)
+        if type(spellID) ~= "number" or spellID < 1 or spellID > 99999999
+            or spellID ~= spellID or spellID ~= math.floor(spellID)
             or type(item) ~= "table" then
             profile.spells[spellID] = nil
         else
@@ -133,12 +134,14 @@ end
 
 function KR.RotationSettings:GetSpell(spellID)
     local profile = self:GetProfile(true)
-    if not profile or type(spellID) ~= "number" then return nil end
+    if not profile or type(spellID) ~= "number" or spellID < 1
+        or spellID > 99999999 or spellID ~= math.floor(spellID) then return nil end
     return profile.spells[spellID]
 end
 
 function KR.RotationSettings:SetSpell(spellID, key, value)
-    if type(spellID) ~= "number" or spellID < 1 or spellID ~= math.floor(spellID) then return false end
+    if type(spellID) ~= "number" or spellID < 1 or spellID > 99999999
+        or spellID ~= spellID or spellID ~= math.floor(spellID) then return false end
     local profile = self:GetProfile(true)
     if not profile then return false end
     if key == "enabled" or key == "separate" then
@@ -159,7 +162,8 @@ end
 
 function KR.RotationSettings:ResetSpell(spellID)
     local profile = self:GetProfile(true)
-    if not profile or type(spellID) ~= "number" then return false end
+    if not profile or type(spellID) ~= "number" or spellID < 1
+        or spellID > 99999999 or spellID ~= math.floor(spellID) then return false end
     profile.spells[spellID] = nil
     return true
 end

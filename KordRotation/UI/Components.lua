@@ -66,7 +66,13 @@ function UI:StepRow(parent, labelKey, x, y, width, getter, setter, step, formatt
         button:SetPoint("RIGHT", offset, 0)
         button:SetText(label)
         button:SetScript("OnClick", function()
-            setter(getter() + delta)
+            local current = getter()
+            if type(current) ~= "number" or current ~= current
+                or current == math.huge or current == -math.huge then
+                row:Refresh()
+                return
+            end
+            setter(current + delta)
             row:Refresh()
         end)
     end

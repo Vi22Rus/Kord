@@ -81,7 +81,8 @@ end
 -- Future engine interface. A caller must supply real, verified state.
 -- Setting nil clears all overlays; test slots never receive synthetic combat data.
 function KR.RotationDisplay:SetSlotData(index, data)
-    if not self.slots or type(index) ~= "number" or index < 1 or index > 5 then return false end
+    if not self.slots or type(index) ~= "number" or index ~= math.floor(index)
+        or index < 1 or index > 5 then return false end
     local slot = self.slots[index]
     if type(data) == "table" then slot:SetDisplayData(data)
     else slot:ClearDisplayData() end

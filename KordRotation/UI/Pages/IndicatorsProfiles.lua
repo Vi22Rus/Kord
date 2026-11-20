@@ -110,7 +110,7 @@ function KR.Pages:Profiles(parent)
     local listing=card(body,-176,300)
     label(listing,"APP_SELECT_TITLE",15,-13,500,true)
     local items={}
-    local selected="Classic"
+    local selected=AP:Active()
     local listButtons={}
     local selectRefresh
     for i=1,5 do
@@ -222,6 +222,7 @@ function KR.Pages:Profiles(parent)
         confirmation:Show()
     end)
     KR.appearancePageRefresh=selectRefresh
+    parent.refresh=selectRefresh
     selectRefresh()
 end
 

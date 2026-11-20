@@ -124,6 +124,7 @@ function M:Apply(id)
     end
     KR.db.activeAppearance=id
     if KR.UpdatePanelControls then KR:UpdatePanelControls() end
+    if KR.appearancePageRefresh then KR.appearancePageRefresh() end
     return true
 end
 function M:Active()
@@ -137,6 +138,7 @@ end
 function M:SetAutoSpec(value)
     if type(value)~="boolean" or not KR.db then return false end
     KR.db.appearancePerSpec=value
+    if value then self:OnCharacterRefresh() end
     return true
 end
 function M:AssignCurrent(id)

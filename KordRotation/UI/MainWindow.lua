@@ -363,8 +363,8 @@ function KR:SelectPage(key)
     if not self.pages or not self.pages[key] then return end
     local target = self.pages[key]
     if not target.initialized then
-        target.initialized = true
         target.build(target)
+        target.initialized = true
         self:UpdatePanelControls()
         self:RefreshCharacterUI()
     end
@@ -377,6 +377,8 @@ function KR:SelectPage(key)
         button.label:SetTextColor(textColor[1], textColor[2], textColor[3], 1)
     end
     self.selectedPage = key
+    -- Lazy pages may have changed while hidden; update on every selection.
+    if target.refresh then target.refresh() end
 end
 
 -- Presents the last safely classified state; no combat rotation is started here.
