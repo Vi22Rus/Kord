@@ -190,6 +190,12 @@ function API:ReadField(record, key, expectedType)
     return outcome("READY", "GameAPI.ReadField", nil, value)
 end
 
+-- Reusable guard for frame method returns and LibActionButton tables.
+-- Safe means no security probe rejected the value; it does not assert game support.
+function API:IsSafeValue(value)
+    return not secret(value)
+end
+
 function API:Probe(name)
     if type(name) ~= "string" or not allowed[name] then
         return {status="UNAVAILABLE", source=name, reason="unsupported_contract"}
