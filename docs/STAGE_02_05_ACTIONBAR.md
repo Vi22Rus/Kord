@@ -19,7 +19,7 @@
 
 Обнаружение без обязательных библиотек: штатные Blizzard `ActionButton`, `MultiBar*`; `BT4Button1..180`, `DominosActionButton1..180`, отдельные `MultiBar*ActionButton`, `ElvUI_Bar1..15Button1..12`; при уже загруженном `LibStub` — `GetAllButtons()` пяти известных вариантов LibActionButton. Не найденная библиотека не загружается. Границы обхода 180 игровых слотов и 1200 кандидатных кнопок.
 
-**Фактическое действие:** кнопка должна быть видимой по `IsVisible()`; её slot берётся из защищённо прочитанного `GetAttribute("action")`, затем `GetPagedID()`, затем `button.action`. Индекс по имени или просто `button.id` НЕ считается подтверждением. Отрицательный/нулевой/вне 1..180 slot отвергается. Для полученного slot требуется `C_ActionBar.HasAction` с fallback `HasAction`, затем `GetActionInfo(slot)` с типом spell и числовым Spell ID. Только подтверждённые пары входят в записи; macro/item/pet/flyout/direct spell без игрового слота исключаются.
+**Фактическое действие:** кнопка должна быть видимой по `IsVisible()`; её slot берётся из защищённо прочитанного `GetAttribute("action")`, затем `GetPagedID()`, затем `GetAction()` при результате `("action", slot)`, затем `button.action`. Индекс по имени или просто `button.id` НЕ считается подтверждением. Отрицательный/нулевой/вне 1..180 slot отвергается. Для полученного slot требуется `C_ActionBar.HasAction` с fallback `HasAction`, затем `GetActionInfo(slot)` с типом spell и числовым Spell ID. Только подтверждённые пары входят в записи; macro/item/pet/flyout/direct spell без игрового слота исключаются.
 
 **Безопасность:** метод `GameAPI:IsSafeValue` повторно использует проверки `issecretvalue`, `issecrettable`, `canaccessvalue`; вызовы полей/методов кнопки защищены `pcall`. Никакого `SetAttribute`, hook, `UseAction`, `CastSpell`, RGB и добавления LibActionButton в сборку.
 
@@ -35,3 +35,9 @@
 - **Процесс:** статические и Lua-тесты описываются в CHANGELOG фактически. Ни игровой runtime, ни поддержка любой конкретной версии стороннего аддона пока не подтверждены.
 
 **Следующий пункт 2.6:** реальные бинды и надписи; сначала сравнение минимум Sonah и MaxDps, отдельное согласование по правилу № 1.
+
+## Корректировка после выполнения Lua-тестов
+
+Отдельным исправляющим коммитом уточнены два случая: (1) ошибка или protected результат `GetAttribute("action")`/`GetPagedID()` останавливает анализ кнопки, а не позволяет подхватить потенциально устаревшее `button.action`; (2) для LibActionButton допускается только `GetAction() -> ("action", подтверждённый slot)`, но не прямое `("spell", id)` и не макросы.
+
+**Выполненный тест:** `texlua tests/stage_02_05_actionbar.lua` на локальной копии *точно того же* `ActionBarScanner.lua` и тестового файла (Git blob SHA совпали с GitHub), с локальными mock-реализациями `GameAPI` и `EventBus` вместо настоящих модулей. Результат: `PASS stage 2.5 mocked action bar scenarios`. Тестируются Blender/BT4/Dominos/ElvUI/LAB, скрытые кнопки, page change, secret, GetAction fallback, предметы и макросы. Это **не является** подтверждением полного набора реальных GameAPI/EventBus и не заменяет WoW Forever.

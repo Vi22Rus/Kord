@@ -64,16 +64,33 @@ local function actionSlot(button)
     local fn=safeField(button,"GetAttribute")
     if type(fn)=="function" then
         local ok,v=safeMethod(button,"GetAttribute","action")
-        if ok and v~=nil then
+        if not ok then return nil end
+        if v~=nil then
             if isInteger(v,MAX_SLOT) then return v end
             return nil
         end
     end
     -- In some classic/modern bar implementations the actual page is provided
     -- by GetPagedID; never infer it from the button's own index.
-    local ok,paged=safeMethod(button,"GetPagedID")
-    if ok and paged~=nil then
-        if isInteger(paged,MAX_SLOT) then return paged end
+    local getPaged=safeField(button,"GetPagedID")
+    if type(getPaged)=="function" then
+        local ok,paged=safeMethod(button,"GetPagedID")
+        if not ok then return nil end
+        if paged~=nil then
+            if isInteger(paged,MAX_SLOT) then return paged end
+            return nil
+        end
+    end
+    -- LAB can expose a slot through GetAction() -> ("action", slot).
+    -- Direct "spell"/"macro"/"item" buttons are deliberately not slots.
+    local getAction=safeField(button,"GetAction")
+    if type(getAction)=="function" then
+        local ok,kind,id=pcall(getAction,button)
+        if not ok then return nil end
+        if not KR.GameAPI or not KR.GameAPI.IsSafeValue
+            or not KR.GameAPI:IsSafeValue(kind)
+            or not KR.GameAPI:IsSafeValue(id) then return nil end
+        if kind=="action" and isInteger(id,MAX_SLOT) then return id end
         return nil
     end
     local raw=safeField(button,"action")

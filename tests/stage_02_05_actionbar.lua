@@ -10,6 +10,7 @@ local actions={
     [1]={"spell",101}, [2]={"spell",102}, [3]={"spell",103},
     [4]={"spell",104}, [5]={"spell",105}, [6]={"spell",106},
     [7]={"item",42}, [8]={"macro",9}, [9]={"spell",109},
+    [10]={"spell",110},
 }
 C_ActionBar={HasAction=function(slot) return actions[slot]~=nil end}
 HasAction=function(slot) return actions[slot]~=nil end
@@ -34,7 +35,13 @@ ActionButton4=button("ActionButton4",8)
 BT4Button2=button("BT4Button2",nil)
 BT4Button2.type="spell";BT4Button2.spell=777
 local libraryButton=button("LibraryButton",5)
-local library={GetAllButtons=function() return {[libraryButton]=true} end}
+local labByGetter=button("LibGetter",nil)
+function labByGetter:GetAction() return "action",10 end
+local labDirect=button("LibDirect",nil)
+function labDirect:GetAction() return "spell",111 end
+local library={GetAllButtons=function()
+    return {[libraryButton]=true,[labByGetter]=true,[labDirect]=true}
+end}
 LibStub=function(name)
     if name=="LibActionButton-1.0" then return library end
 end
@@ -65,6 +72,8 @@ eq(KR.ActionBarScanner:FindSpell(42).status,"UNKNOWN","item not spell")
 eq(KR.ActionBarScanner:FindSpell(777).status,"UNKNOWN","direct spell not action slot")
 eq(KR.ActionBarScanner:FindSpell(9).status,"UNKNOWN","macro not spell")
 eq(KR.ActionBarScanner:FindSpell(103).source,"Dominos","source assigned")
+eq(KR.ActionBarScanner:FindSpell(110).status,"READY","LAB GetAction action slot")
+eq(KR.ActionBarScanner:FindSpell(111).status,"UNKNOWN","LAB direct spell excluded")
 s.entries[1].spellID=9999
 eq(KR.ActionBarScanner:FindSpell(101).status,"READY","cache isolated")
 -- Modifier paging rewrites action attribute without an event. Reject stale record.
@@ -80,6 +89,12 @@ BT4Button1.shown=true; BT4Button1.action="SECRET"
 KR.ActionBarScanner:Invalidate("secret")
 eq(KR.ActionBarScanner:FindSpell(102).status,"UNKNOWN","secret attribute")
 BT4Button1.action=2
+BT4Button1.GetAttribute=function() return "SECRET" end
+KR.ActionBarScanner:Invalidate("protected_attribute")
+eq(KR.ActionBarScanner:FindSpell(102).status,"UNKNOWN","protected attribute never falls back to raw action")
+BT4Button1.GetAttribute=function(self,key)
+    if key=="action" then return self.action end
+end
 C_ActionBar.HasAction=nil
 KR.ActionBarScanner:Invalidate("legacy")
 eq(KR.ActionBarScanner:FindSpell(102).status,"READY","legacy HasAction fallback")
