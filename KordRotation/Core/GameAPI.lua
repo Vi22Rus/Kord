@@ -15,6 +15,7 @@ local allowed = {
     InCombatLockdown=true, IsMounted=true,
     GetNumSpellTabs=true, GetSpellTabInfo=true,
     GetSpellBookItemInfo=true, GetSpellBookItemName=true,
+    GetSpellBookItemTexture=true,
     GetSpellInfo=true, GetSpellTexture=true, GetSpellCooldown=true,
     IsUsableSpell=true, IsSpellInRange=true,
     HasAction=true, GetActionInfo=true, GetActionCooldown=true,
@@ -25,6 +26,11 @@ local allowed = {
     ["C_ActionBar.FindSpellActionButtons"]=true,
     ["C_Spell.GetSpellCooldown"]=true,
     ["C_SpellBook.GetSpellBookItemInfo"]=true,
+    ["C_SpellBook.GetNumSpellBookSkillLines"]=true,
+    ["C_SpellBook.GetSpellBookSkillLineInfo"]=true,
+    ["C_SpellBook.GetSpellBookItemName"]=true,
+    ["C_SpellBook.GetSpellBookItemTexture"]=true,
+    ["C_Spell.GetSpellInfo"]=true,
     ["C_UnitAuras.GetAuraDataByIndex"]=true,
 }
 local validTypes = {boolean=true, number=true, string=true, table=true}
@@ -118,6 +124,31 @@ function API:ReadTuple(name, types, ...)
     local copy={}
     for i=1,#types do copy[i]=values[i] end
     return outcome("READY", name, nil, copy)
+end
+
+
+-- A bounded raw multi-return read for APIs whose useful fields are not first.
+-- Only names on the read-only allowlist are callable. Returned values must still
+-- be validated against each API's client-specific schema by the consumer.
+function API:ReadValues(name, ...)
+    if type(name)~="string" or not allowed[name] then
+        return outcome("UNAVAILABLE", name, "unsupported_contract")
+    end
+    local fn=resolve(name)
+    if type(fn)~="function" then
+        return outcome("UNAVAILABLE", name, "api_missing")
+    end
+    local ok,a,b,c,d,e,f=pcall(fn,...)
+    if not ok then return outcome("ERROR", name, "api_call_failed") end
+    local values={a,b,c,d,e,f}
+    for i=1,6 do
+        if secret(values[i]) then return outcome("UNKNOWN", name, "protected_value") end
+        if type(values[i])=="number" and
+            (values[i]~=values[i] or values[i]==math.huge or values[i]==-math.huge) then
+            return outcome("UNKNOWN", name, "invalid_number")
+        end
+    end
+    return outcome("READY", name, nil, values)
 end
 
 function API:Probe(name)

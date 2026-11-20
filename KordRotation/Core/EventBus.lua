@@ -8,6 +8,7 @@ local channels = {
     PLAYER_LOGIN="identity", PLAYER_ENTERING_WORLD="identity", PLAYER_LEVEL_UP="identity",
     TRAIT_CONFIG_UPDATED="talents", PLAYER_TALENT_UPDATE="talents",
     ACTIVE_TALENT_GROUP_CHANGED="talents", SPELLS_CHANGED="spellbook",
+    LEARNED_SPELL_IN_TAB="spellbook", SKILL_LINES_CHANGED="spellbook",
     ACTIONBAR_SLOT_CHANGED="actionbar", ACTIONBAR_PAGE_CHANGED="actionbar",
     UPDATE_SHAPESHIFT_FORM="actionbar", UPDATE_BINDINGS="bindings",
     UPDATE_MACROS="actionbar", PLAYER_TARGET_CHANGED="target",

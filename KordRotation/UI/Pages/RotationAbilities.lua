@@ -221,7 +221,7 @@ function KR.Pages:Abilities(parent)
         end
         local override = S:GetSpell(chosenID) or {}
         local category = override.category or "unclassified"
-        info:SetText(KR:Format("SPELL_DETAIL_LINE", item.name, chosenID, categoryLabel(category)))
+        info:SetText(KR:Format("SPELL_DETAIL_LINE", (item.displayName or item.name), chosenID, categoryLabel(category)))
         categoryButton:SetText(KR:Format("SPELL_CATEGORY_BUTTON", categoryLabel(category)))
         toggleButton:SetText(KR:L(override.enabled == false and "SPELL_ENABLE" or "SPELL_DISABLE"))
         separateButton:SetText(KR:L(override.separate and "SPELL_UNSEPARATE" or "SPELL_SEPARATE"))
@@ -237,7 +237,7 @@ function KR.Pages:Abilities(parent)
             local item = filtered[page * 7 + index]
             row.data = item
             if item then
-                row.text:SetText(KR:Format("SPELL_ROW", item.name, item.id))
+                row.text:SetText(KR:Format("SPELL_ROW", (item.displayName or item.name), item.id))
                 if item.texture then row.icon:SetTexture(item.texture)
                 else row.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark") end
                 row:Show()
