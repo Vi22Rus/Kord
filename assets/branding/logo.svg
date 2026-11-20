@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1270" role="img" aria-labelledby="title desc">
+<title id="title">Kord Rotation — official Modern Dark logo</title><desc id="desc">Silver KR emblem with two cyan rotation arrows above KORD and ROTATION wordmark, transparent background.</desc>
+<defs><linearGradient id="metal" x1="0" y1="0" x2=".15" y2="1"><stop stop-color="#ffffff"/><stop offset=".26" stop-color="#c6d9ea"/><stop offset=".5" stop-color="#6e8ba4"/><stop offset=".72" stop-color="#e8f2fd"/><stop offset="1" stop-color="#71879e"/></linearGradient>
+<linearGradient id="electric" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#a3fbff"/><stop offset=".37" stop-color="#0be5ff"/><stop offset="1" stop-color="#008ac7"/></linearGradient>
+<filter id="aura" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10"/></filter></defs>
+<g transform="translate(90,0) scale(2)"><path d="M96 168 C143 60 320 34 410 107 L410 73 478 162 378 176 395 150 C309 93 185 108 121 175 Z" fill="#00cfff" filter="url(#aura)" opacity=".5"/><path d="M416 341 C360 450 192 464 103 391 L103 428 34 346 133 330 117 355 C195 413 328 402 390 335 Z" fill="#00cfff" filter="url(#aura)" opacity=".5"/>
+<path d="M96 168 C143 60 320 34 410 107 L410 73 478 162 378 176 395 150 C309 93 185 108 121 175 Z" fill="url(#electric)" stroke="#163549" stroke-width="5"/><path d="M416 341 C360 450 192 464 103 391 L103 428 34 346 133 330 117 355 C195 413 328 402 390 335 Z" fill="url(#electric)" stroke="#163549" stroke-width="5"/>
+<g stroke="#0b1d2d" stroke-width="18" stroke-linejoin="round" fill="url(#metal)"><path d="M70 160 L154 160 141 250 249 158 349 158 216 275 327 356 224 356 144 293 135 354 54 354 Z"/><path d="M260 195 L355 195 Q436 193 431 256 Q426 297 392 308 L449 354 347 354 287 303 280 354 207 354 Z"/></g><path d="M319 250 L363 250 Q377 250 372 262 L314 263 Z" fill="#0b1d2d"/></g>
+<text x="600" y="1048" fill="url(#metal)" stroke="#12283d" stroke-width="3" paint-order="stroke" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-style="italic" font-size="204" font-weight="900" letter-spacing="13">KORD</text>
+<line x1="70" y1="1151" x2="186" y2="1151" stroke="#04ddff" stroke-width="8"/>
+<line x1="1012" y1="1151" x2="1130" y2="1151" stroke="#04ddff" stroke-width="8"/>
+<text x="600" y="1180" fill="url(#electric)" text-anchor="middle" font-family="Arial,sans-serif" font-size="93" font-weight="700" letter-spacing="29">ROTATION</text>
+</svg>
