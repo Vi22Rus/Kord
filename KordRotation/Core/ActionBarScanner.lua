@@ -138,6 +138,8 @@ local function list()
     for i=1,180 do
         add(safeGlobal("BT4Button"..i),"Bartender4")
         add(safeGlobal("DominosActionButton"..i),"Dominos")
+        -- EllesmereUI uses EABButton1..180 with secure action slot attributes.
+        add(safeGlobal("EABButton"..i),"EllesmereUI")
     end
     for _,prefix in ipairs(DOMINOS_EXTRA) do
         for i=1,12 do add(safeGlobal(prefix..i),"Dominos") end

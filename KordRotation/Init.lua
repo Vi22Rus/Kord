@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.8.3-rc5"
+KR.version = "0.1.8.3-rc6"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then

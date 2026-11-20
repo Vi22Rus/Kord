@@ -41,3 +41,9 @@
 Отдельным исправляющим коммитом уточнены два случая: (1) ошибка или protected результат `GetAttribute("action")`/`GetPagedID()` останавливает анализ кнопки, а не позволяет подхватить потенциально устаревшее `button.action`; (2) для LibActionButton допускается только `GetAction() -> ("action", подтверждённый slot)`, но не прямое `("spell", id)` и не макросы.
 
 **Выполненный тест:** `texlua tests/stage_02_05_actionbar.lua` на локальной копии *точно того же* `ActionBarScanner.lua` и тестового файла (Git blob SHA совпали с GitHub), с локальными mock-реализациями `GameAPI` и `EventBus` вместо настоящих модулей. Результат: `PASS stage 2.5 mocked action bar scenarios`. Тестируются Blender/BT4/Dominos/ElvUI/LAB, скрытые кнопки, page change, secret, GetAction fallback, предметы и макросы. Это **не является** подтверждением полного набора реальных GameAPI/EventBus и не заменяет WoW Forever.
+
+## Расширение 2.5a — EllesmereUI
+
+В отдельном согласованном подэтапе добавлен префикс `EABButton` для индексов `1..180`, в той же структуре поиска, что BT4/Dominos. Исходный код EllesmereUI `EllesmereUIActionBars/EUI_ActionBars_Secure.lua` создаёт `EABButton` по игровому слоту, `EUI_ActionBars_Bars.lua` записывает `GetAttribute("action")`, а `EUI_ActionBars_Paging.lua` обновляет атрибут при смене страницы. Это основание для повторного использования существующего `inspect`, но не доказательство работы всех версий в WoW Forever.
+
+Полная методика и QA: [STAGE_02_05A_ELLESMERE.md](STAGE_02_05A_ELLESMERE.md). Кольца OPie не сканируются и не считаются подтверждёнными слотами.
