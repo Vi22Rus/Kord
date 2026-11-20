@@ -49,6 +49,8 @@ local function button(parent, x, y, width, key, action)
     b:SetPoint("TOPLEFT", x, y)
     b:SetText(KR:L(key))
     b:SetScript("OnClick", action)
+    b:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,key) end)
+    b:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     return b
 end
 
@@ -173,6 +175,8 @@ function KR.Pages:Abilities(parent)
     search:SetSize(284, 26)
     search:SetAutoFocus(false)
     search:SetMaxLetters(70)
+    search:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,"SPELL_SEARCH_HINT") end)
+    search:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
     local filter = "all"
     local query = ""
     local chosenID
@@ -194,6 +198,8 @@ function KR.Pages:Abilities(parent)
     keyEdit:SetSize(218, 25)
     keyEdit:SetMaxLetters(32)
     keyEdit:SetAutoFocus(false)
+    keyEdit:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,"SPELL_KEY_LABEL") end)
+    keyEdit:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
 
     local filtered = {}
     local function refreshDetail()
@@ -258,6 +264,8 @@ function KR.Pages:Abilities(parent)
         row.text = UI:Label(row, "", nil, C.text)
         row.text:SetPoint("LEFT", 45, 0)
         row.text:SetWidth(452)
+        row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,"SPELL_LIST_TITLE") end)
+    row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
         row:SetScript("OnClick", function()
             if row.data then chosenID = row.data.id; refreshDetail() end
         end)
