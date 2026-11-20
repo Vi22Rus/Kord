@@ -64,9 +64,23 @@ local function makeHome(parent)
     local identity = setText(status, KR:L("IDENTITY_PENDING"), 16, -78, nil, C.muted, 535)
     KR.homeIdentityLabel = identity
 
-    local footer = makeCard(parent, -369, 80)
+    local footer = makeCard(parent, -356, 120)
     setText(footer, KR:L("HELP"), 16, -11, "title", C.text, 430)
-    setText(footer, KR:L("HOME_COMMANDS"), 16, -43, nil, C.muted, 475)
+    setText(footer, KR:L("HOME_COMMANDS"), 16, -41, nil, C.muted, 475)
+    local actions = {
+        { "PANEL_TEST_ON", "PANEL_TEST_OFF", function() KR.RotationDisplay:ToggleTest() end },
+        { "PANEL_UNLOCK", "PANEL_LOCK", function() KR.RotationDisplay:ToggleLock() end },
+        { "PANEL_RESET", nil, function() KR.RotationDisplay:ResetPosition() end },
+    }
+    KR.panelButtons = {}
+    for i, action in ipairs(actions) do
+        local b = CreateFrame("Button", nil, footer, "UIPanelButtonTemplate")
+        b:SetSize(162, 27)
+        b:SetPoint("TOPLEFT", 11 + (i-1)*169, -76)
+        b:SetScript("OnClick", action[3])
+        KR.panelButtons[i] = b
+    end
+    KR:UpdatePanelControls()
 end
 
 local function makeAbout(parent)
@@ -102,6 +116,16 @@ local function makePlanned(parent, name)
     setText(card, name, 23, -24, "title", C.text, 450)
     setText(card, KR:L("PLANNED"), 23, -65, nil, C.cyan, 480)
     setText(card, KR:L("PLANNED_MORE"), 23, -101, nil, C.muted, 480)
+end
+
+-- Home test-mode controls share the same API as slash commands; no fake live queue.
+function KR:UpdatePanelControls()
+    local btn = self.panelButtons
+    if not btn or not self.db then return end
+    local p = self.db.panel or {}
+    btn[1]:SetText(self:L(p.testMode and "PANEL_TEST_OFF" or "PANEL_TEST_ON"))
+    btn[2]:SetText(self:L(p.locked ~= false and "PANEL_UNLOCK" or "PANEL_LOCK"))
+    btn[3]:SetText(self:L("PANEL_RESET"))
 end
 
 function KR:CreateMainWindow()

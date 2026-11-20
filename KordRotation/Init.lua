@@ -5,7 +5,7 @@
 local addonName, KR = ...
 KR = KR or {}
 KR.name = "Kord Rotation"
-KR.version = "0.1.1.1"
+KR.version = "0.1.2"
 
 function KR:Print(message)
     if DEFAULT_CHAT_FRAME then
@@ -38,6 +38,15 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                 KR:RefreshCharacter("slash_debug")
                 KR:ToggleWindow(true)
                 KR:SelectPage("diagnostics")
+            elseif message == "test" then
+                local enabled = KR.RotationDisplay:ToggleTest()
+                KR:Print(KR:L(enabled and "CHAT_TEST_ON" or "CHAT_TEST_OFF"))
+            elseif message == "lock" then
+                local locked = KR.RotationDisplay:ToggleLock()
+                KR:Print(KR:L(locked and "CHAT_PANEL_LOCKED" or "CHAT_PANEL_UNLOCKED"))
+            elseif message == "resetposition" then
+                KR.RotationDisplay:ResetPosition()
+                KR:Print(KR:L("CHAT_PANEL_RESET"))
             elseif message == "refresh" then
                 local state = KR:RefreshCharacter("slash_refresh")
                 KR:Print(KR:Format("CHAT_SUMMARY", tostring(state.classToken or "?"), state.index and KR:GetLocalizedTree(state.classToken, state.index) or KR:L("SPEC_UNKNOWN"), state.talents.counts and table.concat(state.talents.counts, "/") or "?", KR:L("STATUS_"..state.status)))
@@ -51,6 +60,7 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
     elseif event == "PLAYER_LOGIN" then
         if not KR.db then KR:InitializeSettings() end
         KR:CreateMainWindow()
+        KR.RotationDisplay:Create()
         KR:RefreshCharacter("PLAYER_LOGIN")
         if KR.db.showAtLogin then KR:ToggleWindow(true) end
     elseif event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE"
