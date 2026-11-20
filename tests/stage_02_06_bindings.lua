@@ -97,7 +97,9 @@ eq(resolve(103).bindingLabel,"A+F3","binding update")
 -- Reverse lookup refuses mismatched commands.
 local prior=GetBindingAction
 GetBindingAction=function(k) if k=="ALT-F3" then return "ACTIONBUTTON9" end return prior(k) end
-eq(resolve(103).status,"UNKNOWN","reverse mismatch")
+eq(resolve(103).status,"READY","binding cache before TTL")
+time=time+1
+eq(resolve(103).status,"UNKNOWN","reverse mismatch after TTL")
 GetBindingAction=prior
 -- Paging changes a visible EAB's action but a vanilla command is not
 -- proof its click override is currently routed to the new slot.
