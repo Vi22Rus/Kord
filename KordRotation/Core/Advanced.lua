@@ -7,7 +7,7 @@ KR.Advanced = KR.Advanced or {}
 local A=KR.Advanced
 local defaults={
     showAtLogin=false,showLoadMessage=true,showTooltips=true,
-    showMinimap=false,updateRate=150,visualRate=100,scanRate=500,
+    showMinimap=true,updateRate=150,visualRate=100,scanRate=500,
     talentScanRate=800,actionScanRate=500,settingsRate=250,language="auto",
 }
 local numeric={updateRate={50,1000},visualRate={50,1000},scanRate={200,5000},

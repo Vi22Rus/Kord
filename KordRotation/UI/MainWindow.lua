@@ -270,10 +270,13 @@ local function makeDisplay(parent)
     }
     for i,item in ipairs(rows) do
         local key=item[2]
-        KR.displayRows[#KR.displayRows+1]=UI:StepRow(style,item[1],
-            13,-47-(i-1)*43,505,
-            function()return KR:GetPanelLayout(key)end,
-            function(v)KR:SetPanelLayout(key,v)end,item[3])
+        KR.displayRows[#KR.displayRows+1]=(key=="backgroundAlpha"
+            and UI:SliderInputRow(style,item[1],13,-47-(i-1)*43,505,
+                function()return KR:GetPanelLayout(key)end,
+                function(v)KR:SetPanelLayout(key,v)end,0,100,1)
+            or UI:StepRow(style,item[1],13,-47-(i-1)*43,505,
+                function()return KR:GetPanelLayout(key)end,
+                function(v)KR:SetPanelLayout(key,v)end,item[3]))
     end
     KR.displayRows[#KR.displayRows+1]=UI:ToggleRow(style,"STYLE_HIGHLIGHT",
         13,-177,505,function()return KR:GetPanelLayout("highlightMain")end,

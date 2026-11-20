@@ -11,7 +11,9 @@ function UI:ShowSettingTip(frame,key)
     if not KR.Advanced or not KR.Advanced:Get("showTooltips") or not GameTooltip then return end
     GameTooltip:SetOwner(frame,"ANCHOR_RIGHT")
     GameTooltip:AddLine(KR:L(key))
-    GameTooltip:AddLine(KR:L("UI_TIP_NOTE"),1,1,1,true)
+    local description=KR:L("TIP_"..key)
+    if description=="TIP_"..key then description=KR:L("UI_TIP_NOTE") end
+    GameTooltip:AddLine(description,1,1,1,true)
     GameTooltip:Show()
 end
 
@@ -88,6 +90,64 @@ function UI:StepRow(parent, labelKey, x, y, width, getter, setter, step, formatt
     end
     addButton("-", -42, -(step or 1))
     addButton("+", -8, step or 1)
+    row:EnableMouse(true)
+    row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
+    row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
+    row:Refresh()
+    return row
+end
+
+-- Range slider and numeric edit share the same validated settings setter.
+function UI:SliderInputRow(parent,labelKey,x,y,width,getter,setter,minValue,maxValue,step)
+    local row=CreateFrame("Frame",nil,parent)
+    row:SetPoint("TOPLEFT",parent,"TOPLEFT",x,y)
+    row:SetSize(width or 505,42)
+    self:Background(row,C.sidebar)
+    local caption=self:Label(row,KR:L(labelKey),nil,C.text)
+    caption:SetPoint("LEFT",12,0)
+    caption:SetWidth(190)
+    local slider=CreateFrame("Slider",nil,row,"OptionsSliderTemplate")
+    slider:SetPoint("LEFT",caption,"RIGHT",8,0)
+    slider:SetSize(165,18)
+    slider:SetMinMaxValues(minValue,maxValue)
+    slider:SetValueStep(step or 1)
+    if slider.SetObeyStepOnDrag then slider:SetObeyStepOnDrag(true) end
+    if slider.Low then slider.Low:Hide() end
+    if slider.High then slider.High:Hide() end
+    if slider.Text then slider.Text:Hide() end
+    local input=CreateFrame("EditBox",nil,row,"InputBoxTemplate")
+    input:SetPoint("LEFT",slider,"RIGHT",14,0)
+    input:SetSize(57,25)
+    input:SetAutoFocus(false)
+    input:SetMaxLetters(5)
+    local updating=false
+    local function normalize(n)
+        if type(n)~="number" or n~=n then return nil end
+        n=math.floor(n/(step or 1)+0.5)*(step or 1)
+        return math.max(minValue,math.min(maxValue,n))
+    end
+    function row:Refresh()
+        local n=normalize(getter()) or minValue
+        updating=true
+        slider:SetValue(n)
+        input:SetText(tostring(n))
+        updating=false
+    end
+    slider:SetScript("OnValueChanged",function(_,value)
+        if updating then return end
+        local n=normalize(value)
+        if n then setter(n) end
+        row:Refresh()
+    end)
+    local function commit()
+        local n=normalize(tonumber(input:GetText()))
+        if n then setter(n) end
+        row:Refresh()
+        input:ClearFocus()
+    end
+    input:SetScript("OnEnterPressed",commit)
+    input:SetScript("OnEditFocusLost",function() row:Refresh() end)
+    input:SetScript("OnEscapePressed",function() row:Refresh();input:ClearFocus() end)
     row:EnableMouse(true)
     row:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,labelKey) end)
     row:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
