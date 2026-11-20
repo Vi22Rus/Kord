@@ -1,9 +1,9 @@
 # Kord Rotation (c) 2026 Vi22Rus. All rights reserved; LICENSE in repository root.
 ## Interface: 16001
 ## Title: Kord Rotation
-## Notes: WoW Forever rotation helper — interface prototype 0.1.4
+## Notes: WoW Forever rotation helper — interface prototype 0.1.5
 ## Author: Vi22Rus
-## Version: 0.1.4
+## Version: 0.1.5
 ## SavedVariables: KordRotationDB
 ## SavedVariablesPerCharacter: KordRotationCharDB
 
@@ -13,10 +13,13 @@ Core\Locale.lua
 Core\Character.lua
 Core\Talents.lua
 Core\SpecDetector.lua
+Core\RotationSettings.lua
+Core\SpellCatalogue.lua
 UI\Theme.lua
 UI\Components.lua
 UI\SpellIcon.lua
 UI\RotationDisplay.lua
 UI\MainWindow.lua
+UI\Pages\RotationAbilities.lua
 Init.lua
 # Copyright reminder (3/3): Kord Rotation (c) 2026 Vi22Rus; LICENSE applies.

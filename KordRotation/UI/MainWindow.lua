@@ -287,6 +287,8 @@ function KR:CreateMainWindow()
         elseif key == "about" then page.build = makeAbout
         elseif key == "diagnostics" then page.build = makeDiagnostics
         elseif key == "display" then page.build = makeDisplay
+        elseif key == "rotation" then page.build = function(container) KR.Pages:Rotation(container) end
+        elseif key == "abilities" then page.build = function(container) KR.Pages:Abilities(container) end
         else
             local plannedName = name
             page.build = function(container) makePlanned(container, plannedName) end
@@ -342,6 +344,8 @@ function KR:RefreshCharacterUI()
     if self.homeProfileLabel then
         self.homeProfileLabel:SetText(self:Format("HOME_PROFILE_UNAVAILABLE", s.profileID or "-"))
     end
+    if self.rotationPageRefresh then self.rotationPageRefresh() end
+    if self.abilitiesPageRefresh then self.abilitiesPageRefresh() end
     local l = self.diagnosticLabels
     if l then
         local values = {
