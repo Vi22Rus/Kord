@@ -250,6 +250,26 @@ function S:GetSnapshot(rebuild)
     end
     return result
 end
+-- Internal integration contract for BindingResolver: references to *currently*
+-- verified buttons, never published to the UI or persisted in SavedVariables.
+-- All records are independently revalidated; a stale action is omitted.
+function S:GetVerifiedButtons(spellID)
+    local verified={}
+    if not isInteger(spellID,99999999) then return verified end
+    self:GetSnapshot()
+    for _,entry in ipairs(self.entries or {}) do
+        if entry.spellID==spellID then
+            local live=inspect(entry.button,entry.source)
+            if live and live.spellID==spellID and live.slot==entry.slot then
+                verified[#verified+1]=live
+            else
+                self:Invalidate("stale_binding_button")
+            end
+        end
+    end
+    return verified
+end
+
 function S:FindSpell(id)
     if not isInteger(id,99999999) then
         return {status="UNKNOWN",reason="invalid_spell_id"}

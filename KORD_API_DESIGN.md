@@ -22,6 +22,10 @@
 
 `EABButton1..180` добавлены в поиск `ActionBarScanner`, так как EllesmereUI формирует свои кнопки с публичным игровым action-слотом в `GetAttribute("action")`. Каждая видимая кнопка всё равно требует `HasAction` и `GetActionInfo` для того же слота, плюс проверку при повторном запросе. Это не расширяет допустимость до собственных сценариев OPie. Дополнительных обязательных библиотек не добавлено. Подробности: [docs/STAGE_02_05A_ELLESMERE.md](docs/STAGE_02_05A_ELLESMERE.md).
 
+## Решение 2.6 — реальные клавиши (одобрено пользователем)
+
+`Core/BindingResolver.lua` читает реальный binding-command от подтверждённой видимой кнопки `ActionBarScanner:GetVerifiedButtons`. Приоритет: `button:GetBindingAction()`, `GetAttribute("binding")`, только затем консервативная проверенная карта Blizzard/EllesmereUI. Через `GameAPI:ReadValues("GetBindingKey")` читаются две клавиши, `GetBindingAction` при наличии служит обратной проверкой команды. Любая неоднозначность (особенно custom paging/override bindings) даёт `UNKNOWN`, а не придуманную надпись. Источник: Sonah `Core/Atoms/ActionSlots.lua`, JustAC `ActionBarScanner.lua`, MaxDps `SpellFrame.lua`; для EllesmereUI также `EUI_ActionBars_Keybinds.lua` и `EUI_ActionBars_Secure.lua`. Ручной `RotationSettings.keyLabel` не считается автоматическим биндом. Игровой QA не проводился. Подробнее: [docs/STAGE_02_06_BINDINGS.md](docs/STAGE_02_06_BINDINGS.md).
+
 ## Приоритетные решения
 
 | Подсистема | Основной метод и источник | Fallback и особенности |
