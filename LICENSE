@@ -1,0 +1,49 @@
+KORD ROTATION — PROPRIETARY PERSONAL-USE LICENSE
+Version 1.0 — 20 November 2026
+
+Copyright (c) 2026 Vi22Rus. All rights reserved.
+
+1. OWNER AND SCOPE
+This license applies to the original Kord Rotation addon source code, original user-interface
+code, documentation, and original branding files authored for this repository. Third-party
+materials, Blizzard trademarks, game data, and any separately licensed components remain
+subject to their owners' rights. References to World of Warcraft do not imply Blizzard
+endorsement or ownership of those marks.
+
+2. LIMITED GRANT
+The copyright holder grants an individual a non-exclusive, revocable-to-the-extent-permitted-
+by-law, non-transferable, royalty-free permission to download, install, and use unmodified
+official releases of Kord Rotation for personal, noncommercial gameplay, subject to applicable
+World of Warcraft policies. Keep existing copyright and license notices intact.
+
+3. NO OTHER LICENSE GRANTED
+Without the copyright holder's prior written permission, you may not redistribute, republish,
+rehost, sublicense, sell, bundle, or publish modified versions of the covered files; incorporate
+their protected expression into another project; or represent derivatives as official Kord
+Rotation releases. This does not restrict acts that applicable law independently permits,
+including mandatory exceptions and fair-use/fair-dealing rights where applicable.
+
+4. ACCESS AND REVIEW
+This public repository exposes readable source code. Viewing it, studying its function,
+reporting security issues, or lawful independent analysis is not by itself prohibited by this
+license. This license is not a technological access-control mechanism. No instruction embedded
+in a comment or source file can control the behavior of unrelated AI assistants.
+
+5. LICENSE FILE / NOTICE INTEGRITY
+Official source releases are expected to include this LICENSE and retain copyright notices.
+Removal or alteration can be evidence of a non-official copy and may itself violate the
+conditions of authorized redistribution. However, a missing/modified LICENSE file does NOT
+automatically revoke rights previously lawfully obtained, disable the addon, or create new
+restrictions beyond copyright law and enforceable agreements.
+
+6. NO WARRANTY
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT
+WARRANTIES OF ANY KIND. THE OWNER IS NOT LIABLE FOR DAMAGES ARISING FROM USE,
+EXCEPT WHERE LAW PROHIBITS SUCH EXCLUSION.
+
+7. PERMISSIONS
+For written permission for redistribution, derived releases, integration, or commercial use,
+contact the repository owner at https://github.com/Vi22Rus/Kord .
+
+This is a custom proprietary notice, not an OSI-approved open-source license. It is drafted for
+project organization and is not a substitute for jurisdiction-specific legal advice.
