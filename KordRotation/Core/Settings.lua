@@ -17,6 +17,9 @@ local defaults = {
         scale = 100, alpha = 100, secondaryAlpha = 100,
         direction = "horizontal", primaryAtEnd = false,
         borderStyle = "standard", showNumbers = true,
+        showKeybind = true, showSpellName = false, showCooldown = true,
+        showCharges = true, showUnavailable = true, showGCD = true,
+        showIconBackground = true, textSize = 12,
     },
 }
 
@@ -41,12 +44,15 @@ end
 local numeric = {
     slotCount={1,5}, primarySize={32,128}, secondarySize={24,96},
     gap={0,30}, scale={50,200}, alpha={0,100}, secondaryAlpha={0,100},
+    textSize={8,20},
 }
 local choices = {
     direction={horizontal=true,vertical=true},
     borderStyle={standard=true,minimal=true,none=true},
 }
-local booleanLayout = {primaryAtEnd=true,showNumbers=true}
+local booleanLayout = {primaryAtEnd=true,showNumbers=true,
+    showKeybind=true,showSpellName=true,showCooldown=true,showCharges=true,
+    showUnavailable=true,showGCD=true,showIconBackground=true}
 
 local function normalize(panel)
     for key, range in pairs(numeric) do

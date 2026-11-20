@@ -78,6 +78,16 @@ function KR.RotationDisplay:Create()
 end
 
 -- Reuse all five placeholder frames; only apply layout and visibility.
+-- Future engine interface. A caller must supply real, verified state.
+-- Setting nil clears all overlays; test slots never receive synthetic combat data.
+function KR.RotationDisplay:SetSlotData(index, data)
+    if not self.slots or type(index) ~= "number" or index < 1 or index > 5 then return false end
+    local slot = self.slots[index]
+    if type(data) == "table" then slot:SetDisplayData(data)
+    else slot:ClearDisplayData() end
+    return true
+end
+
 function KR.RotationDisplay:RefreshLayout()
     if not self.frame then return end
     local p = ensurePosition(KR.db)
@@ -101,7 +111,7 @@ function KR.RotationDisplay:RefreshLayout()
             local size = i == 1 and mainSize or otherSize
             slot:SetSize(size, size)
             slot:ApplyAppearance(p.borderStyle or "standard", p.showNumbers ~= false,
-                i == 1 and 100 or (p.secondaryAlpha or 100))
+                i == 1 and 100 or (p.secondaryAlpha or 100), p)
             slot:Show()
         else slot:Hide() end
     end

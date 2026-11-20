@@ -8,6 +8,16 @@ local translations = {}
 
 -- enUS translation; missing strings fall back to enUS.
 translations["enUS"] = {
+    ["LAYER_TITLE"] = "Icon layers",
+    ["LAYER_NOTE"] = "Combat data appear only when verified by the rotation engine. Demo icons do not fake cooldowns.",
+    ["LAYER_BACKGROUND"] = "Icon background",
+    ["LAYER_KEYBIND"] = "Key binding text",
+    ["LAYER_SPELL_NAME"] = "Ability name",
+    ["LAYER_COOLDOWN"] = "Cooldown remaining",
+    ["LAYER_CHARGES"] = "Charges",
+    ["LAYER_UNAVAILABLE"] = "Dim unavailable ability",
+    ["LAYER_GCD"] = "Global cooldown overlay",
+    ["LAYER_FONT_SIZE"] = "Text size (px)",
     ["HOME_QUICK_TITLE"] = "Quick controls",
     ["HOME_QUICK_NOTE"] = "Preferences only: the rotation engine is not implemented.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Enable future recommendations",
@@ -297,6 +307,16 @@ translations["enUS"] = {
 
 -- ruRU translation; missing strings fall back to enUS.
 translations["ruRU"] = {
+    ["LAYER_TITLE"] = "Слои иконок",
+    ["LAYER_NOTE"] = "Боевые данные появятся после подключения движка. Тестовые иконки не имитируют кулдауны.",
+    ["LAYER_BACKGROUND"] = "Фон иконки",
+    ["LAYER_KEYBIND"] = "Подпись клавиши",
+    ["LAYER_SPELL_NAME"] = "Название способности",
+    ["LAYER_COOLDOWN"] = "Оставшееся восстановление",
+    ["LAYER_CHARGES"] = "Заряды",
+    ["LAYER_UNAVAILABLE"] = "Затемнять недоступное",
+    ["LAYER_GCD"] = "Наложение GCD",
+    ["LAYER_FONT_SIZE"] = "Размер текста (px)",
     ["HOME_QUICK_TITLE"] = "Быстрые настройки",
     ["HOME_QUICK_NOTE"] = "Это настройки на будущее: движок ротаций пока не реализован.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Включить будущие рекомендации",
@@ -587,6 +607,16 @@ translations["ruRU"] = {
 
 -- frFR translation; missing strings fall back to enUS.
 translations["frFR"] = {
+    ["LAYER_TITLE"] = "Couches des icônes",
+    ["LAYER_NOTE"] = "Les données de combat nécessitent un moteur vérifié. Le test ne simule pas les délais.",
+    ["LAYER_BACKGROUND"] = "Fond de l'icône",
+    ["LAYER_KEYBIND"] = "Touche associée",
+    ["LAYER_SPELL_NAME"] = "Nom de compétence",
+    ["LAYER_COOLDOWN"] = "Temps de recharge",
+    ["LAYER_CHARGES"] = "Charges",
+    ["LAYER_UNAVAILABLE"] = "Assombrir si indisponible",
+    ["LAYER_GCD"] = "Superposition GCD",
+    ["LAYER_FONT_SIZE"] = "Taille du texte (px)",
     ["HOME_QUICK_TITLE"] = "Réglages rapides",
     ["HOME_QUICK_NOTE"] = "Préférences futures : le moteur de rotation est absent.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Activer les futures recommandations",
@@ -876,6 +906,16 @@ translations["frFR"] = {
 
 -- deDE translation; missing strings fall back to enUS.
 translations["deDE"] = {
+    ["LAYER_TITLE"] = "Symbol-Ebenen",
+    ["LAYER_NOTE"] = "Kampfdaten erst mit geprüfter Engine. Testicons simulieren keine Cooldowns.",
+    ["LAYER_BACKGROUND"] = "Symbolhintergrund",
+    ["LAYER_KEYBIND"] = "Tastenbelegung",
+    ["LAYER_SPELL_NAME"] = "Fähigkeitsname",
+    ["LAYER_COOLDOWN"] = "Abklingzeit",
+    ["LAYER_CHARGES"] = "Aufladungen",
+    ["LAYER_UNAVAILABLE"] = "Bei Nichtverfügbarkeit abdunkeln",
+    ["LAYER_GCD"] = "GCD-Überlagerung",
+    ["LAYER_FONT_SIZE"] = "Textgröße (px)",
     ["HOME_QUICK_TITLE"] = "Schnelleinstellungen",
     ["HOME_QUICK_NOTE"] = "Nur zukünftige Einstellungen; die Rotationsengine fehlt.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Künftige Empfehlungen aktivieren",
@@ -1165,6 +1205,16 @@ translations["deDE"] = {
 
 -- ptBR translation; missing strings fall back to enUS.
 translations["ptBR"] = {
+    ["LAYER_TITLE"] = "Camadas dos ícones",
+    ["LAYER_NOTE"] = "Dados de combate só após motor verificado. Ícones de teste não simulam recargas.",
+    ["LAYER_BACKGROUND"] = "Fundo do ícone",
+    ["LAYER_KEYBIND"] = "Tecla vinculada",
+    ["LAYER_SPELL_NAME"] = "Nome da habilidade",
+    ["LAYER_COOLDOWN"] = "Tempo de recarga",
+    ["LAYER_CHARGES"] = "Cargas",
+    ["LAYER_UNAVAILABLE"] = "Escurecer se indisponível",
+    ["LAYER_GCD"] = "Sobreposição GCD",
+    ["LAYER_FONT_SIZE"] = "Tamanho do texto (px)",
     ["HOME_QUICK_TITLE"] = "Configurações rápidas",
     ["HOME_QUICK_NOTE"] = "Preferências futuras: motor de rotação ainda não implementado.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Ativar futuras recomendações",
@@ -1454,6 +1504,16 @@ translations["ptBR"] = {
 
 -- esES translation; missing strings fall back to enUS.
 translations["esES"] = {
+    ["LAYER_TITLE"] = "Capas de los iconos",
+    ["LAYER_NOTE"] = "Datos de combate solo con motor verificado. La prueba no simula tiempos de reutilización.",
+    ["LAYER_BACKGROUND"] = "Fondo del icono",
+    ["LAYER_KEYBIND"] = "Tecla asignada",
+    ["LAYER_SPELL_NAME"] = "Nombre de habilidad",
+    ["LAYER_COOLDOWN"] = "Tiempo de reutilización",
+    ["LAYER_CHARGES"] = "Cargas",
+    ["LAYER_UNAVAILABLE"] = "Oscurecer si no disponible",
+    ["LAYER_GCD"] = "Superposición GCD",
+    ["LAYER_FONT_SIZE"] = "Tamaño del texto (px)",
     ["HOME_QUICK_TITLE"] = "Ajustes rápidos",
     ["HOME_QUICK_NOTE"] = "Preferencias futuras: el motor de rotación aún no existe.",
     ["HOME_ENABLE_RECOMMENDATIONS"] = "Activar futuras recomendaciones",

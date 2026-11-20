@@ -150,7 +150,7 @@ local function makeDisplay(parent)
     scroll:SetPoint("TOPLEFT", parent, "TOPLEFT", 5, -7)
     scroll:SetPoint("BOTTOMRIGHT", parent, "BOTTOMRIGHT", -27, 6)
     local body = CreateFrame("Frame", nil, scroll)
-    body:SetSize(565, 1305)
+    body:SetSize(565, 1760)
     scroll:SetScrollChild(body)
 
     local control = makeCard(body, -16, 228)
@@ -236,6 +236,30 @@ local function makeDisplay(parent)
             function()return KR:GetPanelFlag(key)end,
             function(value)KR:SetPanelFlag(key,value)end)
     end
+
+    local layers = makeCard(body, -1305, 415)
+    setText(layers, KR:L("LAYER_TITLE"), 17, -16, "title", C.text, 510)
+    setText(layers, KR:L("LAYER_NOTE"), 17, -47, nil, C.muted, 510)
+    local layerRows = {
+        {"LAYER_BACKGROUND","showIconBackground"},
+        {"LAYER_KEYBIND","showKeybind"},
+        {"LAYER_SPELL_NAME","showSpellName"},
+        {"LAYER_COOLDOWN","showCooldown"},
+        {"LAYER_CHARGES","showCharges"},
+        {"LAYER_UNAVAILABLE","showUnavailable"},
+        {"LAYER_GCD","showGCD"},
+    }
+    for i, entry in ipairs(layerRows) do
+        local key = entry[2]
+        KR.displayRows[#KR.displayRows+1] = UI:ToggleRow(layers,entry[1],
+            15,-71-(i-1)*41,510,
+            function() return KR:GetPanelLayout(key) end,
+            function(value) KR:SetPanelLayout(key,value) end)
+    end
+    KR.displayRows[#KR.displayRows+1] = UI:StepRow(layers,"LAYER_FONT_SIZE",
+        15,-366,510,
+        function() return KR:GetPanelLayout("textSize") end,
+        function(value) KR:SetPanelLayout("textSize",value) end,1)
 end
 
 function KR:CreateMainWindow()
