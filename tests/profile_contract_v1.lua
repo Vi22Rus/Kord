@@ -329,4 +329,16 @@ eq(factCalls,beforeRange+1,"range false read exactly once per evaluation")
 local S4=C:Create(direct,KR.GameState:GetSnapshot())
 eq(S4:spellFact(102,"inRange"),false,"fresh evaluation reads confirmed range")
 eq(factCalls,beforeRange+2,"range fact cache does not leak across evaluations")
+-- The shipped pilot must register as experimental, never verified.
+local pilotRegistration
+local pilotKR={RotationProfiles={Register=function(_,class,index,profile)
+ pilotRegistration={class=class,index=index,profile=profile}
+ return true,profile.id
+end}}
+assert(loadfile("KordRotation/Profiles/Hunter/BM_Pilot_Experimental.lua"))("KordRotation",pilotKR)
+eq(pilotRegistration.class,"HUNTER","shipped pilot belongs to Hunter")
+eq(pilotRegistration.index,1,"shipped pilot uses BM tree 1")
+eq(pilotRegistration.profile.status,"experimental","pilot cannot claim verification")
+eq(pilotRegistration.profile.Rules[1].spell,"ArcaneShot","pilot single-spell scope")
+eq(#pilotRegistration.profile.Rules,1,"pilot does not pretend to be full rotation")
 print("PASS profile contract v1 mock: "..n.." assertions")
