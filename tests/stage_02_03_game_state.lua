@@ -108,6 +108,52 @@ local unknown=KR.GameState:GetSnapshot()
 eq(unknown.status,"UNKNOWN","unknown existence")
 eq(unknown.target.status,"UNKNOWN","nil is not absence")
 
+-- v14 #12/#13: direct aura lookups prove presence only; nil is UNKNOWN.
+local auraReads=0
+local auraPlayer={spellId=1978,isHelpful=true}
+local auraTarget={spellId=1978,isHarmful=true}
+C_UnitAuras={
+ GetPlayerAuraBySpellID=function(id)
+  auraReads=auraReads+1
+  if id==1978 then return auraPlayer end
+  return nil
+ end,
+ GetUnitAuraBySpellID=function(unit,id)
+  auraReads=auraReads+1
+  if unit=="target" and id==1978 then return auraTarget end
+  return nil
+ end,
+}
+local targetPresent={target={exists={status="READY",value=true}}}
+local targetMissing={target={exists={status="READY",value=false}}}
+eq(KR.GameState:ReadSignal("player.buff",1978).value,true,"verified player buff")
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).value,true,
+ "verified target debuff")
+eq(KR.GameState:ReadSignal("player.buff",12345).status,"UNKNOWN",
+ "nil aura cannot prove absence")
+eq(KR.GameState:ReadSignal("target.debuff",12345,targetPresent).status,"UNKNOWN",
+ "nil debuff cannot prove absence")
+local beforeMissing=auraReads
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetMissing).status,"UNKNOWN",
+ "absent target cannot assert debuff")
+eq(auraReads,beforeMissing,"missing target skips provider")
+auraTarget={spellId=1978,isHelpful=true}
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "unverified harmful flag")
+auraTarget={spellId=1979,isHarmful=true}
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "wrong aura spellID")
+auraTarget={spellId=1978,isHarmful="SECRET"}
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "secret aura property fails closed")
+auraTarget={spellId=1978,isHarmful=true}
+eq(KR.GameState:ReadSignal("target.debuff","SECRET",targetPresent).status,"UNKNOWN",
+ "protected aura ID rejected")
+local beforeUnsupported=auraReads
+eq(KR.GameState:ReadSignal("target.ttd").status,"UNKNOWN",
+ "unimplemented TTD stays unknown")
+eq(auraReads,beforeUnsupported,"unsupported signal does not query API")
+
 GetTime=nil
 eq(KR.GameAPI:Read("GetTime","number").status,"UNAVAILABLE")
 local noClock=KR.GameState:GetSnapshot()
