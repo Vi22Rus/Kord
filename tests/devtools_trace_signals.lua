@@ -34,8 +34,24 @@ eq(D:ObserveTransition(),true,"profile missing")
 eq(D.entries[6].status,"UNAVAILABLE","unavailable profile")
 current.eventListenerErrors="SECRET"
 eq(D:ObserveTransition(),false,"secret counter cannot be exported")
+-- Actual engine reason must survive in the trace, instead of manual_sample.
+current.engineReason="action_slot_unconfirmed"
+eq(D:ObserveTransition(),true,"new engine reason creates a transition")
+eq(D.entries[7].kind,"ENGINE","engine reason transition kind")
+eq(D.entries[7].reason,"action_slot_unconfirmed","real refusal reason preserved")
+local liveTarget=true
+_G.KordRotationCoreObservation={Target=function()
+ return {liveStatus="READY",liveExists=liveTarget}
+end}
+eq(D:ObserveTransition(),true,"new live target observation")
+eq(D.entries[8].kind,"TARGET","target recorded separately")
+eq(D.entries[8].reason,"target_present","target present readable")
+liveTarget=false
+eq(D:ObserveTransition(),true,"target removal observed")
+eq(D.entries[9].reason,"target_absent","target removal reason")
+_G.KordRotationCoreObservation=nil
 D.active=false
 current.engineStatus="BLOCKED"
 eq(D:ObserveTransition(),false,"opt-in disabled")
-eq(#D.entries,6,"no late recording")
+eq(#D.entries,9,"no late recording")
 print("PASS DevTools aggregate trace mock: "..n.." assertions")
