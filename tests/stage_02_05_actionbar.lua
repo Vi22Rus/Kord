@@ -131,4 +131,30 @@ GetActionInfo=function(slot)
 end
 KR.ActionBarScanner:Invalidate("protected")
 eq(KR.ActionBarScanner:FindSpell(102).status,"UNKNOWN","secret GetActionInfo")
+-- WoW frame-like userdata: method fields must be readable through GameAPI.
+-- newproxy is part of Lua 5.1 (optional in other Lua implementations).
+if type(newproxy)=="function" then
+    local proxy=newproxy(true)
+    local mt=getmetatable(proxy)
+    mt.__index={
+        IsVisible=function() return true end,
+        GetAttribute=function(_,key) if key=="action" then return 16 end end,
+        GetName=function() return "ActionButton5" end,
+    }
+    actions[16]={"spell",216}
+    ActionButton5=proxy
+    KR.ActionBarScanner:Invalidate("userdata_button")
+    eq(KR.GameAPI:ReadField(proxy,"IsVisible").status,"READY",
+        "ordinary userdata methods accessible")
+    eq(KR.ActionBarScanner:FindSpell(216).status,"READY",
+        "userdata action button discovered")
+    local previousSecret=issecretvalue
+    issecretvalue=function(v) return v==proxy or previousSecret(v) end
+    eq(KR.GameAPI:ReadField(proxy,"IsVisible").status,"UNKNOWN",
+        "protected userdata method rejected")
+    KR.ActionBarScanner:Invalidate("protected_userdata")
+    eq(KR.ActionBarScanner:FindSpell(216).status,"UNKNOWN",
+        "protected userdata never yields ready action slot")
+    issecretvalue=previousSecret
+end
 print("PASS stage 2.5 mocked action bar scenarios")
