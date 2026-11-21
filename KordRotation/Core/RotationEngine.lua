@@ -6,12 +6,23 @@ local E=KR.RotationEngine
 local function empty(reason)
     return {status="UNKNOWN",reason=reason,queue={},source="RotationEngine"}
 end
+-- Secret-aware guard; never perform numeric comparisons on protected data.
+local function safeValue(value)
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" then return false end
+    local ok,result=pcall(api.IsSafeValue,api,value)
+    return ok and result==true
+end
 local function safeAsset(value)
-    return (type(value)=="number" and value==value and value>0)
+    if not safeValue(value) then return false end
+    return (type(value)=="number" and value==value
+        and value<math.huge and value>0)
         or (type(value)=="string" and value~="" and #value<=255)
 end
 local function validID(n)
-    return type(n)=="number" and n==math.floor(n) and n>=1 and n<=99999999
+    if not safeValue(n) then return false end
+    return type(n)=="number" and n==n and n==math.floor(n)
+        and n>=1 and n<=99999999
 end
 local function identity()
     local s=KR.characterState
@@ -83,7 +94,13 @@ function E:Evaluate()
     if not book or book.status~="ready" then return empty("spellbook_unavailable") end
     local catalogue={}
     for _,entry in ipairs(book.entries or {}) do
-        if validID(entry.id) and entry.known==true then catalogue[entry.id]=entry end
+        -- Catalogue entries are imported game records: reject secret
+        -- names/assets/IDs before indexing or priority comparisons.
+        if validID(entry.id) and safeValue(entry.known)
+            and entry.known==true and safeValue(entry.name)
+            and safeAsset(entry.texture) then
+            catalogue[entry.id]=entry
+        end
     end
     local diagnostics={}
     for i,rule in ipairs(rules) do

@@ -14,7 +14,7 @@ local catalogue={status="ready",entries={
 KR.SpellCatalogue={Read=function() return catalogue end}
 local requirementValue=false
 local requirementKnown=true
-KR.GameAPI={IsSafeValue=function() return true end}
+KR.GameAPI={IsSafeValue=function(_,v) return v~="SECRET" end}
 local snapshotReads=0
 local snapshotInvalid=false
 KR.GameState={GetSnapshot=function()
@@ -133,6 +133,15 @@ bindingBlank=false
 catalogue.entries[2].texture=nil
 eq(E:Evaluate().status,"UNKNOWN","missing verified texture blocks lower rule")
 catalogue.entries[2].texture=5678
+catalogue.entries[2].id="SECRET"
+eq(E:Evaluate().reason,"spell_visual_data_unverified","protected catalogue ID denied")
+catalogue.entries[2].id=102
+catalogue.entries[2].texture="SECRET"
+eq(E:Evaluate().reason,"spell_visual_data_unverified","protected catalogue texture denied")
+catalogue.entries[2].texture=5678
+catalogue.entries[2].name="SECRET"
+eq(E:Evaluate().reason,"spell_visual_data_unverified","protected catalogue name denied")
+catalogue.entries[2].name="Beta"
 KR.characterState.index=2
 eq(E:Evaluate().reason,"profile_not_registered","no spec fallback")
 KR.characterState.index=1
