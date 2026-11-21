@@ -18,13 +18,21 @@ class Variants(unittest.TestCase):
                     (b"## Dependencies: KordRotation\n## SavedVariables: KordRotationDevToolsDB\n"
                      if addon=="KordRotationDevTools" else b""))
             (root/"KordRotation"/"Core.lua").write_bytes(b"a\r\nb\x00")
+            (root/"KordRotation"/"Inactive.lua").write_bytes(b"old unused rotation")
             (root/"KordRotationDevTools"/"Trace.lua").write_bytes(b"diagnostic")
+            (root/"KordRotation"/"KordRotation.toc").write_text(
+                "## Interface: 16001\nCore.lua\n",encoding="utf-8")
+            (root/"KordRotationDevTools"/"KordRotationDevTools.toc").write_text(
+                "## Interface: 16001\n## Dependencies: KordRotation\n"
+                "## SavedVariables: KordRotationDevToolsDB\nTrace.lua\n",encoding="utf-8")
             manifest=build(root,root/"dist")
             from zipfile import ZipFile
             with ZipFile(root/"dist/KordRotation-user.zip") as user, ZipFile(root/"dist/KordRotation-dev.zip") as dev:
                 self.assertEqual(user.read("KordRotation/Core.lua"),dev.read("KordRotation/Core.lua"))
                 self.assertNotIn("KordRotationDevTools/Trace.lua",user.namelist())
                 self.assertIn("KordRotationDevTools/Trace.lua",dev.namelist())
+                self.assertNotIn("KordRotation/Inactive.lua",user.namelist())
+                self.assertNotIn("KordRotation/Inactive.lua",dev.namelist())
             self.assertEqual(manifest["core_files"],2)
             saved=json.loads((root/"dist/build-manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(len(saved["core_sha256"]),2)
@@ -59,6 +67,11 @@ class Variants(unittest.TestCase):
                     self.assertEqual(user.read(name),dev.read(name),name)
                 self.assertFalse(any(x.startswith("KordRotationDevTools/") for x in user.namelist()))
                 self.assertIn("KordRotationDevTools/KordRotationDevTools.toc",dev.namelist())
+                inactive=[name for name in user.namelist()
+                          if name.startswith("KordRotation/Profiles/Hunter/")
+                          and name.endswith(".lua")]
+                self.assertFalse(inactive,"unregistered Hunter source leaked into install ZIP")
+                self.assertIn("KordRotation/Media/Logo.blp",user.namelist())
 
 if __name__=="__main__":
     unittest.main()

@@ -22,6 +22,7 @@ def contents(root, addon):
             raise ValueError("DevTools must depend on canonical KordRotation")
         if not any(line.strip()=="## SavedVariables: KordRotationDevToolsDB" for line in lines):
             raise ValueError("DevTools must use separate SavedVariables")
+    loaded=set()
     for raw in lines:
         line=raw.strip()
         if not line or line.startswith("#"):
@@ -32,7 +33,14 @@ def contents(root, addon):
             raise ValueError("Unexpected TOC entry: "+line)
         if not (base/relative).is_file():
             raise ValueError("Missing TOC-loaded Lua: "+addon+"/"+relative)
-    return sorted(p for p in base.rglob("*") if p.is_file() and not p.is_symlink())
+        loaded.add(relative)
+    # Ship only Lua that the addon TOC actually loads. Keep disconnected
+    # prototype profiles in Git for differential tests, not in install ZIPs.
+    assets={".blp",".png",".tga",".ogg",".wav",".mp3"}
+    return sorted(p for p in base.rglob("*") if p.is_file() and not p.is_symlink()
+                  and (p==toc or (p.suffix.lower()==".lua"
+                       and p.relative_to(base).as_posix() in loaded)
+                       or p.suffix.lower() in assets))
 
 def build(root, dest):
     ordinary=contents(root, BASE)
