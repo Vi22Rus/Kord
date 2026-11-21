@@ -1,3 +1,8 @@
+## KR-20261121-107 — целостность target.debuff при смене цели
+- `GameState.ReadSignal`: для целевых дебаффов требуется подтверждённый GUID цели из снимка; `UnitGUID("target")` проверяется до и после aura lookup через безопасный `GameAPI`. Несовпадение, отсутствие или секретное значение возвращает `UNKNOWN` без заявления об отсутствии ауры.
+- `tests/stage_02_03_game_state.lua`: добавлены mock-сценарии отсутствующего/устаревшего/secret GUID и смены цели посреди чтения.
+- `docs/rotation/Contract_v1_Status_2_9.md` фиксирует границы защиты. **Lua 5.1, 17 suites, WoW client и Actions NOT RUN**. Hunter BM не подключён.
+
 ## KR-20261121-103 — частичный GameState.ReadSignal для подтверждённого наличия аур
 - `GameState.lua`: добавлен ленивый источник `player.buff`/`target.debuff` по v14 #12/#13 с защищённым чтением через `GameAPI`. `READY(true)` только для совпадающих Spell ID и типовой категории aura; отсутствие результата не считается `false`.
 - `tests/stage_02_03_game_state.lua`: mock-проверки истинного наличия, nil/secret/wrong-ID/wrong-category и пропуска API при отсутствующей цели.
