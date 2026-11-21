@@ -3,6 +3,11 @@ Enum={SpellBookSpellBank={Player=0}}
 local spellKnownByApi=true
 local spellKnownAvailable=true
 local secretSpellId={}
+local secretPolicy={}
+local protectedCharges=false
+local nilUsability=false
+local nilRange=false
+local protectedUsability=false
 local learned=true
 local slot=true
 local active=false
@@ -25,25 +30,36 @@ KR.ActionBarScanner={FindSpell=function() return slot and {status="READY",slot=1
 KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead)},target={exists=r(targetExists),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
 KR.EventBus={Subscribe=function() return true end}
 KR.GameAPI={
- IsSafeValue=function(_,value) return not rawequal(value,secretSpellId) end,
+ IsSafeValue=function(_,value)
+  return not rawequal(value,secretSpellId) and not rawequal(value,secretPolicy)
+ end,
  Probe=function(_,name)
   if name=="C_SpellBook.IsSpellKnown" and not spellKnownAvailable then
    return {status="UNAVAILABLE"}
   end
   return {status="READY"}
  end,
- ReadField=function(_,rec,key) if protected then return {status="UNKNOWN"} end return rec[key]~=nil and r(rec[key]) or {status="UNKNOWN"} end,
+ ReadField=function(_,rec,key)
+  if protected or (protectedCharges and key=="currentCharges") then return {status="UNKNOWN"} end
+  return rec[key]~=nil and r(rec[key]) or {status="UNKNOWN"}
+ end,
  Read=function(_,name,typ,...)
   local id=(...)
   if name=="GetTime" then return r(now) end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
   if name=="C_Spell.GetSpellCooldown" then return r({isActive=id==61304 and gcdActive or active,isOnGCD=false}) end
   if name=="C_Spell.GetSpellCharges" then return r({currentCharges=chargeCount,maxCharges=2}) end
-  if name=="C_Spell.IsSpellInRange" then return r(distance) end
+  if name=="C_Spell.IsSpellInRange" then
+   return nilRange and {status="UNKNOWN"} or r(distance)
+  end
   return {status="UNKNOWN"}
  end,
  ReadValues=function(_,name,...)
-  if name=="C_Spell.IsSpellUsable" then return {status="READY",value={usable,noPower}} end
+  if name=="C_Spell.IsSpellUsable" then
+   if nilUsability then return {status="UNKNOWN"} end
+   if protectedUsability then return {status="UNKNOWN",reason="protected_value"} end
+   return {status="READY",value={usable,noPower}}
+  end
   if name=="UnitCastingInfo" then return {status="READY",value={casting}} end
   if name=="UnitChannelInfo" then return {status="READY",value={}} end
   return {status="UNKNOWN"}
@@ -63,12 +79,28 @@ spellKnownByApi=true;eq(eval().status,"READY","talent granted known spell")
 spellKnownAvailable=false;eq(eval().status,"UNKNOWN","known API absent")
 eq(eval().reason,"spell_known_unverified","no false unlearned")
 spellKnownAvailable=true;learned=true
-eq(KR.AbilityEligibility:Evaluate(secretSpellId,targetPolicy).reason,
-   "invalid_spell_id","secret ID rejected before math.floor")
+local secretResult=KR.AbilityEligibility:Evaluate(secretSpellId,targetPolicy)
+eq(secretResult.reason,"invalid_spell_id","secret ID rejected before math.floor")
+eq(secretResult.spellID,nil,"secret ID must never escape through result")
+eq(KR.AbilityEligibility:Evaluate(101,secretPolicy).reason,
+   "options_protected","secret options rejected before indexing")
+eq(KR.AbilityEligibility:Evaluate(101,{
+ target=secretPolicy,cast="idle",chargesRequired=true}).reason,
+ "policy_protected","secret target policy rejected before comparison")
 slot=false;eq(eval().status,"UNKNOWN","slot");slot=true
 noPower=true;eq(eval().reason,"insufficient_resources");noPower=false
 usable=false;eq(eval().reason,"spell_unusable");usable=true
 chargeCount=0;eq(eval().reason,"no_charges");chargeCount=1
+protectedCharges=true;eq(eval().status,"UNKNOWN","secret charge remains unknown")
+eq(eval().reason,"charges_invalid","secret charge cannot be treated as zero")
+protectedCharges=false
+nilUsability=true;eq(eval().status,"UNKNOWN","nil usability remains unknown")
+nilUsability=false
+protectedUsability=true;eq(eval().status,"UNKNOWN","secret usability remains unknown")
+protectedUsability=false
+nilRange=true;eq(eval().status,"UNKNOWN","nil range remains unknown")
+eq(eval().reason,"range_unavailable","nil range never means in range")
+nilRange=false
 active=true;eq(eval().reason,"cooldown_active_unclassified");active=false
 -- v14 #83: even with isOnGCD=true, snapshot polling must not turn
 -- an active cooldown into a READY recommendation.

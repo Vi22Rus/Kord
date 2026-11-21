@@ -32,7 +32,10 @@ local function multi(name,...)
     return KR.GameAPI:ReadValues(name,...)
 end
 local function candidate(status,reason,id)
-    return {status=status,reason=reason,spellID=id,source="AbilityEligibility"}
+    -- Never forward untrusted/secret ID into UI or future DevTools traces.
+    -- validID rejects protected values before math and comparisons.
+    return {status=status,reason=reason,
+        spellID=validID(id) and id or nil,source="AbilityEligibility"}
 end
 local function choose(unknown,reason)
     if not unknown then return reason end
@@ -211,8 +214,18 @@ local function castStatus(policy)
     return "READY"
 end
 function A:Evaluate(id,options)
-    if not validID(id) then return candidate("UNKNOWN","invalid_spell_id",id) end
+    if not validID(id) then return candidate("UNKNOWN","invalid_spell_id",nil) end
+    local api=KR.GameAPI
+    -- Policy tables and their fields must be safe before indexing/comparison.
+    if not api or not api:IsSafeValue(options) then
+        return candidate("UNKNOWN","options_protected",id)
+    end
     options=type(options)=="table" and options or {}
+    if not api:IsSafeValue(options.target)
+        or not api:IsSafeValue(options.cast)
+        or not api:IsSafeValue(options.chargesRequired) then
+        return candidate("UNKNOWN","policy_protected",id)
+    end
     if options.target~="enemy" and options.target~="friendly"
         and options.target~="self" and options.target~="none" then
         return candidate("UNKNOWN","target_policy_required",id)

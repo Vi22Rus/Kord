@@ -1,3 +1,10 @@
+## KR-20261121-021 — 2.8.3c: protected policy/ID output and nil/secret eligibility regression
+- **Дата UTC:** 2026-11-21T08:43:30.557Z; **подэтап:** 2.8.3c Canonical API Matrix v14 #10,#21,#26,#52,#80. Одобрение: каноническое ядро без runtime-адаптеров старых ротаций.
+- **Проблема:** при invalid/Secret ID Evaluate мог возвращать исходный защищённый id в result.spellID; developer-трассировка могла попытаться сериализовать его. Policy table и поля опций сравнивались без секретной защиты. Не хватало исполняемых сценариев protected currentCharges, nil/secret usability, nil range.
+- **Изменения:** выход candidate всегда содержит только проверенный finite positive SpellID либо nil; Evaluate проверяет безопасность policy table/fields до индексирования/сравнения и отклоняет unknown. Расширено `tests/stage_02_07_eligibility.lua` сценариями secret-ID/secret-options, защищённых зарядов и unavailable usability/range. Обновлены Test_Matrix/GameData_Contract.
+- **Ограничение:** GameAPI, Hunter-приоритеты, .toc, старые классовые профили не изменены. 101 game CLIENT PASS по-прежнему 0; Lua CI требует выполнения на SHA нового коммита. До реальной CI проверки не ставить PASS.
+- **Следующее:** проверить GitHub Actions, зафиксировать evidence; затем продолжить Eligibility v14 #20/#26 и перейти к Engine 2.8.4 после подтверждения контрактов.
+
 ## KR-20261121-020 — зафиксирован CI PASS 2.8.3b (SpellKnown и secret ID)
 - **Дата UTC:** 2026-11-21T08:40:55.294Z. **Тип:** docs/test-evidence, код и .toc не менялись.
 - **Проверенный SHA:** `ebcaa131367d80a827619e909228e7b7bf8a7d68`. GitHub Actions [run 44885927707](https://github.com/Vi22Rus/Kord/actions/runs/44885927707) — completed SUCCESS. Считан job log: luac5.1 -p PASS; все 8 Lua mock suites PASS; Eligibility = 29 checks (включая known fallback, negative, API absent и protected ID), GameState v14 =31, secret input=26, Engine=29.

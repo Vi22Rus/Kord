@@ -96,3 +96,7 @@ BM сегодня использует snake_case и названия спосо
 ## Изученность в Eligibility — v14 #19/#81 (2.8.3b)
 
 Известность проверяется без временного адаптера ротаций: подтверждённая запись `SpellCatalogue` с `known=true` допускает дальнейшие проверки. Если запись отсутствует, `AbilityEligibility` запрашивает `C_SpellBook.IsSpellKnown(spellID, Enum.SpellBookSpellBank.Player)`. Только явное `false` этого метода даёт `BLOCKED/not_learned`; отсутствующий банк, метод, защищённый или `nil` ответ → `UNKNOWN/spell_known_unverified`. Это не утверждение, что алгоритм рангов (#20) полностью готов. Защищённый spellID отклоняется до `math.floor` и сравнений.
+
+## v14 Eligibility — граница вывода и неизвестных сигналов (2.8.3c)
+
+`AbilityEligibility:Evaluate(id,options)` не включает исходный Secret/некорректный Spell ID в возвращаемый объект `spellID`; для невалидного ID результат `UNKNOWN/invalid_spell_id`, `spellID=nil`. Перед индексированием/сравнением policy проверяются безопасность `options`, `target`, `cast`, `chargesRequired`; Secret policy → `UNKNOWN/options_protected` или `UNKNOWN/policy_protected`. Это внутренняя проверка данных, **не runtime-адаптер классовых ротаций**. `currentCharges` secret, nil/usability, nil/range не превращаются в ложные READY или BLOCKED; `UNKNOWN` сохраняется. Клиентская применимость и требования рангов по v14 ещё NOT RUN.

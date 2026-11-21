@@ -114,3 +114,13 @@
 | ELIG-KNOWN-003 | Нет записи в каталоге, IsSpellKnown=false | BLOCKED/not_learned | PASS run 44885927707 (ebcaa131) | NOT RUN |
 | ELIG-KNOWN-004 | Нет записи в каталоге, API/enum bank отсутствует или nil | UNKNOWN/spell_known_unverified, не false | PASS run 44885927707 (ebcaa131) | NOT RUN |
 | ELIG-ID-005 | Secret Spell ID при Evaluate | UNKNOWN/invalid_spell_id до math.floor | PASS run 44885927707 (ebcaa131) | NOT RUN |
+
+## 2.8.3c — безопасные Eligibility policy/ID и nil/Secret сигналы
+
+| Test ID | Matrix v14 | Ожидаемый результат | Автотест | Клиент |
+|---|---|---|---|---|
+| ELIG-SEC-001 | #80 | Secret SpellID не копируется в результат Evaluate, UNKNOWN/invalid_spell_id | stage_02_07_eligibility.lua; CI pending | NOT RUN |
+| ELIG-SEC-002 | #80 | Защищённая policy-таблица или поле отклоняется до сравнения | stage_02_07_eligibility.lua; CI pending | NOT RUN |
+| ELIG-CHARGE-001 | #26/#80 | Защищённый currentCharges → UNKNOWN, не no_charges или READY | stage_02_07_eligibility.lua; CI pending | NOT RUN |
+| ELIG-USABLE-001 | #21/#52 | nil/secret IsSpellUsable → UNKNOWN, не READY/BLOCKED | stage_02_07_eligibility.lua; CI pending | NOT RUN |
+| ELIG-RANGE-001 | #10 | nil IsSpellInRange → UNKNOWN, не в дальности | stage_02_07_eligibility.lua; CI pending | NOT RUN |
