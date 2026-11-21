@@ -71,7 +71,7 @@ local modeOptions = {
 -- License notice (2/3): UI-only settings editor, never executes or auto-casts abilities.
 -- An unavailable class/tree must never be mistaken for a valid profile.
 function KR.Pages:Rotation(parent)
-    local body = scroller(parent, 1015)
+    local body = scroller(parent, 1070)
     local summary = card(body, -14, 158)
     label(summary, "ROT_PROFILE_TITLE", 16, -14, 500, true)
     local status = rawLabel(summary, 16, -48, 510)
@@ -99,7 +99,7 @@ function KR.Pages:Rotation(parent)
             function(value) S:SetCategory(category, value) end)
     end
 
-    local conditions = card(body, -829, 179)
+    local conditions = card(body, -829, 226)
     label(conditions, "ROT_CONDITIONS_TITLE", 16, -13, 510, true)
     local options = {
         {"ROT_ONLY_COMBAT", "cooldownsOnlyInCombat"},
@@ -113,6 +113,10 @@ function KR.Pages:Rotation(parent)
             function() return S:GetFlag(option) end,
             function(value) S:SetFlag(option, value) end)
     end
+    local experimentalRow = UI:ToggleRow(conditions, "ROT_EXPERIMENTAL_OPTIN",
+        12, -172, 500,
+        function() return S:GetFlag("allowUnverifiedProfiles") or false end,
+        function(value) S:SetFlag("allowUnverifiedProfiles", value) end)
     local function refresh()
         local p, id = profileRead()
         local state = KR.characterState
@@ -130,6 +134,8 @@ function KR.Pages:Rotation(parent)
         mode:SetEnabled(p ~= nil)
         for _, row in ipairs(catRows) do row:SetEnabled(p ~= nil) end
         for _, row in ipairs(rows) do row:SetEnabled(p ~= nil) end
+        experimentalRow:SetEnabled(p ~= nil)
+        experimentalRow:Refresh()
         mode:Refresh()
         for _, row in ipairs(catRows) do row:Refresh() end
         for _, row in ipairs(rows) do row:Refresh() end
