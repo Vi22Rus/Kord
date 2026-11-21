@@ -48,7 +48,13 @@ KR.GameAPI={
 KR.RotationSettings={GetProfile=function()
  return {enabled=true,targetMode="single",categories={damage=true},spells={}},"WARRIOR_TREE_1"
 end}
-KR.BindingResolver={Resolve=function()return {status="READY",bindingLabel="1",bindingSource="mock"}end}
+local bindingKnown=true
+local bindingWrongID=false
+KR.BindingResolver={Resolve=function(_,spellID)
+ if not bindingKnown then return {status="UNKNOWN",reason="binding_unverified"} end
+ return {status="READY",spellID=bindingWrongID and 999 or spellID,
+    bindingLabel="1",bindingSource="mock"}
+end}
 assert(loadfile("KordRotation/Core/AbilityEligibility.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/RotationEngine.lua"))("KordRotation",KR)
@@ -75,6 +81,18 @@ eq(state.status,"READY","first READY")
 eq(state.queue[1].spellID,101,"first priority selected")
 eq(state.queue[1].keybind,"1","binding retained")
 eq(#state.queue,1,"one recommendation")
+bindingKnown=false
+state=evaluate()
+eq(state.status,"READY","unbound spell still recommended")
+eq(state.queue[1].keybind,nil,"unknown key never leaked")
+bindingKnown=true
+bindingWrongID=true
+state=evaluate()
+eq(state.status,"READY","foreign key does not suppress ability")
+eq(state.queue[1].keybind,nil,"foreign Spell ID binding rejected")
+bindingWrongID=false
+state=evaluate()
+eq(state.queue[1].keybind,"1","verified key recovered")
 cooldownFirst=true
 state=evaluate()
 eq(state.status,"READY","blocked first skips to next")
@@ -116,6 +134,15 @@ eq(state.reason,"game_state_unavailable","snapshot exception fail closed")
 eq(#state.queue,0,"exception no queue")
 brokenState=false
 KR.characterState.index=2
+local beforeUnknownSpec=reads
 state=E:Evaluate()
 eq(state.reason,"profile_not_registered","no cross-spec fallback")
+eq(reads,beforeUnknownSpec,"unregistered spec does not read API")
+KR.characterState.index=1
+state=evaluate()
+eq(state.queue[1].spellID,101,"return to registered spec restores priority")
+KR.characterState.classToken=nil
+state=E:Evaluate()
+eq(state.reason,"specialization_unknown","invalid identity is fail closed")
+KR.characterState.classToken="WARRIOR"
 print("PASS 2.8.4d integration mock: "..n.." assertions")
