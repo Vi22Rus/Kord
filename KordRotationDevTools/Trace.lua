@@ -41,6 +41,7 @@ function D:TraceStart()
         -- Do not record other units' spellcasts or any spell ID/name.
         if playerOnly[event] and (not D:Safe(unit) or unit~="player") then return end
         D:Record("EVENT","READY",reasons[event],tracked[event])
+        if event=="PLAYER_TARGET_CHANGED" then D.nextDetailedAt=nil end
         D:ObserveTransition()
     end)
     frame:SetScript("OnUpdate",function(self,elapsed)
@@ -57,9 +58,13 @@ function D:TraceStart()
     self.lastErrors=nil
     self.lastTarget=nil
     self.lastFirstReason=nil
+    self.lastDetailKeys={}
+    self.nextDetailedAt=nil
+    self:ObserveTransition()
     return true
 end
 function D:TraceStop()
+    if self.active then self:ObserveDetails(nil,true) end
     local frame=self.traceFrame
     if frame then
         frame:SetScript("OnEvent",nil)
@@ -73,6 +78,8 @@ function D:TraceStop()
     self.lastEligibility=nil
     self.lastErrors=nil
     self.lastTarget=nil
+    self.lastDetailKeys=nil
+    self.nextDetailedAt=nil
     return true
 end
 -- Observe the live target only through the sanitized main-addon bridge.
@@ -97,6 +104,87 @@ function D:ObserveTarget()
     end
     return false
 end
+-- A compact session journal instead of an ever-growing UI report.
+-- Sample at most once per two seconds (or immediately after target change),
+-- record only changes, and never serialize raw game objects.
+function D:ObserveDetails(diagnosis,force)
+    if not self.active then return false end
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" then return false end
+    local clock
+    if type(GetTime)=="function" then
+        local ok,v=pcall(GetTime)
+        if ok and self:Safe(v) and type(v)=="number"
+            and v==v and v>=0 and v<math.huge then clock=v end
+    end
+    if not force and clock and self.nextDetailedAt
+        and clock<self.nextDetailedAt then return false end
+    if clock then self.nextDetailedAt=clock+2 end
+    self.lastDetailKeys=self.lastDetailKeys or {}
+    local function fetch(method)
+        local fn=bridge[method]
+        if type(fn)~="function" then return nil end
+        local ok,value=pcall(fn)
+        if ok and type(value)=="table" and D:Safe(value) then return value end
+        return nil
+    end
+    local function status(value)
+        if not D:Safe(value) then return "UNKNOWN" end
+        if value=="READY" or value=="BLOCKED" or value=="UNKNOWN"
+            or value=="UNAVAILABLE" or value=="ERROR" then return value end
+        return "UNKNOWN"
+    end
+    local function flag(value)
+        if not D:Safe(value) or type(value)~="boolean" then return "UNKNOWN" end
+        return value and "READY" or "BLOCKED"
+    end
+    local function add(kind,st,why,detail)
+        st=status(st)
+        if not D:Safe(detail) then detail=nil end
+        if type(detail)~="number" and type(detail)~="string" then detail=nil end
+        local key=kind..":"..why
+        local signature=st..":"..(detail and tostring(detail) or "")
+        if self.lastDetailKeys[key]==signature then return end
+        if self:Record(kind,st,why,nil,nil,detail) then
+            self.lastDetailKeys[key]=signature
+        end
+    end
+    local diag=diagnosis or fetch("Diagnose")
+    if diag then
+        add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
+            diag.arcaneR4Reason)
+    end
+    local bar=fetch("ActionBar")
+    if bar then
+        add("BAR",bar.status,"actionbar_scan",bar.reason)
+        add("BAR",bar.status,"actionbar_buttons",bar.confirmedSpellButtons)
+        add("BAR",bar.arcaneRankOnBar and "READY" or "UNKNOWN",
+            "arcane_rank_on_bar",bar.arcaneRankOnBar)
+        add("BAR",bar.arcaneFindStatus,"arcane_findspell",
+            bar.arcaneFindReason)
+    end
+    local target=fetch("Target")
+    if target then
+        add("TARGET",target.liveStatus=="READY"
+                and flag(target.liveExists) or "UNKNOWN","target_live")
+        add("TARGET",target.snapshotStatus=="READY"
+                and flag(target.snapshotExists) or "UNKNOWN","target_snapshot")
+    end
+    local display=fetch("Display")
+    if display then
+        add("DISPLAY",flag(display.panelEnabled),"panel_enabled")
+        add("DISPLAY",flag(display.testMode),"test_mode")
+        add("DISPLAY",flag(display.recommendationAccepted),
+            "recommendation_accepted")
+        add("DISPLAY",flag(display.visibilityAllowed),"visibility_allowed")
+        add("DISPLAY",flag(display.frameCreated),"frame_created")
+        add("DISPLAY",flag(display.frameShown),"frame_shown")
+        add("DISPLAY",display.lastEngineStatus,"ui_engine_status",
+            display.lastEngineReason)
+    end
+    return true
+end
+
 function D:ObserveTransition()
     if not self.active then return false end
     local snapshot=self:ReadCore()
@@ -110,6 +198,7 @@ function D:ObserveTransition()
             diagnostic=record
         end
     end
+    self:ObserveDetails(diagnostic,false)
     local status=diagnostic and diagnostic.status
         or (snapshot and snapshot.engineStatus)
     if type(status)~="string" or not self:Safe(status) then status="UNKNOWN" end
