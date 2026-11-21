@@ -249,9 +249,12 @@ function S:Invalidate(reason)
     self.lastInvalidation=type(reason)=="string" and reason or "manual"
 end
 
-function S:GetSnapshot()
+function S:GetSnapshot(force)
+    -- A live rotation evaluation must not reuse target existence from a
+    -- previous evaluation. The standalone /kre dump reads UnitExists fresh.
+    -- Cached snapshots remain available to other consumers.
     local now=clock()
-    local dirty=self.dirty or not self.current
+    local dirty=force==true or self.dirty or not self.current
     if KR.EventBus and KR.EventBus.revisions then
         for _,channel in ipairs(watched) do
             if (KR.EventBus.revisions[channel] or 0) ~=
