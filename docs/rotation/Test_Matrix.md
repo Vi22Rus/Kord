@@ -204,3 +204,15 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | Aggregate Trace `bc06d83fafb6339a50882acd1c80572886c7c179`; тест `bdba8661768111a6db1a002dff02e4b61eb38e4f` | **LOCAL PASS 17 assertions** | Только агрегированные события mock, не per-spell trace |
 
 **Полная локальная регрессия (18 Lua suites), GitHub Actions и внутриигровой WoW Forever QA — NOT RUN.** В текущем dev-репозитории документация описывает исходники двух устанавливаемых аддонов, а не доказанную установленную сборку. CLIENT PASS API v14 остаётся 0/101.
+
+## Очистка перед Profile Contract v1 (2.9-A)
+| ID | Проверка | Статус | Доказательство |
+|---|---|---|---|
+| CLEAN-001 | Profile Contract сохранён дословно, включая завершающую LF | SOURCE PASS | Git blob `17415a2401f9b82bd2c580fa8d69d63483a38a65` |
+| CLEAN-002 | Старый README сохранён как архив, действующий README не содержит старых статусов | SOURCE PASS | `docs/archive/README_HISTORY_2026-11-21.md` |
+| CLEAN-003 | AGENTS/ROADMAP/Creation Guide/rotation indexes используют 2.9 и Contract v1 как SPEC ONLY | SOURCE PASS | KR-20261121-063/064 |
+| CLEAN-004 | В обоих тестовых ZIP исключены неподключённые Lua, сохранён Logo.blp и полная идентичность общего каталога | LOCAL PASS (synthetic) | `scripts/build_variants.py` blob `98aa1bc4b7552d052d05b2f8f31b82dc319ef682` |
+| CLEAN-005 | Две mock-фикстуры исправлены | SOURCE PASS / FULL LOCAL NOT RUN | KR-20261121-065 |
+| CLEAN-006 | Полный Lua 5.1 и Python прогон по реальному checkout | NOT RUN | Не переносить PASS с прошлого SHA |
+| CLEAN-007 | CI manual-only, игровая проверка | NOT RUN | Перед общим QA |
+
