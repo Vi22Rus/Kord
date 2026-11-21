@@ -133,15 +133,25 @@ function E:Evaluate()
                     -- A key is shown only when Resolve confirms this exact
                     -- spell and an ordinary, nonempty label.
                     local api=KR.GameAPI
-                    if ok and type(binding)=="table" and binding.status=="READY"
-                        and binding.spellID==rule.spellID
-                        and type(binding.bindingLabel)=="string"
-                        and #binding.bindingLabel>0 and #binding.bindingLabel<=64
-                        and api and type(api.IsSafeValue)=="function"
-                        and api:IsSafeValue(binding.bindingLabel)
-                        and (binding.bindingSource==nil or
-                            (type(binding.bindingSource)=="string"
-                             and api:IsSafeValue(binding.bindingSource))) then
+                    local verified,usable=pcall(function()
+                        if not ok or type(binding)~="table"
+                            or not api or type(api.IsSafeValue)~="function"
+                            or not api:IsSafeValue(binding)
+                            or not api:IsSafeValue(binding.spellID)
+                            or not api:IsSafeValue(binding.status)
+                            or binding.status~="READY"
+                            or binding.spellID~=rule.spellID
+                            or not api:IsSafeValue(binding.bindingLabel)
+                            or type(binding.bindingLabel)~="string"
+                            or #binding.bindingLabel<1 or #binding.bindingLabel>64
+                            or (binding.bindingSource~=nil and
+                                (not api:IsSafeValue(binding.bindingSource)
+                                or type(binding.bindingSource)~="string")) then
+                            return false
+                        end
+                        return true
+                    end)
+                    if verified and usable then
                         label=binding.bindingLabel
                         bindingSource=binding.bindingSource
                     end

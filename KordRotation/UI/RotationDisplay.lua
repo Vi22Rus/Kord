@@ -278,9 +278,21 @@ function KR.RotationDisplay:Refresh(skipLayout)
             local ok,read=pcall(KR.RotationEngine.Evaluate,KR.RotationEngine)
             if ok and type(read)=="table" then result=read end
         end
-        self.lastEngineStatus=result and result.status or "UNKNOWN"
-        self.lastEngineReason=result and result.reason or "engine_unavailable"
-        local item=verifiedRecommendation(result)
+        -- Even the shape of an addon/plugin supplied record may be protected.
+        -- No bad payload can escape the UI refresh path.
+        local okMeta,status,reason=pcall(function()
+            local api=KR.GameAPI
+            if type(result)~="table" or not api
+                or type(api.IsSafeValue)~="function"
+                or not api:IsSafeValue(result) then
+                return "UNKNOWN","engine_unavailable"
+            end
+            return result.status,result.reason
+        end)
+        self.lastEngineStatus=okMeta and status or "UNKNOWN"
+        self.lastEngineReason=okMeta and reason or "engine_unavailable"
+        local okItem,item=pcall(verifiedRecommendation,result)
+        if not okItem then item=nil end
         if item then
             self.productionReady=true
             self:SetSlotData(1,{texture=item.texture,name=item.name,
