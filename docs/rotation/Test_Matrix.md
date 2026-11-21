@@ -109,8 +109,8 @@
 
 | ID | Сценарий | Ожидаемое | Lua CI | WoW Forever |
 |---|---|---|---|---|
-| ELIG-KNOWN-001 | Запись каталога known=true | READY по известности; продолжить другие проверки | PENDING run | NOT RUN |
-| ELIG-KNOWN-002 | Нет записи в каталоге, C_SpellBook.IsSpellKnown=true | Известность READY (включая пассивные/талантовые ID), без ложного BLOCKED | PENDING run | NOT RUN |
-| ELIG-KNOWN-003 | Нет записи в каталоге, IsSpellKnown=false | BLOCKED/not_learned | PENDING run | NOT RUN |
-| ELIG-KNOWN-004 | Нет записи в каталоге, API/enum bank отсутствует или nil | UNKNOWN/spell_known_unverified, не false | PENDING run | NOT RUN |
-| ELIG-ID-005 | Secret Spell ID при Evaluate | UNKNOWN/invalid_spell_id до math.floor | PENDING run | NOT RUN |
+| ELIG-KNOWN-001 | Запись каталога known=true | READY по известности; продолжить другие проверки | PASS run 44885927707 (ebcaa131) | NOT RUN |
+| ELIG-KNOWN-002 | Нет записи в каталоге, C_SpellBook.IsSpellKnown=true | Известность READY (включая пассивные/талантовые ID), без ложного BLOCKED | PASS run 44885927707 (ebcaa131) | NOT RUN |
+| ELIG-KNOWN-003 | Нет записи в каталоге, IsSpellKnown=false | BLOCKED/not_learned | PASS run 44885927707 (ebcaa131) | NOT RUN |
+| ELIG-KNOWN-004 | Нет записи в каталоге, API/enum bank отсутствует или nil | UNKNOWN/spell_known_unverified, не false | PASS run 44885927707 (ebcaa131) | NOT RUN |
+| ELIG-ID-005 | Secret Spell ID при Evaluate | UNKNOWN/invalid_spell_id до math.floor | PASS run 44885927707 (ebcaa131) | NOT RUN |

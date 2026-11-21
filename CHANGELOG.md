@@ -1,3 +1,9 @@
+## KR-20261121-020 — зафиксирован CI PASS 2.8.3b (SpellKnown и secret ID)
+- **Дата UTC:** 2026-11-21T08:40:55.294Z. **Тип:** docs/test-evidence, код и .toc не менялись.
+- **Проверенный SHA:** `ebcaa131367d80a827619e909228e7b7bf8a7d68`. GitHub Actions [run 44885927707](https://github.com/Vi22Rus/Kord/actions/runs/44885927707) — completed SUCCESS. Считан job log: luac5.1 -p PASS; все 8 Lua mock suites PASS; Eligibility = 29 checks (включая known fallback, negative, API absent и protected ID), GameState v14 =31, secret input=26, Engine=29.
+- **Исправлено:** Test_Matrix ранее имела PENDING run; теперь статусы пяти новых сценариев привязаны к конкретному подтверждённому SHA. Список ограничений: игровые тесты, ранги/варианты spell, полная v14 интеграция и другие 101 capabilities НЕ закрыты.
+- **Дальше:** 2.8.3c остальные eligibility ветки и далее 2.8.4; сохранять неизменными приоритеты Hunter и разделение двух аддонов.
+
 ## KR-20261121-019 — 2.8.3b: known spell без ложного отрицания; secret Spell ID
 - **Дата UTC:** 2026-11-21T08:39:33.703Z. **Этап:** Canonical API Matrix v14 #19/#80/#81, AbilityEligibility, без изменения .toc.
 - **Источники:** Sonah/Core/Atoms/Spells.lua известность пассивных/талантовых заклинаний через C_SpellBook.IsSpellKnown (Player bank); сверено с MaxDps/SpellData.lua и v14. Матрица остаётся единственным authority по выбранному API; client test NOT RUN.
