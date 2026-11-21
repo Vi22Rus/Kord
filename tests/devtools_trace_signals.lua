@@ -49,9 +49,19 @@ eq(D.entries[8].reason,"target_present","target present readable")
 liveTarget=false
 eq(D:ObserveTransition(),true,"target removal observed")
 eq(D.entries[9].reason,"target_absent","target removal reason")
+_G.KordRotationCoreObservation.Diagnose=function()
+ return {status="UNKNOWN",reason="action_slot_unconfirmed",
+  firstStatus="UNKNOWN",firstReason="action_slot_unconfirmed"}
+end
+eq(D:ObserveTransition(),true,"record direct engine refusal")
+eq(D.entries[10].kind,"ENGINE","direct engine diagnostic kind")
+eq(D.entries[10].reason,"action_slot_unconfirmed","engine direct refusal preserved")
+eq(D:ObserveTransition(),true,"first priority diagnostic recorded")
+eq(D.entries[11].kind,"ELIGIBILITY","first priority kind")
+eq(D.entries[11].reason,"action_slot_unconfirmed","first priority reason recorded")
 _G.KordRotationCoreObservation=nil
 D.active=false
 current.engineStatus="BLOCKED"
 eq(D:ObserveTransition(),false,"opt-in disabled")
-eq(#D.entries,9,"no late recording")
+eq(#D.entries,11,"no late recording")
 print("PASS DevTools aggregate trace mock: "..n.." assertions")
