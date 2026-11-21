@@ -1,3 +1,9 @@
+## KR-20261121-045 — 2.8.6d: read-only CoreObservation contract для будущего DevTools
+- **Дата/зона:** 2026-11-21 UTC. **Задача:** подготовить наблюдаемую границу ядра до создания отдельного KordRotationDevTools, не добавляя runtime logger, Recorder или SavedVariables в пользовательскую сборку.
+- **Изменено:** новый `Core/CoreObservation.lua` (pull-only `Read()`, scalar-only version/status/engineReason/stateRevision/eventListenerErrors/bindingDirty). Источники — только уже имеющиеся значения памяти, без `Evaluate/GetSnapshot/WoW API`. Secret/неизвестные значения и не-allowlist причины не экспортируются. TOC подключает модуль после Engine; mock проверяет отсутствие Spell ID, целей, ключей, мутаций и побочных вызовов. GitHub workflow включает 11-й mock-тест и остаётся manual-only.
+- **Проверка:** код написан, локальное выполнение будет проверено в 2.8.6e; GitHub Actions CI NOT RUN намеренно; Forever NOT RUN.
+- **Граница:** настоящий DevTools — второй аддон следующего этапа, без копирования ядра; v14/Hunter priorities/ранги не менялись.
+
 ## KR-20261121-044 — 2.8.6c: guarded SpellCatalogue integration
 - **Дата/зона:** 2026-11-21 UTC. **Симптом:** до 2.8.6c движок сравнивал импортированные Spell Catalogue ID/texture до проверки `GameAPI:IsSafeValue`; защищённые поля могли вызвать исключение или ложный вывод.
 - **Изменения:** `RotationEngine` вводит внутренний защищённый `safeValue`, использует его до проверки numeric ID и asset, исключает неготовые записи каталога по ID/known/name/texture. При READY Eligibility и неподтверждённой визуализации остаётся UNKNOWN, очередь пустая, менее приоритетные правила не раскрываются. Добавлены mock-кейсы SECRET ID, texture и name.

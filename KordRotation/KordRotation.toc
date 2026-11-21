@@ -23,6 +23,7 @@ Core\BindingResolver.lua
 Core\AbilityEligibility.lua
 Core\RotationProfiles.lua
 Core\RotationEngine.lua
+Core\CoreObservation.lua
 Core\IndicatorSettings.lua
 Core\AppearanceProfiles.lua
 Core\Diagnostics.lua

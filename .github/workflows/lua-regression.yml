@@ -37,7 +37,8 @@ jobs:
             tests/stage_02_08_v14_state.lua \
             tests/stage_02_08_v14_argument_guards.lua \
             tests/stage_02_08_v14_rotation_contract.lua \
-            tests/stage_02_08_v14_display.lua; do
+            tests/stage_02_08_v14_display.lua \
+            tests/stage_02_08_v14_observation.lua; do
             echo "RUN $f"
             lua5.1 "$f"
           done
