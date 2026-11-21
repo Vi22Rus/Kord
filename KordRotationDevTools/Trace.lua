@@ -56,6 +56,7 @@ function D:TraceStart()
     self.lastEligibility=nil
     self.lastErrors=nil
     self.lastTarget=nil
+    self.lastFirstReason=nil
     return true
 end
 function D:TraceStop()
@@ -99,7 +100,18 @@ end
 function D:ObserveTransition()
     if not self.active then return false end
     local snapshot=self:ReadCore()
-    local status=snapshot and snapshot.engineStatus
+    -- During an explicitly started recording, collect the engine's actual
+    -- refusal independently of whether the user-facing panel was refreshed.
+    local diagnostic
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)=="table" and type(bridge.Diagnose)=="function" then
+        local ok,record=pcall(bridge.Diagnose)
+        if ok and type(record)=="table" and self:Safe(record) then
+            diagnostic=record
+        end
+    end
+    local status=diagnostic and diagnostic.status
+        or (snapshot and snapshot.engineStatus)
     if type(status)~="string" or not self:Safe(status) then status="UNKNOWN" end
     if status~="READY" and status~="BLOCKED" and status~="UNKNOWN" then
         status="UNKNOWN"
@@ -155,7 +167,8 @@ function D:ObserveTransition()
         return false
     end
 
-    local engineReason=snapshot and snapshot.engineReason
+    local engineReason=diagnostic and diagnostic.reason
+        or (snapshot and snapshot.engineReason)
     if type(engineReason)~="string" or not self:Safe(engineReason)
         or #engineReason>64 or not engineReason:match("^[a-z][a-z0-9_]*$") then
         engineReason="unknown"
@@ -167,6 +180,23 @@ function D:ObserveTransition()
             return true
         end
         return false
+    end
+    if diagnostic and diagnostic.firstReason~=nil then
+        local firstReason=diagnostic.firstReason
+        local firstStatus=diagnostic.firstStatus
+        if not self:Safe(firstReason) or type(firstReason)~="string"
+            or #firstReason>64 or not firstReason:match("^[a-z][a-z0-9_]*$") then
+            firstReason="unknown"
+        end
+        if firstStatus~="READY" and firstStatus~="BLOCKED"
+            and firstStatus~="UNKNOWN" then firstStatus="UNKNOWN" end
+        local key=firstStatus..":"..firstReason
+        if key~=self.lastFirstReason then
+            if self:Record("ELIGIBILITY",firstStatus,firstReason) then
+                self.lastFirstReason=key
+                return true
+            end
+        end
     end
     return self:ObserveTarget()
 end
