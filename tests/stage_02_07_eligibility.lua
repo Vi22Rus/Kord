@@ -250,6 +250,8 @@ KR.SpellCatalogue.Read=function() return {status="UNAVAILABLE"} end
 eq(fact("known").status,"UNKNOWN","unavailable catalogue never implies unknown spell")
 KR.SpellCatalogue.Read=function() error("spellbook failure") end
 eq(fact("known").status,"UNKNOWN","catalogue exception fails closed")
+KR.SpellCatalogue.Read=function() return {status="ready",entries={false}} end
+eq(fact("known").status,"UNKNOWN","malformed catalogue entry fails closed")
 KR.SpellCatalogue.Read=previousCatalogue
 learned=true
 eq(fact("chargesAtLeast").status,"UNKNOWN","charges threshold missing")
