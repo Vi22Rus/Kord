@@ -82,8 +82,10 @@ function D:Start()
 end
 function D:Stop()
     if not self.active then return false,"not_recording" end
+    self.stopping=true
     if self.TraceStop then self:TraceStop() end
     self.active=false
+    self.stopping=false
     if self.session then
         self.session.dropped=self.dropped
         self.session.stopped=now() or 0
@@ -109,7 +111,8 @@ function D:Record(kind,status,reason,matrix,elapsed,detail)
     if not self.active then return false,"not_recording" end
     local current=now()
     if self.started and current and current-self.started>self.maxDuration then
-        self:Stop()
+        -- A final diagnostic snapshot during Stop must not recursively Stop.
+        if not self.stopping then self:Stop() end
         return false,"session_limit"
     end
     if #self.records>=self.maxRecords then
