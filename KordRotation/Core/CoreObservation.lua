@@ -101,8 +101,18 @@ function O:ReadEngineDiagnostic()
     if not ok or not safe(result) or type(result)~="table" then
         return {status="UNKNOWN",reason="engine_exception"}
     end
-    local out={status=status(field(result,"status")),
-        reason=reason(field(result,"reason")) or "unknown"}
+    local refusal=reason(field(result,"reason")) or "unknown"
+    local profileID=field(result,"profileID")
+    local profileStatus="UNKNOWN"
+    if type(profileID)=="string" and #profileID>0 and #profileID<=64 then
+        profileStatus="READY"
+    elseif refusal=="profile_not_registered" then
+        profileStatus="UNAVAILABLE"
+    elseif refusal=="rotation_disabled" or refusal=="profile_unverified" then
+        profileStatus="BLOCKED"
+    end
+    local out={status=status(field(result,"status")),reason=refusal,
+        profileStatus=profileStatus}
     local diagnostics=field(result,"diagnostics")
     if type(diagnostics)=="table" then
         local first=field(diagnostics,1)
