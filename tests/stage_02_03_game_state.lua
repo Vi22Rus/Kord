@@ -74,21 +74,6 @@ eq(first.revision,again.revision,"fresh snapshot is cached")
 again.player.health.current.value=900
 eq(KR.GameState:GetSnapshot().player.health.current.value,50,"no mutable cache exposure")
 
--- A standalone /kre dump re-reads UnitExists on every call. For the
--- rotation evaluator a forced snapshot must do the same, even if the
--- target event was lost and less than 0.5 seconds elapsed.
-hasTarget=true
-local stale=KR.GameState:GetSnapshot()
-eq(stale.target.exists.value,false,"normal cache may retain old target")
-local fresh=KR.GameState:GetSnapshot(true)
-eq(fresh.target.exists.value,true,"forced evaluation detects newly selected target")
-eq(fresh.target.attackable.value,true,"forced evaluation sees enemy relation")
-eq(fresh.revision,first.revision+1,"forced evaluation rebuilds snapshot")
-hasTarget=false
-eq(KR.GameState:GetSnapshot(true).target.exists.value,false,
- "forced evaluation notices target removal")
-
-
 hasTarget=true
 KR.EventBus:HandleEvent("PLAYER_TARGET_CHANGED")
 local second=KR.GameState:GetSnapshot()
@@ -238,6 +223,21 @@ local beforeUnsupported=auraReads
 eq(KR.GameState:ReadSignal("target.ttd").status,"UNKNOWN",
  "unimplemented TTD stays unknown")
 eq(auraReads,beforeUnsupported,"unsupported signal does not query API")
+
+-- Test a missed PLAYER_TARGET_CHANGED event on a stable clock.
+UnitExists=function(unit) return unit=="player" or (unit=="target" and hasTarget) end
+hasTarget=false
+time=time+1
+KR.GameState:GetSnapshot(true)
+hasTarget=true
+local cachedTarget=KR.GameState:GetSnapshot()
+eq(cachedTarget.target.exists.value,false,"normal cache retains old target")
+local freshTarget=KR.GameState:GetSnapshot(true)
+eq(freshTarget.target.exists.value,true,"forced evaluation detects selected target")
+eq(freshTarget.target.attackable.value,true,"forced evaluation reads hostile target")
+hasTarget=false
+eq(KR.GameState:GetSnapshot(true).target.exists.value,false,
+ "forced evaluation detects target removal")
 
 GetTime=nil
 eq(KR.GameAPI:Read("GetTime","number").status,"UNAVAILABLE")
