@@ -181,9 +181,33 @@ function O:ReadActionBar()
             end
         end
     end
+    -- The snapshot confirms a candidate once; Eligibility calls FindSpell
+    -- which revalidates the actual button. Report the difference explicitly.
+    local findStatus="UNKNOWN"
+    local findReason="rank_not_confirmed"
+    if rank and scanner and type(scanner.FindSpell)=="function"
+        and type(profileModule)=="table" then
+        local levelSnapshot=KR.GameState and KR.GameState.current
+        local levelRec=field(field(levelSnapshot,"player"),"level")
+        local levelValue=field(levelRec,"value")
+        if type(levelValue)=="number" and levelValue>=1 and levelValue<=100 then
+            local okProfile,p=pcall(profileModule.ResolveForEngine,
+                profileModule,"HUNTER_TREE_1",levelValue)
+            local id=okProfile and field(field(p,"Spells"),"ArcaneShotR"..rank)
+            if type(id)=="number" and safe(id) then
+                local okFound,found=pcall(scanner.FindSpell,scanner,id)
+                if okFound and safe(found) and type(found)=="table" then
+                    findStatus=status(field(found,"status"))
+                    findReason=reason(field(found,"reason"))
+                        or (findStatus=="READY" and "confirmed" or "unknown")
+                else findReason="find_spell_exception" end
+            end
+        end
+    end
     return {status=count>0 and "READY" or "UNKNOWN",
         reason=count>0 and "scan_has_spells" or "no_confirmed_visible_slots",
-        confirmedSpellButtons=count,arcaneRankOnBar=rank}
+        confirmedSpellButtons=count,arcaneRankOnBar=rank,
+        arcaneFindStatus=findStatus,arcaneFindReason=findReason}
 end
 
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
