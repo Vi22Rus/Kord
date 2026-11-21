@@ -8,6 +8,8 @@ local protectedCharges=false
 local nilUsability=false
 local nilRange=false
 local protectedUsability=false
+local playerLevel=40
+local levelAvailable=true
 local learned=true
 local slot=true
 local active=false
@@ -27,7 +29,7 @@ local targetPolicy={target="enemy",cast="idle",chargesRequired=true}
 local function r(value) return {status="READY",value=value} end
 KR.SpellCatalogue={Read=function() return {status="ready",entries= learned and {{id=101,known=true}} or {{id=102,known=true}}} end}
 KR.ActionBarScanner={FindSpell=function() return slot and {status="READY",slot=1} or {status="UNKNOWN"} end}
-KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead)},target={exists=r(targetExists),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
+KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead),level=levelAvailable and r(playerLevel) or {status="UNKNOWN"}},target={exists=r(targetExists),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
 KR.EventBus={Subscribe=function() return true end}
 KR.GameAPI={
  IsSafeValue=function(_,value)
@@ -87,6 +89,9 @@ eq(KR.AbilityEligibility:Evaluate(101,secretPolicy).reason,
 eq(KR.AbilityEligibility:Evaluate(101,{
  target=secretPolicy,cast="idle",chargesRequired=true}).reason,
  "policy_protected","secret target policy rejected before comparison")
+eq(KR.AbilityEligibility:Evaluate(101,{
+ target="enemy",cast="idle",chargesRequired=true,minLevel=secretPolicy}).reason,
+ "policy_protected","secret level policy rejected before math")
 slot=false;eq(eval().status,"UNKNOWN","slot");slot=true
 noPower=true;eq(eval().reason,"insufficient_resources");noPower=false
 usable=false;eq(eval().reason,"spell_unusable");usable=true
@@ -121,6 +126,25 @@ attackable=false;eq(eval().reason,"target_relation_invalid");attackable=true
 casting="Frostbolt";eq(eval().reason,"already_casting");casting=nil
 protected=true;eq(eval().status,"UNKNOWN","protected");protected=false
 eq(eval({target="self",cast="allow",chargesRequired=false}).status,"READY","self buff")
+local leveled={target="enemy",cast="idle",chargesRequired=true,minLevel=40}
+eq(eval(leveled).status,"READY","minimum level exactly reached")
+leveled.minLevel=41
+eq(eval(leveled).reason,"player_level_too_low","minimum level not reached")
+levelAvailable=false
+eq(eval(leveled).reason,"player_level_unknown","unknown level not enough")
+levelAvailable=true
+leveled.minLevel=40
+playerLevel=40.5
+eq(eval(leveled).reason,"player_level_unknown","noninteger player level")
+playerLevel=40
+leveled.minLevel=40.5
+eq(eval(leveled).reason,"level_policy_invalid","noninteger required level")
+leveled.minLevel=101
+eq(eval(leveled).reason,"level_policy_invalid","minimum level out of bounds")
+leveled.minLevel=0
+eq(eval(leveled).reason,"level_policy_invalid","minimum level zero")
+leveled.minLevel=40
+eq(eval(leveled).status,"READY","level rule again passes")
 eq(eval({target="none",cast="idle",chargesRequired=false}).status,"READY","no target")
 eq(eval({target="enemy"}).status,"UNKNOWN","missing cast policy")
 eq(eval({cast="idle"}).status,"UNKNOWN","missing target policy")

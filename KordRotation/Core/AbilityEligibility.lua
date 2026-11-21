@@ -223,7 +223,8 @@ function A:Evaluate(id,options)
     options=type(options)=="table" and options or {}
     if not api:IsSafeValue(options.target)
         or not api:IsSafeValue(options.cast)
-        or not api:IsSafeValue(options.chargesRequired) then
+        or not api:IsSafeValue(options.chargesRequired)
+        or not api:IsSafeValue(options.minLevel) then
         return candidate("UNKNOWN","policy_protected",id)
     end
     if options.target~="enemy" and options.target~="friendly"
@@ -235,6 +236,16 @@ function A:Evaluate(id,options)
     end
     if type(options.chargesRequired)~="boolean" then
         return candidate("UNKNOWN","charge_policy_required",id)
+    end
+    -- Canonical v14 #82: minimum character level is an explicit rule
+    -- precondition, distinct from known spell, rank and usable spell.
+    -- No implicit required level can be guessed from a spellbook entry.
+    if options.minLevel~=nil and
+        (type(options.minLevel)~="number"
+        or options.minLevel~=options.minLevel
+        or options.minLevel~=math.floor(options.minLevel)
+        or options.minLevel<1 or options.minLevel>100) then
+        return candidate("UNKNOWN","level_policy_invalid",id)
     end
     local catalogue=KR.SpellCatalogue and KR.SpellCatalogue:Read()
     local knownStatus,knownReason=spellKnown(id,catalogue)
@@ -259,6 +270,20 @@ function A:Evaluate(id,options)
     end
     if state.player.dead.value then
         return candidate("BLOCKED","player_dead",id)
+    end
+    if options.minLevel~=nil then
+        local level=state.player.level
+        if not level or level.status~="READY"
+            or not api:IsSafeValue(level.value)
+            or type(level.value)~="number"
+            or level.value~=level.value
+            or level.value~=math.floor(level.value)
+            or level.value<1 or level.value>100 then
+            return candidate("UNKNOWN","player_level_unknown",id)
+        end
+        if level.value<options.minLevel then
+            return candidate("BLOCKED","player_level_too_low",id)
+        end
     end
     local unknown
     local checks={

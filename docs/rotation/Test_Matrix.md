@@ -124,3 +124,13 @@
 | ELIG-CHARGE-001 | #26/#80 | Защищённый currentCharges → UNKNOWN, не no_charges или READY | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
 | ELIG-USABLE-001 | #21/#52 | nil/secret IsSpellUsable → UNKNOWN, не READY/BLOCKED | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
 | ELIG-RANGE-001 | #10 | nil IsSpellInRange → UNKNOWN, не в дальности | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
+
+## 2.8.3d — минимальный уровень; ранг остаётся отдельным доказательством
+
+| ID | v14 | Сценарий | Ожидаемое | Mock | Клиент |
+|---|---|---|---|---|---|
+| ELIG-LEVEL-001 | #82 | minLevel=40 и player.level=40 | READY по уровню, остальная Eligibility не пропущена | PENDING CI | NOT RUN |
+| ELIG-LEVEL-002 | #82 | minLevel=41 и player.level=40 | BLOCKED/player_level_too_low | PENDING CI | NOT RUN |
+| ELIG-LEVEL-003 | #80/#82 | level UNKNOWN / нецелое / secret | UNKNOWN, без угадывания уровня | PENDING CI | NOT RUN |
+| ELIG-LEVEL-004 | #82 | minLevel нецелое/0/>100/Secret | UNKNOWN/level_policy_invalid или policy_protected | PENDING CI | NOT RUN |
+| ELIG-RANK-001 | #20/#82 | highest learned rank и допустимый Spell ID | НЕ РЕАЛИЗОВАНО: точный алгоритм требует доказательства; не считать наличие ID проверкой ранга | NOT RUN | NOT RUN |

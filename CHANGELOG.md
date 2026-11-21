@@ -1,3 +1,10 @@
+## KR-20261121-023 — 2.8.3d: строгая минимальная граница уровня в Eligibility
+- **Дата UTC:** 2026-11-21T08:47:16.138Z. **Источник:** Canonical API Matrix v14 #20/#80/#82, Sonah/Core/Atoms/Spells.lua:68–94,171–189 и MaxDps/SpellData.lua (сверка источников). **Согласование:** утверждённый пользовательский план переработки ядра v14.
+- **Проблема:** известность заклинания не доказывает подходящий уровень персонажа или выбранный ранг. Прежний Eligibility не имел явного контракта минимального уровня, а открытый вопрос рангов нельзя скрыть под `known=true`.
+- **Исправление:** в `AbilityEligibility:Evaluate(id,options)` добавлена только **опциональная** `minLevel` — обычное целое 1–100; Secret policy проверяется до сравнений; подтверждённый уровень ниже порога блокируется; неизвестный уровень даёт UNKNOWN. Без `minLevel` старые правила сохраняют прежнюю проверку. Изменены `tests/stage_02_07_eligibility.lua`, GameData_Contract и Test_Matrix.
+- **Открытый вопрос:** высший ранг и spell variants v14 #20 НЕ реализованы, нельзя выводить rank по имени или наличию ID; тесты в клиенте WoW Forever NOT RUN. Приоритеты Hunter, UI, TOC не менялись.
+- **Проверка:** новый код должен быть испытан в GitHub Actions на exact SHA; до подтверждения CI mock-прогоны имеют PENDING, game CLIENT PASS по-прежнему 0/101.
+
 ## KR-20261121-022 — подтверждённый CI PASS 2.8.3c (protected policy, secret/nil)
 - **Дата UTC:** 2026-11-21T08:44:31.052Z. **Тип:** docs/test evidence; игровые модули и .toc не менялись.
 - **Фактический тест:** GitHub Actions [run 44886222396](https://github.com/Vi22Rus/Kord/actions/runs/44886222396), исходный commit `120c8040b139c81831a792d423fc0c8bdf16024f`, job `136791978814`, completed SUCCESS. Проверены logs, не только workflow-config: Lua 5.1 syntax PASS, 8/8 Lua mock suites PASS; Eligibility 38 checks, GameState v14 31, protected args 26, RotationEngine 29.
