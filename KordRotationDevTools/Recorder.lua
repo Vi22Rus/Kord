@@ -1,7 +1,7 @@
 -- Kord Rotation DevTools (c) 2026 Vi22Rus; see root LICENSE.
 -- Explicit opt-in, bounded memory, no unknown input serialization.
 local _,D=...
-local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,ERROR=true,API=true,PERFORMANCE=true}
+local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true}
 local statuses={READY=true,BLOCKED=true,UNKNOWN=true,UNAVAILABLE=true,ERROR=true}
 local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     cooldown_unavailable=true,spellbook_unavailable=true,api_missing=true,
@@ -9,7 +9,18 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     already_casting=true,global_cooldown=true,not_learned=true,
     invalid_method=true,api_call_failed=true,presence_only=true,
     target_missing=true,no_eligible_rule=true,invalid_status=true,
-    snapshot_unavailable=true,manual_sample=true,game_state_unavailable=true}
+    snapshot_unavailable=true,manual_sample=true,game_state_unavailable=true,
+    action_slot_unconfirmed=true,spell_visual_data_unverified=true,
+    condition_unknown=true,condition_false=true,no_confirmed_visible_slots=true,
+    profile_unverified=true,rotation_settings_unavailable=true,
+    player_level_unverified=true,spellbook_unavailable=true,
+    target_present=true,target_absent=true,target_unverified=true,
+    player_target_changed=true,update_bindings=true,spell_update_cooldown=true,
+    actionbar_slot_changed=true,spells_changed=true,player_regen_enabled=true,
+    player_regen_disabled=true,player_entering_world=true,
+    unit_spellcast_succeeded=true,unit_spellcast_start=true,
+    unit_spellcast_failed=true,unit_spellcast_interrupted=true,
+    target_observed=true}
 local function now()
     if type(GetTime)~="function" then return nil end
     local ok,t=pcall(GetTime)
