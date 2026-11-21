@@ -1,6 +1,6 @@
 # Kord Rotation
 
-**Актуальный этап: 2.9 — контракт профилей и очистка перед Hunter BM (2026-11-21).** Существующее ядро v14 и DevTools опубликованы в исходниках, но новые профили ещё не подключены, полный локальный прогон и игровой WoW Forever QA — NOT RUN; CLIENT PASS API v14 = 0/101.
+**Актуальный этап: 2.9 — контракт v1 внедрён в исходники, проверка ещё впереди (2026-11-21).** Существующее ядро v14 и DevTools опубликованы в исходниках, но новые профили ещё не подключены, полный локальный прогон и игровой WoW Forever QA — NOT RUN; CLIENT PASS API v14 = 0/101.
 
 ## Архитектура
 - `KordRotation-user.zip`: один исходный каталог `KordRotation/`.
@@ -10,8 +10,8 @@
 
 ## Действующий порядок
 1. Очистка документации и сборки без утраты исходников/доказательств.
-2. Исправление mock-фикстур и полный локальный прогон Lua 5.1 (не GitHub Actions).
-3. Реализация [Profile Contract v1](docs/rotation/Profile_Contract.md) — `Needs`, ленивые правила, `UNKNOWN` и единый `AbilityEligibility`. **Пока SPEC ONLY.**
+2. Исправленные mock-фикстуры — SOURCE DONE; [Profile Contract v1](docs/rotation/Profile_Contract.md) теперь SOURCE IMPLEMENTED (`RotationProfiles`, `RotationConditions`, `RotationEngine`), но LUA 5.1 / CLIENT NOT RUN.
+3. Ревизия **17 актуальных** Lua suites, целевые и полный локальный прогон новой архитектуры (Actions остаётся ручным).
 4. Подключение проверенных провайдеров GameState по [v14](docs/rotation/Canonical_API_Matrix.md); неподтверждённое остаётся `UNKNOWN`.
 5. Mock/дифференциальные тесты, затем пилот Hunter BM Leveling PvE 1–59.
 

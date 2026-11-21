@@ -2,7 +2,7 @@
 
 ## АКТУАЛЬНЫЙ ЭТАП 2.9 — CONTRACT READINESS (решение заказчика от 2026-11-21)
 
-**Документ обязательной целевой архитектуры:** [docs/rotation/Profile_Contract.md](docs/rotation/Profile_Contract.md). Исходник сохранён, но **не реализован** в Lua, CLIENT NOT RUN. Актуальная последовательность: чистка → фикстуры/локальный Lua 5.1 → минимальная миграция текущего `RotationProfiles/RotationEngine` → нужные провайдеры по v14 → mock/дифференциальные тесты → Hunter BM Leveling PvE 1–59. Не начинать перенос Hunter до готовности нового контракта.
+**Документ обязательной целевой архитектуры:** [docs/rotation/Profile_Contract.md](docs/rotation/Profile_Contract.md). Оригинал сохранён; Lua-реестр, ограниченный S и движок v1 уже SOURCE IMPLEMENTED, но Lua 5.1, игровой клиент и провайдеры ещё НЕ проверены. Актуальная последовательность: очистка/фикстуры (SOURCE DONE) → минимальная миграция `RotationProfiles/RotationConditions/RotationEngine` (SOURCE IMPLEMENTED / TEST NOT RUN) → ревизия 17 Lua mock suites → целевые и полный локальный прогон → провайдеры v14 и дифференциальные тесты → Hunter BM Leveling PvE 1–59. Не начинать перенос Hunter до готовности нового контракта.
 
 **Правила будущего ядра:** `Needs` разрешает источники, не требует предзагрузку; ленивые условия, `UNKNOWN` по умолчанию стоп, разрешённый `skip` только документированное безопасное исключение, `UNKNOWN` Eligibility никогда не пропускается; окончательный `READY` только в `AbilityEligibility`; нет прямых WoW API в профилях, нет второго движка и runtime alias для старых Hunter. Общие исходники — в единственном `KordRotation/` обеих ZIP. DevTools отдельно. Действующая v14 CLIENT PASS = 0/101.
 
