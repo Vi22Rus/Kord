@@ -120,6 +120,12 @@ eq(P:Get("HUNTER_TREE_1",20).id,p.id,"level profile selected")
 local copy=P:Get("HUNTER_TREE_1",20)
 copy.Spells.Sting=999
 eq(P:Get("HUNTER_TREE_1",20).Spells.Sting,101,"copy immutable")
+local internal=P:ResolveForEngine("HUNTER_TREE_1",20)
+eq(internal.Spells.Sting,101,"engine references validated profile")
+eq(P:ResolveForEngine("HUNTER_TREE_1",20),internal,
+ "no deep copy on each engine evaluation")
+eq(P:Get("HUNTER_TREE_1",20)==internal,false,
+ "external Get never leaks internal table")
 local overlapping=profile(1,"HUNTER_DUPLICATE",59,60)
 eq(P:Register("HUNTER",1,overlapping),false,"level overlap forbidden")
 local at60=profile(1,"HUNTER_BM_60_PVE",60,60,"mock_tested")

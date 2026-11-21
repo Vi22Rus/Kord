@@ -170,18 +170,29 @@ function P:Register(classToken,specIndex,profile)
  registry[key]=list
  return true,profile.id
 end
-function P:Get(key,level)
+local function selectProfile(key,level)
  if type(key)~="string" then return nil end
  local list=registry[key]
  if not list then return nil end
- if level==nil and #list==1 then return copy(list[1],0) end
- if type(level)~="number" or level~=math.floor(level) then return nil end
+ if level==nil then return #list==1 and list[1] or nil end
+ if type(level)~="number" or level~=level
+     or level~=math.floor(level) then return nil end
  for _,profile in ipairs(list) do
   if level>=profile.levelMin and level<=profile.levelMax then
-   return copy(profile,0)
+   return profile
   end
  end
  return nil
+end
+function P:Get(key,level)
+ local profile=selectProfile(key,level)
+ return profile and copy(profile,0) or nil
+end
+-- Internal engine-only view of registered, source-validated, stable metadata.
+-- Never expose this reference to profile callbacks, SavedVariables or DevTools.
+-- Only trusted KordRotation code may call this; external Get remains defensive.
+function P:ResolveForEngine(key,level)
+ return selectProfile(key,level)
 end
 function P:Has(key,level)
  if type(key)~="string" or registry[key]==nil then return false end

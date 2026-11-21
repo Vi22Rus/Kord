@@ -103,9 +103,11 @@ local function levelOf(snapshot)
  return r.value
 end
 local function run()
- if not KR.RotationProfiles or not KR.RotationSettings
-    or not KR.AbilityEligibility or not KR.RotationConditions
-    or not KR.GameState then return unknown("engine_dependency_missing") end
+ if not KR.RotationProfiles or type(KR.RotationProfiles.ResolveForEngine)~="function"
+    or not KR.RotationSettings or not KR.AbilityEligibility
+    or not KR.RotationConditions or not KR.GameState then
+  return unknown("engine_dependency_missing")
+ end
  local identityID=identity()
  if not identityID then return unknown("specialization_unknown") end
  if not KR.RotationProfiles:Has(identityID) then
@@ -125,7 +127,7 @@ local function run()
   return unknown("game_state_unavailable") end
  local level=levelOf(snapshot)
  if not level then return unknown("player_level_unverified") end
- local profile=KR.RotationProfiles:Get(identityID,level)
+ local profile=KR.RotationProfiles:ResolveForEngine(identityID,level)
  if not profile then return unknown("profile_for_level_missing") end
  if profile.status~="verified" and
     not (profile.status=="experimental" and saved.allowUnverifiedProfiles==true) then
