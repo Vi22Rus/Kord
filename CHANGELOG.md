@@ -1,3 +1,10 @@
+## KR-20261121-011 — 2.8.2b: прямые pet/instance/Auto Shot контракты v14
+- **Дата UTC:** 2026-11-21T08:03:36.258Z. **Согласование:** пользователь одобрил полную переработку v14, отдельный DevTools, отсутствие runtime-адаптеров. **Тип:** feature/docs, без изменения версии и Hunter-профилей.
+- **Проблема:** GameState pet не имел отношения pettarget→target; EventBus исключал pet unit-события; IsInInstance не различает тип инстанса; для Auto Shot не было отдельного read-only сигнала.
+- **Изменения:** GameState добавляет pet.targetExists, pet.attackingTarget по v14 #30 с fail-closed, context.instanceType из второго ответа GetInstanceInfo по #18/#90/#91, ReadAutoShot(spellID) отдельно для #24 без предположений swing/queued; EventBus добавляет pet domain/UNIT_PET/PET_BAR_UPDATE и принимает pet/pettarget unit events. Обновлены GameData_Contract и Test_Matrix.
+- **Проверки:** контроль синтаксиса Lua, опубликованного Git HEAD и структуры кода проводится отдельно. **NOT RUN:** WoW Forever, полный mock реальных зависимостей, измерения производительности. Наличие API ≠ CLIENT PASS.
+- **Следующий шаг:** расширить типизированное безопасное чтение GameData, протестировать все новые случаи, затем продолжить Eligibility/Engine.
+
 ## KR-20261121-010 — 2.8.2a: прямые сигналы GameState и selected API v14
 - **Дата (UTC):** 2026-11-21T08:00:31.642Z. **Статус:** исходниковая реализация; CLIENT QA NOT RUN. **Версия:** 0.1.8.3-rc9 (без смены релизного номера, подэтап незавершён).
 - **Задача:** начать переписывание ядра под матрицу v14 без runtime-адаптеров старых профилей. Основание: одобрение пользователя, [Engine_v14_Audit.md](docs/rotation/Engine_v14_Audit.md).

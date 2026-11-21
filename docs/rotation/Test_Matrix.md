@@ -53,3 +53,13 @@
 | GAME-099 | Pet #5/#77/#99 | живой, мёртвый, отсутствует, secret | pet.exists отдельно от pet.dead/health; отсутствие не равно UNKNOWN | NOT RUN |
 | GAME-018 | Context #17/#18/#72/#73 | solo, world party, dungeon, raid, nil | не выводить инстанс/группу из одного флага; нет ложного boolean | NOT RUN |
 | GAME-080 | Secret #3-6/#80 | secret health/power | никакая арифметика по секретному числу | NOT RUN |
+
+## v14: наблюдение питомца и Auto Shot (2.8.2b)
+
+| Test ID | Матрица | Сценарий | Ожидаемое | Game |
+|---|---|---|---|---|
+| PET-201 | #30 | pet/target отсутствуют | UNKNOWN, не false | NOT RUN |
+| PET-202 | #30 | pet и target подтверждены | UnitIsUnit проверяется | NOT RUN |
+| PET-203 | #77/#99 | UNIT_PET / UNIT_HEALTH(pet) | обновление канала pet/health | NOT RUN |
+| CONTEXT-201 | #18/#90 | in instance, GetInstanceInfo nil | UNKNOWN | NOT RUN |
+| AUTOSHOT-201 | #24 | valid/invalid ID, secret flag | раздельные статус active/current | NOT RUN |

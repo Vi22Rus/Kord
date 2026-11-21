@@ -21,6 +21,7 @@ local channels = {
     SPELL_UPDATE_COOLDOWN="cooldowns", ACTIONBAR_UPDATE_COOLDOWN="cooldowns",
     SPELL_UPDATE_CHARGES="cooldowns", SPELL_UPDATE_USABLE="cooldowns",
     UNIT_AURA="auras", UNIT_HEALTH="health", UNIT_MAXHEALTH="health",
+    UNIT_PET="pet", PET_BAR_UPDATE="pet",
     UNIT_DISPLAYPOWER="resources", UNIT_MAXPOWER="resources", UNIT_POWER_UPDATE="resources",
     UNIT_POWER_FREQUENT="resources", UNIT_FLAGS="combat",
     UNIT_SPELLCAST_START="cast",
@@ -32,6 +33,7 @@ local channels = {
 }
 local unitEvents = {
     UNIT_AURA=true, UNIT_HEALTH=true, UNIT_MAXHEALTH=true,
+    UNIT_PET=true,
     UNIT_DISPLAYPOWER=true, UNIT_MAXPOWER=true, UNIT_POWER_UPDATE=true,
     UNIT_POWER_FREQUENT=true, UNIT_FLAGS=true,
     UNIT_SPELLCAST_START=true, UNIT_SPELLCAST_STOP=true,
@@ -41,6 +43,7 @@ local unitEvents = {
 }
 local function relevant(event, unit)
     return not unitEvents[event] or unit == "player" or unit == "target"
+        or unit == "pet" or unit == "pettarget"
 end
 local function deltaValue(value)
     return type(value)=="number" and value==value

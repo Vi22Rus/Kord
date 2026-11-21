@@ -7,7 +7,7 @@ local S = KR.GameState
 
 local watched = {
     "identity", "target", "combat", "health", "resources", "cast",
-    "talents", "heartbeat", "auras", "cooldowns",
+    "talents", "heartbeat", "auras", "cooldowns", "pet",
 }
 local function finite(number, minimum)
     return type(number) == "number" and number == number
@@ -166,11 +166,41 @@ function S:ReadNow()
     local target=unitSnapshot("target")
     -- Matrix #5/#77/#99: pet absence is not a player/target proxy.
     local pet=unitSnapshot("pet")
+    -- v14 #30: pet-target relation is proven only with both targets present.
+    if pet.exists.status=="READY" and pet.exists.value==true then
+        pet.targetExists=read("UnitExists","boolean","pettarget")
+        if pet.targetExists.status=="READY" and pet.targetExists.value==true
+            and target.exists.status=="READY" and target.exists.value==true then
+            pet.attackingTarget=read("UnitIsUnit","boolean","pettarget","target")
+        else
+            pet.attackingTarget=invalid(pet.targetExists,"pet_target_not_confirmed")
+        end
+    else
+        pet.targetExists=invalid(pet.exists,"pet_not_confirmed")
+        pet.attackingTarget=invalid(pet.exists,"pet_not_confirmed")
+    end
     local context={
         inGroup=read("IsInGroup","boolean"),
         inRaid=read("IsInRaid","boolean"),
         inInstance=read("IsInInstance","boolean"),
     }
+    -- v14 #18/#90/#91: GetInstanceInfo second result is instance type.
+    if context.inInstance.status=="READY" and context.inInstance.value==true then
+        local instance=tuple("GetInstanceInfo",{"string","string"})
+        if instance.status=="READY" then
+            local kind=instance.value[2]
+            if kind=="party" or kind=="raid" or kind=="pvp"
+                or kind=="arena" or kind=="scenario" then
+                context.instanceType={status="READY",value=kind,
+                    source="GetInstanceInfo",observedAt=instance.observedAt}
+            else
+                context.instanceType=invalid(instance,"instance_type_unrecognized")
+            end
+        else context.instanceType=invalid(instance,"instance_type_unknown") end
+    elseif context.inInstance.status=="READY" and context.inInstance.value==false then
+        context.instanceType={status="READY",value="none",
+            source="IsInInstance",observedAt=context.inInstance.observedAt}
+    else context.instanceType=invalid(context.inInstance,"instance_unknown") end
     context.status=statusOf({context.inGroup,context.inRaid,context.inInstance})
     local combat={
         player=player.combat or invalid(player.exists, "player_missing"),
@@ -229,6 +259,21 @@ function S:GetSnapshot()
         or now - self.lastReadAt >= 0.5 then dirty=true end
     if dirty then return self:ReadNow() end
     return copy(self.current,0)
+end
+
+-- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
+function S:ReadAutoShot(spellID)
+    if type(spellID)~="number" or spellID~=math.floor(spellID)
+        or spellID<1 or spellID>99999999 then
+        return {status="UNKNOWN",reason="auto_shot_spell_id_unverified"}
+    end
+    local active=read("C_Spell.IsAutoRepeatSpell","boolean",spellID)
+    local current=read("C_Spell.IsCurrentSpell","boolean",spellID)
+    local result={active=active,current=current,spellID=spellID,
+        source="GameState.ReadAutoShot",matrix=24}
+    result.status=statusOf({active,current})
+    if result.status~="READY" then result.reason="auto_shot_state_unknown" end
+    return result
 end
 
 function S:Initialize()

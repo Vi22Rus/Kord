@@ -20,6 +20,16 @@
 
 `player` и `target` остаются совместимы со старым ядром; новые данные добавляются без скрытого преобразования полей ротаций. `GameState` НЕ утверждает `isDungeon`, `isRaid`, `inPvP`, полное число врагов, TTD или safe AoE только по `inInstance=true`. Этим сигналам нужен отдельный подтверждённый контракт v14. Не сравнивать secret числовые значения; `GameAPI` отбрасывает их до `GameState`. Старые кандидаты ниже — исторические предварительные имена, **не перечень реализованных полей**.
 
+## Дополнительные прямые поля v14 (2.8.2b)
+
+| Поле | Источник | Строка v14 | Fail closed |
+|---|---|---|---|
+| `context.instanceType` | `GetInstanceInfo()` second result, only after confirmed inInstance | #18/#90/#91 | UNKNOWN when instance type unavailable; `none` only outside instance |
+| `pet.targetExists` | `UnitExists("pettarget")` | #30 | UNKNOWN when pet missing/unknown |
+| `pet.attackingTarget` | `UnitIsUnit("pettarget","target")` after existence checks | #30 | UNKNOWN when relation unconfirmed |
+| `ReadAutoShot(spellID).active` | `C_Spell.IsAutoRepeatSpell(spellID)` | #24 | UNKNOWN/UNAVAILABLE, no inferred swing |
+| `ReadAutoShot(spellID).current` | `C_Spell.IsCurrentSpell(spellID)` | #24 | UNKNOWN/UNAVAILABLE, no queued inference |
+
 ## Обязательные колонки
 `key | type/range | meaning | source/API | READY value | false/zero | nil/UNKNOWN | refresh trigger | consumers | evidence | implementation status`.
 
