@@ -3194,17 +3194,19 @@ translations["esES"] = {
 
 -- Experimental recommendations must be explicitly enabled; no auto-casting.
 local experimentalLabels = {
- enUS={"Enable experimental rotation recommendations","Unverified Hunter BM pilot. Requires manual single-target mode and enabled rotation. Suggestions only, never casts."},
- ruRU={"Включить экспериментальные подсказки ротации","Непроверенный пилот Hunter BM. Требуется вручную выбрать одну цель и включить ротацию. Только подсказки, без автокаста."},
- frFR={"Activer les recommandations expérimentales","Prototype Chasseur BM non vérifié. Activez le mode cible unique et la rotation. Suggestions uniquement, aucun lancement automatique."},
- deDE={"Experimentelle Rotationsempfehlungen aktivieren","Ungeprüfter Tierherrschaft-Jäger-Test. Einzelzielmodus und Rotation manuell aktivieren. Nur Hinweise, kein automatisches Wirken."},
- ptBR={"Ativar sugestões experimentais de rotação","Protótipo não verificado de Caçador Domínio das Feras. Ative alvo único e rotação. Apenas sugestões, sem lançamento automático."},
- esES={"Activar recomendaciones experimentales","Prototipo no verificado de Cazador Bestias. Activa objetivo único y rotación manualmente. Solo sugerencias; no lanza hechizos."}
+ enUS={"Enable experimental rotation recommendations","Unverified Hunter BM pilot. Requires manual single-target mode and enabled rotation. Suggestions only, never casts.","Enable rotation recommendations","Experimental Hunter BM pilot available; other specializations are not yet registered."},
+ ruRU={"Включить экспериментальные подсказки ротации","Непроверенный пилот Hunter BM. Требуется вручную выбрать одну цель и включить ротацию. Только подсказки, без автокаста.","Включить подсказки ротации","Доступен экспериментальный пилот Hunter BM; остальные специализации ещё не подключены."},
+ frFR={"Activer les recommandations expérimentales","Prototype Chasseur BM non vérifié. Activez le mode cible unique et la rotation. Suggestions uniquement, aucun lancement automatique.","Activer les recommandations de rotation","Prototype expérimental du Chasseur BM disponible ; les autres spécialisations ne sont pas encore prises en charge."},
+ deDE={"Experimentelle Rotationsempfehlungen aktivieren","Ungeprüfter Tierherrschaft-Jäger-Test. Einzelzielmodus und Rotation manuell aktivieren. Nur Hinweise, kein automatisches Wirken.","Rotationsempfehlungen aktivieren","Experimentelles Tierherrschaft-Jäger-Profil vorhanden; andere Spezialisierungen sind noch nicht verfügbar."},
+ ptBR={"Ativar sugestões experimentais de rotação","Protótipo não verificado de Caçador Domínio das Feras. Ative alvo único e rotação. Apenas sugestões, sem lançamento automático.","Ativar sugestões de rotação","Protótipo experimental de Caçador Domínio das Feras disponível; outras especializações ainda não foram registradas."},
+ esES={"Activar recomendaciones experimentales","Prototipo no verificado de Cazador Bestias. Activa objetivo único y rotación manualmente. Solo sugerencias; no lanza hechizos.","Activar recomendaciones de rotación","Prototipo experimental de Cazador Bestias disponible; otras especializaciones aún no están registradas."}
 }
 for locale,strings in pairs(experimentalLabels) do
  if translations[locale] then
   translations[locale].ROT_EXPERIMENTAL_OPTIN=strings[1]
   translations[locale].TIP_ROT_EXPERIMENTAL_OPTIN=strings[2]
+  translations[locale].ROT_PREFERENCE_ENABLE=strings[3]
+  translations[locale].ROT_PROFILE_UNAVAILABLE=strings[4]
  end
 end
 
