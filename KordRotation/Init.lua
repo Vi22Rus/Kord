@@ -58,8 +58,25 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                 if type(evaluator)~="function" then
                     KR:Print("Rotation: engine_unavailable")
                 else
-                    local ok,result=pcall(evaluator,KR.RotationEngine)
+                    -- Compare the same direct API used by /kre with the
+                    -- rotation snapshot. Only ordinary booleans are printed.
                     local api=KR.GameAPI
+                    if api and type(api.Read)=="function" then
+                        local live=api:Read("UnitExists","boolean","target")
+                        local snapshot=KR.GameState and KR.GameState.current
+                        local record=snapshot and snapshot.target and snapshot.target.exists
+                        local function printable(r)
+                            if type(r)=="table" and r.status=="READY"
+                                and type(r.value)=="boolean"
+                                and api:IsSafeValue(r.value) then
+                                return tostring(r.value)
+                            end
+                            return "UNKNOWN"
+                        end
+                        KR:Print("Target: live="..printable(live)
+                            ..", snapshot="..printable(record))
+                    end
+                    local ok,result=pcall(evaluator,KR.RotationEngine)
                     local function ordinary(v)
                         if not api or type(api.IsSafeValue)~="function" then return false end
                         local checked,safe=pcall(api.IsSafeValue,api,v)
