@@ -1,3 +1,11 @@
+## KR-20261121-158 — исправление считывания выбранной цели по реальному игровому сравнению
+- По пользовательскому воспроизведению: `/kr why` сообщил `BLOCKED/no_eligible_rule`, `Priority 1: condition_false` при выбранной враждебной цели. Проверка пилота `S:is("target.exists")` читала `GameState` snapshot, в то время как отдельный работающий `KordRotationEngine` в `Core/State.lua` получает `safeCall(UnitExists,"target")==true` заново при каждом `BuildState()`.
+- `GameState:GetSnapshot(force)`: при `force==true` явно делает `ReadNow()` и не использует краткосрочный кэш (обычные потребители сохраняют прежний кэш).
+- `RotationEngine` теперь запрашивает `GetSnapshot(true)` для каждого живого вычисления; не опирается на пропущенный event `PLAYER_TARGET_CHANGED`. Само наличие цели по-прежнему подтверждается `GameAPI:Read("UnitExists","boolean","target")`, защищённое или nil остаётся UNKNOWN.
+- `/kr why` отображает `Target before evaluate: live=..., cached=...` и `Target evaluated: exists=...`, чтобы выявить расхождение непосредственно в WoW Forever.
+- `tests/stage_02_03_game_state.lua` дополнен mock-сценарием смены цели без события и без истечения TTL. Источники обновлены, **Lua 5.1 tests NOT RUN / CLIENT RECHECK PENDING**.
+- Это устранение подтверждённого архитектурного различия, но не доказательство, что именно кэш вызвал пользовательский false. Если `Target evaluated` остаётся false при live true, продолжить диагностику адаптера.
+
 ## KR-20261121-151 — диагностика отсутствующей иконки Hunter BM
 - По реальному игровому отчёту: Hunter BM 30, Arcane Shot изучен и находится на панели, настройки single/experimental включены, **рекомендация не появляется**. Пользовательский сценарий воспроизведён только по описанию, не в клиенте разработчика.
 - Добавлена команда `/kr why`: по ручному запросу пересчитывает `RotationEngine:Evaluate()`, печатает в чат точный `status/reason` и причину первой приоритетной записи, а при `READY` дополнительно проверяет состояние отображения и `showPanel/testMode`. Проверки `GameAPI.IsSafeValue` не допускают вывод защищённых произвольных данных в чат.
