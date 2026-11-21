@@ -135,13 +135,16 @@ function D:ObserveTransition()
     end
     if errors<self.lastErrors then self.lastErrors=errors end
 
-    local profile=snapshot and snapshot.profileStatus
+    local profile=diagnostic and diagnostic.profileStatus
+        or (snapshot and snapshot.profileStatus)
     if not self:Safe(profile) or (profile~="READY" and profile~="BLOCKED"
         and profile~="UNAVAILABLE" and profile~="UNKNOWN") then
         profile="UNKNOWN"
     end
     if profile~=self.lastProfile then
-        if self:Record("PROFILE",profile,"manual_sample") then
+        local profileReason=profile=="UNAVAILABLE" and "profile_not_registered"
+            or profile=="BLOCKED" and "profile_unverified" or "none"
+        if self:Record("PROFILE",profile,profileReason) then
             self.lastProfile=profile
             return true
         end
