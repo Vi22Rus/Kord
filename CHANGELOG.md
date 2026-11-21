@@ -1,3 +1,8 @@
+## KR-20261121-148 — hotfix: ошибка `Missing numeric bounds for LAYOUT_COUNT`
+- Исправлены **все три** вызова `UI:StepRow` в `KordRotation/UI/MainWindow.lua`: добавлен пропущенный аргумент `formatter=nil`, чтобы границы `minimum` и `maximum` попадали в правильные позиции. Ошибка возникала при открытии страницы настроек отображения (`Components.lua:61`).
+- Источник ошибки — несовпадение сигнатуры `StepRow(parent,labelKey,x,y,width,getter,setter,step,formatter,minimum,maximum)` с вызовами из `MainWindow.lua`. Проверка всех 3 вызовов выполнена по актуальному файлу в GitHub.
+- **Исправление в исходниках; клиентский повторный запуск пока не проверен.** Не требует DevTools и не добавляет новых настроек.
+
 ## KR-20261121-146 — минимальный устанавливаемый экспериментальный Hunter BM пилот
 - В `KordRotation.toc` подключён `BM_Pilot_Experimental.lua`: одно правило Arcane Shot (3044), Hunter BM tree 1, явно `experimental`, без прямых WoW API и без автоматического каста. Это **не полная ротация**.
 - `RotationSettings`: `allowUnverifiedProfiles=false` по умолчанию; в UI добавлено отдельное ручное включение experimental. Подсказки и текст состояния актуализированы на enUS/ruRU/frFR/deDE/ptBR/esES.
