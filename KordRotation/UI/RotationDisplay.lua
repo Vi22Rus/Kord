@@ -97,11 +97,22 @@ function KR.RotationDisplay:Create()
         if self.rotationAccumulator<0.4 then return end
         self.rotationAccumulator=0
         local p=ensurePosition(KR.db)
-        if not p.showPanel or p.testMode then return end
+        if p.testMode then return end
+        -- Even with no active profile, a previously displayed real icon
+        -- must be cleared when settings/profile disappear.
+        if not p.showPanel then
+            if KR.RotationDisplay.productionReady then
+                KR.RotationDisplay:Refresh(true)
+            end
+            return
+        end
         local id=KR.RotationSettings and KR.RotationSettings:GetProfileID()
-        if not id or not KR.RotationProfiles or not KR.RotationProfiles:Has(id) then return end
-        local settings=KR.RotationSettings:GetProfile(false)
+        local registered=id and KR.RotationProfiles
+            and KR.RotationProfiles:Has(id)
+        local settings=registered and KR.RotationSettings:GetProfile(false)
         if settings and settings.enabled==true then
+            KR.RotationDisplay:Refresh(true)
+        elseif KR.RotationDisplay.productionReady then
             KR.RotationDisplay:Refresh(true)
         end
     end)
