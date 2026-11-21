@@ -1,3 +1,10 @@
+## KR-20261121-051 — DT-4: opt-in EVENT/ENGINE trace и ограниченное профилирование
+- **Дата UTC:** 2026-11-21. **Контракт:** TraceStart вызывается только после ручного Recorder:Start; TraceStop удаляет регистрации, callbacks, polling. События из whitelisted списка, без raw payload, target/GUID, spellId, chat или защищённых данных.
+- **Изменено:** Trace.lua, Performance.lua, tests/devtools_trace.lua. EVENT записи содержат только разрешённую категорию и номер строки матрицы; ENGINE только изменение статуса готовой сводки, никакой автооценки AbilityEligibility. Интервал 0.75 сек только при активной ручной записи.
+- **Измерение:** Measure() вручную измеряет только накладные расходы чтения CoreObservation через debugprofilestop, не объявляется всей CPU/FPS статистикой аддона. При отсутствии метода UNKNOWN/UNAVAILABLE; не выводить вымышленный 0ms.
+- **Результаты:** мок тесты добавлены, локальный прогон NOT RUN; CI NOT RUN по утверждённой политике; WoW Forever NOT RUN. Per-rule ELIGIBILITY/PROFILE trace остаётся UNSUPPORTED до отдельного безопасного контракта и реального профиля.
+- **Общие файлы KordRotation:** без изменений; диагностическая поставка по-прежнему получает точную копию общего исходника.
+
 ## KR-20261121-050 — DT-3: разовые верификационные API-пробы v14
 - **Дата UTC:** 2026-11-21. **Доказательства:** source-baseline v14, номера 1,2,3,6,7,8,9,10,11,12,14,15,17,18,19,20,21,24,26,32,33.
 - **Изменения:** DevTools-only Probe.lua, 22 пары известных методов и строк v14, однократный ProbeAll только по действию пользователя, запрет произвольного API name/action, ответ presence_only_not_client_pass. Через CoreObservation:Probe читает лишь уже утверждённую GameAPI:Probe; не вызывает никаких protected game actions и не выдаёт существование метода за его игровой PASS.
