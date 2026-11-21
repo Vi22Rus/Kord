@@ -1,3 +1,9 @@
+## KR-20261121-118 — факт known через единый spellKnown
+- `AbilityEligibility.lua`: реализован `Fact(id,"known")` без второго алгоритма; повторно использует проверку `spellKnown`, различая `READY(true)`, строго подтверждённый `READY(false)` (SpellBook API `not_learned`) и `UNKNOWN` при недоступных/повреждённых данных. Защита `pcall` и `IsSafeValue` для каталога.
+- `tests/stage_02_07_eligibility.lua`: добавлены mock-сценарии известного заклинания, подтверждённого отрицания, отсутствующей записи без API, сбоя и повреждённой структуры каталога.
+- `chargesAtLeast` намеренно не реализован: для семантики «не меньше N» контракт `spellFact(id,kind)` не передаёт N. Высший изученный ранг v14 #20 не доказан.
+- `docs/rotation/Contract_v1_Status_2_9.md` обновлён. **LUA 5.1/17 tests NOT RUN; WoW CLIENT NOT RUN; GitHub Actions NOT RUN**. Hunter BM не подключён, пользовательский `Profile_Contract.md` не менялся.
+
 ## KR-20261121-112 — fail-closed aura guard и расширение mock-фикстур
 - `GameState.ReadSignal("player.buff")`: при наличии снимка проверяется `player.exists=READY(true)`; неизвестный/отсутствующий игрок не получает `READY(true)` по Aura lookup.
 - `tests/stage_02_03_game_state.lua`: проверены сценарии секретной AuraData, исключения провайдера, защищённого GUID после чтения, а также противоречащих снимков игрока и отсутствие лишних запросов.
