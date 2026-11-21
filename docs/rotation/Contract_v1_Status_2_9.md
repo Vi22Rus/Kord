@@ -68,6 +68,14 @@
 - `enemy.count`, `target.ttd`, `autoShot.swing` и `spell.range` через GameState остаются без источников и возвращают `UNKNOWN`. Реальные игровые API не подтверждены клиентским тестированием.
 - **SOURCE IMPLEMENTED (partial); Lua 5.1 TESTS NOT RUN; WoW CLIENT NOT RUN; Actions NOT RUN.**
 
+## Защита аур при смене цели (KR-20261121-105…106)
+
+- `GameState.ReadSignal("target.debuff", ...)` теперь требует `READY` GUID из снимка оценки, проверяет его через `GameAPI.Read("UnitGUID", "string", "target")` **до и после** чтения ауры. Отсутствующий/secret GUID, несовпадение с текущей целью или смена цели во время запроса дают `UNKNOWN`.
+- Проверки идут через `GameAPI.ReadField` и `GameAPI.Read`, не используют защищённые значения в ключах и не меняют политику `nil` — отсутствие ауры не доказано.
+- В `tests/stage_02_03_game_state.lua` добавлены mock-сценарии устаревшего GUID, смены цели между чтениями, отсутствующего/защищённого GUID.
+- Гарантия ограничена двумя последовательными проверками GUID внутри синхронного чтения; подлинность AuraData, поведение игры и атомарность API по-прежнему требуют клиентского подтверждения.
+- **Lua 5.1 / 17 suites NOT RUN; клиент NOT RUN; GitHub Actions NOT RUN.**
+
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
 1. Выполнить целевой контрактный mock на точном checkout в Lua 5.1, затем все 17 пересмотренных Lua tests, синтаксис и Python ZIP parity. Ошибки исправить до итогового общего QA.
