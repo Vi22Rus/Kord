@@ -298,6 +298,24 @@ function S:ReadSignal(field,spellID,snapshot)
     else
         name,unit,flag="C_UnitAuras.GetUnitAuraBySpellID","target","isHarmful"
     end
+    -- A supplied evaluation snapshot is authoritative for player existence.
+    -- A positive aura lookup must not override an unknown/absent player.
+    if unit=="player" and snapshot~=nil then
+        local okSnapshot,safeSnapshot=pcall(api.IsSafeValue,api,snapshot)
+        if not okSnapshot or safeSnapshot~=true or type(snapshot)~="table" then
+            return unknown("aura_player_unverified")
+        end
+        local player=api:ReadField(snapshot,"player","table")
+        if player.status~="READY" then return unknown("aura_player_unverified") end
+        local exists=api:ReadField(player.value,"exists","table")
+        if exists.status~="READY" then return unknown("aura_player_unverified") end
+        local status=api:ReadField(exists.value,"status","string")
+        local present=api:ReadField(exists.value,"value","boolean")
+        if status.status~="READY" or status.value~="READY"
+            or present.status~="READY" or present.value~=true then
+            return unknown("aura_player_unverified")
+        end
+    end
     -- Require a stable target identity across the aura read. An existence
     -- flag alone cannot bind an AuraData record to this evaluation's target.
     local targetGUID
