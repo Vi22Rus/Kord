@@ -320,6 +320,64 @@ function A:Evaluate(id,options)
     result.target=options.target
     return result
 end
+-- Profile Contract v1 facts are narrow observations, never a READY recommendation.
+-- Only a proven, ordinary boolean is exposed; missing/secret data stays UNKNOWN.
+function A:Fact(id,kind,options)
+    if not validID(id) then return {status="UNKNOWN",reason="invalid_spell_id"} end
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" then
+        return {status="UNKNOWN",reason="api_missing"}
+    end
+    local ok,safeKind=pcall(api.IsSafeValue,api,kind)
+    if not ok or safeKind~=true or type(kind)~="string" then
+        return {status="UNKNOWN",reason="fact_kind_unverified"}
+    end
+    if options~=nil then
+        local okOptions,safeOptions=pcall(api.IsSafeValue,api,options)
+        if not okOptions or safeOptions~=true or type(options)~="table" then
+            return {status="UNKNOWN",reason="fact_options_unverified"}
+        end
+    end
+    local function answer(value)
+        if type(value)~="boolean" then
+            return {status="UNKNOWN",reason="fact_value_unverified"}
+        end
+        return {status="READY",value=value,source="AbilityEligibility.Fact"}
+    end
+    if kind=="cooldownActive" then
+        -- v14 #83: isActive is a fact; isOnGCD is NOT authoritative in a poll.
+        if type(api.Probe)~="function" or
+            api:Probe("C_Spell.GetSpellCooldown").status~="READY" then
+            return {status="UNKNOWN",reason="cooldown_fact_unavailable"}
+        end
+        local r=get("C_Spell.GetSpellCooldown","table",id)
+        if not r or r.status~="READY" then
+            return {status="UNKNOWN",reason="cooldown_fact_unavailable"}
+        end
+        return answer(field(r.value,"isActive"))
+    elseif kind=="inRange" then
+        -- This fact always refers to the current target; never guess the unit.
+        if type(api.Probe)=="function" and
+            api:Probe("C_Spell.IsSpellInRange").status=="READY" then
+            local r=get("C_Spell.IsSpellInRange","boolean",id,"target")
+            if not r or r.status~="READY" then
+                return {status="UNKNOWN",reason="range_fact_unavailable"}
+            end
+            return answer(r.value)
+        end
+        local r=multi("IsSpellInRange",id,"target")
+        if not r or r.status~="READY" or type(r.value)~="table" then
+            return {status="UNKNOWN",reason="range_fact_unavailable"}
+        end
+        local v=r.value[1]
+        if v==1 or v==true then return answer(true) end
+        if v==0 or v==false then return answer(false) end
+        return {status="UNKNOWN",reason="range_fact_unavailable"}
+    end
+    -- 'known' requires a separately audited fact-only spellbook path.
+    -- 'chargesAtLeast' has no threshold parameter in Profile Contract v1.
+    return {status="UNKNOWN",reason="fact_provider_unimplemented"}
+end
 function A:Invalidate(reason) self.lastInvalidation=reason or "manual" end
 function A:Initialize()
     if self.initialized then return true end
