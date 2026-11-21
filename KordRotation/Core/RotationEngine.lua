@@ -1,197 +1,204 @@
 -- Kord Rotation (c) 2026 Vi22Rus. All rights reserved.
--- Stage 2.8: one currently eligible recommendation, not a predicted future queue.
-local addonName, KR = ...
-KR.RotationEngine = KR.RotationEngine or {}
+-- Contract v1: one safe current recommendation; no speculative future queue.
+local addonName, KR=...
+KR.RotationEngine=KR.RotationEngine or {}
 local E=KR.RotationEngine
-local function empty(reason)
-    return {status="UNKNOWN",reason=reason,queue={},source="RotationEngine"}
+local function unknown(reason,profileID,diagnostics)
+ return {status="UNKNOWN",reason=reason,queue={},source="RotationEngine",
+  profileID=profileID,diagnostics=diagnostics or {}}
 end
--- Secret-aware guard; never perform numeric comparisons on protected data.
-local function safeValue(value)
-    local api=KR.GameAPI
-    if not api or type(api.IsSafeValue)~="function" then return false end
-    local ok,result=pcall(api.IsSafeValue,api,value)
-    return ok and result==true
+local function blocked(reason,profileID,diagnostics)
+ return {status="BLOCKED",reason=reason,queue={},source="RotationEngine",
+  profileID=profileID,diagnostics=diagnostics or {}}
 end
-local function safeAsset(value)
-    if not safeValue(value) then return false end
-    return (type(value)=="number" and value==value
-        and value<math.huge and value>0)
-        or (type(value)=="string" and value~="" and #value<=255)
+local function safe(value)
+ local api=KR.GameAPI
+ if not api or type(api.IsSafeValue)~="function" then return false end
+ local ok,valid=pcall(api.IsSafeValue,api,value)
+ return ok and valid==true
 end
-local function validID(n)
-    if not safeValue(n) then return false end
-    return type(n)=="number" and n==n and n==math.floor(n)
-        and n>=1 and n<=99999999
+local function validID(id)
+ return safe(id) and type(id)=="number" and id==id
+  and id==math.floor(id) and id>=1 and id<=99999999
+end
+local function asset(value)
+ return safe(value) and
+  ((type(value)=="string" and #value>0 and #value<=255)
+   or (type(value)=="number" and value==value
+     and value<math.huge and value>0))
 end
 local function identity()
-    local s=KR.characterState
-    if type(s)~="table" or type(s.classToken)~="string"
-        or type(s.index)~="number" or s.index~=math.floor(s.index)
-        or s.index<1 or s.index>3 then return nil end
-    return s.classToken.."_TREE_"..s.index
+ local s=KR.characterState
+ if type(s)~="table" or not safe(s) or not safe(s.classToken)
+     or type(s.classToken)~="string" or not s.classToken:match("^[A-Z]+$")
+     or not safe(s.index) or type(s.index)~="number"
+     or s.index~=math.floor(s.index) or s.index<1 or s.index>3 then return nil end
+ return s.classToken.."_TREE_"..s.index
 end
--- A strict v14 GameData subset: no dynamic field paths or truthiness coercion.
-local requirementPaths={["player.moving"]={"player","moving"},
-    ["target.isPlayer"]={"target","isPlayer"},["pet.exists"]={"pet","exists"},
-    ["pet.dead"]={"pet","dead"},["context.inGroup"]={"context","inGroup"},
-    ["context.inRaid"]={"context","inRaid"},
-    ["context.inInstance"]={"context","inInstance"}}
-local function requirementStatus(snapshot,requires)
-    if not requires then return "READY" end
-    for _,condition in ipairs(requires) do
-        local path=requirementPaths[condition.field]
-        if not path then return "UNKNOWN","requirement_unsupported" end
-        local ok,signal=pcall(function()
-            local section=snapshot[path[1]]
-            return type(section)=="table" and section[path[2]] or nil
-        end)
-        if not ok or type(signal)~="table" then
-            return "UNKNOWN","requirement_unavailable"
-        end
-        local safe,value=pcall(function() return signal.value end)
-        local statusOK,status=pcall(function() return signal.status end)
-        if not safe or not statusOK or status~="READY"
-            or type(value)~="boolean"
-            or not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"
-            or not KR.GameAPI:IsSafeValue(value) then
-            return "UNKNOWN","requirement_unverified"
-        end
-        if value~=condition.equals then return "BLOCKED","requirement_not_met" end
+local function config(profile,saved)
+ local cfg={}
+ local options=type(saved)=="table" and saved.config or nil
+ if type(options)~="table" or not safe(options) then options={} end
+ for _,def in ipairs(profile.Config) do
+  local value=options[def.key]
+  if not safe(value) then value=nil end
+  if def.type=="bool" then
+   cfg[def.key]=type(value)=="boolean" and value or def.default
+  elseif def.type=="number" then
+   cfg[def.key]=type(value)=="number" and value==value and
+    value~=math.huge and value~=-math.huge and value>=def.min
+    and value<=def.max and value or def.default
+  elseif def.type=="enum" then
+   local valid=false
+   for _,candidate in ipairs(def.values) do
+    if type(candidate)==type(value) and candidate==value then valid=true end
+   end
+   cfg[def.key]=valid and value or def.default
+  end
+ end
+ return cfg
+end
+local function findVisual(id)
+ local book=KR.SpellCatalogue
+ if not book or type(book.Read)~="function" then return nil end
+ local ok,data=pcall(book.Read,book)
+ if not ok or type(data)~="table" or not safe(data)
+     or not safe(data.status) or data.status~="ready"
+     or type(data.entries)~="table" or not safe(data.entries) then return nil end
+ for _,entry in ipairs(data.entries) do
+  if type(entry)=="table" and safe(entry)
+      and validID(entry.id) and entry.id==id
+      and safe(entry.known) and entry.known==true
+      and safe(entry.name) and type(entry.name)=="string"
+      and #entry.name>0 and #entry.name<=255
+      and asset(entry.texture) then
+   return entry.name,entry.texture
+  end
+ end
+ return nil
+end
+local function binding(id)
+ local module=KR.BindingResolver
+ if not module or type(module.Resolve)~="function" then return nil,nil end
+ local ok,b=pcall(module.Resolve,module,id)
+ if not ok or type(b)~="table" or not safe(b)
+    or not safe(b.status) or b.status~="READY"
+    or not validID(b.spellID) or b.spellID~=id
+    or not safe(b.bindingLabel)
+    or type(b.bindingLabel)~="string"
+    or #b.bindingLabel<1 or #b.bindingLabel>64
+    or (b.bindingSource~=nil and
+      (not safe(b.bindingSource) or type(b.bindingSource)~="string")) then
+  return nil,nil
+ end
+ return b.bindingLabel,b.bindingSource
+end
+local function levelOf(snapshot)
+ if not safe(snapshot) or type(snapshot)~="table"
+    or type(snapshot.player)~="table" or not safe(snapshot.player)
+    or type(snapshot.player.level)~="table" then return nil end
+ local r=snapshot.player.level
+ if not safe(r) or not safe(r.status) or r.status~="READY"
+     or not validID(r.value) or r.value>100 then return nil end
+ return r.value
+end
+local function run()
+ if not KR.RotationProfiles or not KR.RotationSettings
+    or not KR.AbilityEligibility or not KR.RotationConditions
+    or not KR.GameState then return unknown("engine_dependency_missing") end
+ local identityID=identity()
+ if not identityID then return unknown("specialization_unknown") end
+ if not KR.RotationProfiles:Has(identityID) then
+  return unknown("profile_not_registered") end
+ local saved,id=KR.RotationSettings:GetProfile(false)
+ if id~=identityID or not saved then return unknown("rotation_settings_unavailable") end
+ if not safe(saved) or saved.enabled~=true then return unknown("rotation_disabled") end
+ local mode=saved.targetMode
+ if not safe(mode) then return unknown("target_mode_invalid") end
+ if mode=="auto" then return unknown("auto_target_count_unverified") end
+ if mode~="single" and mode~="aoe" then return unknown("target_mode_invalid") end
+ if type(KR.GameState.GetSnapshot)~="function" then
+  return unknown("game_state_missing") end
+ local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState)
+ if not ok or type(snapshot)~="table" or not safe(snapshot)
+   or type(snapshot.player)~="table" or type(snapshot.target)~="table" then
+  return unknown("game_state_unavailable") end
+ local level=levelOf(snapshot)
+ if not level then return unknown("player_level_unverified") end
+ local profile=KR.RotationProfiles:Get(identityID,level)
+ if not profile then return unknown("profile_for_level_missing") end
+ if profile.status~="verified" and
+    not (profile.status=="experimental" and saved.allowUnverifiedProfiles==true) then
+  return unknown("profile_unverified",profile.id) end
+ local cfg=config(profile,saved)
+ local S=KR.RotationConditions:Create(profile,snapshot)
+ if not S then return unknown("condition_context_missing",profile.id) end
+ local diagnostics={}
+ for i,rule in ipairs(profile.Rules) do
+  local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
+  local status,reason
+  if rule.type~="SPELL" then
+   status,reason="BLOCKED","unsupported_action"
+  elseif rule.mode~=nil and rule.mode~="any" and rule.mode~=mode then
+   status,reason="BLOCKED","mode_not_selected"
+  else
+   local overrides=type(saved.spells)=="table" and saved.spells[spellID] or nil
+   local category=rule.category
+   if type(overrides)=="table" and
+      type(overrides.category)=="string" then category=overrides.category end
+   if rule.enabled==false or
+       (type(overrides)=="table" and overrides.enabled==false) then
+    status,reason="BLOCKED","rule_disabled"
+   elseif type(saved.categories)~="table"
+       or saved.categories[category]~=true then
+    status,reason="BLOCKED","category_disabled"
+   else
+    -- A function is called only for this priority and gets no raw snapshot.
+    local conditionOK,when=pcall(rule.when,S,cfg)
+    if not conditionOK then
+     status,reason="UNKNOWN","condition_error"
+    elseif when==false then
+     status,reason="BLOCKED","condition_false"
+    elseif when~=true then
+     status,reason="UNKNOWN",when==nil and
+       "condition_unknown" or "condition_invalid"
+    else
+     local policy={target=rule.target,cast=rule.cast,
+       chargesRequired=rule.chargesRequired}
+     local result=KR.RotationConditions:Check(S,spellID,policy)
+     status,reason=result.status,result.reason
+     if status~="READY" and status~="BLOCKED" and status~="UNKNOWN" then
+      status,reason="UNKNOWN","eligibility_status_invalid"
+     end
     end
-    return "READY"
+   end
+  end
+  local diag={priority=i,status=status,reason=reason}
+  diagnostics[#diagnostics+1]=diag
+  if status=="UNKNOWN" then
+   if reason=="condition_unknown" and rule.onUnknown=="skip" then
+    diag.reason="condition_unknown_skipped"
+   else return unknown(reason or "higher_priority_unknown",profile.id,diagnostics) end
+  elseif status=="READY" then
+   local name,texture=findVisual(spellID)
+   if not name then
+    diag.status,diag.reason="UNKNOWN","spell_visual_data_unverified"
+    return unknown("spell_visual_data_unverified",profile.id,diagnostics)
+   end
+   local keybind,bindingSource=binding(spellID)
+   local record={spellID=spellID,texture=texture,name=name,
+    keybind=keybind,bindingSource=bindingSource,
+    source=profile.status=="verified" and "verified_profile" or "experimental_profile",
+    priority=i,category=rule.category,mode=mode}
+   return {status="READY",source="RotationEngine",profileID=profile.id,
+    mode=mode,queue={record},diagnostics=diagnostics}
+  end
+ end
+ return blocked("no_eligible_rule",profile.id,diagnostics)
 end
 function E:Evaluate()
-    if not KR.RotationProfiles or not KR.RotationSettings
-        or not KR.AbilityEligibility or not KR.SpellCatalogue then
-        return empty("engine_dependency_missing")
-    end
-    local profileID=identity()
-    if not profileID then return empty("specialization_unknown") end
-    local ruleset=KR.RotationProfiles:Get(profileID)
-    if not ruleset then return empty("profile_not_registered") end
-    local settings,id=KR.RotationSettings:GetProfile(false)
-    if id~=profileID or not settings then return empty("rotation_settings_unavailable") end
-    if settings.enabled~=true then return empty("rotation_disabled") end
-    local mode=settings.targetMode
-    if mode=="auto" then
-        -- No proven hostile target-count API yet. Never guess ST or AoE.
-        return empty("auto_target_count_unverified")
-    end
-    if mode~="single" and mode~="aoe" then return empty("target_mode_invalid") end
-    local rules=ruleset[mode]
-    if type(rules)~="table" or #rules==0 then return empty("no_rules_for_mode") end
-    -- One GameState snapshot per pass; per-field UNKNOWN remains valid.
-    if not KR.GameState or type(KR.GameState.GetSnapshot)~="function" then
-        return empty("game_state_missing")
-    end
-    local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState)
-    if not ok or type(snapshot)~="table"
-        or type(snapshot.player)~="table" or type(snapshot.target)~="table" then
-        return empty("game_state_unavailable")
-    end
-    local book=KR.SpellCatalogue:Read()
-    if not book or book.status~="ready" then return empty("spellbook_unavailable") end
-    local catalogue={}
-    for _,entry in ipairs(book.entries or {}) do
-        -- Catalogue entries are imported game records: reject secret
-        -- names/assets/IDs before indexing or priority comparisons.
-        if validID(entry.id) and safeValue(entry.known)
-            and entry.known==true and safeValue(entry.name)
-            and safeAsset(entry.texture) then
-            catalogue[entry.id]=entry
-        end
-    end
-    local diagnostics={}
-    for i,rule in ipairs(rules) do
-        local override=type(settings.spells)=="table" and settings.spells[rule.spellID] or nil
-        local enabled=rule.enabled~=false and (type(override)~="table" or override.enabled~=false)
-        local category=rule.category
-        if type(override)=="table" and type(override.category)=="string" then
-            category=override.category
-        end
-        local status,reason
-        if not enabled then status,reason="BLOCKED","rule_disabled"
-        elseif type(settings.categories)~="table" or settings.categories[category]~=true then
-            status,reason="BLOCKED","category_disabled"
-        else
-            local requirement,requirementReason=requirementStatus(snapshot,rule.requires)
-            if requirement~="READY" then
-                status,reason=requirement,requirementReason
-            else
-            local ok,value=pcall(KR.AbilityEligibility.Evaluate,KR.AbilityEligibility,
-                rule.spellID,{target=rule.target,cast=rule.cast,
-                    chargesRequired=rule.chargesRequired,stateSnapshot=snapshot})
-            if not ok or type(value)~="table" then
-                status,reason="UNKNOWN","eligibility_error"
-            elseif value.status~="READY" and value.status~="BLOCKED"
-                and value.status~="UNKNOWN" then
-                status,reason="UNKNOWN","eligibility_status_invalid"
-            elseif value.spellID~=rule.spellID then
-                status,reason="UNKNOWN","eligibility_spell_mismatch"
-            else status,reason=value.status,value.reason end
-            end
-        end
-        diagnostics[#diagnostics+1]={priority=i,spellID=rule.spellID,status=status,reason=reason}
-        if status=="READY" then
-            local info=catalogue[rule.spellID]
-            if not info or not safeAsset(info.texture)
-                or type(info.name)~="string" or info.name=="" then
-                diagnostics[#diagnostics].status="UNKNOWN"
-                diagnostics[#diagnostics].reason="spell_visual_data_unverified"
-                return {status="UNKNOWN",reason="spell_visual_data_unverified",
-                    source="RotationEngine",profileID=profileID,mode=mode,
-                    queue={},diagnostics=diagnostics}
-            else
-                local label=nil
-                local bindingSource=nil
-                if KR.BindingResolver and KR.BindingResolver.Resolve then
-                    local ok,binding=pcall(KR.BindingResolver.Resolve,KR.BindingResolver,rule.spellID)
-                    -- A key is shown only when Resolve confirms this exact
-                    -- spell and an ordinary, nonempty label.
-                    local api=KR.GameAPI
-                    local verified,usable=pcall(function()
-                        if not ok or type(binding)~="table"
-                            or not api or type(api.IsSafeValue)~="function"
-                            or not api:IsSafeValue(binding)
-                            or not api:IsSafeValue(binding.spellID)
-                            or not api:IsSafeValue(binding.status)
-                            or binding.status~="READY"
-                            or binding.spellID~=rule.spellID
-                            or not api:IsSafeValue(binding.bindingLabel)
-                            or type(binding.bindingLabel)~="string"
-                            or #binding.bindingLabel<1 or #binding.bindingLabel>64
-                            or (binding.bindingSource~=nil and
-                                (not api:IsSafeValue(binding.bindingSource)
-                                or type(binding.bindingSource)~="string")) then
-                            return false
-                        end
-                        return true
-                    end)
-                    if verified and usable then
-                        label=binding.bindingLabel
-                        bindingSource=binding.bindingSource
-                    end
-                end
-                local record={spellID=rule.spellID,texture=info.texture,
-                    name=info.name,keybind=label,bindingSource=bindingSource,
-                    source="verified_profile",priority=i,category=category,
-                    mode=mode}
-                return {status="READY",reason=nil,source="RotationEngine",
-                    profileID=profileID,mode=mode,queue={record},
-                    diagnostics=diagnostics}
-            end
-        elseif status=="UNKNOWN" then
-            -- Higher-priority UNKNOWN means we cannot safely recommend
-            -- a lower-priority ability as though the earlier rule were false.
-            return {status="UNKNOWN",reason=reason or "higher_priority_unknown",
-                source="RotationEngine",profileID=profileID,mode=mode,
-                queue={},diagnostics=diagnostics}
-        end
-    end
-    return {status="BLOCKED",reason="no_eligible_rule",
-        source="RotationEngine",profileID=profileID,mode=mode,
-        queue={},diagnostics=diagnostics}
+ local ok,result=pcall(run)
+ if not ok or type(result)~="table" then return unknown("engine_exception") end
+ return result
 end
--- Not installed as an OnUpdate rule evaluator: the display triggers bounded reads.
--- Copyright notice: see repository LICENSE.
+-- UI/EventBus own bounded updates; this module installs no OnUpdate loop.

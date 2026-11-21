@@ -1,3 +1,9 @@
+## KR-20261121-072 — RotationEngine v1: ленивый обход, stop/skip и единый Eligibility
+- Дата: 2026-11-21 11:00 UTC; этап 2.9-C IN PROGRESS, заменён ограниченный исполнитель семи `requires`.
+- `RotationEngine.lua`: выбор профиля по классу, дереву и подтверждённому уровню; только `verified` или явно разрешённый `experimental`; режимы single/aoe, auto fail-closed; проверка одного правила за раз с pcall, UNKNOWN стоп, документированный condition_unknown skip, ошибок не пропускаем; `PET_COMMAND` unsupported_action без иконки; `AbilityEligibility` — единственная окончательная проверка; catalogue и binding читаются только после READY. UI использует прежний формат `queue` из 1 элемента.
+- Не создан второй движок или runtime alias старых Hunter; GameState/provider без доказательств не вызывается eagerly. Ошибки и Secret значений превращаются в UNKNOWN. Настройки старого пользователя не активируют профиль автоматически.
+- Неактивные Hunter исходники не подключены к TOC. Локальная новая регрессия ещё готовится; предыдущие 2.8 Engine-тесты устарели и будут заменены. GitHub Actions и WoW Forever не запускались.
+
 ## KR-20261121-071 — ограниченный ленивый контекст S (этап 2.9-C)
 - Время: 2026-11-21 10:45 UTC. Изменены KordRotation/Core/RotationConditions.lua и KordRotation.toc (перед RotationEngine).
 - Причина: будущий профиль должен получать только утверждённые методы чтения, а не сырые snapshot поля и не прямой WoW API. Глобальный S не создаётся; создаётся на каждый Evaluate и принимает ленивые замыкания.
