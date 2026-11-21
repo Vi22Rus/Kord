@@ -1,3 +1,11 @@
+## KR-20261121-194 — Hunter BM: scanner action-slot diagnosis from live DevTools trace
+- Реальный лог: `PROFILE READY`, `TARGET READY target_present`, `ENGINE UNKNOWN action_slot_unconfirmed`, отдельные `BLOCKED condition_false` у рангов выше уровня, `dropped=0`. Поэтому исправление фокуса — распознавание кнопки на action bar, а не чтение цели/событий.
+- `GameAPI:ReadField`: при отсутствии секретности допускает `userdata` UI-объекты наряду с Lua-таблицами; доступ к полю по-прежнему строго через `pcall` и `issecretvalue`/`issecrettable`/`canaccessvalue`. Это позволяет `ActionBarScanner` видеть методы WoW-кнопок, представленных `userdata`; защищённые кнопки по-прежнему блокируются.
+- В DevTools-only `CoreObservation.ActionBar()` доступна **явная** проверка сканера и подтверждённых заклинаний: число проверенных кнопок, высший наблюдавшийся ранг Arcane Shot из профиля Hunter BM; **никаких сырьевых Spell IDs, slot, GUID, имен и ссылок на UI-объекты**.
+- `/krdev why` показывает `Action bar scan`, `Confirmed spell buttons`, `Hunter Arcane Shot rank on bar`; разница между полностью пустым сканом и отсутствием нужного ранга теперь видна напрямую.
+- Mock-тесты дополнены сценарием Lua 5.1 `newproxy` userdata UI-объекта, защищённого userdata, ручного scanner bridge и текстового отчёта. **Lua 5.1 runtime NOT RUN; WoW client result NOT CONFIRMED.** Причиной пользователя может быть и макрос/нестандартные кнопки: это ещё не доказано.
+- Работающие ранее изменения в `RotationEngine` и двухаддонная архитектура сохранены; новые разработческие сообщения в основном аддоне не добавлены.
+
 ## KR-20261121-187 — полезный DevTools-лог при реальном бое
 - По экспортированному игровому журналу Hunter: `TARGET BLOCKED target_absent → TARGET READY target_present`, подтверждены `player_target_changed`, успешные/неудачные собственные касты и cooldown events. `ENGINE UNKNOWN unknown` и `PROFILE UNKNOWN` не позволяли установить причину отсутствующей рекомендации; `dropped=20` означал реальные отброшенные записи, в том числе из-за общего 50-мс ограничения.
 - `CoreObservation.Diagnose()` — **только через явное обращение DevTools**; реальный `RotationEngine:Evaluate()` и первая причина по приоритету возвращаются как ограниченные, безопасные статусы/коды без Spell IDs, GUID и сырых таблиц. Сам основной интерфейс и `/kr` не добавляют сообщений.
