@@ -54,6 +54,25 @@ eq(D:Record("ENGINE","UNKNOWN","action_slot_unconfirmed"),true,
  "engine refusal survives same-frame events")
 eq(D:Record("EVENT","READY","unit_spellcast_succeeded",25),true,
  "player cast survives same-frame events")
+eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,
+ "action_slot_unconfirmed"),true,"rank rule is recorded")
+eq(D:Record("BAR","READY","actionbar_buttons",nil,nil,29),true,
+ "button coverage is recorded")
+eq(D:Record("DISPLAY","BLOCKED","frame_shown"),true,
+ "frame visibility is recorded")
+eq(D:Record("DISPLAY","BLOCKED","frame_shown",nil,nil,
+ "PlayerName-SECRET"),true,"arbitrary detail is discarded")
+local structured=D:Export()
+eq(structured:find("arcane_rank_4_rule",1,true)~=nil,true,
+ "structured rank reason is exported")
+eq(structured:find("action_slot_unconfirmed",1,true)~=nil,true,
+ "known refusal reason is exported")
+eq(structured:find("actionbar_buttons",1,true)~=nil,true,
+ "button coverage marker is exported")
+eq(structured:find("29",1,true)~=nil,true,
+ "button count is exported")
+eq(structured:find("PlayerName-SECRET",1,true),nil,
+ "arbitrary personal data never exported")
 eq(D.dropped,0,"intentional cooldown coalescing is not data loss")
 eq(D:Stop(),true,"burst session stops")
 print("PASS DevTools recorder mock "..n.." assertions")
