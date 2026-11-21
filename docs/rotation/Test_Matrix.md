@@ -119,8 +119,8 @@
 
 | Test ID | Matrix v14 | Ожидаемый результат | Автотест | Клиент |
 |---|---|---|---|---|
-| ELIG-SEC-001 | #80 | Secret SpellID не копируется в результат Evaluate, UNKNOWN/invalid_spell_id | stage_02_07_eligibility.lua; CI pending | NOT RUN |
-| ELIG-SEC-002 | #80 | Защищённая policy-таблица или поле отклоняется до сравнения | stage_02_07_eligibility.lua; CI pending | NOT RUN |
-| ELIG-CHARGE-001 | #26/#80 | Защищённый currentCharges → UNKNOWN, не no_charges или READY | stage_02_07_eligibility.lua; CI pending | NOT RUN |
-| ELIG-USABLE-001 | #21/#52 | nil/secret IsSpellUsable → UNKNOWN, не READY/BLOCKED | stage_02_07_eligibility.lua; CI pending | NOT RUN |
-| ELIG-RANGE-001 | #10 | nil IsSpellInRange → UNKNOWN, не в дальности | stage_02_07_eligibility.lua; CI pending | NOT RUN |
+| ELIG-SEC-001 | #80 | Secret SpellID не копируется в результат Evaluate, UNKNOWN/invalid_spell_id | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
+| ELIG-SEC-002 | #80 | Защищённая policy-таблица или поле отклоняется до сравнения | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
+| ELIG-CHARGE-001 | #26/#80 | Защищённый currentCharges → UNKNOWN, не no_charges или READY | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
+| ELIG-USABLE-001 | #21/#52 | nil/secret IsSpellUsable → UNKNOWN, не READY/BLOCKED | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |
+| ELIG-RANGE-001 | #10 | nil IsSpellInRange → UNKNOWN, не в дальности | stage_02_07_eligibility.lua; PASS run 44886222396 (120c8040) | NOT RUN |

@@ -1,3 +1,9 @@
+## KR-20261121-022 — подтверждённый CI PASS 2.8.3c (protected policy, secret/nil)
+- **Дата UTC:** 2026-11-21T08:44:31.052Z. **Тип:** docs/test evidence; игровые модули и .toc не менялись.
+- **Фактический тест:** GitHub Actions [run 44886222396](https://github.com/Vi22Rus/Kord/actions/runs/44886222396), исходный commit `120c8040b139c81831a792d423fc0c8bdf16024f`, job `136791978814`, completed SUCCESS. Проверены logs, не только workflow-config: Lua 5.1 syntax PASS, 8/8 Lua mock suites PASS; Eligibility 38 checks, GameState v14 31, protected args 26, RotationEngine 29.
+- **Исправление документации:** Test_Matrix фиксирует PASS для пяти новых ELIG-SEC/CHARGE/USABLE/RANGE сценариев и точный SHA. **In-game NOT RUN:** реальный клиент WoW Forever, 101 API матрицы не объявлены клиентски проверенными.
+- **Следующая работа:** 2.8.3d remaining rank/level policy and cooldown/charges context; далее 2.8.4 RotationEngine; пользовательский и диагностический аддоны остаются отдельными поставками с единым ядром.
+
 ## KR-20261121-021 — 2.8.3c: protected policy/ID output and nil/secret eligibility regression
 - **Дата UTC:** 2026-11-21T08:43:30.557Z; **подэтап:** 2.8.3c Canonical API Matrix v14 #10,#21,#26,#52,#80. Одобрение: каноническое ядро без runtime-адаптеров старых ротаций.
 - **Проблема:** при invalid/Secret ID Evaluate мог возвращать исходный защищённый id в result.spellID; developer-трассировка могла попытаться сериализовать его. Policy table и поля опций сравнивались без секретной защиты. Не хватало исполняемых сценариев protected currentCharges, nil/secret usability, nil range.
