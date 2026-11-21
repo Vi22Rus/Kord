@@ -215,6 +215,29 @@ function KR.RotationDisplay:ShouldShow()
     return true
 end
 
+-- Reject malformed or protected recommendations before touching UI textures.
+local function verifiedRecommendation(result)
+    if type(result)~="table" or result.status~="READY"
+        or result.source~="RotationEngine" or type(result.queue)~="table"
+        or #result.queue~=1 then return nil end
+    local item=result.queue[1]
+    if type(item)~="table" or item.source~="verified_profile" then return nil end
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" then return nil end
+    local function safe(v) return api:IsSafeValue(v) end
+    if not safe(item.spellID) or not safe(item.texture)
+        or not safe(item.name) then return nil end
+    local id=item.spellID
+    if type(id)~="number" or id~=id or id<1 or id>99999999
+        or id~=math.floor(id) then return nil end
+    local tex=item.texture
+    if not ((type(tex)=="number" and tex==tex and tex>0
+            and tex<math.huge)
+        or (type(tex)=="string" and #tex>0 and #tex<=255)) then return nil end
+    if type(item.name)~="string" or item.name=="" then return nil end
+    return item
+end
+
 function KR.RotationDisplay:Refresh(skipLayout)
     if not self.frame then return end
     local p = ensurePosition(KR.db)
@@ -233,10 +256,8 @@ function KR.RotationDisplay:Refresh(skipLayout)
         end
         self.lastEngineStatus=result and result.status or "UNKNOWN"
         self.lastEngineReason=result and result.reason or "engine_unavailable"
-        local item=result and result.status=="READY"
-            and type(result.queue)=="table" and result.queue[1]
-        if type(item)=="table" and type(item.spellID)=="number"
-            and item.texture~=nil and item.source=="verified_profile" then
+        local item=verifiedRecommendation(result)
+        if item then
             self.productionReady=true
             self:SetSlotData(1,{texture=item.texture,name=item.name,
                 keybind=item.keybind})
