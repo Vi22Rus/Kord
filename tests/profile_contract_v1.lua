@@ -120,6 +120,15 @@ eq(P:Register("HUNTER",1,bad),false,"unknown needs rejected")
 bad=profile(1,"BAD",1,59)
 bad.Rules[1].spell="Missing"
 eq(P:Register("HUNTER",1,bad),false,"undeclared spell rejected")
+bad=profile(1,"BAD",1,59)
+bad.Config[1].default=math.huge
+eq(P:Register("HUNTER",1,bad),false,"nonfinite CFG default rejected")
+bad=profile(1,"BAD",1,59)
+bad.Config[1].min=-math.huge
+eq(P:Register("HUNTER",1,bad),false,"nonfinite CFG bound rejected")
+bad=profile(1,"BAD",1,59)
+bad.Spells.Sting="SECRET"
+eq(P:Register("HUNTER",1,bad),false,"protected SpellID rejected")
 eq(P:Register("HUNTER",1,p),false,"unapproved skip rejected")
 p.SkipExceptions={OptionalSting={reason="optional debuff",testID="PC-002",safeOptional=true}}
 eq(P:Register("HUNTER",1,p),true,"register approved skip")

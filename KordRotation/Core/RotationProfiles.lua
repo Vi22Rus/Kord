@@ -10,9 +10,16 @@ local categories={damage=true,cooldowns=true,buffs=true,racial=true,
 local targets={enemy=true,friendly=true,self=true,none=true}
 local casts={idle=true,allow=true}
 local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true}
+local function finite(n)
+ return type(n)=="number" and n==n and n~=math.huge and n~=-math.huge
+end
 local function spellID(n)
- return type(n)=="number" and n==n and n~=math.huge
-     and n==math.floor(n) and n>=1 and n<=99999999
+ local api=KR.GameAPI
+ if api and type(api.IsSafeValue)=="function" then
+  local ok,allowed=pcall(api.IsSafeValue,api,n)
+  if not ok or allowed~=true then return false end
+ end
+ return finite(n) and n==math.floor(n) and n>=1 and n<=99999999
 end
 local function dense(t,max)
  if type(t)~="table" or #t>max then return false end
@@ -86,8 +93,8 @@ local function validate(profile,classToken,specIndex)
   configKeys[item.key]=true
   if item.type=="bool" and type(item.default)~="boolean" then return false,"invalid_config" end
   if item.type=="number" and
-     (type(item.default)~="number" or type(item.min)~="number"
-      or type(item.max)~="number" or item.min>item.max
+     (not finite(item.default) or not finite(item.min)
+      or not finite(item.max) or item.min>item.max
       or item.default<item.min or item.default>item.max) then
    return false,"invalid_config"
   end
@@ -153,7 +160,8 @@ function P:Register(classToken,specIndex,profile)
      or specIndex~=math.floor(specIndex) or specIndex<1 or specIndex>3 then
   return false,"invalid_profile_identity"
  end
- local ok,reason=validate(profile,classToken,specIndex)
+ local called,ok,reason=pcall(validate,profile,classToken,specIndex)
+ if not called then return false,"profile_validation_error" end
  if not ok then return false,reason end
  local key=classToken.."_TREE_"..specIndex
  local list=registry[key] or {}
@@ -166,7 +174,11 @@ function P:Register(classToken,specIndex,profile)
  end
  -- Copy all metadata so later mutations cannot change a registered profile.
  -- Function values are intentionally retained; they receive only restricted S.
- list[#list+1]=copy(profile,0)
+ local copied,record=pcall(copy,profile,0)
+ if not copied or type(record)~="table" then
+  return false,"profile_copy_unavailable"
+ end
+ list[#list+1]=record
  registry[key]=list
  return true,profile.id
 end
@@ -197,6 +209,6 @@ end
 function P:Has(key,level)
  if type(key)~="string" or registry[key]==nil then return false end
  if level==nil then return true end
- return self:Get(key,level)~=nil
+ return selectProfile(key,level)~=nil
 end
 -- No profiles are registered by default; old Hunter sources remain unloaded.
