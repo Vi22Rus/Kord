@@ -1,5 +1,9 @@
 # Profile Registry — инвентарь и допуск к использованию
 
+**Нормативная цель:** [Profile Contract v1](Profile_Contract.md), статусы `draft/mock_tested/experimental/verified`, раздельный тестовый и игровой допуск. **SPEC ONLY:** действующий `RotationProfiles.lua` пока проверяет `verified=true`; ни один Hunter не зарегистрирован/не загружен в TOC. Новые статусы нельзя объявить реализованными до Lua-миграции.
+
+
+
 **Утверждённый первый перенос и игровой пилот:** Hunter BM `Leveling` `PVE` (уровни 1–59) **после** канонического ядра v14 и `KordRotationDevTools`. Реестр содержит исходники других Hunter, но они не становятся активными автоматически и не загружаются ради проб. См. [две сборки](../BUILD_VARIANTS_AND_DIAGNOSTICS.md).
 
 Нормативное имя: `Kord_<Class>_<Spec>_<Leveling|60>_<PVE|PVP>.lua`; PVP — отдельный профиль. ClassCommon и SpecCore — вспомогательные модули, не самостоятельные профили.
