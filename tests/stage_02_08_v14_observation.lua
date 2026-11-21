@@ -102,6 +102,9 @@ KR.ActionBarScanner={GetSnapshot=function()
   {spellID=14283,slot=7},
   {spellID=14282,slot=8}
  }}
+end,FindSpell=function(_,id)
+ eq(id,14283,"revalidation uses observed rank ID")
+ return {status="UNKNOWN",reason="spell_not_confirmed_on_visible_bar"}
 end}
 KR.RotationProfiles={ResolveForEngine=function(_,identity,level)
  eq(identity,"HUNTER_TREE_1","manual scan Hunter profile identity")
@@ -112,6 +115,9 @@ local bars=bridge.ActionBar()
 eq(bars.status,"READY","manual scanner returns available")
 eq(bars.confirmedSpellButtons,2,"manual scanner confirmed spells")
 eq(bars.arcaneRankOnBar,4,"highest observed Arcane rank")
+eq(bars.arcaneFindStatus,"UNKNOWN","snapshot matching does not prove live revalidation")
+eq(bars.arcaneFindReason,"spell_not_confirmed_on_visible_bar",
+ "exact FindSpell failure shown")
 eq(bars.spellID,nil,"no raw spell ID in DevTools output")
 eq(scannerReads,1,"scanner read only on manual request")
 print("PASS 2.8.6 observer mock: "..n.." assertions")
