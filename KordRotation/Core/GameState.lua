@@ -298,19 +298,34 @@ function S:ReadSignal(field,spellID,snapshot)
     else
         name,unit,flag="C_UnitAuras.GetUnitAuraBySpellID","target","isHarmful"
     end
-    -- Avoid a stale/recycled target result when the supplied evaluation
-    -- snapshot already establishes that the target is absent or unknown.
-    if unit=="target" and snapshot~=nil then
+    -- Require a stable target identity across the aura read. An existence
+    -- flag alone cannot bind an AuraData record to this evaluation's target.
+    local targetGUID
+    if unit=="target" then
         local okSnapshot,safeSnapshot=pcall(api.IsSafeValue,api,snapshot)
         if not okSnapshot or safeSnapshot~=true or type(snapshot)~="table" then
             return unknown("aura_target_unverified")
         end
-        local target=snapshot.target
-        if type(target)~="table" or target.exists==nil
-            or type(target.exists)~="table"
-            or target.exists.status~="READY"
-            or target.exists.value~=true then
+        local target=api:ReadField(snapshot,"target","table")
+        if target.status~="READY" then return unknown("aura_target_unverified") end
+        local exists=api:ReadField(target.value,"exists","table")
+        local guid=api:ReadField(target.value,"guid","table")
+        if exists.status~="READY" or guid.status~="READY" then
             return unknown("aura_target_unverified")
+        end
+        local existsStatus=api:ReadField(exists.value,"status","string")
+        local existsValue=api:ReadField(exists.value,"value","boolean")
+        local guidStatus=api:ReadField(guid.value,"status","string")
+        local guidValue=api:ReadField(guid.value,"value","string")
+        if existsStatus.value~="READY" or existsValue.value~=true
+            or guidStatus.value~="READY" or guidValue.status~="READY"
+            or guidValue.value=="" then
+            return unknown("aura_target_unverified")
+        end
+        targetGUID=guidValue.value
+        local current=api:Read("UnitGUID","string","target")
+        if current.status~="READY" or current.value~=targetGUID then
+            return unknown("aura_target_changed")
         end
     end
     local r
@@ -325,6 +340,12 @@ function S:ReadSignal(field,spellID,snapshot)
     if not id or id.status~="READY" or id.value~=spellID
         or not matching or matching.status~="READY" or matching.value~=true then
         return unknown("aura_identity_unverified")
+    end
+    if unit=="target" then
+        local current=api:Read("UnitGUID","string","target")
+        if current.status~="READY" or current.value~=targetGUID then
+            return unknown("aura_target_changed")
+        end
     end
     return {status="READY",value=true,source="GameState.ReadSignal"}
 end
