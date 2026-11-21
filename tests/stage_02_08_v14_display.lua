@@ -33,6 +33,7 @@ IsMounted=function()return false end
 local opts={showPanel=true,testMode=false,slotCount=3,showInCombat=true,showOutOfCombat=true}
 local callbacks={}
 local active=true
+local allowExperimental=false
 local registered=true
 local selected=true
 local KR={db={panel=opts},UI={colors={cyan={0,1,1},sidebar={}}}}
@@ -45,7 +46,8 @@ KR.EventBus={Subscribe=function(_,channel,_,fn)callbacks[channel]=fn;return true
 KR.RotationProfiles={Has=function()return registered end}
 KR.RotationSettings={
  GetProfileID=function()return selected and "WARRIOR_TREE_1" or nil end,
- GetProfile=function()return {enabled=active},"WARRIOR_TREE_1" end
+ GetProfile=function()return {enabled=active,
+  allowUnverifiedProfiles=allowExperimental},"WARRIOR_TREE_1" end
 }
 local engineResult
 KR.RotationEngine={Evaluate=function()
@@ -89,6 +91,15 @@ eq(D.productionReady,false,"empty name rejected")
 engineResult=ready();engineResult.queue[1].source="unknown_source"
 D:Refresh(true)
 eq(D.productionReady,false,"unknown source rejected")
+engineResult=ready();engineResult.queue[1].source="experimental_profile"
+D:Refresh(true)
+eq(D.productionReady,false,"experimental icon denied by default")
+allowExperimental=true
+D:Refresh(true)
+eq(D.productionReady,true,"explicit experimental UI opt-in")
+allowExperimental=false
+D:Refresh(true)
+eq(D.productionReady,false,"experimental icon cleared after opt-out")
 engineResult=ready();engineResult.queue[2]={spellID=102}
 D:Refresh(true)
 eq(D.productionReady,false,"unverified future queue rejected")

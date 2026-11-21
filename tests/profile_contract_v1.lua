@@ -133,6 +133,19 @@ eq(P:Register("HUNTER",1,at60),true,"second level range")
 eq(P:Has("HUNTER_TREE_1"),true,"multi range Has works")
 eq(P:Get("HUNTER_TREE_1",60).id,at60.id,"level60 profile selected")
 eq(P:Get("HUNTER_TREE_1",61),nil,"out of range no silent fallback")
+local exp=profile(2,"HUNTER_MM_60_PVE",60,60,"experimental")
+eq(P:Register("HUNTER",2,exp),true,"experimental profile registered")
+KR.characterState.index=2
+level=60
+eq(E:Evaluate().reason,"profile_unverified","experimental opt-in defaults false")
+allowExperimental=true
+local experimentalResult=E:Evaluate()
+eq(experimentalResult.status,"READY","explicit experimental opt-in evaluated")
+eq(experimentalResult.queue[1].source,"experimental_profile",
+ "experimental source retained for UI gate")
+allowExperimental=false
+KR.characterState.index=1
+level=20
 local state=E:Evaluate()
 eq(state.status,"READY","skip unknown optional")
 eq(state.queue[1].spellID,102,"second candidate chosen")
@@ -205,6 +218,13 @@ eq(S:any(function()return nil end,function()return false end),nil,
  "any preserves UNKNOWN")
 eq(S:any(function()return nil end,function()return true end),true,
  "any later true resolves")
+eq(S:any(function()return false end,function()return false end),false,
+ "any known false result")
+eq(pcall(function()S:any(function()return "bad" end)end),false,
+ "any invalid child fails closed")
+local beforeUndeclared=auraReads
+eq(S:is("target.debuff",123456),nil,"undeclared aura fails closed")
+eq(auraReads,beforeUndeclared,"undeclared aura does not call provider")
 eq(S:all(function()return nil end,function()error("eager")end),nil,
  "all first unknown stops")
 eq(pcall(function()S:all(function()return "not tri-state" end)end),
