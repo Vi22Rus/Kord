@@ -197,7 +197,7 @@ local function makeDisplay(parent)
         KR.displayRows[#KR.displayRows+1] = UI:StepRow(layout, item[1],
             15, -47-(i-1)*47, 510,
             function() return KR:GetPanelLayout(key) end,
-            function(value) KR:SetPanelLayout(key, value) end, step, ranges[key][1], ranges[key][2])
+            function(value) KR:SetPanelLayout(key, value) end, step, nil, ranges[key][1], ranges[key][2])
     end
 
     local options = makeCard(body, -683, 317)
@@ -266,7 +266,7 @@ local function makeDisplay(parent)
     KR.displayRows[#KR.displayRows+1] = UI:StepRow(layers,"LAYER_FONT_SIZE",
         15,-366,510,
         function() return KR:GetPanelLayout("textSize") end,
-        function(value) KR:SetPanelLayout("textSize",value) end,1,8,20)
+        function(value) KR:SetPanelLayout("textSize",value) end,1,nil,8,20)
 
     local style=makeCard(body,-1740,397)
     setText(style,KR:L("STYLE_TITLE"),17,-14,"title",C.text,510)
@@ -283,7 +283,7 @@ local function makeDisplay(parent)
                 function(v)KR:SetPanelLayout(key,v)end,0,100,1)
             or UI:StepRow(style,item[1],13,-47-(i-1)*43,505,
                 function()return KR:GetPanelLayout(key)end,
-                function(v)KR:SetPanelLayout(key,v)end,item[3],ranges[key][1],ranges[key][2]))
+                function(v)KR:SetPanelLayout(key,v)end,item[3],nil,ranges[key][1],ranges[key][2]))
     end
     KR.displayRows[#KR.displayRows+1]=UI:ToggleRow(style,"STYLE_HIGHLIGHT",
         13,-177,505,function()return KR:GetPanelLayout("highlightMain")end,
