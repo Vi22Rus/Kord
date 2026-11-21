@@ -120,4 +120,27 @@ eq(bars.arcaneFindReason,"spell_not_confirmed_on_visible_bar",
  "exact FindSpell failure shown")
 eq(bars.spellID,nil,"no raw spell ID in DevTools output")
 eq(scannerReads,1,"scanner read only on manual request")
+-- Final UI output path is observed without forcing refresh.
+local visibilityChecks=0
+KR.GameAPI.ReadField=function(_,obj,key)
+ local value=obj[key]
+ if value==nil then return {status="UNKNOWN"} end
+ return {status="READY",value=value}
+end
+KR.RotationDisplay.frame={IsShown=function() return false end}
+KR.RotationDisplay.productionReady=false
+KR.RotationDisplay.lastEngineStatus="UNKNOWN"
+KR.RotationDisplay.lastEngineReason="action_slot_unconfirmed"
+KR.RotationDisplay.ShouldShow=function()
+ visibilityChecks=visibilityChecks+1
+ return false
+end
+local display=bridge.Display()
+eq(display.status,"READY","display observer accessible")
+eq(display.frameCreated,true,"frame is instantiated")
+eq(display.frameShown,false,"actual frame hidden")
+eq(display.recommendationAccepted,false,"UI rejected non-ready result")
+eq(display.visibilityAllowed,false,"display gate denies visibility")
+eq(display.lastEngineReason,"action_slot_unconfirmed","last UI engine reason")
+eq(visibilityChecks,1,"observation never calls Refresh")
 print("PASS 2.8.6 observer mock: "..n.." assertions")
