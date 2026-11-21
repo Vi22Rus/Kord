@@ -17,3 +17,8 @@
 `profile id | version | client/server build | class/spec | level range | content | role | source register | ability register | GameData dependencies | priority matrix | CFG keys | module dependencies | TOC | registration | test IDs | static/unit/integration/in-game status | open questions`.
 
 **Ни один существующий Hunter-профиль не помечен интегрированным или проверенным в игре.** Статусы обновлять только по доказательствам.
+
+
+## Hunter BM/MM/SV — исследование 2026-11-21
+
+Подробный реестр по шести PVE-профилям Hunter, включая подтверждённые исходники, буквальные spellID, несовместимые поля, источники, открытые конфликты и тест-кейсы: [Hunter_Research_2026-11-21.md](Hunter_Research_2026-11-21.md). **SOURCE REVIEWED / WEB PARTIAL / IN-GAME NOT RUN**. Не переносить неизвестные свойства в рабочие таблицы как подтверждённые. Для полного заполнения этой таблицы требуются дополнительные проверки клиента и адаптера.
