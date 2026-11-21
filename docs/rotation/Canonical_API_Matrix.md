@@ -1,156 +1,128 @@
-# Kord Rotation — матрица потребностей профилей и выбора API (reference-first)
+# Kord Rotation — единая матрица потребностей профилей и выбора API
 
-**Версия:** v3, 2026-11-21. **Статус:** инвентаризация / сравнительный аудит в процессе. **Не является утверждением работоспособности в игровом клиенте.** Существующий Kord не является источником выбора методов.
+**Версия v4 · 2026-11-21 · Reference-first · СТАТУС: НЕ ЗАВЕРШЕНО.** Существующий движок Kord не является эталоном и не используется для выбора API. Все источники — шесть предоставленных архивов. **Один реестр вместо трёх разрозненных таблиц.**
 
-## Принцип заполнения
+## Как читать
 
-**Первый столбец — конкретная потребность профиля.** Каждая операция (наличие баффа, длительность баффа, здоровье цели, дальность применения, GCD и т.д.) — отдельная строка. Далее идут конкретный метод и **все шесть референсов**; последний столбец — выбор для будущего Kord. `—` означает **в текущем проходе не зафиксировано доказательство**, а не отсутствие функциональности. `(audit)` означает **файл-кандидат, точный вызов и строка ещё не проверены**; такой пример не может быть основанием для окончательного выбора. Только записи с конкретным местом исходника являются проверяемым статическим свидетельством. Проверка работоспособности в Forever требует отдельного теста в клиенте.
+Каждая строка — самостоятельная потребность профиля или отдельная операция получения данных. Колонки референсов показывают **имеющиеся в предыдущем аудите указания на исходники**, а не гарантированно работающие методы. `—` = нет зафиксированного доказательства; `(audit)`, `(review required)` и `уточнить` = не проверены точная сигнатура/вызов/связь с профилем. Кандидатное решение **не является окончательным**. Записи о дебаг-коде и общих библиотеках не считаются подтверждением использования в ротации. Игровой тест: **NOT RUN**.
 
-Источники: архивы `Sonah.zip`, `MaxDps.zip`, `JustAC.zip`, `ForeverAuras.zip`, `ForeverRotation.zip`, `RotationGuide.zip`. Для MaxDps анализировать прежде всего `Specialization/Forever/`, не смешивать с Classic/Cata/Retail. Изучать **профили всех классов**, а не только Hunter; дополнять матрицу по мере обнаружения новых потребностей. Статический проход по исходникам выявил следующие подтверждаемые местоположения, а непроверенные направления помечены.
+## Единая матрица (102 строк; 0 точных дубликатов объединено)
 
-## Реестр потребностей и решений (39 отдельных строк)
+| Потребность профиля | API / кандидат | Sonah | MaxDps Forever | JustAC | ForeverAuras | ForeverRotation | RotationGuide | Выбор Kord / статус |
+|---|---|---|---|---|---|---|---|---|
+| 1. Цель существует | UnitExists | Sonah/Core/Atoms/Units.lua:46 | — | JustAC/BlizzardAPI/StateHelpers.lua:25 | — | ForeverRotation/CC.lua:43 | RotationGuide/Core/State.lua:301 | UnitExists via guarded unit reader; pending client |
+| 2. Цель враждебна | UnitCanAttack | Sonah/Core/Atoms/Units.lua:60 | — | JustAC/BlizzardAPI/StateHelpers.lua:26 | — | ForeverRotation/CC.lua:43 | RotationGuide/Core/State.lua:285 | UnitCanAttack; pending client |
+| 3. Здоровье цели | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Guarded health pair; pending client |
+| 4. Здоровье игрока | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Same unit reader; pending client |
+| 5. Здоровье питомца | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Candidate same unit reader; pet case unverified |
+| 6. Мана / ресурс | UnitPower | Sonah/Core/Atoms/Units.lua:326 | — | JustAC/BlizzardAPI/StateHelpers.lua:2155 | — | ForeverRotation/Engine.lua:84 | RotationGuide/Core/State.lua:234 | Separate mana from active power type; pending client |
+| 7. Уровень игрока | UnitLevel | Sonah/Core/Atoms/Units.lua:158 | — | JustAC/BlizzardAPI/StateHelpers.lua:1597 | — | ForeverRotation/Engine.lua:393 | RotationGuide/Core/State.lua:309 | Centralized unit reader; pending client |
+| 8. Класс игрока | UnitClass | Sonah/Core/Atoms/Units.lua:80 | — | JustAC/BlizzardAPI/StateHelpers.lua:2359 | — | ForeverRotation/Core.lua:181 | RotationGuide/Core/API.lua:45 | Class token; pending client |
+| 9. Игрок движется | IsPlayerMoving | — | — | JustAC/DebugCommands.lua:8826 (debug only) | — | ForeverRotation/Engine.lua:56 | — | Guarded candidate, no false on error |
+| 10. Дистанция применения способности | IsSpellInRange | Sonah/Core/Atoms/Spells.lua:445 | — | JustAC/BlizzardAPI/StateHelpers.lua:397 | — | ForeverRotation/Engine.lua:3 | RotationGuide/Core/State.lua:248 | Spell-specific boolean; not meters |
+| 11. Кулдаун способности | GetSpellCooldown / C_Spell | Sonah/Core/Atoms/Spells.lua:289 | — | JustAC/BlizzardAPI/CooldownTracking.lua:15 | — | ForeverRotation/Display.lua:302 | RotationGuide/Core/State.lua:101 | SpellID cooldown + guarded return; pending client |
+| 12. Баффы игрока | Aura reader | Sonah/Core/Atoms/Auras.lua:743 | — | JustAC/BlizzardAPI/SecretValues.lua:239 | ForeverAuras/API.lua (review required) | ForeverRotation/Rotations/Buffs.lua (review required) | — | Prefer aura scan with secret handling; exact API TBD |
+| 13. Дебаффы цели | Aura reader | Sonah/Core/Atoms/Auras.lua:743 | — | JustAC/BlizzardAPI/SecretValues.lua:239 | ForeverAuras/API.lua (review required) | — | — | Same aura reader, unit-specific; exact API TBD |
+| 14. Агро / угроза | UnitThreatSituation | Sonah/Core/Atoms/Units.lua:1318 | — | JustAC/BlizzardAPI/StateHelpers.lua:81 | — | — | — | Threat is not equivalent to hasAggro; unresolved |
+| 15. Каст противника | UnitCastingInfo | Sonah/Core/Atoms/Casts.lua:26 | — | JustAC/BlizzardAPI/StateHelpers.lua:129 | — | ForeverRotation/Engine.lua:170 | — | Casting reader; interruptability separate |
+| 16. Число врагов | Nameplate enumeration | — | — | JustAC/BlizzardAPI/StateHelpers.lua:82–108 | — | — | — | Observed engaged nameplates only; not exact total |
+| 17. Группа / рейд | GetNumGroupMembers | Sonah/Core/Atoms/Units.lua:1214 | — | JustAC/DebugCommands.lua:5474 (debug only) | — | — | — | Candidate, not equivalent to dungeon/raid |
+| 18. Подземелье / рейд | Instance context | — | — | JustAC/DebugCommands.lua:284 (debug only) | — | — | — | Unresolved; no confirmed runtime provider |
+| 19. Изученность заклинания | Spellbook scan | Sonah/Core/Atoms/Spells.lua:68–96 | — | JustAC/BlizzardAPI/SpellQuery.lua:69–93 | — | — | RotationGuide/Core/State.lua:24–67 | Sonah rank resolver candidate |
+| 20. Ранг заклинания | Highest learned rank | Sonah/Core/Atoms/Spells.lua:139–246 | — | JustAC/BlizzardAPI/SpellQuery.lua:69–93 | — | — | RotationGuide/Core/State.lua:24–67 | Central ability-to-rank resolver |
+| 21. Доступность / стоимость | Usability query | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/SpellQuery.lua (audit) | — | ForeverRotation/Engine.lua (audit) | RotationGuide/Core/State.lua:79–109 | Keep distinct from cooldown/range |
+| 22. Прерывание | Enemy cast + interrupt spell | Sonah/Core/Atoms/Casts.lua:26 | — | JustAC/BlizzardAPI/StateHelpers.lua:129 | — | ForeverRotation/Rotations/Interrupts.lua (audit) | — | Requires cast/interruptible/ready separately |
+| 23. Контроль / CC | Aura and unit state | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | ForeverRotation/CC.lua (audit) | — | Unresolved CC-safe AoE |
+| 24. Автовыстрел / автоатака | Attack state | — | — | — | — | ForeverRotation/Rotations/Hunter.lua (audit) | — | Unresolved |
+| 25. GCD | Global cooldown | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/CooldownTracking.lua (audit) | — | ForeverRotation/Engine.lua (audit) | RotationGuide/Core/State.lua (audit) | Must distinguish spell cooldown |
+| 26. Заряды способности | Charges query | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/SpellQuery.lua (audit) | — | — | — | Unresolved exact return |
+| 27. Остаток баффа | Aura expiration | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/SecretValues.lua (audit) | ForeverAuras/API.lua (audit) | — | — | Expiration and current time; pending |
+| 28. Остаток дебаффа | Aura expiration | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/SecretValues.lua (audit) | ForeverAuras/API.lua (audit) | — | — | Same aura model |
+| 29. Таланты / специализация | Talent reader | Sonah/Core/Atoms/Talents.lua:535 | — | — | — | — | — | Unresolved spec contract |
+| 30. Питомец атакует цель | Pet target state | Sonah/Core/Atoms/Units.lua (audit) | — | — | — | ForeverRotation/Rotations/Hunter.lua (audit) | — | Unresolved |
+| 31. Время до смерти цели | TTD estimator | — | — | — | — | — | — | Unresolved |
+| 32. Доступность action bar | Action bar inspection | — | — | JustAC/ActionBarScanner.lua (audit) | — | — | — | Separate from ability readiness |
+| 33. Привязка клавиши | Binding inspection | — | — | JustAC/ActionBarScanner.lua (audit) | — | — | — | Unresolved exact mapping |
+| 34. Изменение формы / стойки | Form/stance state | Sonah/Classes/Druid.lua (audit) | — | — | — | ForeverRotation/Rotations/Druid.lua (audit) | — | Unresolved |
+| 35. Условия лечения / диспела | Friendly target + aura | Sonah/Classes/Priest.lua (audit) | — | — | ForeverAuras/API.lua (audit) | ForeverRotation/Rotations/Priest.lua (audit) | — | Unresolved |
+| 36. Тринкеты / расовые / предметы | Usable action | Sonah/Classes/Racials.lua (audit) | — | — | — | — | — | Unresolved |
+| 37. Опасный входящий урон | Threat/health/encounter | — | — | — | — | — | — | Unresolved; no guess |
+| 38. PvP / игрок-цель | Unit player test | Sonah/Core/Atoms/Units.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | — | — | Unresolved |
+| 39. Воскрешение / смерть | Unit death | Sonah/Core/Atoms/Units.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | — | — | Unresolved |
+| 40. Пропущенная потребность (отдельная строка) | уточнить API по указанному референсу | — | — | — | — | — | — | Почему требуется отдельный контракт — КАНДИДАТ; требуется трассировка |
+| 41. Процент здоровья союзника / выбор цели лечения | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:527 C.healBelow; Sonah/Classes/Paladin.lua:202 C.healingOther | — | — | — | — | — | healing target != enemy target — КАНДИДАТ; требуется трассировка |
+| 42. Невидимое/защищённое значение здоровья | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:162 C.healHidden | — | — | — | ForeverRotation/Rotations/Signals.lua:1–15 | — | secret-safe hint != numeric HP available to priority engine — КАНДИДАТ; требуется трассировка |
+| 43. Порог здоровья цели / execute | уточнить API по указанному референсу | Sonah/Classes/Mage.lua:189 C.targetBelow | — | JustAC/Data/Forever/Rotations.lua:633 t=execute | — | — | — | execute threshold separate from target health — КАНДИДАТ; требуется трассировка |
+| 44. Наличие/обновление DoT по времени | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:185–186 C.dotRefresh | — | JustAC/Data/Forever/Rotations.lua:46 t=dot | — | — | — | refresh window separate from aura existence — КАНДИДАТ; требуется трассировка |
+| 45. Проверка владельца HoT/DoT | уточнить API по указанному референсу | Sonah/Classes/Priest.lua (header: own Renew) | — | — | — | — | — | own aura != any aura; exact implementation audit — КАНДИДАТ; требуется трассировка |
+| 46. Стеки ауры | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:151 C.stacksBelow | MaxDps_Druid/Specialization/Forever/Balance.lua:28 MaxDps.Stacks | JustAC/Data/Forever/Rotations.lua:83 t=stack | — | — | — | count separate from aura active — КАНДИДАТ; требуется трассировка |
+| 47. Стеки проков | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:338 C.proc | — | — | — | — | — | proc activation/stack semantics audit — КАНДИДАТ; требуется трассировка |
+| 48. Оружейное зачарование | уточнить API по указанному референсу | Sonah/Classes/Rogue.lua:196 C.weaponEnchantMissing | — | — | — | — | — | weapon enchant != player aura — КАНДИДАТ; требуется трассировка |
+| 49. Тотем активен / нужен | уточнить API по указанному референсу | — | — | JustAC/Data/Forever/Rotations.lua:492 t=totem | — | — | — | totem slot/existence audit — КАНДИДАТ; требуется трассировка |
+| 50. Комбо-поинты | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:178 C.combo | — | JustAC/Data/Forever/Rotations.lua:71 res=combo_points | — | — | — | resource combo points separate from mana — КАНДИДАТ; требуется трассировка |
+| 51. Энергия | уточнить API по указанному референсу | — | — | JustAC/Data/Forever/Rotations.lua:68 res=energy | — | ForeverRotation/Rotations/Signals.lua:49 | — | resource typed and secret-safe — КАНДИДАТ; требуется трассировка |
+| 52. Ярость | уточнить API по указанному референсу | — | — | JustAC/Data/Forever/Rotations.lua:84 res=rage | — | ForeverRotation/Rotations/Signals.lua:59 | — | resource typed and secret-safe — КАНДИДАТ; требуется трассировка |
+| 53. Нехватка ресурса / starved | уточнить API по указанному референсу | — | MaxDps_Druid/Specialization/Forever/Balance.lua:45 MaxDps.Starved | JustAC/Data/Forever/Rotations.lua:45 t=starved | — | — | — | not equivalent to numeric mana — КАНДИДАТ; требуется трассировка |
+| 54. Прогноз расхода ресурса | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:136 C.spareMana; Sonah/Classes/Druid.lua:322 C.efficient | — | — | — | — | — | requires explicit resource cost and policy — КАНДИДАТ; требуется трассировка |
+| 55. Доступность предмета в сумке | уточнить API по указанному референсу | Sonah/Classes/Mage.lua:243 C.hasItem | — | — | — | — | — | inventory ownership vs cooldown — КАНДИДАТ; требуется трассировка |
+| 56. Недавнее применение способности | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:540 C.notRecent | — | — | — | — | — | cast history separate from cooldown — КАНДИДАТ; требуется трассировка |
+| 57. Очередь/ожидание каста | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:156 C.castPending | — | — | — | — | — | pending cast separate from currently casting — КАНДИДАТ; требуется трассировка |
+| 58. Проверка возможности закончить каст | уточнить API по указанному референсу | Sonah/Classes/Mage.lua:302 C.notCasting; Sonah/Classes/Druid.lua:156 C.castPending | — | — | — | — | — | channel/cast interruption audit — КАНДИДАТ; требуется трассировка |
+| 59. Окно автоатаки / swing timer | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:447 C.autoActive | — | JustAC/Data/Forever/Rotations.lua:121 t=swing | — | — | — | timing != autoattack active — КАНДИДАТ; требуется трассировка |
+| 60. Тик периодического урона | уточнить API по указанному референсу | — | — | JustAC/Data/Forever/Rotations.lua:450 t=tick | — | — | — | tick timing distinct from DoT duration — КАНДИДАТ; требуется трассировка |
+| 61. Стелс | уточнить API по указанному референсу | — | — | JustAC/Data/Forever/Rotations.lua:435 t=stealth | — | — | — | stealth state != combat — КАНДИДАТ; требуется трассировка |
+| 62. Контроль персонажа / root | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:197 C.lossOfControl('root') | — | — | — | — | — | root/stun/silence separate signals — КАНДИДАТ; требуется трассировка |
+| 63. Прерываемость вражеского каста | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:26 C.targetInterruptible | — | — | — | — | — | cast present != interruptible — КАНДИДАТ; требуется трассировка |
+| 64. Снятие дебафа с союзника | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:548–550 C.healDispellable('Curse'/'Poison') | — | — | — | — | — | debuff type and dispel capability — КАНДИДАТ; требуется трассировка |
+| 65. Самодиспел | уточнить API по указанному референсу | Sonah/Classes/Mage.lua:309 C.selfDispellable | — | — | — | — | — | self vs party target — КАНДИДАТ; требуется трассировка |
+| 66. Групповой баф отсутствует | уточнить API по указанному референсу | Sonah/Classes/Mage.lua:231 C.partyBuffMissing | — | — | — | — | — | party coverage != player buff — КАНДИДАТ; требуется трассировка |
+| 67. Классовый баф отсутствует | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:233 C.buffMissing | — | — | — | — | — | buff scope / owner — КАНДИДАТ; требуется трассировка |
+| 68. Тип цели: игрок | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:196 C.targetIsPlayer | — | — | — | — | — | PVP player-target detection — КАНДИДАТ; требуется трассировка |
+| 69. Тип цели: элита/босс | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:176 C.targetElite; Sonah/Classes/Hunter.lua:310 C.targetBoss | — | — | — | — | — | elite != boss — КАНДИДАТ; требуется трассировка |
+| 70. Класс вражеской цели | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:129 C.targetClass; Sonah/Classes/Druid.lua:199 C.targetClassOrUnknown | — | — | — | — | — | class-aware PVP — КАНДИДАТ; требуется трассировка |
+| 71. Наличие оружия дальнего боя | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:219 C.rangedWeapon | — | — | — | — | — | equipment prerequisite — КАНДИДАТ; требуется трассировка |
+| 72. Достаточное количество противников для AoE | уточнить API по указанному референсу | — | MaxDps_Druid/Specialization/Forever/Balance.lua:24 MaxDps:SmartAoe | JustAC/Data/Forever/Rotations.lua:58 t=targets | — | — | — | observable count + thresholds — КАНДИДАТ; требуется трассировка |
+| 73. Состояние игрока в соло/квестах | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:237 C.solo; Sonah/Classes/Druid.lua:319 C.questing | — | — | — | — | — | solo != open world != dungeon — КАНДИДАТ; требуется трассировка |
+| 74. Наличие группы и число участников | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:219 C.inGroup; Sonah/Classes/Druid.lua:531 C.groupBelow | — | — | — | — | — | group count separate from instance type — КАНДИДАТ; требуется трассировка |
+| 75. Наличие талантов/рангов талантов | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:147 C.talent; Sonah/Classes/Druid.lua:243 C.noTalent | — | — | — | — | — | known spell != talent rank — КАНДИДАТ; требуется трассировка |
+| 76. Специализация / дерево | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:149 C.spec | — | — | — | — | — | spec ID mapping — КАНДИДАТ; требуется трассировка |
+| 77. Изменение формы и запрет способностей | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:164 C.form; Sonah/Classes/Druid.lua:169 C.noForm | — | — | — | — | — | form gating — КАНДИДАТ; требуется трассировка |
+| 78. Состояние pet отсутствует / призыв | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:110 C.noPet; Sonah/Classes/Hunter.lua:159 C.hasPet | — | — | — | — | — | pet existence separate from alive/dead — КАНДИДАТ; требуется трассировка |
+| 79. Агро отсутствует / высокое агро | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:184 C.aggro; Sonah/Classes/Druid.lua:430 C.noAggro | — | — | — | — | — | threat thresholds and roles — КАНДИДАТ; требуется трассировка |
+| 80. Защитная рекомендация вне ротации | уточнить API по указанному референсу | — | — | — | — | ForeverRotation/Rotations/Signals.lua:1–15,31–42 | — | UI hint separate from priority action — КАНДИДАТ; требуется трассировка |
+| 81. Проверка ограничения секретных чисел | уточнить API по указанному референсу | — | — | — | — | ForeverRotation/Rotations/Signals.lua:1–15 | — | curve UI cannot imply readable percentage — КАНДИДАТ; требуется трассировка |
+| 82. Условие неизвестности заклинания | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:180 C.unknown | — | JustAC/Data/Forever/Rotations.lua:160 t=unconfirmed | — | — | — | unknown != unavailable — КАНДИДАТ; требуется трассировка |
+| 83. Проверка таланта / уровня до применения | уточнить API по указанному референсу | Sonah/Classes/Druid.lua:325 C.level; Sonah/Classes/Druid.lua:322 C.levelBelow | — | — | — | — | — | level-gated rank — КАНДИДАТ; требуется трассировка |
+| 84. Проверка GCD vs общего/shared cooldown | уточнить API по указанному референсу | Sonah/Classes/Hunter.lua:24–27 sharedCd fields | — | — | — | — | — | shared cooldown separate from GCD and spell CD — КАНДИДАТ; требуется трассировка |
+| 85. Слот экипировки → itemID | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:46 | — | JustAC/PrecombatEngine.lua:115 | ForeverAuras/GenericTrigger.lua:3790 | — | — | GetInventoryItemID; отдельный сигнал от наличия предмета в сумке — КАНДИДАТ; требуется трассировка |
+| 86. Кулдаун экипированного предмета | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:124–125 | — | — | — | — | — | GetInventoryItemCooldown; не spell cooldown — КАНДИДАТ; требуется трассировка |
+| 87. Наличие оружия дальнего боя по слоту | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:192–193 | — | — | — | — | — | GetInventoryItemID slot RANGED; не дальность цели — КАНДИДАТ; требуется трассировка |
+| 88. Боеприпасы: слот/количество | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:206–212 | — | — | — | — | — | GetInventoryItemID/Count; отдельная механика Hunter — КАНДИДАТ; требуется трассировка |
+| 89. Считывание tooltip экипировки | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:275–280 | — | — | — | — | — | C_TooltipInfo.GetInventoryItem; защищённые значения — КАНДИДАТ; требуется трассировка |
+| 90. Ссылка предмета экипировки | уточнить API по указанному референсу | Sonah/Core/Atoms/Items.lua:310 | MaxDps/Helper.lua:1660 | — | — | — | — | GetInventoryItemLink; не подтверждает применимость — КАНДИДАТ; требуется трассировка |
+| 91. Идентификатор инстанса | уточнить API по указанному референсу | — | — | — | ForeverAuras/Prototypes.lua:180 | — | — | GetInstanceInfo select(8); не равен inDungeon/inRaid — КАНДИДАТ; требуется трассировка |
+| 92. Контекст вне инстанса | уточнить API по указанному референсу | — | MaxDps/SecretHelper.lua:332 | — | — | — | — | IsInInstance; не гарантирует solo — КАНДИДАТ; требуется трассировка |
+| 93. Threat по паре юнитов | уточнить API по указанному референсу | — | — | — | ForeverAuras/Prototypes.lua:97 | — | — | UnitDetailedThreatSituation wrapper; надо изучить возвращаемые значения — КАНДИДАТ; требуется трассировка |
+| 94. Время последнего изменения cooldown | уточнить API по указанному референсу | — | — | JustAC/BlizzardAPI/CooldownTracking.lua:15 | — | — | — | Инвалидация/кэш cooldown; отдельно от его числовой длительности — КАНДИДАТ; требуется трассировка |
+| 95. Форма друида через кэш | уточнить API по указанному референсу | — | — | JustAC/FormCache.lua:30 | — | — | — | Форма требует отдельной стратегии refresh — КАНДИДАТ; требуется трассировка |
+| 96. Предбоевое состояние/подготовка | уточнить API по указанному референсу | — | — | JustAC/PrecombatEngine.lua:115 | — | — | — | Precombat отличается от combat rotation — КАНДИДАТ; требуется трассировка |
+| 97. Защитная ветка вне обычного DPS | уточнить API по указанному референсу | — | — | JustAC/DefensiveEngine.lua:228 | — | — | — | Защитные правила/сигналы не смешивать с DPS приоритетом — КАНДИДАТ; требуется трассировка |
+| 98. Диапазон действия предмета | уточнить API по указанному референсу | — | — | — | ForeverAuras/ActionRange.lua:18 | — | — | Отдельный диапазон предмета и заклинания — КАНДИДАТ; требуется трассировка |
+| 99. Статус видимости/доступности кнопки | уточнить API по указанному референсу | — | — | JustAC/ActionBarScanner.lua:16–17 | ForeverAuras/ActionRange.lua:43 | — | — | Action slot vs binding vs usable — КАНДИДАТ; требуется трассировка |
+| 100. Наличие питомца в контексте классового профиля | уточнить API по указанному референсу | Sonah/Core/Atoms/Units.lua:1191 | — | — | — | — | RotationGuide/Core/State.lua:313 | Pet existence vs pet health/attack state — КАНДИДАТ; требуется трассировка |
+| 101. Определение цели-игрока и классификации | уточнить API по указанному референсу | — | — | — | — | ForeverRotation/CC.lua:46 | RotationGuide/Core/State.lua:308 | PvP unit vs elite/boss; проверить семантику — КАНДИДАТ; требуется трассировка |
+| 102. Различие combat lockdown и actual combat | уточнить API по указанному референсу | Sonah/Core/Atoms/Units.lua:120 | — | — | — | ForeverRotation/Core.lua:127 | — | UI lockdown не означает агро — КАНДИДАТ; требуется трассировка |
 
-| Потребность профиля (одна задача на строку) | API/алгоритм | Sonah | MaxDps Forever | JustAC | ForeverAuras | ForeverRotation | RotationGuide | Предварительное решение Kord |
-|---|---|---|---|---|---|---|---|---|---|
-| Цель существует | UnitExists | Sonah/Core/Atoms/Units.lua:46 | — | JustAC/BlizzardAPI/StateHelpers.lua:25 | — | ForeverRotation/CC.lua:43 | RotationGuide/Core/State.lua:301 | UnitExists via guarded unit reader; pending client |
-| Цель враждебна | UnitCanAttack | Sonah/Core/Atoms/Units.lua:60 | — | JustAC/BlizzardAPI/StateHelpers.lua:26 | — | ForeverRotation/CC.lua:43 | RotationGuide/Core/State.lua:285 | UnitCanAttack; pending client |
-| Здоровье цели | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Guarded health pair; pending client |
-| Здоровье игрока | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Same unit reader; pending client |
-| Здоровье питомца | UnitHealth / UnitHealthMax | Sonah/Core/Atoms/Units.lua:569 | — | JustAC/BlizzardAPI/StateHelpers.lua:23 | — | — | — | Candidate same unit reader; pet case unverified |
-| Мана / ресурс | UnitPower | Sonah/Core/Atoms/Units.lua:326 | — | JustAC/BlizzardAPI/StateHelpers.lua:2155 | — | ForeverRotation/Engine.lua:84 | RotationGuide/Core/State.lua:234 | Separate mana from active power type; pending client |
-| Уровень игрока | UnitLevel | Sonah/Core/Atoms/Units.lua:158 | — | JustAC/BlizzardAPI/StateHelpers.lua:1597 | — | ForeverRotation/Engine.lua:393 | RotationGuide/Core/State.lua:309 | Centralized unit reader; pending client |
-| Класс игрока | UnitClass | Sonah/Core/Atoms/Units.lua:80 | — | JustAC/BlizzardAPI/StateHelpers.lua:2359 | — | ForeverRotation/Core.lua:181 | RotationGuide/Core/API.lua:45 | Class token; pending client |
-| Игрок движется | IsPlayerMoving | — | — | JustAC/DebugCommands.lua:8826 (debug only) | — | ForeverRotation/Engine.lua:56 | — | Guarded candidate, no false on error |
-| Дистанция применения способности | IsSpellInRange | Sonah/Core/Atoms/Spells.lua:445 | — | JustAC/BlizzardAPI/StateHelpers.lua:397 | — | ForeverRotation/Engine.lua:3 | RotationGuide/Core/State.lua:248 | Spell-specific boolean; not meters |
-| Кулдаун способности | GetSpellCooldown / C_Spell | Sonah/Core/Atoms/Spells.lua:289 | — | JustAC/BlizzardAPI/CooldownTracking.lua:15 | — | ForeverRotation/Display.lua:302 | RotationGuide/Core/State.lua:101 | SpellID cooldown + guarded return; pending client |
-| Баффы игрока | Aura reader | Sonah/Core/Atoms/Auras.lua:743 | — | JustAC/BlizzardAPI/SecretValues.lua:239 | ForeverAuras/API.lua (review required) | ForeverRotation/Rotations/Buffs.lua (review required) | — | Prefer aura scan with secret handling; exact API TBD |
-| Дебаффы цели | Aura reader | Sonah/Core/Atoms/Auras.lua:743 | — | JustAC/BlizzardAPI/SecretValues.lua:239 | ForeverAuras/API.lua (review required) | — | — | Same aura reader, unit-specific; exact API TBD |
-| Агро / угроза | UnitThreatSituation | Sonah/Core/Atoms/Units.lua:1318 | — | JustAC/BlizzardAPI/StateHelpers.lua:81 | — | — | — | Threat is not equivalent to hasAggro; unresolved |
-| Каст противника | UnitCastingInfo | Sonah/Core/Atoms/Casts.lua:26 | — | JustAC/BlizzardAPI/StateHelpers.lua:129 | — | ForeverRotation/Engine.lua:170 | — | Casting reader; interruptability separate |
-| Число врагов | Nameplate enumeration | — | — | JustAC/BlizzardAPI/StateHelpers.lua:82–108 | — | — | — | Observed engaged nameplates only; not exact total |
-| Группа / рейд | GetNumGroupMembers | Sonah/Core/Atoms/Units.lua:1214 | — | JustAC/DebugCommands.lua:5474 (debug only) | — | — | — | Candidate, not equivalent to dungeon/raid |
-| Подземелье / рейд | Instance context | — | — | JustAC/DebugCommands.lua:284 (debug only) | — | — | — | Unresolved; no confirmed runtime provider |
-| Изученность заклинания | Spellbook scan | Sonah/Core/Atoms/Spells.lua:68–96 | — | JustAC/BlizzardAPI/SpellQuery.lua:69–93 | — | — | RotationGuide/Core/State.lua:24–67 | Sonah rank resolver candidate |
-| Ранг заклинания | Highest learned rank | Sonah/Core/Atoms/Spells.lua:139–246 | — | JustAC/BlizzardAPI/SpellQuery.lua:69–93 | — | — | RotationGuide/Core/State.lua:24–67 | Central ability-to-rank resolver |
-| Доступность / стоимость | Usability query | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/SpellQuery.lua (audit) | — | ForeverRotation/Engine.lua (audit) | RotationGuide/Core/State.lua:79–109 | Keep distinct from cooldown/range |
-| Прерывание | Enemy cast + interrupt spell | Sonah/Core/Atoms/Casts.lua:26 | — | JustAC/BlizzardAPI/StateHelpers.lua:129 | — | ForeverRotation/Rotations/Interrupts.lua (audit) | — | Requires cast/interruptible/ready separately |
-| Контроль / CC | Aura and unit state | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | ForeverRotation/CC.lua (audit) | — | Unresolved CC-safe AoE |
-| Автовыстрел / автоатака | Attack state | — | — | — | — | ForeverRotation/Rotations/Hunter.lua (audit) | — | Unresolved |
-| GCD | Global cooldown | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/CooldownTracking.lua (audit) | — | ForeverRotation/Engine.lua (audit) | RotationGuide/Core/State.lua (audit) | Must distinguish spell cooldown |
-| Заряды способности | Charges query | Sonah/Core/Atoms/Spells.lua (audit) | — | JustAC/BlizzardAPI/SpellQuery.lua (audit) | — | — | — | Unresolved exact return |
-| Остаток баффа | Aura expiration | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/SecretValues.lua (audit) | ForeverAuras/API.lua (audit) | — | — | Expiration and current time; pending |
-| Остаток дебаффа | Aura expiration | Sonah/Core/Atoms/Auras.lua (audit) | — | JustAC/BlizzardAPI/SecretValues.lua (audit) | ForeverAuras/API.lua (audit) | — | — | Same aura model |
-| Таланты / специализация | Talent reader | Sonah/Core/Atoms/Talents.lua:535 | — | — | — | — | — | Unresolved spec contract |
-| Питомец атакует цель | Pet target state | Sonah/Core/Atoms/Units.lua (audit) | — | — | — | ForeverRotation/Rotations/Hunter.lua (audit) | — | Unresolved |
-| Время до смерти цели | TTD estimator | — | — | — | — | — | — | Unresolved |
-| Доступность action bar | Action bar inspection | — | — | JustAC/ActionBarScanner.lua (audit) | — | — | — | Separate from ability readiness |
-| Привязка клавиши | Binding inspection | — | — | JustAC/ActionBarScanner.lua (audit) | — | — | — | Unresolved exact mapping |
-| Изменение формы / стойки | Form/stance state | Sonah/Classes/Druid.lua (audit) | — | — | — | ForeverRotation/Rotations/Druid.lua (audit) | — | Unresolved |
-| Условия лечения / диспела | Friendly target + aura | Sonah/Classes/Priest.lua (audit) | — | — | ForeverAuras/API.lua (audit) | ForeverRotation/Rotations/Priest.lua (audit) | — | Unresolved |
-| Тринкеты / расовые / предметы | Usable action | Sonah/Classes/Racials.lua (audit) | — | — | — | — | — | Unresolved |
-| Опасный входящий урон | Threat/health/encounter | — | — | — | — | — | — | Unresolved; no guess |
-| PvP / игрок-цель | Unit player test | Sonah/Core/Atoms/Units.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | — | — | Unresolved |
-| Воскрешение / смерть | Unit death | Sonah/Core/Atoms/Units.lua (audit) | — | JustAC/BlizzardAPI/StateHelpers.lua (audit) | — | — | — | Unresolved |
+## Проверка покрытия и пробелы
 
-## Следующий обязательный проход
+**Объединены** прежние три набора: 39 первоначальных, 44 добавленных из профилей, 18 добавленных после сканирования архивов. Совпадающие по написанию требования слиты; семантически близкие, но неэквивалентные оставлены отдельными. **Число строк не равно числу полностью подтверждённых API-методов.**
 
-1. Для каждой строки проверить **каждый** из шести референсов, включая профили и вспомогательные API-обёртки; заменить `—` и `(audit)` на точные места либо документированное отсутствие после полного поиска.
-2. Для каждого найденного метода записать точную сигнатуру, возвращаемые значения, доступность в Forever, защиту secret values, cache/refresh, поведение при ошибке.
-3. Сравнить альтернативы по точности, безопасности, покрытию потребности, ограничениям и частоте обновления; лишь после этого зафиксировать окончательный выбор Kord.
-4. Выполнить проверки на актуальном Forever-клиенте; отдельные статусы SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN.
-5. Только после завершения матрицы планировать замену движка. **Никакой метод не сохраняется исключительно потому, что он уже реализован в Kord.**
+Источники для дальнейшей проверки: `Sonah.zip` (в том числе `Classes/`, `Core/Atoms/`), `MaxDps.zip` (только `Specialization/Forever/` как Forever-специфичная реализация), `JustAC.zip` (`Data/Forever/Rotations.lua`, `BlizzardAPI/`), `ForeverAuras.zip` (API, ауры, range, prototype), `ForeverRotation.zip` (`Rotations/`, `Engine.lua`), `RotationGuide.zip` (`Data/`, `Core/State.lua`).
 
+**Критические незакрытые проверки:** число/секретность HP и ресурсов; реальное число врагов; тип инстанса и solo/open-world; точное расстояние vs проверка радиуса заклинания; threat vs aggro; GCD vs spell/shared/item cooldown; ауры с владельцем, длительностью и стаками; Hunter ammo/auto shot/pet; привязка кнопки vs изученность и доступность способности. Отдельно проверить negative/unknown semantics, секретные значения, ранги и клиентскую версию API.
 
-## Дополнительная сверка потребностей по реальным профилям (2026-11-21)
+**Следующая работа:** пройти каждую строку и все шесть колонок, выписать `profile → helper → API` с точным файлом/строкой, аргументами, возвращаемым значением, fallback, ограничениями и статусом `SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN`. По результатам выбрать метод и объяснить, почему он лучше альтернатив. До этого **движок не переписывать**, отсутствие свидетельства не превращать в `false` или `0`.
 
-**Результат:** исходные 39 строк НЕ покрывали все условия. Дополнительно выявлено **44** отдельных потребностей из классовых профилей Sonah, 27 файлов MaxDps `Specialization/Forever`, Forever-APL JustAC и профилей ForeverRotation. Это **список обнаруженных пропусков**, не заявление о полном покрытии. В столбце источника приводится файл/строка или явно обозначен требующий аудита участок. Прочерк в основной таблице нельзя считать доказательством отсутствия функции. В этой сверке не утверждается, что клиент Forever проверен.
+## История
 
-| Пропущенная потребность (отдельная строка) | Реальный референс / свидетельство | Почему требуется отдельный контракт |
-|---|---|---|
-| Процент здоровья союзника / выбор цели лечения | Sonah/Classes/Druid.lua:527 C.healBelow; Sonah/Classes/Paladin.lua:202 C.healingOther | healing target != enemy target |
-| Невидимое/защищённое значение здоровья | Sonah/Classes/Druid.lua:162 C.healHidden; ForeverRotation/Rotations/Signals.lua:1–15 | secret-safe hint != numeric HP available to priority engine |
-| Порог здоровья цели / execute | Sonah/Classes/Mage.lua:189 C.targetBelow; JustAC/Data/Forever/Rotations.lua:633 t=execute | execute threshold separate from target health |
-| Наличие/обновление DoT по времени | Sonah/Classes/Druid.lua:185–186 C.dotRefresh; JustAC/Data/Forever/Rotations.lua:46 t=dot | refresh window separate from aura existence |
-| Проверка владельца HoT/DoT | Sonah/Classes/Priest.lua (header: own Renew) | own aura != any aura; exact implementation audit |
-| Стеки ауры | Sonah/Classes/Druid.lua:151 C.stacksBelow; MaxDps_Druid/Specialization/Forever/Balance.lua:28 MaxDps.Stacks; JustAC/Data/Forever/Rotations.lua:83 t=stack | count separate from aura active |
-| Стеки проков | Sonah/Classes/Druid.lua:338 C.proc | proc activation/stack semantics audit |
-| Оружейное зачарование | Sonah/Classes/Rogue.lua:196 C.weaponEnchantMissing | weapon enchant != player aura |
-| Тотем активен / нужен | JustAC/Data/Forever/Rotations.lua:492 t=totem | totem slot/existence audit |
-| Комбо-поинты | Sonah/Classes/Druid.lua:178 C.combo; JustAC/Data/Forever/Rotations.lua:71 res=combo_points | resource combo points separate from mana |
-| Энергия | JustAC/Data/Forever/Rotations.lua:68 res=energy; ForeverRotation/Rotations/Signals.lua:49 | resource typed and secret-safe |
-| Ярость | JustAC/Data/Forever/Rotations.lua:84 res=rage; ForeverRotation/Rotations/Signals.lua:59 | resource typed and secret-safe |
-| Нехватка ресурса / starved | MaxDps_Druid/Specialization/Forever/Balance.lua:45 MaxDps.Starved; JustAC/Data/Forever/Rotations.lua:45 t=starved | not equivalent to numeric mana |
-| Прогноз расхода ресурса | Sonah/Classes/Hunter.lua:136 C.spareMana; Sonah/Classes/Druid.lua:322 C.efficient | requires explicit resource cost and policy |
-| Доступность предмета в сумке | Sonah/Classes/Mage.lua:243 C.hasItem | inventory ownership vs cooldown |
-| Недавнее применение способности | Sonah/Classes/Druid.lua:540 C.notRecent | cast history separate from cooldown |
-| Очередь/ожидание каста | Sonah/Classes/Druid.lua:156 C.castPending | pending cast separate from currently casting |
-| Проверка возможности закончить каст | Sonah/Classes/Mage.lua:302 C.notCasting; Sonah/Classes/Druid.lua:156 C.castPending | channel/cast interruption audit |
-| Окно автоатаки / swing timer | JustAC/Data/Forever/Rotations.lua:121 t=swing; Sonah/Classes/Druid.lua:447 C.autoActive | timing != autoattack active |
-| Тик периодического урона | JustAC/Data/Forever/Rotations.lua:450 t=tick | tick timing distinct from DoT duration |
-| Стелс | JustAC/Data/Forever/Rotations.lua:435 t=stealth | stealth state != combat |
-| Контроль персонажа / root | Sonah/Classes/Druid.lua:197 C.lossOfControl('root') | root/stun/silence separate signals |
-| Прерываемость вражеского каста | Sonah/Classes/Druid.lua:26 C.targetInterruptible | cast present != interruptible |
-| Снятие дебафа с союзника | Sonah/Classes/Druid.lua:548–550 C.healDispellable('Curse'/'Poison') | debuff type and dispel capability |
-| Самодиспел | Sonah/Classes/Mage.lua:309 C.selfDispellable | self vs party target |
-| Групповой баф отсутствует | Sonah/Classes/Mage.lua:231 C.partyBuffMissing | party coverage != player buff |
-| Классовый баф отсутствует | Sonah/Classes/Druid.lua:233 C.buffMissing | buff scope / owner |
-| Тип цели: игрок | Sonah/Classes/Druid.lua:196 C.targetIsPlayer | PVP player-target detection |
-| Тип цели: элита/босс | Sonah/Classes/Druid.lua:176 C.targetElite; Sonah/Classes/Hunter.lua:310 C.targetBoss | elite != boss |
-| Класс вражеской цели | Sonah/Classes/Hunter.lua:129 C.targetClass; Sonah/Classes/Druid.lua:199 C.targetClassOrUnknown | class-aware PVP |
-| Наличие оружия дальнего боя | Sonah/Classes/Hunter.lua:219 C.rangedWeapon | equipment prerequisite |
-| Достаточное количество противников для AoE | MaxDps_Druid/Specialization/Forever/Balance.lua:24 MaxDps:SmartAoe; JustAC/Data/Forever/Rotations.lua:58 t=targets | observable count + thresholds |
-| Состояние игрока в соло/квестах | Sonah/Classes/Druid.lua:237 C.solo; Sonah/Classes/Druid.lua:319 C.questing | solo != open world != dungeon |
-| Наличие группы и число участников | Sonah/Classes/Druid.lua:219 C.inGroup; Sonah/Classes/Druid.lua:531 C.groupBelow | group count separate from instance type |
-| Наличие талантов/рангов талантов | Sonah/Classes/Druid.lua:147 C.talent; Sonah/Classes/Druid.lua:243 C.noTalent | known spell != talent rank |
-| Специализация / дерево | Sonah/Classes/Hunter.lua:149 C.spec | spec ID mapping |
-| Изменение формы и запрет способностей | Sonah/Classes/Druid.lua:164 C.form; Sonah/Classes/Druid.lua:169 C.noForm | form gating |
-| Состояние pet отсутствует / призыв | Sonah/Classes/Hunter.lua:110 C.noPet; Sonah/Classes/Hunter.lua:159 C.hasPet | pet existence separate from alive/dead |
-| Агро отсутствует / высокое агро | Sonah/Classes/Druid.lua:184 C.aggro; Sonah/Classes/Druid.lua:430 C.noAggro | threat thresholds and roles |
-| Защитная рекомендация вне ротации | ForeverRotation/Rotations/Signals.lua:1–15,31–42 | UI hint separate from priority action |
-| Проверка ограничения секретных чисел | ForeverRotation/Rotations/Signals.lua:1–15 | curve UI cannot imply readable percentage |
-| Условие неизвестности заклинания | Sonah/Classes/Druid.lua:180 C.unknown; JustAC/Data/Forever/Rotations.lua:160 t=unconfirmed | unknown != unavailable |
-| Проверка таланта / уровня до применения | Sonah/Classes/Druid.lua:325 C.level; Sonah/Classes/Druid.lua:322 C.levelBelow | level-gated rank |
-| Проверка GCD vs общего/shared cooldown | Sonah/Classes/Hunter.lua:24–27 sharedCd fields | shared cooldown separate from GCD and spell CD |
-
-### Обнаруженная архитектурная проблема
-
-`ForeverRotation/Rotations/Signals.lua` прямо описывает `UnitPowerPercent`/`UnitHealthPercent` с `C_CurveUtil`: **скрытый процент передаётся в прозрачность индикатора, аддон не читает число**. Поэтому `playerHealthPercent`, `manaPercent`, `targetHealthPercent` нельзя объявлять универсально доступными числовыми сигналами без проверки на актуальном билде. Необходимо отдельно учитывать: (a) точный числовой сигнал, (b) защищённый/нечитаемый сигнал, (c) визуальный threshold hint, который не влияет на приоритет ротации. Это критическая недоработка первоначальной матрицы.
-
-### Статус полноты
-
-**Минимум 83 выявленных строк** в основном реестре и дополнении; это НЕ окончательное число. Полный построчный cross-reference по всем методам шести архивов, полное заполнение шести столбцов каждой строки и игровой тест НЕ завершены. Перед переписыванием движка нужно объединить строки в одну таблицу, проверить все альтернативы и классифицировать каждую по SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN.
-
-
-## Третий проход — скан всех шести архивов (2026-11-21)
-
-Проверены непосредственно доступные ZIP: **Sonah 83, MaxDps 252, JustAC 125, ForeverAuras 290, ForeverRotation 28, RotationGuide 20 Lua-файлов** (всего 798, включая встроенные библиотеки, локализации и технические модули). Автоматический поиск по 16 категориям API выполнен по всем Lua-файлам; результаты далее сверены с конкретными строками в указанных файлах. Это **статический поиск, не полное семантическое ревью всех 798 файлов**. Фактическое использование метода в конкретной ротации требует отдельной трассировки от профиля до helper. Файлы `Specialization/TWW`, `Classic`, `Cata` MaxDps **не являются Forever-источниками** и не должны использоваться как доказательство Forever.
-
-**Новые явные разделения (ещё 18 строк, итого не менее 101 выявленных потребностей; возможны пересечения по предметной области, поэтому итоговое число не считать дедуплицированным):**
-
-| Дополнительная отдельная потребность | Реальное место в референсе | Требование к контракту |
-|---|---|---|
-| Слот экипировки → itemID | Sonah/Core/Atoms/Items.lua:46; JustAC/PrecombatEngine.lua:115; ForeverAuras/GenericTrigger.lua:3790 | GetInventoryItemID; отдельный сигнал от наличия предмета в сумке |
-| Кулдаун экипированного предмета | Sonah/Core/Atoms/Items.lua:124–125 | GetInventoryItemCooldown; не spell cooldown |
-| Наличие оружия дальнего боя по слоту | Sonah/Core/Atoms/Items.lua:192–193 | GetInventoryItemID slot RANGED; не дальность цели |
-| Боеприпасы: слот/количество | Sonah/Core/Atoms/Items.lua:206–212 | GetInventoryItemID/Count; отдельная механика Hunter |
-| Считывание tooltip экипировки | Sonah/Core/Atoms/Items.lua:275–280 | C_TooltipInfo.GetInventoryItem; защищённые значения |
-| Ссылка предмета экипировки | Sonah/Core/Atoms/Items.lua:310; MaxDps/Helper.lua:1660 | GetInventoryItemLink; не подтверждает применимость |
-| Идентификатор инстанса | ForeverAuras/Prototypes.lua:180 | GetInstanceInfo select(8); не равен inDungeon/inRaid |
-| Контекст вне инстанса | MaxDps/SecretHelper.lua:332 | IsInInstance; не гарантирует solo |
-| Threat по паре юнитов | ForeverAuras/Prototypes.lua:97 | UnitDetailedThreatSituation wrapper; надо изучить возвращаемые значения |
-| Время последнего изменения cooldown | JustAC/BlizzardAPI/CooldownTracking.lua:15 | Инвалидация/кэш cooldown; отдельно от его числовой длительности |
-| Форма друида через кэш | JustAC/FormCache.lua:30 | Форма требует отдельной стратегии refresh |
-| Предбоевое состояние/подготовка | JustAC/PrecombatEngine.lua:115 | Precombat отличается от combat rotation |
-| Защитная ветка вне обычного DPS | JustAC/DefensiveEngine.lua:228 | Защитные правила/сигналы не смешивать с DPS приоритетом |
-| Диапазон действия предмета | ForeverAuras/ActionRange.lua:18 | Отдельный диапазон предмета и заклинания |
-| Статус видимости/доступности кнопки | JustAC/ActionBarScanner.lua:16–17; ForeverAuras/ActionRange.lua:43 | Action slot vs binding vs usable |
-| Наличие питомца в контексте классового профиля | RotationGuide/Core/State.lua:313; Sonah/Core/Atoms/Units.lua:1191 | Pet existence vs pet health/attack state |
-| Определение цели-игрока и классификации | RotationGuide/Core/State.lua:308; ForeverRotation/CC.lua:46 | PvP unit vs elite/boss; проверить семантику |
-| Различие combat lockdown и actual combat | ForeverRotation/Core.lua:127; Sonah/Core/Atoms/Units.lua:120 | UI lockdown не означает агро |
-
-### Результаты и исправления предыдущего аудита
-
-- **Исправление:** ранее помеченный как невыбранный источник инстанса требует нового исследования: в `ForeverAuras/Prototypes.lua:180` встречается `GetInstanceInfo()`, а в `MaxDps/SecretHelper.lua:332` — `IsInInstance()`. Эти примеры не доказывают наличие корректного `inDungeon/inRaid` на текущем Forever, но опровергают прежнюю идею, что нет даже кандидатов.
-- **Исправление:** `Sonah/Core/Atoms/Items.lua:192–212` отдельно работает с дальнобойным оружием и боеприпасами. В матрице Hunter это нужно разделять на `rangedWeaponEquipped` и `ammoAvailable`, если профиль реально использует эти факты.
-- **Ограничение:** часть результатов regex относится к комментариям, helper-файлам, UI, библиотекам или не-Forever веткам; автоматический hit **не равен** подтверждённому способу для ротации.
-- **Статус:** не выполнены исчерпывающая ручная трассировка каждого условия каждого профиля, шесть точных сопоставлений для каждой строки, проверка всех клиентских API в игре. Полнота **NOT VERIFIED**. Нельзя объявлять матрицу завершённой или начинать удаление движка только по этому скану.
+v3: 39 строк основной матрицы + 44 строки дополнительной сверки + 18 строк третьего сканирования. v4: объединены в единую таблицу с шестью референсными колонками; ни один непроверенный кандидат не объявлен подтверждённым.
