@@ -1,6 +1,4 @@
 -- Kord Rotation | Hunter Survival | Level 60 | PVE | WoW Forever
--- Endgame design profile (standalone, NOT registered in TOC). Reference priority: Sonah,
--- cross-checked against MaxDps Forever, ForeverRotation, RotationGuide, JustAC.
 -- No direct WoW API. Shared GameData adapter supplies canonical, verified signals.
 -- UNKNOWN is nil; only explicit true/false may prove a condition.
 -- Interface: SV.Next(state, options) -> {spellID, spell, phase, reason} or nil.
@@ -102,7 +100,6 @@ local function maintenance(s,o)
   end
  end
  if opt(o,'aspectReminder') and s.inCombat==false then
-  -- Sonah: Monkey before Beast is learned, Beast after level 30 if known.
   if type(s.known)=='table' and s.known.AspectBeast==true then
    local r=attempt(s,'AspectBeast',absent(s.playerBuffs,'AspectBeast')
     and s.otherAspectActive==false,'buff','Survival melee aspect')
@@ -173,7 +170,6 @@ local function meleeDamage(s,o)
  local dungeon=group(s)
  local style=opt(o,'manaStyle')
  local r
- -- Sonah: questing opener; raids preserve reactive attacks and mark uptime.
  if not weaving and questing(s) and opt(o,'manaStyle')~='efficient' then
   r=recommend(s,'StriderKick','melee','Questing opener: Strider Kick')
   if r then return r end
@@ -192,7 +188,6 @@ local function meleeDamage(s,o)
   r=recommend(s,'StriderKick','melee','Weapon-damage kick')
   if r then return r end
  end
- -- Sonah: in group content balanced/efficient preserve mana; never queue twice.
  local skipRaptor=dungeon and (style=='balanced' or style=='efficient')
  if not skipRaptor and not weaving and s.raptorStrikeQueued==false then
   r=recommend(s,'RaptorStrike','melee','Queue next melee swing once')
