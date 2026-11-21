@@ -64,12 +64,42 @@ function O:Read()
     }
     return result
 end
+-- Explicit DevTools-only, pull-based target comparison. No raw unit data,
+-- GUIDs, health, spell IDs or internal table references cross the bridge.
+function O:ReadTarget()
+    local api=KR.GameAPI
+    local function boolRecord(r)
+        local v=field(r,"value")
+        if field(r,"status")=="READY" and type(v)=="boolean" then return v end
+        return nil
+    end
+    local live
+    if api and type(api.Read)=="function" then
+        local ok,result=pcall(api.Read,api,"UnitExists","boolean","target")
+        if ok then live=boolRecord(result) end
+    end
+    local game=KR.GameState
+    local snapshot=field(game,"current")
+    local target=field(snapshot,"target")
+    local cached=boolRecord(field(target,"exists"))
+    local out={liveStatus=live==nil and "UNKNOWN" or "READY",
+        snapshotStatus=cached==nil and "UNKNOWN" or "READY"}
+    if live~=nil then out.liveExists=live end
+    if cached~=nil then out.snapshotExists=cached end
+    return out
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
     Read=function()
         local ok,result=pcall(O.Read,O)
         if not ok then return {version=1,status="ERROR",engineStatus="UNKNOWN"} end
+        return result
+    end,
+    Target=function()
+        local ok,result=pcall(O.ReadTarget,O)
+        if not ok then return {liveStatus="UNKNOWN",snapshotStatus="UNKNOWN"} end
         return result
     end,
     Probe=function(_,name)
