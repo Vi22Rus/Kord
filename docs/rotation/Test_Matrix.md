@@ -156,3 +156,14 @@
 | ENG-284D-001 | Настоящие Profiles+Engine+Eligibility, mock API | Порядок, cooldown, GCD, target, context, snapshot failure | PASS run 44888049693 / 28104bbb | NOT RUN |
 
 CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua`; подтверждено логу Actions: 9/9 Lua mock suites PASS, including integration 28 assertions. Игровые тесты, диагностика CPU/RAM и v14 #20 highest learned rank остаются NOT RUN.
+
+## 2.8.5a–e — интеграция Engine, BindingResolver, EventBus, UI
+| ID | Проверка | Ожидаемое | Локально | GitHub CI | WoW Forever |
+|---|---|---|---|---|---|
+| UI-285A-001 | Неверный Spell ID, texture, имя, источник или лишняя queue | Пустая рекомендация, скрытая production-панель | NOT RUN | NOT RUN | NOT RUN |
+| UI-285B-001 | Чужой BindingResolver Spell ID, пустая клавиша, UNKNOWN | keybind=nil, без ложного отображения | NOT RUN | NOT RUN | NOT RUN |
+| UI-285C-001 | EventBus bindings/target/cooldowns | Обновление без старой иконки | NOT RUN | NOT RUN | NOT RUN |
+| UI-285D-001 | Нет профиля, профиль выключен, showPanel=false | Рабочая иконка очищается | NOT RUN | NOT RUN | NOT RUN |
+| UI-285E-001 | Тестовый режим и 5 слотов | TEST отдельно, только одна production рекомендация | NOT RUN | NOT RUN | NOT RUN |
+
+Сценарии: `tests/stage_02_08_v14_display.lua`, обновлён `tests/stage_02_08_rotation_engine.lua`. Workflow добавляет десятый набор, но запускается **только вручную** один раз перед общим QA. Новых UI-строк нет; словари 6 языков не меняются. Изолированная реальная игровая FrameXML/Secret проверка и FPS/RAM — NOT RUN.

@@ -33,3 +33,12 @@
 - **d:** добавлен интеграционный mock реальных модулей `RotationProfiles + RotationEngine + AbilityEligibility`, подключён девятым Lua suite к Actions. По итоговому логу 9/9 PASS: Eligibility 57 checks; RotationEngine 38 assertions; GameState v14 31; guards 26; integration 28 assertions. `luac5.1 -p` PASS.
 - **Границы:** классные профили по-прежнему не активированы; Hunter priorities, ранги, v14 API, механизм двух аддонов и UI не менялись. Максимальный изученный ранг v14 #20, все 101 клиентских проверки, FPS/RAM и настоящая игра — **NOT RUN**. CI не доказывает клиентский API.
 
+
+## 2.8.5a–e — интерфейс и бинды (implementation, QA pending)
+**Дата:** 2026-11-21. **Статус:** IMPLEMENTED / LOCAL NOT RUN / CI NOT RUN / IN-GAME NOT RUN. Коммиты KR-20261121-034..038.
+- a: production recommendation проверяется до отображения по структуре источника, одной записи, безопасности Spell ID, текстуры и имени. Неподтверждённое отображение очищается.
+- b: ключ переносится только при точном совпадении spellID результата BindingResolver, корректной непустой и безопасной строке клавиши; UNKNOWN остаётся пустым ключом.
+- c: RotationDisplay подписан на существующие EventBus-каналы (включая bindings/actionbar/target/cooldowns), сохранив коалесцирование и ограниченный опрос 0,4 с.
+- d: при отключении или исчезновении профиля ранее показанная рекомендация очищается даже после остановки обычных вычислений. TEST-режим изолирован.
+- e: новый mock `tests/stage_02_08_v14_display.lua`, всего десять Lua наборов в ручном GitHub workflow; дополнения Test_Matrix. Никаких новых строк UI, приоритетов Hunter, новых API или классовых профилей.
+- CI умышленно не запускался по решению заказчика от 2026-11-21. Без завершённого локального/CI результата нельзя утверждать PASS. Игровой QA, v14 #20 и performance остаются NOT RUN.
