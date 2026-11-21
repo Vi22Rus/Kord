@@ -1,3 +1,9 @@
+## KR-20261121-026 — исправлен тестовый mock для отсутствующих полей зарядов
+- **Дата UTC:** 2026-11-21T08:56:53.887Z. **FAIL evidence:** [GitHub Actions run 44887103080](https://github.com/Vi22Rus/Kord/actions/runs/44887103080), SHA `05ffac3283332fae3474065be91cc509b1aa7b88`: syntax PASS, mock suite остановился на `tests/stage_02_07_eligibility.lua:120`, `missing currentCharges got READY expected UNKNOWN`. Не игнорировать этот FAILED run.
+- **Причина:** тестовая формула `missingChargeCount and nil or chargeCount` в Lua 5.1 не умеет создавать условное nil: выражение возвращает резервный chargeCount. Аналогичная ошибка была для maxCharges. **Это тестовая фикстура**, а не доказательство ошибки `AbilityEligibility`.
+- **Изменения:** в `tests/stage_02_07_eligibility.lua` mock `C_Spell.GetSpellCharges` теперь строит структуру с явными присваиваниями только известных полей. Источники ядра, приоритеты Hunter, TOC, UI и каноническая матрица v14 не меняются.
+- **Проверки:** требуется следующий confirmed CI PASS; игровой WoW Forever NOT RUN. Остальные новые кейсы уже включены в Test_Matrix, статусы PENDING до нового прогона.
+
 ## KR-20261121-025 — 2.8.3e: строгие заряды и GCD, пограничная регрессия
 - **Дата UTC:** 2026-11-21T08:54:49.504Z. **Решение:** согласованный продолжением вариант 2.8.3e; референсы `Sonah/Core/Atoms/Spells.lua` (GetSpellCharges и GCD), `JustAC/BlizzardAPI/CooldownTracking.lua`, MaxDps (Cooldowns.lua, SpellData.lua). Канон — матрица v14 #25/#26/#80/#83.
 - **Дефект/риск:** логическая путаница `isActive` у зарядов (recharge ≠ count), а также неявное принятие неполных ответов GCD как подтверждённой готовности. Рефакторинг сохраняет fail-closed и делает семантику явной.

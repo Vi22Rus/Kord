@@ -59,11 +59,10 @@ KR.GameAPI={
    return r({isActive=id==61304 and gcdActive or active,isOnGCD=false})
   end
   if name=="C_Spell.GetSpellCharges" then
-   return r({
-    currentCharges=missingChargeCount and nil or chargeCount,
-    maxCharges=missingChargeMax and nil or chargeMaximum,
-    isActive=chargeIsActive
-   })
+   local chargeInfo={isActive=chargeIsActive}
+   if not missingChargeCount then chargeInfo.currentCharges=chargeCount end
+   if not missingChargeMax then chargeInfo.maxCharges=chargeMaximum end
+   return r(chargeInfo)
   end
   if name=="C_Spell.IsSpellInRange" then
    return nilRange and {status="UNKNOWN"} or r(distance)
