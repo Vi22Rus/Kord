@@ -116,6 +116,8 @@ function D:Why()
             self:Safe(actionBar and actionBar.arcaneRankOnBar)
             and type(actionBar and actionBar.arcaneRankOnBar)=="number"
             and tostring(actionBar.arcaneRankOnBar) or "NOT CONFIRMED"),
+        "Arcane Shot FindSpell: "..status(actionBar and actionBar.arcaneFindStatus)
+            .." / "..reason(actionBar and actionBar.arcaneFindReason),
         "Profile (manual evaluation): "..status(diagnosis and diagnosis.profileStatus),
         "Profile (last UI evaluation): "..status(summary and summary.profileStatus),
         "Eligibility (ready/blocked/unknown): "
