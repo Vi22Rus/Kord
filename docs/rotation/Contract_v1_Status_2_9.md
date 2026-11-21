@@ -47,7 +47,7 @@
 
 ## Проверка границы фактов и провайдеров (KR-20261121-094)
 
-- До KR-20261121-097 методы `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствовали. Теперь `AbilityEligibility.Fact` частично реализован (см. ниже), а `GameState.ReadSignal` по-прежнему отсутствует. Вызовы условий через `S` остаются `UNKNOWN`/`nil` до реализации подтверждённых источников; наличие mock-заглушек в тесте не доказывает работоспособность WoW API.
+- До KR-20261121-097 методы `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствовали. Теперь `AbilityEligibility.Fact` частично реализован (см. ниже), а `GameState.ReadSignal` реализован частично для положительного доказательства аур (подробности ниже). Вызовы условий через `S` остаются `UNKNOWN`/`nil` до реализации подтверждённых источников; наличие mock-заглушек в тесте не доказывает работоспособность WoW API.
 - Добавлен mock-контроль: `Needs.ranges` запрещает вызов даже при включённом провайдере; подтверждённое `READY(false)` сохраняется как `false`, повторное чтение внутри контекста не происходит, а новый контекст читает заново.
 - Проверки сохранены как исходный код; **Lua 5.1 runtime NOT RUN**. Они не повышают статус `experimental`/`verified` и не разрешают подключение Hunter BM.
 
@@ -58,6 +58,15 @@
 - `known` и `chargesAtLeast` пока отвечают `UNKNOWN`: требуется отдельная доказательная проверка spellbook, а у `chargesAtLeast` нет порога в текущем интерфейсе `spellFact(id,kind)`.
 - В `tests/stage_02_07_eligibility.lua` добавлены сценарии true/false/UNKNOWN, secret Spell ID, защищённого поля cooldown и запрета угадывать `isActive` по `isOnGCD`. `GameState.ReadSignal` остаётся отсутствующим.
 - **Статус:** SOURCE IMPLEMENTED (partial), MOCKS UPDATED, LUA 5.1 NOT RUN, CLIENT NOT RUN. Никакие API не объявлены подтверждёнными в реальном WoW клиенте.
+
+## Первый этап GameState.ReadSignal (KR-20261121-101…102)
+
+- `GameState:ReadSignal` реализован только для `player.buff` и `target.debuff`, согласно v14 #12/#13. Использует `GameAPI.Read` и `GameAPI.ReadField`, не обращается к WoW API напрямую.
+- Истинное наличие возвращается как `READY(true)` лишь после проверки точного `spellId` и правильного флага `isHelpful`/`isHarmful`. `nil`, тайный/недоступный AuraData, несовпадающий ID, недоказанная категория и неизвестная цель дают `UNKNOWN`.
+- Отсутствие ауры **не** объявляется `READY(false)` из одиночного nil lookup: результат может быть скрыт или недоступен. Поэтому условия `S:isNot(...)` не будут ошибочно разрешать отсутствие DoT/баффа.
+- `tests/stage_02_03_game_state.lua` расширен mock-проверками положительного наличия, nil, protected values, несоответствия типа и отказа чтения при отсутствующей цели.
+- `enemy.count`, `target.ttd`, `autoShot.swing` и `spell.range` через GameState остаются без источников и возвращают `UNKNOWN`. Реальные игровые API не подтверждены клиентским тестированием.
+- **SOURCE IMPLEMENTED (partial); Lua 5.1 TESTS NOT RUN; WoW CLIENT NOT RUN; Actions NOT RUN.**
 
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
