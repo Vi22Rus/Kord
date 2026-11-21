@@ -54,3 +54,49 @@ function D:ProbeAll()
     if self.active then self:Record("API","READY","presence_only") end
     return self.lastProbe
 end
+
+-- Manual, bounded diagnostic report. No game-state mutation, cast, or
+-- uncontrolled logging. Main addon exposes only sanitized read-only data.
+function D:Why()
+    local summary=self:ReadCore()
+    local bridge=_G.KordRotationCoreObservation
+    local target
+    if type(bridge)=="table" and type(bridge.Target)=="function" then
+        local ok,value=pcall(bridge.Target)
+        if ok and type(value)=="table" and self:Safe(value) then target=value end
+    end
+    local function status(value)
+        if self:Safe(value) and (value=="READY" or value=="BLOCKED"
+            or value=="UNKNOWN" or value=="UNAVAILABLE"
+            or value=="ERROR") then return value end
+        return "UNKNOWN"
+    end
+    local function reason(value)
+        if not self:Safe(value) or type(value)~="string"
+            or #value>64 or not value:match("^[a-z][a-z0-9_]*$") then
+            return "unknown"
+        end
+        return value
+    end
+    local function observation(st,value)
+        if status(st)=="READY" and self:Safe(value)
+            and type(value)=="boolean" then return tostring(value) end
+        return "UNKNOWN"
+    end
+    local lines={
+        "Kord Rotation DevTools - manual diagnosis",
+        "Engine (last UI evaluation): "..status(summary and summary.engineStatus)
+            .." / "..reason(summary and summary.engineReason),
+        "Target UnitExists (live): "..observation(target and target.liveStatus,
+            target and target.liveExists),
+        "Target exists (cached snapshot): "..observation(
+            target and target.snapshotStatus,target and target.snapshotExists),
+        "Profile status: "..status(summary and summary.profileStatus),
+        "Eligibility (ready/blocked/unknown): "
+            ..tostring(type(summary)=="table" and summary.eligibilityReady or 0)
+            .."/"..tostring(type(summary)=="table" and summary.eligibilityBlocked or 0)
+            .."/"..tostring(type(summary)=="table" and summary.eligibilityUnknown or 0),
+        "NOTE: report is read-only. No live engine evaluation is triggered."
+    }
+    return table.concat(lines,"\n")
+end
