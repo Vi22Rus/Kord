@@ -46,7 +46,12 @@ KR.RotationSettings={
  GetProfile=function()return {enabled=active},"WARRIOR_TREE_1" end
 }
 local engineResult
-KR.RotationEngine={Evaluate=function()return engineResult end}
+KR.RotationEngine={Evaluate=function()
+ if not active or not registered or not selected then
+  return {status="UNKNOWN",source="RotationEngine",queue={}}
+ end
+ return engineResult
+end}
 local function ready()
  return {status="READY",source="RotationEngine",queue={{
     spellID=101,texture=101,name="Valid spell",source="verified_profile",keybind="1"
