@@ -94,8 +94,14 @@ engineResult=ready();engineResult.source="other"
 D:Refresh(true)
 eq(D.productionReady,false,"wrong engine source rejected")
 engineResult=ready()
+engineResult.profileID="WARRIOR_TREE_1"
+engineResult.diagnostics={{status="BLOCKED"},{status="READY"}}
 D:Refresh(true)
 eq(D.productionReady,true,"recovery restores icon")
+eq(D.lastSummary.profileStatus,"READY","profile summary verified")
+eq(D.lastSummary.eligibilityBlocked,1,"blocked count from last evaluation")
+eq(D.lastSummary.eligibilityReady,1,"ready count from last evaluation")
+eq(D.lastSummary.eligibilityUnknown,0,"no fabricated unknown count")
 eq(type(callbacks.bindings),"function","bindings subscribed")
 eq(type(callbacks.cooldowns),"function","cooldown subscribed")
 eq(type(callbacks.target),"function","target subscribed")

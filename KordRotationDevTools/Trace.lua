@@ -70,9 +70,13 @@ function D:ObserveTransition()
     end
     -- At most one aggregate transition per read. Rate-limited recorder may
     -- reject a sample; preserve previous marker and retry on the next tick.
-    local errors=tonumber(snapshot and snapshot.eventListenerErrors) or 0
-    if errors<0 or errors>1000000000 or errors~=math.floor(errors)
-        or not self:Safe(errors) then errors=0 end
+    local rawErrors=snapshot and snapshot.eventListenerErrors
+    local errors=0
+    if self:Safe(rawErrors) and type(rawErrors)=="number"
+        and rawErrors==rawErrors and rawErrors>=0 and rawErrors<=1000000000
+        and rawErrors==math.floor(rawErrors) then
+        errors=rawErrors
+    end
     if self.lastErrors==nil then self.lastErrors=errors end
     if errors>self.lastErrors then
         if self:Record("ERROR","ERROR","manual_sample") then
