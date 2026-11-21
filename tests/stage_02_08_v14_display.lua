@@ -13,7 +13,9 @@ local function frame()
   if key=="SetShown" then return function(self,v) self.visible=v end end
   if key=="ClearDisplayData" then return function(self) self.data=nil;self.cleared=self.cleared+1 end end
   if key=="SetDisplayData" then return function(self,d) self.data=d end end
-  return nop
+  -- Mock functions are CamelCase; an unset data member must remain nil.
+  if type(key)=="string" and key:match("^%u") then return nop end
+  return nil
  end})
  return f
 end

@@ -1,3 +1,10 @@
+## KR-20261121-065 — исправление двух mock-фикстур по стороннему ревью
+- Дата: 2026-11-21 UTC; исходник `test_fixtures_fix.patch` передан заказчиком и сопоставлен с реальным кодом.
+- `tests/devtools_recorder.lua`: `issecretvalue(nil)` больше не считает `nil` секретным, когда тестовая переменная `saved` ещё не определена. Runtime-защита не меняется.
+- `tests/stage_02_08_v14_display.lua`: mock-фрейм возвращает `nil` для отсутствующих data-атрибутов вместо заглушки функции; только mock, не игровой UI.
+- Проверки: точные текстовые якоря патча подтверждены; полный Lua 5.1 прогон ещё NOT RUN на SHA, CI NOT RUN, WoW Forever CLIENT NOT RUN. Отдельный строгий mock методов — будущая задача.
+- Сборочные ZIP и Hunter не менялись.
+
 ## KR-20261121-064 — синхронизация руководства и контрактных реестров
 - Дата: 2026-11-21 UTC. Согласованная очистка перед этапом 2.9.
 - Обновлены BUILD_VARIANTS_AND_DIAGNOSTICS, PROJECT_CONTEXT, Kord_Rotation_Creation_Guide и rotation README/GameData_Contract/Profile_Registry: в каждом указана единая нормативная `docs/rotation/Profile_Contract.md` (SPEC ONLY), порядок до Hunter, отсутствие runtime aliases и не подтверждённая клиентом v14.

@@ -3,7 +3,8 @@ local saved
 local clock=1
 GetTime=function()clock=clock+0.1;return clock end
 local safe=false
-issecretvalue=function(v)return v==saved end
+-- A nil optional field is not a secret (test sentinel must first exist).
+issecretvalue=function(v)return saved~=nil and v==saved end
 local D={matrix="v14",version="test",active=false,records={},maxRecords=3,
  maxSessions=2,maxDuration=900,maxExport=32768,settings={}}
 function D:Safe(v) return not issecretvalue(v) end
