@@ -1,3 +1,9 @@
+## KR-20261121-103 — частичный GameState.ReadSignal для подтверждённого наличия аур
+- `GameState.lua`: добавлен ленивый источник `player.buff`/`target.debuff` по v14 #12/#13 с защищённым чтением через `GameAPI`. `READY(true)` только для совпадающих Spell ID и типовой категории aura; отсутствие результата не считается `false`.
+- `tests/stage_02_03_game_state.lua`: mock-проверки истинного наличия, nil/secret/wrong-ID/wrong-category и пропуска API при отсутствующей цели.
+- `Contract_v1_Status_2_9.md`: ограничения, отсутствие доказанного `READY(false)`, неподключённые TTD/swing/enemyCount зафиксированы. `UNKNOWN` сохранён.
+- **SOURCE IMPLEMENTED; Lua 5.1 mock regression NOT RUN, WoW client NOT RUN, GitHub Actions NOT RUN.** Hunter BM и оригинальный контракт не менялись.
+
 ## KR-20261121-099 — частичная реализация AbilityEligibility.Fact по v14
 - `AbilityEligibility.lua`: введён узкий факт-провайдер `cooldownActive` через `C_Spell.GetSpellCooldown.isActive` и `inRange` через `C_Spell.IsSpellInRange` с legacy fallback 0/1. Результаты только `READY(boolean)` или `UNKNOWN`; это не рекомендация к касту.
 - `known`, `chargesAtLeast` и GameState.ReadSignal остаются неподтверждёнными; `isOnGCD` не используется для подмены активности кулдауна.
