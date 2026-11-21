@@ -22,7 +22,7 @@ jobs:
           set -euo pipefail
           while IFS= read -r -d '' f; do
             luac5.1 -p "$f"
-          done < <(find KordRotation tests -name '*.lua' -type f -print0)
+          done < <(find KordRotation KordRotationDevTools tests -name '*.lua' -type f -print0)
       - name: Run existing and canonical v14 mock tests
         shell: bash
         run: |
@@ -38,7 +38,14 @@ jobs:
             tests/stage_02_08_v14_argument_guards.lua \
             tests/stage_02_08_v14_rotation_contract.lua \
             tests/stage_02_08_v14_display.lua \
-            tests/stage_02_08_v14_observation.lua; do
+            tests/stage_02_08_v14_observation.lua \
+            tests/devtools_recorder.lua \
+            tests/devtools_probe.lua \
+            tests/devtools_trace.lua \
+            tests/devtools_boot.lua \
+            tests/devtools_ui_locale.lua; do
             echo "RUN $f"
             lua5.1 "$f"
           done
+      - name: Verify byte-identical packaging and TOC references
+        run: python3 -m unittest discover -s tests -p 'test_build_variants.py' -v

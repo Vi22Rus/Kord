@@ -179,3 +179,18 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | CORE-286E-002 | Все 11 Lua suites на полном рабочем дереве | Локальный запускатель добавлен; общий прогон доступен после получения всех файлов в workspace | NOT RUN | NOT RUN | NOT RUN |
 
 **Принцип доказательств:** `LOCAL PASS` относится только к прямому запуску `tests/stage_02_08_v14_observation.lua` с файлом `CoreObservation.lua`, чьи Git blob SHA подтверждены соответственно `3e1fe9ffcbddbf37d9c72eec5bebf6626a9ae9db` и `c8ef6ac3d3abbd3d716557c3fe4d957acd059c8b`. Сценарии других модулей на этом SHA не исполнялись локально. Не переносить прежний CI PASS 2.8.4 на текущий коммит. GitHub Actions запускать один раз перед общим игровым QA, по согласованию заказчика.
+
+## DevTools DT-1–DT-6 — регрессия и статус доказательств
+| ID | Область | Требование | Локально | CI | WoW Forever |
+|---|---|---|---|---|---|
+| DT-001 | Две поставки | Все файлы KordRotation идентичны в обоих ZIP, DevTools только во втором | NOT RUN | NOT RUN | NOT RUN |
+| DT-002 | Загрузка | Два TOC, dependencies, отдельные SavedVariables, все модули существуют | NOT RUN | NOT RUN | NOT RUN |
+| DT-003 | Запись | Только ручной Start/Stop, после /reload выключена, ограничены буфер и история | NOT RUN | NOT RUN | NOT RUN |
+| DT-004 | Secret | Защищённые значения/имена/GUID не экспортируются | NOT RUN | NOT RUN | NOT RUN |
+| DT-005 | API v14 | Allowlist, presence-only не считается CLIENT PASS | NOT RUN | NOT RUN | NOT RUN |
+| DT-006 | Трассировка | EVENT/ENGINE лишь при записи, Stop отключает callbacks | NOT RUN | NOT RUN | NOT RUN |
+| DT-007 | UI | Семь рабочих кнопок, ручной текстовый экспорт, отсутствие DevTools UI в user ZIP | NOT RUN | NOT RUN | NOT RUN |
+| DT-008 | 6 локалей | Полные labels/tooltips для enUS/ruRU/frFR/deDE/ptBR/esES | NOT RUN | NOT RUN | NOT RUN |
+| DT-009 | Производительность | Время чтения observer; не выдавать за CPU всего аддона | NOT RUN | NOT RUN | NOT RUN |
+
+Полный мок-набор не является игровым доказательством; API матрица v14 CLIENT PASS по-прежнему 0/101. История предыдущих mock PASS к текущему SHA не переносится.

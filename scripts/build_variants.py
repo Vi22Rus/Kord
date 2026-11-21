@@ -13,7 +13,25 @@ FIXED=(2026,1,1,0,0,0)
 
 def contents(root, addon):
     base=root/addon
-    assert (base/(addon+".toc")).is_file(), "Missing addon TOC: "+addon
+    toc=base/(addon+".toc")
+    if not toc.is_file():
+        raise ValueError("Missing addon TOC: "+addon)
+    lines=toc.read_text(encoding="utf-8-sig").splitlines()
+    if addon==DEV:
+        if not any(line.strip()=="## Dependencies: KordRotation" for line in lines):
+            raise ValueError("DevTools must depend on canonical KordRotation")
+        if not any(line.strip()=="## SavedVariables: KordRotationDevToolsDB" for line in lines):
+            raise ValueError("DevTools must use separate SavedVariables")
+    for raw in lines:
+        line=raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        relative=line.replace("\\","/")
+        if not relative.endswith(".lua") or relative.startswith("/") or any(
+                piece in ("","..",".") for piece in relative.split("/")):
+            raise ValueError("Unexpected TOC entry: "+line)
+        if not (base/relative).is_file():
+            raise ValueError("Missing TOC-loaded Lua: "+addon+"/"+relative)
     return sorted(p for p in base.rglob("*") if p.is_file() and not p.is_symlink())
 
 def build(root, dest):
