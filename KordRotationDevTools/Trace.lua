@@ -123,7 +123,7 @@ function D:ObserveDetails(diagnosis,force,summary)
     self.lastDetailKeys=self.lastDetailKeys or {}
     local function fetch(method)
         local fn=bridge[method]
-        if type(fn)~="function" then return nil end
+        if type(fn)~="function" or not D:Safe(fn) then return nil end
         local ok,value=pcall(fn)
         if ok and type(value)=="table" and D:Safe(value) then return value end
         return nil
@@ -141,6 +141,8 @@ function D:ObserveDetails(diagnosis,force,summary)
     local function add(kind,st,why,detail)
         st=status(st)
         if not D:Safe(detail) then detail=nil end
+        if type(detail)=="string" and (#detail>64
+            or not detail:match("^[a-z][a-z0-9_]*$")) then detail=nil end
         if type(detail)~="number" and type(detail)~="string" then detail=nil end
         local key=kind..":"..why
         local signature=st..":"..(detail and tostring(detail) or "")
@@ -176,8 +178,11 @@ function D:ObserveDetails(diagnosis,force,summary)
     if bar then
         add("BAR",bar.status,"actionbar_scan",bar.reason)
         add("BAR",bar.status,"actionbar_buttons",bar.confirmedSpellButtons)
-        add("BAR",bar.arcaneRankOnBar and "READY" or "UNKNOWN",
-            "arcane_rank_on_bar",bar.arcaneRankOnBar)
+        local rank=bar.arcaneRankOnBar
+        local rankOK=D:Safe(rank) and type(rank)=="number"
+            and rank==math.floor(rank) and rank>=1 and rank<=8
+        add("BAR",rankOK and "READY" or "UNKNOWN",
+            "arcane_rank_on_bar",rankOK and rank or nil)
         add("BAR",bar.arcaneFindStatus,"arcane_findspell",
             bar.arcaneFindReason)
     end
