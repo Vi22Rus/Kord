@@ -1,3 +1,10 @@
+## KR-20261121-071 — ограниченный ленивый контекст S (этап 2.9-C)
+- Время: 2026-11-21 10:45 UTC. Изменены KordRotation/Core/RotationConditions.lua и KordRotation.toc (перед RotationEngine).
+- Причина: будущий профиль должен получать только утверждённые методы чтения, а не сырые snapshot поля и не прямой WoW API. Глобальный S не создаётся; создаётся на каждый Evaluate и принимает ленивые замыкания.
+- Добавлены S:is/isNot/eq/ge/le, all/any с short-circuit, S:spellAvailable, S:spellFact, ограничение Needs, кэш в рамках оценки, единый вызов AbilityEligibility; Fact без подтверждённого источника => nil, ReadSignal без провайдера => nil, прямой state не предоставляется. Метатаблица не даёт записывать новые поля. Никаких автоматических действий.
+- Защита: pcall для внешних чтений, проверка Secret через GameAPI:IsSafeValue, объявленные SpellID; Eligibility UNKNOWN не превращается в READY. До реализации провайдеров данные remain UNKNOWN, никакой предварительной загрузки.
+- Сравнены референсы Sonah/MaxDps/JustAC/ForeverRotation/RotationGuide; использована каноническая форма Kord, чужой код не копировался. Game client/CI/full regression NOT RUN; новые S tests — следующий шаг.
+
 ## KR-20261121-070 — Profile Contract v1: новый реестр (код 2.9-C, часть 1)
 - Дата/время: 2026-11-21 10:30 UTC, этап 2.9-C IN PROGRESS; предыдущий HEAD 34cd937e803424799b1b5804576a203278190e1f.
 - Проблема: старый 2.8 RotationProfiles принимал только verified=true и статичные single/aoe с семью boolean requires; не выражает Hunter BM и не различает уровень 1–59/60.
