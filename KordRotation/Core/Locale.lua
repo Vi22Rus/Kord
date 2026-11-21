@@ -531,9 +531,10 @@ translations["enUS"] = {
     ["TIP_NAV_INDICATORS"] = "Configure test defensive and interrupt indicators and future alerts.",
     ["TIP_NAV_PROFILES"] = "Create, rename, apply and bind appearance profiles.",
     ["TIP_NAV_ADVANCED"] = "Choose language, minimap options and reset controls.",
-    ["TIP_NAV_DIAGNOSTICS"] = "View technical state, refresh scans and copy troubleshooting data.",
+    ["TIP_NAV_DIAGNOSTICS"] = "View basic addon state. Advanced monitoring and API diagnostics are in the optional DevTools addon.",
     ["TIP_NAV_ABOUT"] = "Read addon version, authorship and compatibility information.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "Advanced monitoring, API probes, event tracing and report export are available in the separate Kord Rotation DevTools addon.",
 }
 
 -- ruRU translation; missing strings fall back to enUS.
@@ -1061,9 +1062,10 @@ translations["ruRU"] = {
     ["TIP_NAV_INDICATORS"] = "Тестовые индикаторы защиты и прерывания, будущие оповещения.",
     ["TIP_NAV_PROFILES"] = "Создание, переименование, применение и привязка профилей оформления.",
     ["TIP_NAV_ADVANCED"] = "Выбор языка, параметры миникарты и сброс настроек.",
-    ["TIP_NAV_DIAGNOSTICS"] = "Просмотр технического состояния, повторная проверка и копирование диагностики.",
+    ["TIP_NAV_DIAGNOSTICS"] = "Просмотр основных сведений об аддоне. Мониторинг и проверка API — в отдельном DevTools.",
     ["TIP_NAV_ABOUT"] = "Сведения о версии, авторстве и совместимости аддона.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "Расширенный мониторинг, проверка API, трассировка событий и экспорт отчётов доступны в отдельном аддоне Kord Rotation DevTools.",
 }
 
 -- frFR translation; missing strings fall back to enUS.
@@ -1591,9 +1593,10 @@ translations["frFR"] = {
     ["TIP_NAV_INDICATORS"] = "Indicateurs défensifs, interruptions et futures alertes.",
     ["TIP_NAV_PROFILES"] = "Créer, renommer, appliquer et associer des profils d'apparence.",
     ["TIP_NAV_ADVANCED"] = "Choisir la langue, les options de minicarte et les réinitialisations.",
-    ["TIP_NAV_DIAGNOSTICS"] = "Consulter l'état technique, relancer l'analyse et copier le diagnostic.",
+    ["TIP_NAV_DIAGNOSTICS"] = "Afficher l'état de base de l'addon. Le suivi et les tests API avancés sont dans DevTools.",
     ["TIP_NAV_ABOUT"] = "Lire la version, les crédits et la compatibilité de l'addon.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "Le suivi avancé, les tests API, les traces d'événements et l'export de rapports sont dans l'addon séparé Kord Rotation DevTools.",
 }
 
 -- deDE translation; missing strings fall back to enUS.
@@ -2121,9 +2124,10 @@ translations["deDE"] = {
     ["TIP_NAV_INDICATORS"] = "Testanzeigen für Defensive, Unterbrechung und künftige Warnungen.",
     ["TIP_NAV_PROFILES"] = "Darstellungsprofile erstellen, umbenennen, anwenden und verknüpfen.",
     ["TIP_NAV_ADVANCED"] = "Sprache, Minikartenoptionen und Zurücksetzen einstellen.",
-    ["TIP_NAV_DIAGNOSTICS"] = "Technischen Status prüfen, Scans erneuern und Diagnosen kopieren.",
+    ["TIP_NAV_DIAGNOSTICS"] = "Grundstatus des Addons anzeigen. Erweiterte Diagnose und API-Prüfungen gibt es im separaten DevTools.",
     ["TIP_NAV_ABOUT"] = "Version, Urheber und Kompatibilität des Addons anzeigen.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "Erweiterte Überwachung, API-Prüfungen, Ereignisprotokolle und Berichtsexport sind im separaten Kord Rotation DevTools verfügbar.",
 }
 
 -- ptBR translation; missing strings fall back to enUS.
@@ -2651,9 +2655,10 @@ translations["ptBR"] = {
     ["TIP_NAV_INDICATORS"] = "Indicadores defensivos, interrupções e alertas futuros.",
     ["TIP_NAV_PROFILES"] = "Criar, renomear, aplicar e vincular perfis de aparência.",
     ["TIP_NAV_ADVANCED"] = "Escolher idioma, opções do minimapa e redefinições.",
-    ["TIP_NAV_DIAGNOSTICS"] = "Ver estado técnico, atualizar verificações e copiar diagnósticos.",
+    ["TIP_NAV_DIAGNOSTICS"] = "Ver o estado básico do addon. Monitoramento avançado e testes de API ficam no DevTools separado.",
     ["TIP_NAV_ABOUT"] = "Ler versão, autoria e compatibilidade do addon.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "Monitoramento avançado, testes de API, rastreamento de eventos e exportação de relatórios estão no addon separado Kord Rotation DevTools.",
 }
 
 -- esES translation; missing strings fall back to enUS.
@@ -3181,9 +3186,10 @@ translations["esES"] = {
     ["TIP_NAV_INDICATORS"] = "Indicadores defensivos, interrupciones y futuras alertas.",
     ["TIP_NAV_PROFILES"] = "Crear, renombrar, aplicar y vincular perfiles de apariencia.",
     ["TIP_NAV_ADVANCED"] = "Elegir idioma, opciones de minimapa y restablecimientos.",
-    ["TIP_NAV_DIAGNOSTICS"] = "Ver estado técnico, actualizar análisis y copiar diagnósticos.",
+    ["TIP_NAV_DIAGNOSTICS"] = "Ver el estado básico del addon. La supervisión y pruebas de API están en DevTools.",
     ["TIP_NAV_ABOUT"] = "Leer versión, autoría y compatibilidad del addon.",
 
+    ["DIAG_DEVTOOLS_NOTE"] = "La supervisión avanzada, las pruebas de API, el rastreo de eventos y la exportación de informes están en el addon independiente Kord Rotation DevTools.",
 }
 
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.

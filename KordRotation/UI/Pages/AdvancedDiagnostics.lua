@@ -129,68 +129,27 @@ function KR.Pages:Advanced(parent)
 end
 
 function KR.Pages:Diagnostics(parent)
-    local body=scrolled(parent,1130)
+    -- User support summary only; no API scan, recorder, event history or export.
+    local body=scrolled(parent,780)
     local summary=panel(body,-13,245)
     prose(summary,"DIAG_TITLE",15,-12,510,true)
     local status=value(summary,15,-45,520)
     local details=value(summary,15,-147,520)
-    local compat=panel(body,-277,213)
-    prose(compat,"DIAG_API_TITLE",15,-12,520,true)
-    local caps=value(compat,15,-43,515)
-    local logFrame=panel(body,-508,227)
-    local refresh
-    prose(logFrame,"DIAG_EVENTS",15,-12,500,true)
-    local recent=value(logFrame,15,-41,518)
-    click(logFrame,"DIAG_TEST_UI",15,-185,170,function()
-        KR.RotationDisplay:ToggleTest()
-        refresh()
-    end)
-    local export=panel(body,-754,346)
-    prose(export,"DIAG_EXPORT_TITLE",15,-13,510,true)
-    prose(export,"DIAG_COPY_HELP",15,-40,505)
-    local field=CreateFrame("EditBox",nil,export,"InputBoxTemplate")
-    field:SetPoint("TOPLEFT",22,-92)
-    field:SetSize(474,177)
-    field:SetMultiLine(true)
-    field:SetScript("OnEnter",function(self) UI:ShowSettingTip(self,"DIAG_COPY_HELP") end)
-    field:SetScript("OnLeave",function() if GameTooltip then GameTooltip:Hide() end end)
-    field:SetAutoFocus(false)
-    field:SetMaxLetters(0)
-    field:SetScript("OnEscapePressed",function(self)self:ClearFocus()end)
-    refresh=function()
+    local compat=panel(body,-277,214)
+    prose(compat,"ADV_COMPAT_TITLE",15,-12,520,true)
+    local compatText=value(compat,15,-45,520)
+    local info=panel(body,-510,135)
+    prose(info,"DIAG_DEVTOOLS_NOTE",15,-16,500)
+    local function refresh()
         local snap=D:Snapshot()
         status:SetText(KR:Format("DIAG_SUMMARY",snap.class,snap.profile,snap.status,
             snap.counts,snap.trigger,snap.slots,snap.x,snap.y,snap.scale,
             snap.testMode and KR:L("UI_ENABLED") or KR:L("UI_DISABLED")))
         details:SetText(KR:Format("DIAG_DETAILS",tostring(snap.config),
             tostring(snap.branch),tostring(snap.method),snap.certainty))
-        caps:SetText(D:ProbeReport())
-        local lines=D.lines or {}
-        local recentLines={}
-        for i=math.max(1,#lines-5),#lines do
-            local entry=lines[i]
-            if entry then recentLines[#recentLines+1]=entry.time.." ["..entry.module.."] "..entry.text end
-        end
-        recent:SetText(table.concat(recentLines,"\n"))
-        field:SetText(D:Report())
+        compatText:SetText(D:CompatibilityText())
     end
-    click(export,"DIAG_RESCAN",15,-295,156,function()
-        KR:RefreshCharacter("diagnostic_manual")
-        refresh()
-    end)
-    click(export,"DIAG_CLEAR",183,-295,136,function()
-        D:Clear()
-        refresh()
-    end)
-    click(export,"DIAG_SELECT",331,-295,180,function()
-        field:SetText(D:Report())
-        field:SetFocus()
-        field:HighlightText()
-    end)
     parent.refresh=refresh
-    KR.RefreshDiagnosticsPage=function()
-        if parent:IsShown() then refresh() end
-    end
     refresh()
 end
 
