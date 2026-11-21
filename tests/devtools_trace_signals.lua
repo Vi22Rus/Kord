@@ -10,6 +10,8 @@ function D:Record(kind,status,reason)
  return true
 end
 assert(loadfile("KordRotationDevTools/Trace.lua"))("KordRotationDevTools",D)
+local detailedObserver=D.ObserveDetails
+D.ObserveDetails=function() return false end -- isolate legacy transition assertions
 local n=0
 local function eq(a,b,label)
  n=n+1
@@ -59,9 +61,51 @@ eq(D.entries[10].reason,"spellbook_unavailable","engine direct refusal preserved
 eq(D:ObserveTransition(),true,"first priority diagnostic recorded")
 eq(D.entries[11].kind,"ELIGIBILITY","first priority kind")
 eq(D.entries[11].reason,"action_slot_unconfirmed","first priority reason recorded")
+-- Detailed observations are now recorded with the session, not shown
+-- only in /krdev why. A sampled diagnostic must cover the full path.
+D.ObserveDetails=detailedObserver
+_G.KordRotationCoreObservation.ActionBar=function()
+ return {status="READY",reason="scan_has_spells",confirmedSpellButtons=29,
+  arcaneRankOnBar=4,arcaneFindStatus="READY",arcaneFindReason="confirmed"}
+end
+_G.KordRotationCoreObservation.Display=function()
+ return {panelEnabled=true,testMode=false,recommendationAccepted=false,
+  visibilityAllowed=false,frameCreated=true,frameShown=false,
+  lastEngineStatus="UNKNOWN",lastEngineReason="action_slot_unconfirmed"}
+end
+_G.KordRotationCoreObservation.Target=function()
+ return {liveStatus="READY",liveExists=true,
+  snapshotStatus="READY",snapshotExists=true}
+end
+local beforeDetails=#D.entries
+eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
+ arcaneR4Reason="action_slot_unconfirmed"},true),true,"detail sample created")
+local matches={}
+for i=beforeDetails+1,#D.entries do
+ local entry=D.entries[i]
+ matches[entry.reason]=entry.status
+end
+eq(matches.arcane_rank_4_rule,"UNKNOWN","rank four recorded")
+eq(matches.actionbar_scan,"READY","scanner recorded")
+eq(matches.actionbar_buttons,"READY","confirmed buttons recorded")
+eq(matches.arcane_rank_on_bar,"READY","rank on bar recorded")
+eq(matches.arcane_findspell,"READY","FindSpell recorded")
+eq(matches.target_live,"READY","live target recorded")
+eq(matches.target_snapshot,"READY","cached target recorded")
+eq(matches.panel_enabled,"READY","panel flag recorded")
+eq(matches.test_mode,"BLOCKED","test mode false recorded")
+eq(matches.recommendation_accepted,"BLOCKED","UI rejection recorded")
+eq(matches.visibility_allowed,"BLOCKED","frame gate recorded")
+eq(matches.frame_created,"READY","frame existence recorded")
+eq(matches.frame_shown,"BLOCKED","frame visibility recorded")
+eq(matches.ui_engine_status,"UNKNOWN","last UI engine recorded")
+local detailsCount=#D.entries
+eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
+ arcaneR4Reason="action_slot_unconfirmed"},true),true,"repeat sample available")
+eq(#D.entries,detailsCount,"unchanged detailed observations not duplicated")
 _G.KordRotationCoreObservation=nil
 D.active=false
 current.engineStatus="BLOCKED"
 eq(D:ObserveTransition(),false,"opt-in disabled")
-eq(#D.entries,11,"no late recording")
+eq(#D.entries,detailsCount,"no late recording")
 print("PASS DevTools aggregate trace mock: "..n.." assertions")
