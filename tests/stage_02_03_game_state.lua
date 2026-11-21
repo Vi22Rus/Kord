@@ -124,7 +124,8 @@ C_UnitAuras={
   return nil
  end,
 }
-local targetPresent={target={exists={status="READY",value=true}}}
+local targetPresent={target={exists={status="READY",value=true},
+ guid={status="READY",value="Creature-2"}}}
 local targetMissing={target={exists={status="READY",value=false}}}
 eq(KR.GameState:ReadSignal("player.buff",1978).value,true,"verified player buff")
 eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).value,true,
@@ -147,6 +148,32 @@ auraTarget={spellId=1978,isHarmful="SECRET"}
 eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
  "secret aura property fails closed")
 auraTarget={spellId=1978,isHarmful=true}
+local missingGuid={target={exists={status="READY",value=true}}}
+local beforeGuid=auraReads
+eq(KR.GameState:ReadSignal("target.debuff",1978,missingGuid).status,"UNKNOWN",
+ "target GUID is mandatory")
+eq(auraReads,beforeGuid,"missing GUID cannot query aura")
+local staleTarget={target={exists={status="READY",value=true},
+ guid={status="READY",value="Creature-OLD"}}}
+eq(KR.GameState:ReadSignal("target.debuff",1978,staleTarget).status,"UNKNOWN",
+ "snapshot GUID mismatch is UNKNOWN")
+eq(auraReads,beforeGuid,"stale target prevented before aura read")
+local actualGUID=UnitGUID
+local guidReadCount=0
+UnitGUID=function(unit)
+ if unit=="target" then
+  guidReadCount=guidReadCount+1
+  if guidReadCount>=2 then return "Creature-NEW" end
+ end
+ return actualGUID(unit)
+end
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "target changed during aura lookup")
+UnitGUID=actualGUID
+eq(KR.GameState:ReadSignal("target.debuff",1978,
+ {target={exists={status="READY",value=true},
+ guid={status="READY",value="SECRET"}}}).status,"UNKNOWN",
+ "secret GUID must not be compared or queried")
 eq(KR.GameState:ReadSignal("target.debuff","SECRET",targetPresent).status,"UNKNOWN",
  "protected aura ID rejected")
 local beforeUnsupported=auraReads
