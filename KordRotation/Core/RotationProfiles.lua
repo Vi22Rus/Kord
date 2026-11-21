@@ -22,13 +22,20 @@ local function spellID(n)
  return finite(n) and n==math.floor(n) and n>=1 and n<=99999999
 end
 local function dense(t,max)
- if type(t)~="table" or #t>max then return false end
+ -- Lua 5.1 does not define #t for an array with holes. Establish a
+ -- contiguous 1..count sequence without consulting the length operator.
+ if type(t)~="table" then return false end
  local count=0
  for k in pairs(t) do
-  if type(k)~="number" or k~=math.floor(k) or k<1 or k>#t then return false end
+  if type(k)~="number" or k~=k or k~=math.floor(k)
+      or k<1 or k>max then return false end
   count=count+1
+  if count>max then return false end
  end
- return count==#t
+ for i=1,count do
+  if rawget(t,i)==nil then return false end
+ end
+ return true
 end
 local function nonempty(s,max)
  return type(s)=="string" and #s>0 and #s<=max
