@@ -65,6 +65,13 @@ function D:Why()
         local ok,value=pcall(bridge.Diagnose)
         if ok and type(value)=="table" and self:Safe(value) then diagnosis=value end
     end
+    local actionBar
+    if type(bridge)=="table" and type(bridge.ActionBar)=="function" then
+        local ok,value=pcall(bridge.ActionBar)
+        if ok and type(value)=="table" and self:Safe(value) then
+            actionBar=value
+        end
+    end
     local target
     if type(bridge)=="table" and type(bridge.Target)=="function" then
         local ok,value=pcall(bridge.Target)
@@ -100,6 +107,15 @@ function D:Why()
             target and target.liveExists),
         "Target exists (cached snapshot): "..observation(
             target and target.snapshotStatus,target and target.snapshotExists),
+        "Action bar scan: "..status(actionBar and actionBar.status),
+        "Confirmed spell buttons: "..(
+            self:Safe(actionBar and actionBar.confirmedSpellButtons)
+            and type(actionBar and actionBar.confirmedSpellButtons)=="number"
+            and tostring(actionBar.confirmedSpellButtons) or "UNKNOWN"),
+        "Hunter Arcane Shot rank on bar: "..(
+            self:Safe(actionBar and actionBar.arcaneRankOnBar)
+            and type(actionBar and actionBar.arcaneRankOnBar)=="number"
+            and tostring(actionBar.arcaneRankOnBar) or "NOT CONFIRMED"),
         "Profile (manual evaluation): "..status(diagnosis and diagnosis.profileStatus),
         "Profile (last UI evaluation): "..status(summary and summary.profileStatus),
         "Eligibility (ready/blocked/unknown): "
