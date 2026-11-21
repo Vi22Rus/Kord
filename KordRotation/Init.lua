@@ -52,6 +52,40 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
             elseif message == "refresh" then
                 local state = KR:RefreshCharacter("slash_refresh")
                 KR:Print(KR:Format("CHAT_SUMMARY", tostring(state.classToken or "?"), state.index and KR:GetLocalizedTree(state.classToken, state.index) or KR:L("SPEC_UNKNOWN"), state.talents.counts and table.concat(state.talents.counts, "/") or "?", KR:L("STATUS_"..state.status)))
+            elseif message == "why" then
+                -- User-triggered diagnostic; never auto-log protected game data.
+                local evaluator=KR.RotationEngine and KR.RotationEngine.Evaluate
+                if type(evaluator)~="function" then
+                    KR:Print("Rotation: engine_unavailable")
+                else
+                    local ok,result=pcall(evaluator,KR.RotationEngine)
+                    local api=KR.GameAPI
+                    local function ordinary(v)
+                        if not api or type(api.IsSafeValue)~="function" then return false end
+                        local checked,safe=pcall(api.IsSafeValue,api,v)
+                        return checked and safe==true
+                    end
+                    if not ok or not ordinary(result) or type(result)~="table" then
+                        KR:Print("Rotation: engine_exception")
+                    else
+                        local status=ordinary(result.status) and result.status or "UNKNOWN"
+                        local reason=ordinary(result.reason) and result.reason or "no_reason"
+                        if type(status)~="string" or type(reason)~="string" then
+                            KR:Print("Rotation: invalid_result")
+                        else
+                            KR:Print("Rotation: "..status.." / "..reason)
+                            if ordinary(result.diagnostics)
+                                and type(result.diagnostics)=="table" then
+                                local first=result.diagnostics[1]
+                                if ordinary(first) and type(first)=="table"
+                                    and ordinary(first.reason)
+                                    and type(first.reason)=="string" then
+                                    KR:Print("Priority 1: "..first.reason)
+                                end
+                            end
+                        end
+                    end
+                end
             elseif message == "help" then
                 KR:Print(KR:L("CHAT_HELP"))
             else
