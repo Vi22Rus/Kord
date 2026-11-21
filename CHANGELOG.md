@@ -1,3 +1,10 @@
+## KR-20261121-199 — Hunter: snapshot-панель подтверждает Arcane Shot 4, но движок блокирует слот
+- В реальном WoW Forever пользователь получил `Action bar scan: READY`, `Confirmed spell buttons: 29`, `Hunter Arcane Shot rank on bar: 4`, `Profile: READY`, одновременно с `ENGINE UNKNOWN action_slot_unconfirmed` при бое.
+- Это исключает полное отсутствие распознавания панели, языковое несовпадение и отсутствие распознанного ID четвёртого ранга в момент ручного snapshot. **Не доказывает**, почему точная проверка `FindSpell` временно возвращает UNKNOWN.
+- `CoreObservation.ActionBar()` теперь при явном запуске DevTools вызывает `ActionBarScanner:FindSpell` для подтверждённого ранга и отдаёт только безопасные `arcaneFindStatus/arcaneFindReason` без SpellID, slot, GUID или raw button.
+- `/krdev why` дополнен `Arcane Shot FindSpell: ...`. Добавлены mock-тесты случая «snapshot содержит Arcane Shot rank 4, но повторная live revalidation возвращает UNKNOWN».
+- **Lua 5.1 tests / WoW client NOT RUN**. Никаких новых сообщений в основном аддоне и никакого ослабления fail-closed validation.
+
 ## KR-20261121-194 — Hunter BM: scanner action-slot diagnosis from live DevTools trace
 - Реальный лог: `PROFILE READY`, `TARGET READY target_present`, `ENGINE UNKNOWN action_slot_unconfirmed`, отдельные `BLOCKED condition_false` у рангов выше уровня, `dropped=0`. Поэтому исправление фокуса — распознавание кнопки на action bar, а не чтение цели/событий.
 - `GameAPI:ReadField`: при отсутствии секретности допускает `userdata` UI-объекты наряду с Lua-таблицами; доступ к полю по-прежнему строго через `pcall` и `issecretvalue`/`issecrettable`/`canaccessvalue`. Это позволяет `ActionBarScanner` видеть методы WoW-кнопок, представленных `userdata`; защищённые кнопки по-прежнему блокируются.
