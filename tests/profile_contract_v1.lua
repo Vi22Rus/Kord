@@ -268,6 +268,18 @@ eq(C:Check(S,102,{target="enemy",cast="idle",chargesRequired=false}).status,
 eq(eligibilityCalls,before+1,"one Eligibility call per exact policy")
 eq(S:spellAvailable(987654),"UNKNOWN","spell outside registry never checked")
 eq(S:spellFact(102,"cooldownActive"),nil,"unproven fact UNKNOWN")
+-- Even a faulty/future Fact provider reporting READY must not approve an
+-- undefined chargesAtLeast threshold in Profile Contract v1.
+local beforeCharges=factCalls
+local originalFact=KR.AbilityEligibility.Fact
+KR.AbilityEligibility.Fact=function(_,id,kind)
+ factCalls=factCalls+1
+ if kind=="chargesAtLeast" then return r(true) end
+ return {status="UNKNOWN"}
+end
+eq(S:spellFact(102,"chargesAtLeast"),nil,"undefined charge threshold stays UNKNOWN")
+eq(factCalls,beforeCharges,"undefined charge threshold never calls provider")
+KR.AbilityEligibility.Fact=originalFact
 local beforeRangeFact=factCalls
 eq(S:spellFact(101,"inRange"),nil,"undeclared range fact is UNKNOWN")
 eq(factCalls,beforeRangeFact,"undeclared range does not reach Fact provider")
