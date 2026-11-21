@@ -47,3 +47,8 @@ BM сегодня использует snake_case и названия спосо
 ## Hunter BM/MM/SV — исследование 2026-11-21
 
 Подробный реестр по шести PVE-профилям Hunter, включая подтверждённые исходники, буквальные spellID, несовместимые поля, источники, открытые конфликты и тест-кейсы: [Hunter_Research_2026-11-21.md](Hunter_Research_2026-11-21.md). **SOURCE REVIEWED / WEB PARTIAL / IN-GAME NOT RUN**. Не переносить неизвестные свойства в рабочие таблицы как подтверждённые. Для полного заполнения этой таблицы требуются дополнительные проверки клиента и адаптера.
+
+
+## Canonical API Matrix — binding rule (2026-11-21)
+
+**Mandatory normative dictionary:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md). This file defines the sole canonical spelling of every profile-facing state key and links each key to the read-only GameAPI method and owning engine module. The current GameData table contains earlier candidate names; interpret them through the canonical matrix, never invent aliases. Source-level archive review is documented in that matrix. New profiles must use lowerCamelCase `state` keys and PascalCase ability keys. An unknown provider must remain UNKNOWN, never be guessed. Implementation and client verification are separate statuses.

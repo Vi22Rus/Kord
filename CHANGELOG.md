@@ -1,3 +1,11 @@
+## KR-20261121-011 — единая каноническая матрица API и GameData
+
+- **Дата:** 2026-11-21. **Согласование:** пользователь явно одобрил создание единой матрицы после проверки референсных аддонов. **Тип:** docs/architecture.
+- **Референсы:** Sonah (Atoms/Spells), MaxDps Forever BM, JustAC (StateHelpers/SpellQuery), ForeverAuras (API/ClientAPI), ForeverRotation (Engine), RotationGuide (Core/API, Core/State); сравнение с существующими API_REFERENCE_MATRIX и KORD_API_DESIGN. Не копировался чужой код.
+- **Решение:** нормативный `docs/rotation/Canonical_API_Matrix.md` с каноническими именами сигналов, владельцами, WoW read API, unknown policy, состояниями реализации и таблицей миграции Hunter BM. Ссылки добавлены в AGENTS, гайд, GameData Contract, индекс.
+- **PASS:** документальный аудит референсов и сопоставление с текущим GameAPI allowlist. **NOT RUN:** реализация нормализатора, Lua unit/integration, игровой клиент и проверка API на текущем Forever build.
+- **Риски:** наличие имени API в allowlist не гарантирует доступность/возврат значений; часть сигналов пока не имеет провайдера. **SHA:** `git log --grep KR-20261121-011`.
+
 ## KR-20261121-010 — исправление источников: Forever ≠ Classic
 
 - **Дата:** 2026-11-21. **Согласование:** пользователь прямо потребовал исключить Classic и продолжить исследование. **Тип:** docs/research correction.
