@@ -91,6 +91,13 @@
 - `chargesAtLeast` остаётся `UNKNOWN/fact_provider_unimplemented`: интерфейс `S:spellFact(id,kind)` не содержит порога `N`. Реализацию нельзя начинать с молчаливого `N=1`; потребуется явное согласованное расширение контракта и защита по v14 #26.
 - **SOURCE IMPLEMENTED (known); LUA 5.1/17 SUITES NOT RUN; WoW CLIENT NOT RUN; CI NOT RUN.**
 
+## Fail-closed для chargesAtLeast и проект уточнения (KR-20261121-120…121)
+
+- `RotationConditions:spellFact(id,"chargesAtLeast")` теперь возвращает `nil` **до вызова** `AbilityEligibility.Fact`. Это закрывает риск, что будущий провайдер по ошибке ответит `READY(true)` без определённого минимального числа зарядов.
+- `tests/profile_contract_v1.lua`: mock-провайдер намеренно возвращает `READY(true)` для `chargesAtLeast`; тест требует `nil` и ноль вызовов провайдера.
+- **Предлагаемое, но НЕ принятое расширение контракта:** отдельная версия с `S:spellFact(id,"chargesAtLeast",minimum)`, где `minimum` — явное положительное целое число. Для неё потребуется проверка безопасности до арифметики/табличных ключей, явное определение результата при `minimum > maxCharges`, кэш с ключом `(id,kind,minimum)`, тесты secret/invalid/zero/NaN/Infinity, защита поля `currentCharges` согласно v14 #26. До отдельного решения этот синтаксис и провайдер **не включать**.
+- Исходный `Profile_Contract.md` не редактировался. Клиентское доказательство и Lua 5.1 mock-прогон отсутствуют.
+
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
 1. Выполнить целевой контрактный mock на точном checkout в Lua 5.1, затем все 17 пересмотренных Lua tests, синтаксис и Python ZIP parity. Ошибки исправить до итогового общего QA.
