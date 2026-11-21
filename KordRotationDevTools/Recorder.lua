@@ -1,7 +1,7 @@
 -- Kord Rotation DevTools (c) 2026 Vi22Rus; see root LICENSE.
 -- Explicit opt-in, bounded memory, no unknown input serialization.
 local _,D=...
-local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true}
+local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true}
 local statuses={READY=true,BLOCKED=true,UNKNOWN=true,UNAVAILABLE=true,ERROR=true}
 local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     cooldown_unavailable=true,spellbook_unavailable=true,api_missing=true,
@@ -22,7 +22,26 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     unit_spellcast_failed=true,unit_spellcast_interrupted=true,
     target_observed=true,engine_exception=true,engine_dependency_missing=true,
     condition_error=true,higher_priority_unknown=true,category_disabled=true,
-    no_eligible_rule=true,action_slot_unconfirmed=true}
+    no_eligible_rule=true,action_slot_unconfirmed=true,
+    arcane_rank_4_rule=true,actionbar_scan=true,actionbar_buttons=true,
+    arcane_rank_on_bar=true,arcane_findspell=true,
+    panel_enabled=true,test_mode=true,recommendation_accepted=true,
+    visibility_allowed=true,frame_created=true,frame_shown=true,
+    target_live=true,target_snapshot=true,ui_engine_status=true}
+-- Only bounded scalar diagnostics can be exported. No user strings,
+-- frame objects, spell IDs, slot IDs or names are accepted.
+local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
+ rank_not_confirmed=true,find_spell_exception=true,scan_has_spells=true,
+ no_confirmed_visible_slots=true,scan_unavailable=true,
+ scanner_unavailable=true,unknown=true,none=true}
+local function safeDetail(v)
+    if v==nil then return nil end
+    if not D:Safe(v) then return nil end
+    if type(v)=="number" and v==v and v==math.floor(v)
+        and v>=0 and v<=1200 then return v end
+    if type(v)=="string" and detailWords[v] then return v end
+    return nil
+end
 local function now()
     if type(GetTime)~="function" then return nil end
     local ok,t=pcall(GetTime)
@@ -75,7 +94,7 @@ function D:Stop()
         for i,item in ipairs(self.records) do
             kept.records[i]={sequence=item.sequence,kind=item.kind,
                 status=item.status,reason=item.reason,
-                matrix=item.matrix,elapsed=item.elapsed,time=item.time}
+                matrix=item.matrix,elapsed=item.elapsed,time=item.time,detail=item.detail}
         end
         local db=self.settings
         db.sessions=type(db.sessions)=="table" and db.sessions or {}
@@ -86,7 +105,7 @@ function D:Stop()
     self.session=nil
     return true
 end
-function D:Record(kind,status,reason,matrix,elapsed)
+function D:Record(kind,status,reason,matrix,elapsed,detail)
     if not self.active then return false,"not_recording" end
     local current=now()
     if self.started and current and current-self.started>self.maxDuration then
@@ -107,6 +126,7 @@ function D:Record(kind,status,reason,matrix,elapsed)
     reason=sanitizeReason(reason)
     local v14=int(matrix,1,101)
     local latency=int(elapsed,0,1000000)
+    local cleanDetail=safeDetail(detail)
     -- A cooldown storm may be throttled, but distinct target, engine,
     -- profile and player-cast transitions are never lost to a global 50ms
     -- gate. The bounded maxRecords/maxDuration limits still apply.
@@ -117,7 +137,8 @@ function D:Record(kind,status,reason,matrix,elapsed)
     end
     self.sequence=self.sequence+1
     self.records[#self.records+1]={sequence=self.sequence,kind=kind,
-        status=status,reason=reason,matrix=v14,elapsed=latency,time=current}
+        status=status,reason=reason,matrix=v14,elapsed=latency,time=current,
+        detail=cleanDetail}
     self.lastTick=current
     if kind=="EVENT" and reason=="spell_update_cooldown" then
         self.lastCooldownTick=current
@@ -146,7 +167,7 @@ function D:Export()
     for _,v in ipairs(list) do
         local line=table.concat({encode(v.sequence),encode(v.kind),
             encode(v.status),encode(v.reason),encode(v.matrix),
-            encode(v.elapsed),encode(v.time)},"\t")
+            encode(v.elapsed),encode(v.time),encode(v.detail)},"\t")
         if #table.concat(lines,"\n")+#line+1>self.maxExport then break end
         lines[#lines+1]=line
     end
