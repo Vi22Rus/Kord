@@ -63,6 +63,17 @@ eq(barReport:find("Hunter Arcane Shot rank on bar: 4",1,true)~=nil,true,
  "DevTools why includes observed Arcane rank")
 eq(barReport:find("Arcane Shot FindSpell: UNKNOWN / spell_not_confirmed_on_visible_bar",1,true)~=nil,true,
  "DevTools reports final action-slot revalidation result")
+bridge.Display=function()
+ return {status="READY",lastEngineStatus="UNKNOWN",
+  lastEngineReason="action_slot_unconfirmed",
+  recommendationAccepted=false,visibilityAllowed=false,
+  frameCreated=true,frameShown=false}
+end
+local uiReport=D:Why()
+eq(uiReport:find("Display accepts recommendation: false",1,true)~=nil,
+ true,"DevTools reports recommendation rejected by final UI")
+eq(uiReport:find("Display frame shown: false",1,true)~=nil,
+ true,"DevTools reports actual hidden frame")
 _G.KordRotationCoreObservation=nil
 eq(D:ProbeMethod("UnitExists").status,"UNAVAILABLE","missing bridge")
 print("PASS DevTools probe mock "..n.." assertions")
