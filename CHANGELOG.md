@@ -1,3 +1,8 @@
+## KR-20261121-087 — Needs.ranges применяется к spellFact(inRange)
+- `RotationConditions.lua`: `S:spellFact(spellID, "inRange")` не вызывает `AbilityEligibility.Fact`, если spellID не указан в `Needs.ranges`; ответ `nil` (UNKNOWN). Другие виды фактов остаются доступными только для заклинаний из `Spells`.
+- `tests/profile_contract_v1.lua`: добавлены проверки отказа без вызова провайдера и разрешённого запроса с объявленным range-ID.
+- Lua 5.1 mock regression и WoW клиент НЕ ЗАПУСКАЛИСЬ; Hunter BM и GitHub Actions не затронуты.
+
 ## KR-20261121-085 — контрольная точка миграции Profile Contract v1
 - Дата UTC: 2026-11-21. Вынесен `docs/rotation/Contract_v1_Status_2_9.md`: реальный список SOURCE IMPLEMENTED в Registry/Conditions/Engine/Display и 17 тестов, ошибки/фиксы (unknown nil, CFG false, nonfinite/secret) и проверяемые границы текущего статуса.
 - `ROADMAP.md` и `docs/rotation/Test_Matrix.md` теперь ссылаются на контрольную точку. Полная Lua 5.1 регрессия, клиент, профиль Hunter и провайдеры v14 НЕ ГОТОВЫ. Только статические проверки и локальная репродукция Lua false выполнены; CI NOT RUN.
