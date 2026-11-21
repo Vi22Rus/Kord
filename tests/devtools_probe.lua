@@ -43,6 +43,15 @@ bridge.Target=function() return {liveStatus="UNKNOWN",liveExists=secret,
 diagnostic=D:Why()
 eq(diagnostic:find("Target UnitExists %(live%): UNKNOWN")~=nil,true,
  "DevTools hides protected live target")
+bridge.Diagnose=function()
+ return {status="UNKNOWN",reason="action_slot_unconfirmed",
+  firstStatus="UNKNOWN",firstReason="action_slot_unconfirmed"}
+end
+local manual=D:Why()
+eq(manual:find("Engine %(manual evaluation%): UNKNOWN / action_slot_unconfirmed")~=nil,
+ true,"manual diagnosis includes actual engine refusal")
+eq(manual:find("Priority 1: UNKNOWN / action_slot_unconfirmed",1,true)~=nil,
+ true,"manual diagnosis includes first priority reason")
 _G.KordRotationCoreObservation=nil
 eq(D:ProbeMethod("UnitExists").status,"UNAVAILABLE","missing bridge")
 print("PASS DevTools probe mock "..n.." assertions")
