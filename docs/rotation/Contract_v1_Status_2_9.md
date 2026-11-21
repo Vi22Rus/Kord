@@ -1,6 +1,6 @@
 # Этап 2.9-C — контрольная точка минимального Profile Contract v1
 
-**Дата:** 2026-11-21. **Статус:** SOURCE IMPLEMENTED / TARGETED STATIC CHECKS PASS / LUA 5.1 NOT RUN / CLIENT NOT RUN. **Пилот Hunter BM не подключён.**
+**Дата:** 2026-11-21. **Актуальный статус:** SOURCE IMPLEMENTED (PARTIAL) / STATIC SOURCE AUDIT ONLY / LUA 5.1 NOT RUN / 17 SUITES NOT RUN / CLIENT NOT RUN / CI NOT RUN. **Пилот Hunter BM не подключён.** Исторические результаты статических проверок ниже не являются новой приёмкой последующих изменений.
 
 ## Единый канон и код
 
@@ -56,7 +56,7 @@
 - `AbilityEligibility:Fact(id, kind, options)` добавлен только для `cooldownActive` (читаемое `C_Spell.GetSpellCooldown(...).isActive`) и `inRange` (проверка текущей цели через `C_Spell.IsSpellInRange`, либо валидный legacy 0/1). Возвращает `{status="READY",value=<boolean>}` только при доступном обычном boolean; ошибка, nil, secret и неподдерживаемый источник = `UNKNOWN`.
 - `isOnGCD` не используется для вывода активности кулдауна. Положительная дальность / отрицательный факт кулдауна не означают итоговую пригодность способности: `Evaluate` остаётся единственным источником финального допуска.
 - **Исторический статус до KR-20261121-114:** оба факта оставались `UNKNOWN`. `known` теперь частично реализован (см. ниже); `chargesAtLeast` по-прежнему без порога.
-- В `tests/stage_02_07_eligibility.lua` добавлены сценарии true/false/UNKNOWN, secret Spell ID, защищённого поля cooldown и запрета угадывать `isActive` по `isOnGCD`. `GameState.ReadSignal` остаётся отсутствующим.
+- В `tests/stage_02_07_eligibility.lua` добавлены сценарии true/false/UNKNOWN, secret Spell ID, защищённого поля cooldown и запрета угадывать `isActive` по `isOnGCD`. **Историческое замечание:** на момент этой записи `GameState.ReadSignal` ещё отсутствовал; с KR-20261121-101 реализован частичный провайдер аур.
 - **Статус:** SOURCE IMPLEMENTED (partial), MOCKS UPDATED, LUA 5.1 NOT RUN, CLIENT NOT RUN. Никакие API не объявлены подтверждёнными в реальном WoW клиенте.
 
 ## Первый этап GameState.ReadSignal (KR-20261121-101…102)
@@ -88,7 +88,7 @@
 - `AbilityEligibility:Fact(id,"known")` переиспользует существующий `spellKnown(id,catalogue)` из финального Eligibility: подтверждённое наличие в SpellCatalogue или положительный ответ `C_SpellBook.IsSpellKnown` → `READY(true)`; **только явное** `BLOCKED/not_learned` от SpellBook API → `READY(false)`.
 - Отсутствие записи в каталоге, недоступный SpellBook API, исключение или ошибочная структура каталога → `UNKNOWN`. Запрос не выполняет `Evaluate` и не присваивает финальный статус способности. Непроверенный высший ранг заклинания (#20) не выводится из этого факта.
 - В `tests/stage_02_07_eligibility.lua` добавлены mock-сценарии true/false/unknown и ошибок каталога.
-- `chargesAtLeast` остаётся `UNKNOWN/fact_provider_unimplemented`: интерфейс `S:spellFact(id,kind)` не содержит порога `N`. Реализацию нельзя начинать с молчаливого `N=1`; потребуется явное согласованное расширение контракта и защита по v14 #26.
+- `chargesAtLeast` не поддерживается действующим контрактом: интерфейс `S:spellFact(id,kind)` не содержит порога `N`. Начиная с KR-20261121-120 `RotationConditions` отсекает такой факт до провайдера, возвращая `nil`; прямой `AbilityEligibility.Fact` для него остаётся `UNKNOWN/fact_provider_unimplemented`. Дальнейшая реализация требует отдельного согласованного расширения и защиты по v14 #26.
 - **SOURCE IMPLEMENTED (known); LUA 5.1/17 SUITES NOT RUN; WoW CLIENT NOT RUN; CI NOT RUN.**
 
 ## Fail-closed для chargesAtLeast и проект уточнения (KR-20261121-120…121)
@@ -101,7 +101,7 @@
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
 1. Выполнить целевой контрактный mock на точном checkout в Lua 5.1, затем все 17 пересмотренных Lua tests, синтаксис и Python ZIP parity. Ошибки исправить до итогового общего QA.
-2. Доработать и подтвердить по API v14 необходимые `GameState.ReadSignal` (auras по SpellID, range, enemyCount, TTD, swing) и `AbilityEligibility.Fact`. До этого будущие проверки должны возвращать UNKNOWN.
+2. Довести и проверить по API v14 частично реализованные `GameState.ReadSignal` (положительное наличие аур по Spell ID) и `AbilityEligibility.Fact` (`known`, `cooldownActive`, `inRange`); `chargesAtLeast`, отрицательное доказательство ауры, `enemy.count`, TTD и swing остаются неподтверждёнными/`UNKNOWN`. Полный клиентский PASS отсутствует.
 3. Выбор `targetMode=auto` сейчас сознательно возвращает `auto_target_count_unverified`; не включать автоподбор ST/AoE без достоверного счётчика.
 4. CFG UI из схемы v1, хранение пользовательских конфигураций и локализация всех новых controls на 6 языков ещё не готовы; не выдавать наличие `Config` у профиля за готовую UI-генерацию.
 5. Перед подключением Hunter выполнить статическую проверку запрета прямых WoW API в профиле и дифференциальные тесты против сохранённых исходников BM. Старые Hunter Lua сейчас не в TOC.
