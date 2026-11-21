@@ -89,12 +89,42 @@ function O:ReadTarget()
     return out
 end
 
+-- Explicit DevTools-only diagnostic. Evaluate only when a user starts
+-- recording or requests /krdev why. Never return a raw queue, spell ID,
+-- GUID, protected game value or mutable engine object.
+function O:ReadEngineDiagnostic()
+    local engine=KR.RotationEngine
+    if not engine or type(engine.Evaluate)~="function" then
+        return {status="UNAVAILABLE",reason="engine_unavailable"}
+    end
+    local ok,result=pcall(engine.Evaluate,engine)
+    if not ok or not safe(result) or type(result)~="table" then
+        return {status="UNKNOWN",reason="engine_exception"}
+    end
+    local out={status=status(field(result,"status")),
+        reason=reason(field(result,"reason")) or "unknown"}
+    local diagnostics=field(result,"diagnostics")
+    if type(diagnostics)=="table" then
+        local first=field(diagnostics,1)
+        if type(first)=="table" then
+            out.firstStatus=status(field(first,"status"))
+            out.firstReason=reason(field(first,"reason")) or "unknown"
+        end
+    end
+    return out
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
     Read=function()
         local ok,result=pcall(O.Read,O)
         if not ok then return {version=1,status="ERROR",engineStatus="UNKNOWN"} end
+        return result
+    end,
+    Diagnose=function()
+        local ok,result=pcall(O.ReadEngineDiagnostic,O)
+        if not ok then return {status="UNKNOWN",reason="engine_exception"} end
         return result
     end,
     Target=function()
