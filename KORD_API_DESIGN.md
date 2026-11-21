@@ -26,6 +26,10 @@
 
 `Core/BindingResolver.lua` читает реальный binding-command от подтверждённой видимой кнопки `ActionBarScanner:GetVerifiedButtons`. Приоритет: `button:GetBindingAction()`, `GetAttribute("binding")`, только затем консервативная проверенная карта Blizzard/EllesmereUI. Через `GameAPI:ReadValues("GetBindingKey")` читаются две клавиши, `GetBindingAction` при наличии служит обратной проверкой команды. Любая неоднозначность (особенно custom paging/override bindings) даёт `UNKNOWN`, а не придуманную надпись. Источник: Sonah `Core/Atoms/ActionSlots.lua`, JustAC `ActionBarScanner.lua`, MaxDps `SpellFrame.lua`; для EllesmereUI также `EUI_ActionBars_Keybinds.lua` и `EUI_ActionBars_Secure.lua`. Ручной `RotationSettings.keyLabel` не считается автоматическим биндом. Игровой QA не проводился. Подробнее: [docs/STAGE_02_06_BINDINGS.md](docs/STAGE_02_06_BINDINGS.md).
 
+## Подэтап 2.8 — безопасный универсальный выбор ротации (одобрен)
+
+`Core/RotationProfiles.lua` — пустой по умолчанию реестр проверяемых правил ST/AoE с явными `target`, `cast`, `chargesRequired`, `category`. `Core/RotationEngine.lua` выбирает только первое строго READY правило через `AbilityEligibility`, берёт подтверждённые texture/name из `SpellCatalogue` и реальную клавишу исключительно из `BindingResolver`. Высокоприоритетный UNKNOWN блокирует fallback; при режиме auto без проверенного счётчика целей — UNKNOWN. `RotationDisplay` сохраняет testMode, а обычный UI появляется лишь для зарегистрированного профиля и действительных данных; остальные слоты очищаются. Профилей пока нет, все пользовательские установки остаются совместимы. См. [docs/STAGE_02_08_ROTATION_ENGINE.md](docs/STAGE_02_08_ROTATION_ENGINE.md); игровой тест NOT RUN.
+
 ## Приоритетные решения
 
 | Подсистема | Основной метод и источник | Fallback и особенности |

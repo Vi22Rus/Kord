@@ -90,6 +90,21 @@ function KR.RotationDisplay:Create()
     visibility:SetScript("OnEvent", function(_,event,unit)
         if event ~= "UNIT_FLAGS" or unit == "player" then KR.RotationDisplay:Refresh() end
     end)
+    -- Poll ONLY if a registered profile is enabled. There are no profiles
+    -- at stage 2.8, so this incurs no eligibility reads for normal installs.
+    visibility:SetScript("OnUpdate",function(self,elapsed)
+        self.rotationAccumulator=(self.rotationAccumulator or 0)+(elapsed or 0)
+        if self.rotationAccumulator<0.4 then return end
+        self.rotationAccumulator=0
+        local p=ensurePosition(KR.db)
+        if not p.showPanel or p.testMode then return end
+        local id=KR.RotationSettings and KR.RotationSettings:GetProfileID()
+        if not id or not KR.RotationProfiles or not KR.RotationProfiles:Has(id) then return end
+        local settings=KR.RotationSettings:GetProfile(false)
+        if settings and settings.enabled==true then
+            KR.RotationDisplay:Refresh(true)
+        end
+    end)
     self.visibilityFrame = visibility
     self:RefreshLayout()
     self:Refresh()
@@ -185,11 +200,10 @@ end
 
 function KR.RotationDisplay:ShouldShow()
     local p = ensurePosition(KR.db)
-    if not p.showPanel or not p.testMode then return false end
+    if not p.showPanel or (not p.testMode and not self.productionReady) then return false end
     local combat = safeBoolean(InCombatLockdown)
     if combat == nil then combat = safeBoolean(UnitAffectingCombat, "player") end
     if combat == nil then
-        -- Missing combat APIs must not bypass an explicitly restricted visibility mode.
         if not p.showInCombat or not p.showOutOfCombat then return false end
     else
         if combat and not p.showInCombat then return false end
@@ -201,11 +215,39 @@ function KR.RotationDisplay:ShouldShow()
     return true
 end
 
-function KR.RotationDisplay:Refresh()
+function KR.RotationDisplay:Refresh(skipLayout)
     if not self.frame then return end
     local p = ensurePosition(KR.db)
-    self:RefreshLayout()
-    -- Without a real rotation engine, NEVER show a fictitious production queue.
+    if not skipLayout then self:RefreshLayout() end
+    self.productionReady=false
+    if p.testMode then
+        -- Preserve preview artwork and numbers, never mark it live.
+        for i,slot in ipairs(self.slots or {}) do
+            slot:SetTestSlot(i,i==1)
+        end
+    else
+        local result
+        if p.showPanel and KR.RotationEngine and KR.RotationEngine.Evaluate then
+            local ok,read=pcall(KR.RotationEngine.Evaluate,KR.RotationEngine)
+            if ok and type(read)=="table" then result=read end
+        end
+        self.lastEngineStatus=result and result.status or "UNKNOWN"
+        self.lastEngineReason=result and result.reason or "engine_unavailable"
+        local item=result and result.status=="READY"
+            and type(result.queue)=="table" and result.queue[1]
+        if type(item)=="table" and type(item.spellID)=="number"
+            and item.texture~=nil and item.source=="verified_profile" then
+            self.productionReady=true
+            self:SetSlotData(1,{texture=item.texture,name=item.name,
+                keybind=item.keybind})
+        else self:SetSlotData(1,nil) end
+        -- Stage 2.8 does not predict a future spell queue. Never show
+        -- empty question-mark placeholders as production recommendations.
+        for i=2,5 do self:SetSlotData(i,nil) end
+        if self.slots then
+            for i=2,5 do self.slots[i]:Hide() end
+        end
+    end
     if self:ShouldShow() then self.frame:Show() else self.frame:Hide() end
 end
 

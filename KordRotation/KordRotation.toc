@@ -1,9 +1,9 @@
 # Kord Rotation (c) 2026 Vi22Rus. All rights reserved; LICENSE in repository root.
 ## Interface: 16001
 ## Title: Kord Rotation
-## Notes: WoW Forever rotation helper — game API foundation 0.1.8.3-rc8
+## Notes: WoW Forever rotation helper — game API foundation 0.1.8.3-rc9
 ## Author: Vi22Rus
-## Version: 0.1.8.3-rc8
+## Version: 0.1.8.3-rc9
 ## SavedVariables: KordRotationDB
 ## SavedVariablesPerCharacter: KordRotationCharDB
 
@@ -21,6 +21,8 @@ Core\GameState.lua
 Core\ActionBarScanner.lua
 Core\BindingResolver.lua
 Core\AbilityEligibility.lua
+Core\RotationProfiles.lua
+Core\RotationEngine.lua
 Core\IndicatorSettings.lua
 Core\AppearanceProfiles.lua
 Core\Diagnostics.lua
