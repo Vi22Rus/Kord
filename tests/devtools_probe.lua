@@ -26,6 +26,23 @@ eq(result.present>0,true,"presence recorded")
 eq(result.present<101,true,"unverified rows not PASS")
 eq(result.evidence,"presence_only_not_client_pass","no client pass")
 eq(result.entries[1].matrix,1,"v14 numbering")
+D.ReadCore=function() return {engineStatus="BLOCKED",
+ engineReason="no_eligible_rule",profileStatus="READY",
+ eligibilityReady=0,eligibilityBlocked=1,eligibilityUnknown=0} end
+bridge.Target=function() return {liveStatus="READY",liveExists=true,
+ snapshotStatus="READY",snapshotExists=false} end
+local diagnostic=D:Why()
+eq(diagnostic:find("Engine %(last UI evaluation%): BLOCKED / no_eligible_rule")~=nil,
+ true,"DevTools reports engine refusal")
+eq(diagnostic:find("Target UnitExists %(live%): true")~=nil,true,
+ "DevTools reports current live target")
+eq(diagnostic:find("Target exists %(cached snapshot%): false")~=nil,true,
+ "DevTools reports stale core state without raw GUID")
+bridge.Target=function() return {liveStatus="UNKNOWN",liveExists=secret,
+ snapshotStatus="UNKNOWN",snapshotExists=secret} end
+diagnostic=D:Why()
+eq(diagnostic:find("Target UnitExists %(live%): UNKNOWN")~=nil,true,
+ "DevTools hides protected live target")
 _G.KordRotationCoreObservation=nil
 eq(D:ProbeMethod("UnitExists").status,"UNAVAILABLE","missing bridge")
 print("PASS DevTools probe mock "..n.." assertions")
