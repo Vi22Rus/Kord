@@ -1,0 +1,110 @@
+-- Kord Rotation DevTools (c) 2026 Vi22Rus; see root LICENSE.
+-- Entirely separate language dictionary; does not change canonical core locale.
+local _, D = ...
+local strings={
+ enUS={TITLE="Kord Rotation DevTools",START="Start recording",STOP="Stop recording",
+   PROBE="Probe APIs",MEASURE="Measure",EXPORT="Export / copy",CLEAR="Clear data",
+   CLOSE="Close",STATE_ON="Recording",STATE_OFF="Recording off",
+   HELP="Select the report text and press Ctrl+C to copy. API presence is not an in-game PASS.",
+   STATUS="Status: %s | Records: %d | Dropped: %d",
+   RESULT="Probe: %d of %d methods found (presence only).",
+   METRIC="Observation read: %d ms (not full addon CPU).",
+   UNAVAILABLE="Unavailable or unverified",
+   TIP_START="Manually begin a bounded diagnostic session. No automatic recording.",
+   TIP_STOP="Stop recording and preserve a bounded session in DevTools SavedVariables.",
+   TIP_PROBE="Check allowlisted v14 API methods once. Does not cast or prove gameplay behavior.",
+   TIP_MEASURE="Measure only the cost of reading the current safe observation.",
+   TIP_EXPORT="Prepare a sanitized report, select it and copy manually with Ctrl+C.",
+   TIP_CLEAR="Delete stopped DevTools sessions and buffered records. Requires recording to stop.",
+   TIP_CLOSE="Hide this diagnostic window. The current session does not stop automatically."},
+ ruRU={TITLE="Kord Rotation DevTools",START="Начать запись",STOP="Остановить запись",
+   PROBE="Проверить API",MEASURE="Измерить",EXPORT="Экспорт / копировать",CLEAR="Очистить",
+   CLOSE="Закрыть",STATE_ON="Идёт запись",STATE_OFF="Запись выключена",
+   HELP="Выделите текст отчёта и нажмите Ctrl+C. Наличие API не означает успешную проверку в игре.",
+   STATUS="Статус: %s | Записей: %d | Пропущено: %d",
+   RESULT="API: найдено %d из %d методов (только наличие).",
+   METRIC="Чтение состояния: %d мс (не полная нагрузка аддона).",
+   UNAVAILABLE="Недоступно или не подтверждено",
+   TIP_START="Вручную запустить ограниченную диагностическую сессию. Автозапуска нет.",
+   TIP_STOP="Остановить запись и сохранить ограниченную сессию в отдельных SavedVariables.",
+   TIP_PROBE="Один раз проверить разрешённые методы v14. Не применяет способности и не подтверждает работу в игре.",
+   TIP_MEASURE="Измерить только время чтения безопасной сводки состояния.",
+   TIP_EXPORT="Подготовить безопасный отчёт и выделить его для ручного копирования Ctrl+C.",
+   TIP_CLEAR="Удалить завершённые сессии и буфер. Сначала необходимо остановить запись.",
+   TIP_CLOSE="Скрыть окно диагностики. Уже начатая запись продолжается."},
+ frFR={TITLE="Kord Rotation DevTools",START="Démarrer l'enregistrement",STOP="Arrêter l'enregistrement",
+   PROBE="Tester les API",MEASURE="Mesurer",EXPORT="Exporter / copier",CLEAR="Effacer",
+   CLOSE="Fermer",STATE_ON="Enregistrement actif",STATE_OFF="Enregistrement arrêté",
+   HELP="Sélectionnez le rapport et appuyez sur Ctrl+C. La présence d'une API ne prouve pas son fonctionnement en jeu.",
+   STATUS="État : %s | Entrées : %d | Ignorées : %d",
+   RESULT="API : %d méthodes sur %d présentes (présence uniquement).",
+   METRIC="Lecture de l'état : %d ms (pas le CPU total de l'addon).",
+   UNAVAILABLE="Indisponible ou non vérifié",
+   TIP_START="Démarrer manuellement une session limitée. Aucun enregistrement automatique.",
+   TIP_STOP="Arrêter et enregistrer une session limitée dans les variables propres à DevTools.",
+   TIP_PROBE="Vérifier une seule fois les méthodes v14 autorisées. Aucune action de combat.",
+   TIP_MEASURE="Mesurer uniquement la lecture d'un résumé sécurisé.",
+   TIP_EXPORT="Préparer le rapport filtré et le sélectionner pour Ctrl+C.",
+   TIP_CLEAR="Supprimer les sessions arrêtées et le tampon. Arrêtez d'abord l'enregistrement.",
+   TIP_CLOSE="Masquer la fenêtre sans arrêter la session en cours."},
+ deDE={TITLE="Kord Rotation DevTools",START="Aufzeichnung starten",STOP="Aufzeichnung stoppen",
+   PROBE="APIs prüfen",MEASURE="Messen",EXPORT="Export / Kopieren",CLEAR="Löschen",
+   CLOSE="Schließen",STATE_ON="Aufzeichnung läuft",STATE_OFF="Aufzeichnung aus",
+   HELP="Bericht markieren und mit Strg+C kopieren. API-Verfügbarkeit ist kein Spieltest.",
+   STATUS="Status: %s | Einträge: %d | Verworfen: %d",
+   RESULT="API: %d von %d Methoden vorhanden (nur Verfügbarkeit).",
+   METRIC="Statuslesen: %d ms (nicht die gesamte Addon-CPU).",
+   UNAVAILABLE="Nicht verfügbar oder ungeprüft",
+   TIP_START="Begrenzte Diagnosesitzung manuell starten. Kein automatischer Start.",
+   TIP_STOP="Aufzeichnung stoppen und begrenzte Sitzung separat speichern.",
+   TIP_PROBE="Erlaubte v14-Methoden einmal prüfen. Keine Kampfaktion oder Funktionsgarantie.",
+   TIP_MEASURE="Nur das Lesen der sicheren Statusübersicht messen.",
+   TIP_EXPORT="Bereinigten Bericht vorbereiten und für Strg+C markieren.",
+   TIP_CLEAR="Beendete Sitzungen und Puffer löschen. Zuerst Aufzeichnung stoppen.",
+   TIP_CLOSE="Diagnosefenster schließen; laufende Aufzeichnung bleibt aktiv."},
+ ptBR={TITLE="Kord Rotation DevTools",START="Iniciar gravação",STOP="Parar gravação",
+   PROBE="Verificar APIs",MEASURE="Medir",EXPORT="Exportar / copiar",CLEAR="Limpar",
+   CLOSE="Fechar",STATE_ON="Gravando",STATE_OFF="Gravação desligada",
+   HELP="Selecione o relatório e pressione Ctrl+C. A presença de API não comprova funcionamento no jogo.",
+   STATUS="Estado: %s | Registros: %d | Descartados: %d",
+   RESULT="API: %d de %d métodos presentes (somente presença).",
+   METRIC="Leitura do estado: %d ms (não é o uso total de CPU).",
+   UNAVAILABLE="Indisponível ou não verificado",
+   TIP_START="Iniciar manualmente uma sessão limitada. Sem gravação automática.",
+   TIP_STOP="Parar a gravação e armazenar uma sessão limitada em variáveis separadas.",
+   TIP_PROBE="Verificar uma vez os métodos v14 permitidos. Sem ações de combate.",
+   TIP_MEASURE="Medir apenas o custo da leitura de um resumo seguro.",
+   TIP_EXPORT="Preparar relatório filtrado e selecionar para copiar com Ctrl+C.",
+   TIP_CLEAR="Apagar sessões encerradas e buffer. Pare a gravação antes.",
+   TIP_CLOSE="Ocultar a janela; a gravação ativa não é parada automaticamente."},
+ esES={TITLE="Kord Rotation DevTools",START="Iniciar grabación",STOP="Detener grabación",
+   PROBE="Comprobar API",MEASURE="Medir",EXPORT="Exportar / copiar",CLEAR="Borrar",
+   CLOSE="Cerrar",STATE_ON="Grabando",STATE_OFF="Grabación desactivada",
+   HELP="Selecciona el informe y pulsa Ctrl+C. La presencia de una API no verifica su uso en el juego.",
+   STATUS="Estado: %s | Registros: %d | Descartados: %d",
+   RESULT="API: %d de %d métodos presentes (solo presencia).",
+   METRIC="Lectura del estado: %d ms (no es la CPU total del addon).",
+   UNAVAILABLE="No disponible o sin verificar",
+   TIP_START="Iniciar manualmente una sesión limitada. No hay grabación automática.",
+   TIP_STOP="Detener y guardar una sesión limitada en variables separadas.",
+   TIP_PROBE="Comprobar una vez métodos v14 permitidos. Sin acciones de combate.",
+   TIP_MEASURE="Medir solo la lectura del resumen seguro del estado.",
+   TIP_EXPORT="Preparar informe filtrado y seleccionarlo para copiar con Ctrl+C.",
+   TIP_CLEAR="Borrar sesiones detenidas y búfer. Detén primero la grabación.",
+   TIP_CLOSE="Ocultar la ventana sin detener la grabación activa."}
+}
+local aliases={enGB="enUS",esMX="esES",ptPT="ptBR"}
+local locale="enUS"
+if type(GetLocale)=="function" then
+    local ok,value=pcall(GetLocale)
+    if ok and type(value)=="string" then locale=aliases[value] or value end
+end
+if not strings[locale] then locale="enUS" end
+D.locale=locale
+function D:L(key)
+    return (strings[self.locale] and strings[self.locale][key]) or strings.enUS[key] or key
+end
+function D:Format(key,...)
+    local ok,result=pcall(string.format,self:L(key),...)
+    return ok and result or self:L(key)
+end

@@ -1,3 +1,11 @@
+## KR-20261121-052 — DT-5a: отдельный интерфейс и шесть локалей DevTools
+- Дата: 2026-11-21 UTC; коммит: см. git log --grep KR-20261121-052; утверждённые DT-1–DT-6.
+- Причина: диагностический TOC ссылался на отсутствующие Locale.lua и UI.lua — пакет был неполным.
+- Изменены: KordRotationDevTools/Locale.lua и KordRotationDevTools/UI.lua. Добавлен самостоятельный UI с ручными Start/Stop, Probe, Measure, Export/Copy, Clear и Close, чётким статусом; все кнопки и подсказки локализованы на enUS/ruRU/frFR/deDE/ptBR/esES (алиасы enGB/esMX/ptPT). Копирование через выделение текста и Ctrl+C, без попыток записи на диск.
+- Риски: FrameXML/видимость проверяются только в настоящем клиенте; использование BasicFrameTemplateWithInset требует client QA. В пользовательской сборке UI DevTools отсутствует. Не включён новый WoW API.
+- Тесты: статическое сопоставление семи кнопок и ключей, locale coverage будет выполнен в DT-6. Lua runtime/игра NOT RUN; GitHub Actions CI NOT RUN по правилу экономии.
+- Выдано тестировщику: коммит; отдельную установку пока не требуем. Следующий шаг: разделение пользовательской диагностики и DevTools.
+
 ## KR-20261121-051 — DT-4: opt-in EVENT/ENGINE trace и ограниченное профилирование
 - **Дата UTC:** 2026-11-21. **Контракт:** TraceStart вызывается только после ручного Recorder:Start; TraceStop удаляет регистрации, callbacks, polling. События из whitelisted списка, без raw payload, target/GUID, spellId, chat или защищённых данных.
 - **Изменено:** Trace.lua, Performance.lua, tests/devtools_trace.lua. EVENT записи содержат только разрешённую категорию и номер строки матрицы; ENGINE только изменение статуса готовой сводки, никакой автооценки AbilityEligibility. Интервал 0.75 сек только при активной ручной записи.
