@@ -39,8 +39,13 @@ KR.AbilityEligibility={Evaluate=function(_,id,opts)
   spellID=wrongEligibilityID and 999 or id}
 end}
 local bindingReady=true
+local bindingWrongID=false
+local bindingBlank=false
 KR.BindingResolver={Resolve=function(_,id)
- if bindingReady then return {status="READY",bindingLabel="S+1",bindingSource="blizzard_command"} end
+ if bindingReady then return {status="READY",
+    spellID=bindingWrongID and 999 or id,
+    bindingLabel=bindingBlank and "" or "S+1",
+    bindingSource="blizzard_command"} end
  return {status="UNKNOWN"}
 end}
 assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
@@ -119,6 +124,12 @@ mode="single"
 bindingReady=false
 eq(E:Evaluate().queue[1].keybind,nil,"unknown binding blank")
 bindingReady=true
+bindingWrongID=true
+eq(E:Evaluate().queue[1].keybind,nil,"foreign binding ID must be blank")
+bindingWrongID=false
+bindingBlank=true
+eq(E:Evaluate().queue[1].keybind,nil,"empty verified label must be blank")
+bindingBlank=false
 catalogue.entries[2].texture=nil
 eq(E:Evaluate().status,"UNKNOWN","missing verified texture blocks lower rule")
 catalogue.entries[2].texture=5678

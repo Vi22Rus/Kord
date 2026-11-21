@@ -130,8 +130,18 @@ function E:Evaluate()
                 local bindingSource=nil
                 if KR.BindingResolver and KR.BindingResolver.Resolve then
                     local ok,binding=pcall(KR.BindingResolver.Resolve,KR.BindingResolver,rule.spellID)
+                    -- A key is shown only when Resolve confirms this exact
+                    -- spell and an ordinary, nonempty label.
+                    local api=KR.GameAPI
                     if ok and type(binding)=="table" and binding.status=="READY"
-                        and type(binding.bindingLabel)=="string" then
+                        and binding.spellID==rule.spellID
+                        and type(binding.bindingLabel)=="string"
+                        and #binding.bindingLabel>0 and #binding.bindingLabel<=64
+                        and api and type(api.IsSafeValue)=="function"
+                        and api:IsSafeValue(binding.bindingLabel)
+                        and (binding.bindingSource==nil or
+                            (type(binding.bindingSource)=="string"
+                             and api:IsSafeValue(binding.bindingSource))) then
                         label=binding.bindingLabel
                         bindingSource=binding.bindingSource
                     end
