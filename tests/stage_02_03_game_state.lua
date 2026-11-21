@@ -74,6 +74,21 @@ eq(first.revision,again.revision,"fresh snapshot is cached")
 again.player.health.current.value=900
 eq(KR.GameState:GetSnapshot().player.health.current.value,50,"no mutable cache exposure")
 
+-- A standalone /kre dump re-reads UnitExists on every call. For the
+-- rotation evaluator a forced snapshot must do the same, even if the
+-- target event was lost and less than 0.5 seconds elapsed.
+hasTarget=true
+local stale=KR.GameState:GetSnapshot()
+eq(stale.target.exists.value,false,"normal cache may retain old target")
+local fresh=KR.GameState:GetSnapshot(true)
+eq(fresh.target.exists.value,true,"forced evaluation detects newly selected target")
+eq(fresh.target.attackable.value,true,"forced evaluation sees enemy relation")
+eq(fresh.revision,first.revision+1,"forced evaluation rebuilds snapshot")
+hasTarget=false
+eq(KR.GameState:GetSnapshot(true).target.exists.value,false,
+ "forced evaluation notices target removal")
+
+
 hasTarget=true
 KR.EventBus:HandleEvent("PLAYER_TARGET_CHANGED")
 local second=KR.GameState:GetSnapshot()
