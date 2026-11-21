@@ -1,3 +1,9 @@
+## KR-20261121-024 — подтверждена регрессия уровня 2.8.3d
+- **Дата UTC:** 2026-11-21T08:48:33.763Z. **Тип:** docs/test evidence, без изменения Lua, профилей или .toc.
+- **Проверенный результат:** [GitHub Actions run 44886522419](https://github.com/Vi22Rus/Kord/actions/runs/44886522419), SHA `5ac5d0fee8805d0b6f0054cbb28e9dbdc1341ac8`, completed/success, job 136792876252. Проверены job logs: `luac5.1 -p` PASS по Lua; **8/8** mock suites PASS; `AbilityEligibility` **47 checks**, `GameState v14` 31, secret input guards 26, `RotationEngine` 29. Новые minLevel 4 сценария помечены PASSED CI в Test_Matrix.
+- **Не подтверждено:** клиент WoW Forever; правильность выбора highest learned rank v14 #20; корректность v14 всех 101 API capabilities в игре. CLIENT PASS=0/101, соответствующие строки NOT RUN.
+- **Далее:** продолжить проверку v14 GCD/charges и явно открытых rank-проверок; затем согласованный переход к ядру Engine 2.8.4, DevTools и Hunter BM 1–59 без изменения приоритетов.
+
 ## KR-20261121-023 — 2.8.3d: строгая минимальная граница уровня в Eligibility
 - **Дата UTC:** 2026-11-21T08:47:16.138Z. **Источник:** Canonical API Matrix v14 #20/#80/#82, Sonah/Core/Atoms/Spells.lua:68–94,171–189 и MaxDps/SpellData.lua (сверка источников). **Согласование:** утверждённый пользовательский план переработки ядра v14.
 - **Проблема:** известность заклинания не доказывает подходящий уровень персонажа или выбранный ранг. Прежний Eligibility не имел явного контракта минимального уровня, а открытый вопрос рангов нельзя скрыть под `known=true`.
