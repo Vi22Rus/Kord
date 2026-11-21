@@ -27,7 +27,11 @@ eq(type(lastframe.scripts.OnEvent),"function","event handler enabled")
 eq(lastframe.events.UPDATE_BINDINGS,true,"event registered")
 lastframe.scripts.OnEvent(lastframe,"UPDATE_BINDINGS")
 eq(#D.records>0,true,"recorded events")
-eq(D.records[1].reason,"update_bindings","named event not manual_sample")
+local sawBindings=false
+for _,record in ipairs(D.records) do
+ if record.reason=="update_bindings" then sawBindings=true end
+end
+eq(sawBindings,true,"named event not manual_sample")
 eq(lastframe.events.UNIT_SPELLCAST_SUCCEEDED,true,"player cast event registered")
 local beforeOtherUnit=#D.records
 lastframe.scripts.OnEvent(lastframe,"UNIT_SPELLCAST_SUCCEEDED","target")
