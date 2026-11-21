@@ -2,7 +2,7 @@
 
 **Сборки / обязательная ссылка для новых чатов:** [BUILD_VARIANTS_AND_DIAGNOSTICS.md](../BUILD_VARIANTS_AND_DIAGNOSTICS.md). Одно ядро по [Canonical_API_Matrix v14](Canonical_API_Matrix.md), два отдельных аддона `KordRotation` и `KordRotationDevTools`. Первый пилот — `Kord_Hunter_BM_Leveling_PVE.lua` (BM 1–59 PvE) после DevTools; в конечный пользовательский ZIP DevTools не включается.
 
-**Обязательная целевая спецификация:** [Profile_Contract.md](Profile_Contract.md) (v1, SPEC ONLY / NOT IMPLEMENTED / CLIENT NOT RUN). Она предписывает будущую границу `Needs/Rules/UNKNOWN`; 2.8 `requires` и старые `Next` пока существуют только как исторический исходный код, не второй утверждённый формат.
+**Обязательная целевая спецификация:** [Profile_Contract.md](Profile_Contract.md) (v1, SOURCE IMPLEMENTED / LUA 5.1 NOT RUN / CLIENT NOT RUN). Она предписывает будущую границу `Needs/Rules/UNKNOWN`; 2.8 `requires` удалён из текущего движка и два устаревших engine-теста удалены из Git-дерева; исторические версии доступны в Git history, а Hunter исходники по-прежнему не подключены.
 
 Статус: нормативные шаблоны и рабочие реестры; **не** доказательство игровых механик и не готовые профили. Основной стандарт: [Kord Rotation Creation Guide](../Kord_Rotation_Creation_Guide.md).
 
