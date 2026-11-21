@@ -15,18 +15,29 @@ D.sequence = 0
 D.records = {}
 D.settings = {}
 local function safe(v)
-    local api=KordRotation and KordRotation.GameAPI
-    if not api or type(api.IsSafeValue)~="function" then return false end
-    local ok,result=pcall(api.IsSafeValue,api,v)
-    return ok and result==true
+    -- The diagnostic namespace has no access to KR.GameAPI internals.
+    -- Only client secrecy checks are used; protected data are discarded.
+    if type(issecretvalue)=="function" then
+        local ok,secret=pcall(issecretvalue,v)
+        if not ok or secret==true then return false end
+    end
+    if type(issecrettable)=="function" then
+        local ok,secret=pcall(issecrettable,v)
+        if not ok or secret==true then return false end
+    end
+    if type(canaccessvalue)=="function" then
+        local ok,allowed=pcall(canaccessvalue,v)
+        if not ok or allowed~=true then return false end
+    end
+    return true
 end
 function D:Safe(v) return safe(v) end
 function D:ReadCore()
-    local kr=KordRotation
-    if not kr or not kr.CoreObservation or type(kr.CoreObservation.Read)~="function" then
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" or type(bridge.Read)~="function" then
         return {status="UNAVAILABLE",engineStatus="UNKNOWN"}
     end
-    local ok,value=pcall(kr.CoreObservation.Read,kr.CoreObservation)
+    local ok,value=pcall(bridge.Read)
     if not ok or type(value)~="table" then
         return {status="ERROR",engineStatus="UNKNOWN"}
     end

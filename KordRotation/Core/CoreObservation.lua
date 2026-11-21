@@ -59,4 +59,31 @@ function O:Read()
     }
     return result
 end
+-- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
+-- The diagnostic extension is a separate WoW addon namespace.
+_G.KordRotationCoreObservation = {
+    Read=function()
+        local ok,result=pcall(O.Read,O)
+        if not ok then return {version=1,status="ERROR",engineStatus="UNKNOWN"} end
+        return result
+    end,
+    Probe=function(_,name)
+        -- Existing GameAPI returns presence-only results (NOT client proof).
+        if type(name)~="string" or #name<1 or #name>80
+            or not string.match(name,"^[A-Za-z][A-Za-z0-9_.]*$") then
+            return {status="UNAVAILABLE",reason="invalid_method"}
+        end
+        local api=KR.GameAPI
+        if not api or type(api.Probe)~="function" then
+            return {status="UNAVAILABLE",reason="api_missing"}
+        end
+        local ok,v=pcall(api.Probe,api,name)
+        if not ok or type(v)~="table" then
+            return {status="ERROR",reason="api_call_failed"}
+        end
+        local s=status(field(v,"status"))
+        local why=reason(field(v,"reason"))
+        return {status=s,reason=why or "presence_only"}
+    end,
+}
 -- Copyright notice: see root LICENSE.
