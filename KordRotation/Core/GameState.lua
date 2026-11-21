@@ -134,6 +134,11 @@ local function unitSnapshot(unit)
         -- Matrix #38/#67/#100: UnitIsUnit(player,target) is NOT UnitIsPlayer.
         record.isPlayer=read("UnitIsPlayer", "boolean", "target")
         record.threat=number("UnitThreatSituation",0,3,"player","target")
+        -- Matrix #14/#78/#92: threat situation is an integer 0..3.
+        if record.threat.status=="READY" and
+            record.threat.value~=math.floor(record.threat.value) then
+            record.threat=invalid(record.threat,"threat_level_invalid")
+        end
     end
     record.status=statusOf({record.guid, record.dead, record.exists})
     return record
@@ -201,7 +206,9 @@ function S:ReadNow()
         context.instanceType={status="READY",value="none",
             source="IsInInstance",observedAt=context.inInstance.observedAt}
     else context.instanceType=invalid(context.inInstance,"instance_unknown") end
-    context.status=statusOf({context.inGroup,context.inRaid,context.inInstance})
+    -- A confirmed instance with unreadable type is NOT a fully READY context.
+    context.status=statusOf({context.inGroup,context.inRaid,
+        context.inInstance,context.instanceType})
     local combat={
         player=player.combat or invalid(player.exists, "player_missing"),
         lockdown=read("InCombatLockdown", "boolean"),

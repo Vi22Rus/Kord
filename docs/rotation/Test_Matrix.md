@@ -49,7 +49,7 @@
 |---|---|---|---|---|
 | GAME-009 | IsPlayerMoving #9 | true / false / nil / secret / unsupported | отдельные READY(true/false) и UNKNOWN/UNAVAILABLE | NOT RUN |
 | GAME-067 | UnitIsPlayer #38/#67 | игрок в цели / NPC / отсутствующая цель | не заменять UnitIsPlayer через UnitIsUnit | NOT RUN |
-| GAME-092 | Threat #14/#78/#92 | 0..3 / nil / secret | READY только для finite 0..3; иначе UNKNOWN | NOT RUN |
+| GAME-092 | Threat #14/#78/#92 | целые 0..3 / дробное 1.5 / nil / secret | READY только для integer 0..3; иначе UNKNOWN | NOT RUN |
 | GAME-099 | Pet #5/#77/#99 | живой, мёртвый, отсутствует, secret | pet.exists отдельно от pet.dead/health; отсутствие не равно UNKNOWN | NOT RUN |
 | GAME-018 | Context #17/#18/#72/#73 | solo, world party, dungeon, raid, nil | не выводить инстанс/группу из одного флага; нет ложного boolean | NOT RUN |
 | GAME-080 | Secret #3-6/#80 | secret health/power | никакая арифметика по секретному числу | NOT RUN |
@@ -72,3 +72,8 @@
 | GAME-CURVE-002 | #3/#4/#5/#41 | missing curve, nil, secret result or failing API | UNKNOWN; no arithmetic, no invented threshold | NOT RUN | NOT RUN |
 | GAME-CURVE-003 | #6/#49–51 | UnitPowerPercent with valid resource type | READY only for numeric 0..100 | NOT RUN | NOT RUN |
 | GAME-CURVE-004 | #6/#49–51 | unexpected >100, NaN, negative, unknown resource type | UNKNOWN and reason | NOT RUN | NOT RUN |
+
+## Исполняемая регрессия 2.8.2 (подэтап 2.8.2d)
+
+- **Файл:** `tests/stage_02_08_v14_state.lua`; изолированные mock-значения здоровья/ресурса, API error, Secret API, pet/pettarget, instance status, Auto Shot, границы threat. **Синтаксис теста** проверен texluac; **исполнение на реальном исходном ядре** требуется при наличии всех файлов в локальном workspace — не выдавать syntax-only за PASS assertions.
+- **Обязательные FAIL cases:** fractional threat; GetInstanceInfo second return nil при IsInInstance true; UnitPowerPercent secret; ошибочный UnitHealthPercent; отсутствующий Curve. **Игра:** NOT RUN.

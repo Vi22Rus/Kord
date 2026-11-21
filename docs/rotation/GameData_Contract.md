@@ -24,6 +24,8 @@
 
 | Поле | Источник | Строка v14 | Fail closed |
 |---|---|---|---|
+| `context.status` | `inGroup`, `inRaid`, `inInstance` **and** `instanceType` | #17/#18/#90/#91 | UNKNOWN if any required context component cannot be checked |
+| `target.threat` | `UnitThreatSituation("player","target")` strictly integer 0..3 | #14/#78/#92 | UNKNOWN on nil, secret, noninteger, outside range |
 | `context.instanceType` | `GetInstanceInfo()` second result, only after confirmed inInstance | #18/#90/#91 | UNKNOWN when instance type unavailable; `none` only outside instance |
 | `pet.targetExists` | `UnitExists("pettarget")` | #30 | UNKNOWN when pet missing/unknown |
 | `pet.attackingTarget` | `UnitIsUnit("pettarget","target")` after existence checks | #30 | UNKNOWN when relation unconfirmed |
