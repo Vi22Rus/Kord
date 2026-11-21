@@ -167,3 +167,15 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | UI-285E-001 | Тестовый режим и 5 слотов | TEST отдельно, только одна production рекомендация | NOT RUN | NOT RUN | NOT RUN |
 
 Сценарии: `tests/stage_02_08_v14_display.lua`, обновлён `tests/stage_02_08_rotation_engine.lua`. Workflow добавляет десятый набор, но запускается **только вручную** один раз перед общим QA. Новых UI-строк нет; словари 6 языков не меняются. Изолированная реальная игровая FrameXML/Secret проверка и FPS/RAM — NOT RUN.
+
+## 2.8.6a–e — итоговая интеграция ядра (без CI до общего QA)
+| ID | Сценарий | Факт | Локально | GitHub CI | Игра |
+|---|---|---|---|---|---|
+| CORE-286A-001 | Аудит v14 API→UI и шести референсов | Карта зависимостей и рисков, SOURCE REVIEWED | SOURCE REVIEWED | NOT RUN | NOT RUN |
+| CORE-286B-001 | GameState/target/group/GCD/identity/bind переходы | Дополнены реальные Engine+Eligibility mock-сценарии | NOT RUN | NOT RUN | NOT RUN |
+| CORE-286C-001 | Secret ID/name/texture из SpellCatalogue | Новые mock-кейсы, guarded lookup | NOT RUN | NOT RUN | NOT RUN |
+| CORE-286D-001 | Read-only CoreObservation, secret/missing/untrusted | 20 Lua assertions, точные SHA исходников совпадают | **LOCAL PASS 20** (texlua; SHA verified) | NOT RUN | NOT RUN |
+| CORE-286E-001 | TOC порядок, наличие шести локалей, manual CI | Static source verification: 6 locales present, 11 mock suites listed, manual-only workflow, TOC order | **STATIC PASS** | NOT RUN | NOT RUN |
+| CORE-286E-002 | Все 11 Lua suites на полном рабочем дереве | Локальный запускатель добавлен; общий прогон доступен после получения всех файлов в workspace | NOT RUN | NOT RUN | NOT RUN |
+
+**Принцип доказательств:** `LOCAL PASS` относится только к прямому запуску `tests/stage_02_08_v14_observation.lua` с файлом `CoreObservation.lua`, чьи Git blob SHA подтверждены соответственно `3e1fe9ffcbddbf37d9c72eec5bebf6626a9ae9db` и `c8ef6ac3d3abbd3d716557c3fe4d957acd059c8b`. Сценарии других модулей на этом SHA не исполнялись локально. Не переносить прежний CI PASS 2.8.4 на текущий коммит. GitHub Actions запускать один раз перед общим игровым QA, по согласованию заказчика.

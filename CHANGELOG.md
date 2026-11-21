@@ -1,3 +1,10 @@
+## KR-20261121-046 — 2.8.6e: локальный runner, проверка структуры и матрица QA
+- **Дата/зона:** 2026-11-21 UTC. **Причина:** завершить 2.8.6 с воспроизводимыми локальными тестами, не расходуя GitHub Actions до общего QA.
+- **Изменения:** локальный `scripts/run_local_lua_regression.sh` запускает синтаксис Lua всего KordRotation/tests и 11 mock-сценариев; поддерживает точечный запуск выбранных файлов. `scripts/check_lua_syntax.lua` компилирует без исполнения. Расширены `docs/rotation/Test_Matrix.md` и `docs/STAGE_02_08_ROTATION_ENGINE.md`.
+- **Фактические проверки:** `texlua` локально: 20/20 observer assertions PASS. Локальные исходники observer и test хешированы через `git hash-object` и побайтно совпали с опубликованными GitHub blob SHA `c8ef6ac3` и `3e1fe9ff`. `bash -n` runner PASS, точечный runner observer PASS. Статическая проверка TOC порядка и 6 словарей присутствуют, ручной workflow содержит 11 suite, push trigger отсутствует. Полный 11-suite локально NOT RUN; GitHub Actions CI NOT RUN; WoW Forever NOT RUN.
+- **Открыто:** полная интеграционная регрессия, API matrix #20, DevTools (ещё не создан), пилот BM Leveling PvE 1–59, WoW Forever QA. Не объявлять их DONE и не переносить старый PASS.
+- **Сохранено:** 2 аддона/одно ядро, шесть UI локалей, Hunter приоритеты, Secret fail-closed, user-only UI без recorder.
+
 ## KR-20261121-045 — 2.8.6d: read-only CoreObservation contract для будущего DevTools
 - **Дата/зона:** 2026-11-21 UTC. **Задача:** подготовить наблюдаемую границу ядра до создания отдельного KordRotationDevTools, не добавляя runtime logger, Recorder или SavedVariables в пользовательскую сборку.
 - **Изменено:** новый `Core/CoreObservation.lua` (pull-only `Read()`, scalar-only version/status/engineReason/stateRevision/eventListenerErrors/bindingDirty). Источники — только уже имеющиеся значения памяти, без `Evaluate/GetSnapshot/WoW API`. Secret/неизвестные значения и не-allowlist причины не экспортируются. TOC подключает модуль после Engine; mock проверяет отсутствие Spell ID, целей, ключей, мутаций и побочных вызовов. GitHub workflow включает 11-й mock-тест и остаётся manual-only.

@@ -42,3 +42,15 @@
 - d: при отключении или исчезновении профиля ранее показанная рекомендация очищается даже после остановки обычных вычислений. TEST-режим изолирован.
 - e: новый mock `tests/stage_02_08_v14_display.lua`, всего десять Lua наборов в ручном GitHub workflow; дополнения Test_Matrix. Никаких новых строк UI, приоритетов Hunter, новых API или классовых профилей.
 - CI умышленно не запускался по решению заказчика от 2026-11-21. Без завершённого локального/CI результата нельзя утверждать PASS. Игровой QA, v14 #20 и performance остаются NOT RUN.
+
+## 2.8.6a–e — итоговая интеграция и наблюдаемость ядра
+**Дата:** 2026-11-21. **Состояние:** IMPLEMENTED / PARTIAL LOCAL PASS / ALL-SUITE LOCAL NOT RUN / CI NOT RUN / IN-GAME NOT RUN.
+- **a:** `docs/rotation/Engine_Integration_Audit_2_8_6.md` — первоисточники, цепочка контрактов, риски и тест-границы.
+- **b:** расширены mock-сценарии `stage_02_08_v14_rotation_contract.lua` — spec/target/group/GCD/bind переходы; исправлена устаревшая binding fixture после 2.8.5.
+- **c:** в `RotationEngine` добавлены secret-aware guards для ID/name/texture каталога до индексации и сравнений; UNKNOWN при неподтверждённой визуализации, без изменения priority list.
+- **d:** `CoreObservation:Read()` — pull-only scalar snapshot уже вычисленных статусов/причин, без вызова WoW API, без записи/логирования/хранения, без Spell ID. TOC подключает после Engine. Отдельный DevTools пока **не создан**.
+- **e:** `scripts/run_local_lua_regression.sh` и `scripts/check_lua_syntax.lua` для локальной синтаксической проверки и запуска 11 наборов; Test Matrix обновлена. Статически подтверждены порядок TOC и наличие шести базовых локалей. Новых текстов UI нет. Workflow manual-only.
+
+**Фактический локальный тест:** `texlua tests/stage_02_08_v14_observation.lua` — 20/20 PASS, проверены Git blob SHA точных двух файлов. `bash -n scripts/run_local_lua_regression.sh` PASS; локальный запускатель на наблюдательском наборе PASS. Остальные десять наборов не были исполнены локально на полном исходном дереве — NOT RUN. 11/11 CI НЕ утверждаем. Ограничения: v14 #20 highest rank, реальный клиент WoW Forever, FPS/RAM, DevTools, классовые профили NOT RUN/NOT IMPLEMENTED.
+
+**Следующий этап:** отдельно согласовать создание `KordRotationDevTools`; перед комплексным игровым QA выполнить один объединённый CI по решению KR-20261121-033, не включать автоматику при push.
