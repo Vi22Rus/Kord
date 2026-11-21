@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r -d '' f; do
-            lua5.1 -e 'assert(loadfile(arg[1]))' "$f"
+            luac5.1 -p "$f"
           done < <(find KordRotation tests -name '*.lua' -type f -print0)
       - name: Run existing and canonical v14 mock tests
         shell: bash
