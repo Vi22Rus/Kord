@@ -120,6 +120,16 @@ function O:ReadEngineDiagnostic()
             out.firstStatus=status(field(first,"status"))
             out.firstReason=reason(field(first,"reason")) or "unknown"
         end
+        -- Hunter BM pilot declares eight ranks from highest to lowest.
+        -- At level 30, rule 5 is the level-28 / rank-4 Arcane Shot rule.
+        -- Only its status and reason cross the diagnostic bridge.
+        if #diagnostics>=5 and profileID=="HUNTER_BM_PILOT_EXPERIMENTAL" then
+            local fourthRank=field(diagnostics,5)
+            if type(fourthRank)=="table" then
+                out.arcaneR4Status=status(field(fourthRank,"status"))
+                out.arcaneR4Reason=reason(field(fourthRank,"reason")) or "unknown"
+            end
+        end
     end
     return out
 end
@@ -217,8 +227,11 @@ function O:ReadDisplay()
     if not display then return {status="UNAVAILABLE",reason="display_unavailable"} end
     local frame=field(display,"frame")
     local ready=field(display,"productionReady")
+    local panel=field(KR.db,"panel")
     local out={
         status="READY",
+        panelEnabled=field(panel,"showPanel")==true,
+        testMode=field(panel,"testMode")==true,
         frameCreated=frame~=nil,
         recommendationAccepted=ready==true,
         lastEngineStatus=status(field(display,"lastEngineStatus")),
