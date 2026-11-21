@@ -25,3 +25,20 @@
 ## Hunter BM/MM/SV — исследование 2026-11-21
 
 Подробный реестр по шести PVE-профилям Hunter, включая подтверждённые исходники, буквальные spellID, несовместимые поля, источники, открытые конфликты и тест-кейсы: [Hunter_Research_2026-11-21.md](Hunter_Research_2026-11-21.md). **SOURCE REVIEWED / WEB PARTIAL / IN-GAME NOT RUN**. Не переносить неизвестные свойства в рабочие таблицы как подтверждённые. Для полного заполнения этой таблицы требуются дополнительные проверки клиента и адаптера.
+
+## Две сборки и диагностический пилот (решение 2026-11-21)
+
+**Источник:** [BUILD_VARIANTS_AND_DIAGNOSTICS.md](../BUILD_VARIANTS_AND_DIAGNOSTICS.md). Статусы до фактических тестов — NOT RUN.
+
+| Test ID | Сценарий | Критерий | Статус |
+|---|---|---|---|
+| BUILD-DEV-001 | Обычный ZIP без DevTools | Не содержит DevTools, developer-кнопки, recorder, отдельные debug SavedVariables | NOT RUN |
+| BUILD-DEV-002 | Debug ZIP | Содержит два аддона, `KordRotationDevTools` зависит от `KordRotation` | NOT RUN |
+| BUILD-DEV-003 | SHA ядра | Все файлы канонического ядра побайтно равны в двух пакетах | NOT RUN |
+| DEV-001 | Ручной старт/стоп записи | Никаких данных до opt-in; stop прекращает запись | NOT RUN |
+| DEV-002 | Secret API, nil, ERROR | Причины и номер v14 без попытки сериализовать защищённое значение | NOT RUN |
+| DEV-003 | Большой лог | Ограниченный буфер, rate limit, dropped counter и измеренный overhead | NOT RUN |
+| DEV-004 | /reload и экспорт | Диагностические SavedVariables сохраняются при reload/выходе; ручной экспорт работает | NOT RUN |
+| DEV-005 | Сессия API v14 | Сценарные probe, 101 отдельных статусов; отсутствие client test не превращается в PASS | NOT RUN |
+| BM-LEVEL-001 | Перенос BM 1–59 | ST/AoE/CFG/priority сохраняют решения старой ротации на одинаковых проверенных состояниях | NOT RUN |
+| BM-LEVEL-002 | Игровой тест | Pet, Auto Shot, ammo, GCD, ресурсы, дальность, threat, solo/dungeon, смена level/target | NOT RUN |

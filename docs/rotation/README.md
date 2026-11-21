@@ -1,5 +1,7 @@
 # Rotation documentation — единая система для всех классов
 
+**Сборки / обязательная ссылка для новых чатов:** [BUILD_VARIANTS_AND_DIAGNOSTICS.md](../BUILD_VARIANTS_AND_DIAGNOSTICS.md). Одно ядро по [Canonical_API_Matrix v14](Canonical_API_Matrix.md), два отдельных аддона `KordRotation` и `KordRotationDevTools`. Первый пилот — `Kord_Hunter_BM_Leveling_PVE.lua` (BM 1–59 PvE) после DevTools; в конечный пользовательский ZIP DevTools не включается.
+
 Статус: нормативные шаблоны и рабочие реестры; **не** доказательство игровых механик и не готовые профили. Основной стандарт: [Kord Rotation Creation Guide](../Kord_Rotation_Creation_Guide.md).
 
 ## Какие документы использовать

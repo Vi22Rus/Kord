@@ -1,5 +1,7 @@
 # Profile Registry — инвентарь и допуск к использованию
 
+**Утверждённый первый перенос и игровой пилот:** Hunter BM `Leveling` `PVE` (уровни 1–59) **после** канонического ядра v14 и `KordRotationDevTools`. Реестр содержит исходники других Hunter, но они не становятся активными автоматически и не загружаются ради проб. См. [две сборки](../BUILD_VARIANTS_AND_DIAGNOSTICS.md).
+
 Нормативное имя: `Kord_<Class>_<Spec>_<Leveling|60>_<PVE|PVP>.lua`; PVP — отдельный профиль. ClassCommon и SpecCore — вспомогательные модули, не самостоятельные профили.
 
 | Class | Spec | Mode | Content | File | Exists in GitHub | Registered/TOC | Game verified |
