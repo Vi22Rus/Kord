@@ -234,7 +234,24 @@ nilRange=false
 protected=true
 eq(fact("cooldownActive").status,"UNKNOWN","protected cooldown field unknown")
 protected=false
-eq(fact("known").status,"UNKNOWN","known fact requires separate audit")
+eq(fact("known").status,"READY","known fact from confirmed catalogue")
+eq(fact("known").value,true,"known catalogue affirmative")
+learned=false
+spellKnownByApi=false
+eq(fact("known").status,"READY","explicit SpellBook negative is a known fact")
+eq(fact("known").value,false,"explicit unlearned remains false")
+spellKnownByApi=true
+eq(fact("known").value,true,"SpellBook positive covers absent catalogue entry")
+spellKnownAvailable=false
+eq(fact("known").status,"UNKNOWN","catalogue absence plus missing API is unknown")
+spellKnownAvailable=true
+local previousCatalogue=KR.SpellCatalogue.Read
+KR.SpellCatalogue.Read=function() return {status="UNAVAILABLE"} end
+eq(fact("known").status,"UNKNOWN","unavailable catalogue never implies unknown spell")
+KR.SpellCatalogue.Read=function() error("spellbook failure") end
+eq(fact("known").status,"UNKNOWN","catalogue exception fails closed")
+KR.SpellCatalogue.Read=previousCatalogue
+learned=true
 eq(fact("chargesAtLeast").status,"UNKNOWN","charges threshold missing")
 eq(fact("notSupported").status,"UNKNOWN","invalid fact kind closed")
 eq(KR.AbilityEligibility:Fact(secretSpellId,"inRange").status,
