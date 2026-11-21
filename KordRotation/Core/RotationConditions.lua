@@ -202,6 +202,10 @@ function methods:spellFact(id,kind)
  if not ctx or not spellAllowed(ctx,id) or not safe(kind)
      or (kind~="known" and kind~="cooldownActive"
       and kind~="inRange" and kind~="chargesAtLeast") then return nil end
+ -- chargesAtLeast needs an explicit minimum charge count. Contract v1
+ -- has no threshold argument; do not silently assume one charge or call
+ -- a future provider that might accidentally interpret this as READY.
+ if kind=="chargesAtLeast" then return nil end
  -- Needs is an allowlist for profile facts, not an eager preload request.
  -- Range facts may be queried only for explicitly declared spell IDs.
  if kind=="inRange" and not has(ctx.profile.Needs.ranges,id) then return nil end
