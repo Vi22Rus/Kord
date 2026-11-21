@@ -6,16 +6,26 @@ local tracked={
  SPELL_UPDATE_COOLDOWN=25, ACTIONBAR_SLOT_CHANGED=32,
  SPELLS_CHANGED=19, PLAYER_REGEN_ENABLED=17,
  PLAYER_REGEN_DISABLED=17, PLAYER_ENTERING_WORLD=18,
+ UNIT_SPELLCAST_SUCCEEDED=25, UNIT_SPELLCAST_START=25,
+ UNIT_SPELLCAST_FAILED=25, UNIT_SPELLCAST_INTERRUPTED=25,
 }
 local reasons={
- PLAYER_TARGET_CHANGED="manual_sample",
- UPDATE_BINDINGS="manual_sample",
- SPELL_UPDATE_COOLDOWN="manual_sample",
- ACTIONBAR_SLOT_CHANGED="manual_sample",
- SPELLS_CHANGED="manual_sample",
- PLAYER_REGEN_ENABLED="manual_sample",
- PLAYER_REGEN_DISABLED="manual_sample",
- PLAYER_ENTERING_WORLD="manual_sample",
+ PLAYER_TARGET_CHANGED="player_target_changed",
+ UPDATE_BINDINGS="update_bindings",
+ SPELL_UPDATE_COOLDOWN="spell_update_cooldown",
+ ACTIONBAR_SLOT_CHANGED="actionbar_slot_changed",
+ SPELLS_CHANGED="spells_changed",
+ PLAYER_REGEN_ENABLED="player_regen_enabled",
+ PLAYER_REGEN_DISABLED="player_regen_disabled",
+ PLAYER_ENTERING_WORLD="player_entering_world",
+ UNIT_SPELLCAST_SUCCEEDED="unit_spellcast_succeeded",
+ UNIT_SPELLCAST_START="unit_spellcast_start",
+ UNIT_SPELLCAST_FAILED="unit_spellcast_failed",
+ UNIT_SPELLCAST_INTERRUPTED="unit_spellcast_interrupted",
+}
+local playerOnly={
+ UNIT_SPELLCAST_SUCCEEDED=true, UNIT_SPELLCAST_START=true,
+ UNIT_SPELLCAST_FAILED=true, UNIT_SPELLCAST_INTERRUPTED=true,
 }
 function D:TraceStart()
     if not self.active then return false end
@@ -26,8 +36,10 @@ function D:TraceStart()
         -- Client may omit events. Feature-detect, never fake successful hooks.
         pcall(frame.RegisterEvent,frame,event)
     end
-    frame:SetScript("OnEvent",function(_,event)
+    frame:SetScript("OnEvent",function(_,event,unit)
         if not D.active or not tracked[event] then return end
+        -- Do not record other units' spellcasts or any spell ID/name.
+        if playerOnly[event] and (not D:Safe(unit) or unit~="player") then return end
         D:Record("EVENT","READY",reasons[event],tracked[event])
         D:ObserveTransition()
     end)
@@ -43,6 +55,7 @@ function D:TraceStart()
     self.lastProfile=nil
     self.lastEligibility=nil
     self.lastErrors=nil
+    self.lastTarget=nil
     return true
 end
 function D:TraceStop()
@@ -58,7 +71,30 @@ function D:TraceStop()
     self.lastProfile=nil
     self.lastEligibility=nil
     self.lastErrors=nil
+    self.lastTarget=nil
     return true
+end
+-- Observe the live target only through the sanitized main-addon bridge.
+-- Do not query game APIs, inspect target GUIDs or retain unit objects.
+function D:ObserveTarget()
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" or type(bridge.Target)~="function" then return false end
+    local ok,data=pcall(bridge.Target)
+    if not ok or type(data)~="table" or not self:Safe(data) then return false end
+    local state="UNKNOWN"
+    if self:Safe(data.liveStatus) and data.liveStatus=="READY"
+        and self:Safe(data.liveExists)
+        and type(data.liveExists)=="boolean" then
+        state=data.liveExists and "READY" or "BLOCKED"
+    end
+    if state==self.lastTarget then return false end
+    local reason=state=="READY" and "target_present"
+        or state=="BLOCKED" and "target_absent" or "target_unverified"
+    if self:Record("TARGET",state,reason,1) then
+        self.lastTarget=state
+        return true
+    end
+    return false
 end
 function D:ObserveTransition()
     if not self.active then return false end
@@ -119,11 +155,18 @@ function D:ObserveTransition()
         return false
     end
 
-    if status~=self.lastObserved then
-        if self:Record("ENGINE",status,"manual_sample") then
-            self.lastObserved=status
+    local engineReason=snapshot and snapshot.engineReason
+    if type(engineReason)~="string" or not self:Safe(engineReason)
+        or #engineReason>64 or not engineReason:match("^[a-z][a-z0-9_]*$") then
+        engineReason="unknown"
+    end
+    local engineKey=status..":"..engineReason
+    if engineKey~=self.lastObserved then
+        if self:Record("ENGINE",status,engineReason) then
+            self.lastObserved=engineKey
             return true
         end
+        return false
     end
-    return false
+    return self:ObserveTarget()
 end
