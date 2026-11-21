@@ -24,6 +24,7 @@ Core\AbilityEligibility.lua
 Core\RotationProfiles.lua
 Core\RotationConditions.lua
 Core\RotationEngine.lua
+Profiles\Hunter\BM_Pilot_Experimental.lua
 Core\CoreObservation.lua
 Core\IndicatorSettings.lua
 Core\AppearanceProfiles.lua
