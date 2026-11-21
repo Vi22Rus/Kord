@@ -1,11 +1,7 @@
 name: Lua regression (WoW mock, not in-game)
+# Deliberately manual-only to conserve GitHub Actions minutes.
+# Run once before consolidated QA, after all changes and tests are collected.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'KordRotation/**/*.lua'
-      - 'tests/**/*.lua'
-      - '.github/workflows/lua-regression.yml'
   workflow_dispatch:
 permissions:
   contents: read

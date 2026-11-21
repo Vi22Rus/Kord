@@ -1,3 +1,9 @@
+## KR-20261121-033 — ручной CI по решению заказчика
+- **Дата/зона:** 2026-11-21 UTC. **Причина:** автоматические прогоны после каждого Lua-коммита расходуют лимит GitHub Actions; заказчик потребовал накопить тесты и запустить их один раз перед общим QA.
+- **Изменено:** `.github/workflows/lua-regression.yml` переведён только на `workflow_dispatch`; удалён `push` trigger. В `AGENTS.md` закреплены отдельные статусы локальных проверок и CI и запрет запускать CI до итогового QA без отдельного согласования.
+- **Проверка:** сверка конфигурации по тексту; GitHub Actions намеренно **NOT RUN** для этой записи. Изменений Lua/TOC/UI/ротаций нет. Ранее зафиксированные CI PASS относятся только к прежним SHA.
+- **Следующий шаг:** накапливать тесты для 2.8.5 и 2.8.6 без автоматического CI.
+
 ## KR-20261121-032 — подтверждение итогового CI этапа 2.8.4a–d
 - **Дата/зона:** 2026-11-21 UTC. **Тип:** documentation evidence, Lua/TOC/UI не изменяются.
 - **Проверенный источник:** [GitHub Actions run 44888049693](https://github.com/Vi22Rus/Kord/actions/runs/44888049693), SHA `28104bbb9920fdba46170426e8c6eb621a243b17`, job `136797558374`, completed/success. Проверка синтаксиса всех Lua через luac5.1 PASS. **Девять из девяти mock suites PASS**: Stage 2.3 GameState, 2.4 SpellCatalogue, 2.5 ActionBar, 2.6 Bindings (25), Eligibility (57), RotationEngine (38), v14 GameState (31), v14 argument guards (26), v14 real-module integration (28). Лог получен непосредственно из job.
