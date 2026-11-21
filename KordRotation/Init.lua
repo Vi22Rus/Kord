@@ -74,6 +74,20 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                             KR:Print("Rotation: invalid_result")
                         else
                             KR:Print("Rotation: "..status.." / "..reason)
+                            if status=="READY" and KR.RotationDisplay then
+                                local display=KR.RotationDisplay
+                                local show,showReason=pcall(display.ShouldShow,display)
+                                if show then
+                                    KR:Print("Display visible: "..tostring(showReason))
+                                else
+                                    KR:Print("Display visibility check failed")
+                                end
+                                local panel=KR.db and KR.db.panel
+                                if ordinary(panel) and type(panel)=="table" then
+                                    KR:Print("Panel: showPanel="..tostring(panel.showPanel)
+                                        ..", testMode="..tostring(panel.testMode))
+                                end
+                            end
                             if ordinary(result.diagnostics)
                                 and type(result.diagnostics)=="table" then
                                 local first=result.diagnostics[1]
