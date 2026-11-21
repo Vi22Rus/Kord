@@ -1,3 +1,8 @@
+## KR-20261121-091 — локальная регрессия строго на Lua 5.1
+- `scripts/run_local_lua_regression.sh`: удалён автоматический fallback на `texlua` (на доступном хосте это Lua 5.3), добавлены проверка наличия `lua5.1` и исполнение отдельного version-probe `_VERSION == "Lua 5.1"` до проверок исходников.
+- Проверен фактический `texlua`: `Lua 5.3`; он не является доказательством совместимости Lua 5.1. Локальный checkout из контейнера недоступен из-за DNS, поэтому 17 тестов **не запускались** и статус этапа не повышен.
+- Hunter BM, WoW клиент и GitHub Actions не затронуты.
+
 ## KR-20261121-087 — Needs.ranges применяется к spellFact(inRange)
 - `RotationConditions.lua`: `S:spellFact(spellID, "inRange")` не вызывает `AbilityEligibility.Fact`, если spellID не указан в `Needs.ranges`; ответ `nil` (UNKNOWN). Другие виды фактов остаются доступными только для заклинаний из `Spells`.
 - `tests/profile_contract_v1.lua`: добавлены проверки отказа без вызова провайдера и разрешённого запроса с объявленным range-ID.
