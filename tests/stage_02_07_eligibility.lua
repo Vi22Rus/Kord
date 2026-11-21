@@ -205,5 +205,39 @@ KR.GameAPI.ReadValues=function(self,name,...)
 end
 eq(eval().status,"READY","legacy APIs")
 KR.GameAPI.ReadValues=oldMulti;KR.GameAPI.Probe=oldProbe
+-- Contract v1 Fact: typed, fail-closed observations, not final spell readiness.
+local function fact(kind,id)
+ return KR.AbilityEligibility:Fact(id or 101,kind,{stateSnapshot=KR.GameState:GetSnapshot()})
+end
+eq(fact("cooldownActive").status,"READY","cooldown fact readable")
+eq(fact("cooldownActive").value,false,"cooldown fact inactive")
+active=true
+eq(fact("cooldownActive").value,true,"cooldown fact active")
+active=false
+missingGcdField=false
+local oldReadFact=KR.GameAPI.Read
+KR.GameAPI.Read=function(self,name,typ,...)
+ if name=="C_Spell.GetSpellCooldown" and (...)==101 then
+  return r({isOnGCD=true})
+ end
+ return oldReadFact(self,name,typ,...)
+end
+eq(fact("cooldownActive").status,"UNKNOWN","missing active field not guessed from GCD")
+KR.GameAPI.Read=oldReadFact
+distance=false
+eq(fact("inRange").value,false,"range false retained")
+distance=true
+eq(fact("inRange").value,true,"range true retained")
+nilRange=true
+eq(fact("inRange").status,"UNKNOWN","nil range not inferred")
+nilRange=false
+protected=true
+eq(fact("cooldownActive").status,"UNKNOWN","protected cooldown field unknown")
+protected=false
+eq(fact("known").status,"UNKNOWN","known fact requires separate audit")
+eq(fact("chargesAtLeast").status,"UNKNOWN","charges threshold missing")
+eq(fact("notSupported").status,"UNKNOWN","invalid fact kind closed")
+eq(KR.AbilityEligibility:Fact(secretSpellId,"inRange").status,
+ "UNKNOWN","secret spellID rejected")
 eq(KR.AbilityEligibility:Initialize(),true,"initialization")
 print("PASS stage 2.7 eligibility mock: "..count.." checks")
