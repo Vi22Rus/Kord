@@ -92,4 +92,26 @@ eq(diagnosis.firstReason,"action_slot_unconfirmed","first priority refusal")
 eq(diagnosis.spellID,nil,"no raw spell ID in DevTools")
 eq(diagnosis.diagnostics,nil,"no raw diagnostics exported")
 eq(reads,1,"engine reevaluates only for explicit diagnosis")
+-- Scanner coverage is inspected only on manual DevTools request.
+KR.characterState={classToken="HUNTER",index=1}
+KR.GameState.current.player={level={status="READY",value=30}}
+local scannerReads=0
+KR.ActionBarScanner={GetSnapshot=function()
+ scannerReads=scannerReads+1
+ return {status="READY",entries={
+  {spellID=14283,slot=7},
+  {spellID=14282,slot=8}
+ }}
+end}
+KR.RotationProfiles={ResolveForEngine=function(_,identity,level)
+ eq(identity,"HUNTER_TREE_1","manual scan Hunter profile identity")
+ eq(level,30,"manual scan player level")
+ return {Spells={ArcaneShotR3=14282,ArcaneShotR4=14283}}
+end}
+local bars=bridge.ActionBar()
+eq(bars.status,"READY","manual scanner returns available")
+eq(bars.confirmedSpellButtons,2,"manual scanner confirmed spells")
+eq(bars.arcaneRankOnBar,4,"highest observed Arcane rank")
+eq(bars.spellID,nil,"no raw spell ID in DevTools output")
+eq(scannerReads,1,"scanner read only on manual request")
 print("PASS 2.8.6 observer mock: "..n.." assertions")
