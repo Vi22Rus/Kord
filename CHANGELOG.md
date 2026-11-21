@@ -1,3 +1,10 @@
+## KR-20261121-019 — 2.8.3b: known spell без ложного отрицания; secret Spell ID
+- **Дата UTC:** 2026-11-21T08:39:33.703Z. **Этап:** Canonical API Matrix v14 #19/#80/#81, AbilityEligibility, без изменения .toc.
+- **Источники:** Sonah/Core/Atoms/Spells.lua известность пассивных/талантовых заклинаний через C_SpellBook.IsSpellKnown (Player bank); сверено с MaxDps/SpellData.lua и v14. Матрица остаётся единственным authority по выбранному API; client test NOT RUN.
+- **Дефект:** при отсутствии в локальных entries любой ID считался not_learned, хотя это не доказывает неизвестность способности. Кроме того validID делал math.floor/comparison до проверки секретности ID.
+- **Исправление:** добавлена прямая spellKnown-проверка в Eligibility: запись known=true принимается; иначе C_SpellBook.IsSpellKnown(ID, Enum.SpellBookSpellBank.Player), явное false=BLOCKED, невозможность проверить=UNKNOWN. validID защищает ID через GameAPI:IsSafeValue до арифметики. Никаких alias-адаптеров классовых ротаций. Тест 2.7 расширен проверками known positive/negative/absent и protected ID; матрица тестов и GameData Contract актуализированы.
+- **Проверка:** обязательный GitHub Actions mock после публикации, отчёт отдельно; игровой Forever NOT RUN. **Ограничение:** поведение высших рангов, spell variants и talent-правил проверяется отдельно; ложного CLIENT PASS нет.
+
 ## KR-20261121-018 — зафиксирован подтверждённый CI PASS этапа 2.8.3a
 - **Дата UTC:** 2026-11-21T08:35:26.552Z. **Тип:** docs/test evidence, без изменения кода/TOC/профилей/сборки.
 - **Доказательство:** GitHub Actions [run 44885528119](https://github.com/Vi22Rus/Kord/actions/runs/44885528119), head SHA `0eec94612ad106cb3ba7eb57f758180adc33eccb`, completed/success; syntax Lua 5.1 PASS; все 8 mock suites PASS. Eligibility 25 checks (включая 2 новых по isOnGCD), GameState v14 31 assertions, secret inputs 26 assertions, RotationEngine 29 assertions. Записано из фактического job log.

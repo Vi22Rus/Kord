@@ -104,3 +104,13 @@
 | ELIG-083-001 | `isActive=true,isOnGCD=true` при обычном `Evaluate()` | BLOCKED с `cooldown_active_unclassified`, не ложный READY | PASS run 44885528119 / 0eec9461 | NOT RUN |
 | ELIG-083-002 | `isActive=true,isOnGCD=false` | BLOCKED; причина не утверждает индивидуальную или GCD категорию | PASS run 44885528119 / 0eec9461 | NOT RUN |
 | ELIG-083-003 | `isActive=false` | Отдельный cooldown READY, независимо от неприменимого `isOnGCD` | PASS run 44885528119 / 0eec9461 | NOT RUN |
+
+## Canonical v14 Eligibility #19/#80/#81 — прямое подтверждение known (2.8.3b)
+
+| ID | Сценарий | Ожидаемое | Lua CI | WoW Forever |
+|---|---|---|---|---|
+| ELIG-KNOWN-001 | Запись каталога known=true | READY по известности; продолжить другие проверки | PENDING run | NOT RUN |
+| ELIG-KNOWN-002 | Нет записи в каталоге, C_SpellBook.IsSpellKnown=true | Известность READY (включая пассивные/талантовые ID), без ложного BLOCKED | PENDING run | NOT RUN |
+| ELIG-KNOWN-003 | Нет записи в каталоге, IsSpellKnown=false | BLOCKED/not_learned | PENDING run | NOT RUN |
+| ELIG-KNOWN-004 | Нет записи в каталоге, API/enum bank отсутствует или nil | UNKNOWN/spell_known_unverified, не false | PENDING run | NOT RUN |
+| ELIG-ID-005 | Secret Spell ID при Evaluate | UNKNOWN/invalid_spell_id до math.floor | PENDING run | NOT RUN |

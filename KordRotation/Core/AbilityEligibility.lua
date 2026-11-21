@@ -6,6 +6,11 @@ local A = KR.AbilityEligibility
 local GCD_SPELL_ID = 61304
 local watched = {"spellbook","actionbar","identity","talents","target","resources","cast","combat","cooldowns"}
 local function validID(n)
+    -- Check secrecy BEFORE type checks, math.floor or numeric comparisons.
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" or not api:IsSafeValue(n) then
+        return false
+    end
     return type(n)=="number" and n==n and n==math.floor(n) and n>=1 and n<=99999999
 end
 local function number(n)
@@ -33,6 +38,31 @@ local function choose(unknown,reason)
     if not unknown then return reason end
     return unknown
 end
+-- Matrix v14 #19/#81: catalogue absence is not proof of an unknown spell.
+-- Talent/passive spells may be known but absent from a scanned book.
+-- Never guess the player spell-book bank or silently treat nil as false.
+local function spellKnown(id,catalogue)
+    if not catalogue or catalogue.status~="ready" then
+        return "UNKNOWN","spellbook_unavailable"
+    end
+    for _,item in ipairs(catalogue.entries or {}) do
+        if item.id==id and item.known==true then return "READY" end
+    end
+    local api=KR.GameAPI
+    local enum=type(Enum)=="table" and Enum.SpellBookSpellBank
+    local bank=type(enum)=="table" and enum.Player
+    if not api or type(api.Probe)~="function" or type(api.Read)~="function"
+        or type(api.IsSafeValue)~="function" or not api:IsSafeValue(bank)
+        or type(bank)~="number" or bank~=math.floor(bank)
+        or api:Probe("C_SpellBook.IsSpellKnown").status~="READY" then
+        return "UNKNOWN","spell_known_unverified"
+    end
+    local r=api:Read("C_SpellBook.IsSpellKnown","boolean",id,bank)
+    if r.status~="READY" then return "UNKNOWN","spell_known_unverified" end
+    if r.value==false then return "BLOCKED","not_learned" end
+    return "READY"
+end
+
 local function cooldown(id)
     local api=KR.GameAPI
     if not api then return "UNKNOWN","api_missing" end
@@ -194,14 +224,8 @@ function A:Evaluate(id,options)
         return candidate("UNKNOWN","charge_policy_required",id)
     end
     local catalogue=KR.SpellCatalogue and KR.SpellCatalogue:Read()
-    if not catalogue or catalogue.status~="ready" then
-        return candidate("UNKNOWN","spellbook_unavailable",id)
-    end
-    local known=false
-    for _,item in ipairs(catalogue.entries or {}) do
-        if item.id==id and item.known==true then known=true;break end
-    end
-    if not known then return candidate("BLOCKED","not_learned",id) end
+    local knownStatus,knownReason=spellKnown(id,catalogue)
+    if knownStatus~="READY" then return candidate(knownStatus,knownReason,id) end
     if not KR.ActionBarScanner or not KR.ActionBarScanner.FindSpell then
         return candidate("UNKNOWN","scanner_unavailable",id)
     end

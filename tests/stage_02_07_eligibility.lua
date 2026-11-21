@@ -1,4 +1,8 @@
 local KR={}
+Enum={SpellBookSpellBank={Player=0}}
+local spellKnownByApi=true
+local spellKnownAvailable=true
+local secretSpellId={}
 local learned=true
 local slot=true
 local active=false
@@ -21,11 +25,18 @@ KR.ActionBarScanner={FindSpell=function() return slot and {status="READY",slot=1
 KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead)},target={exists=r(targetExists),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
 KR.EventBus={Subscribe=function() return true end}
 KR.GameAPI={
- Probe=function(_,name) return {status="READY"} end,
+ IsSafeValue=function(_,value) return not rawequal(value,secretSpellId) end,
+ Probe=function(_,name)
+  if name=="C_SpellBook.IsSpellKnown" and not spellKnownAvailable then
+   return {status="UNAVAILABLE"}
+  end
+  return {status="READY"}
+ end,
  ReadField=function(_,rec,key) if protected then return {status="UNKNOWN"} end return rec[key]~=nil and r(rec[key]) or {status="UNKNOWN"} end,
  Read=function(_,name,typ,...)
   local id=(...)
   if name=="GetTime" then return r(now) end
+  if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
   if name=="C_Spell.GetSpellCooldown" then return r({isActive=id==61304 and gcdActive or active,isOnGCD=false}) end
   if name=="C_Spell.GetSpellCharges" then return r({currentCharges=chargeCount,maxCharges=2}) end
   if name=="C_Spell.IsSpellInRange" then return r(distance) end
@@ -46,7 +57,14 @@ local function eq(got,want,msg)
 end
 local function eval(opts) return KR.AbilityEligibility:Evaluate(101,opts or targetPolicy) end
 eq(eval().status,"READY","available")
-learned=false;eq(eval().reason,"not_learned");learned=true
+learned=false
+spellKnownByApi=false;eq(eval().reason,"not_learned","known API negative")
+spellKnownByApi=true;eq(eval().status,"READY","talent granted known spell")
+spellKnownAvailable=false;eq(eval().status,"UNKNOWN","known API absent")
+eq(eval().reason,"spell_known_unverified","no false unlearned")
+spellKnownAvailable=true;learned=true
+eq(KR.AbilityEligibility:Evaluate(secretSpellId,targetPolicy).reason,
+   "invalid_spell_id","secret ID rejected before math.floor")
 slot=false;eq(eval().status,"UNKNOWN","slot");slot=true
 noPower=true;eq(eval().reason,"insufficient_resources");noPower=false
 usable=false;eq(eval().reason,"spell_unusable");usable=true

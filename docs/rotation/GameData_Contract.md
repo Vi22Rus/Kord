@@ -92,3 +92,7 @@ BM сегодня использует snake_case и названия спосо
 ## Eligibility v14 #83 — активный cooldown (2.8.3a)
 
 `AbilityEligibility` при **обычном опросе** `C_Spell.GetSpellCooldown(spellID)` не использует `SpellCooldownInfo.isOnGCD`: матрица v14 #83 разрешает доверять этому признаку **только во время SPELL_UPDATE_COOLDOWN**. Если `isActive=true`, способность `BLOCKED` с причиной `cooldown_active_unclassified`; категория индивидуальный/shared/GCD остаётся неизвестной. `isActive=false` даёт прохождение именно этой проверки. Независимая проверка GCD остаётся обязательной. `nil`, secret, ошибка и неполная структура не становятся READY. Дальнейшая реализация event-scoped классификации требует отдельного проверяемого контракта, а не догадки по snapshot. Это исправление **не меняет приоритеты классовых ротаций**.
+
+## Изученность в Eligibility — v14 #19/#81 (2.8.3b)
+
+Известность проверяется без временного адаптера ротаций: подтверждённая запись `SpellCatalogue` с `known=true` допускает дальнейшие проверки. Если запись отсутствует, `AbilityEligibility` запрашивает `C_SpellBook.IsSpellKnown(spellID, Enum.SpellBookSpellBank.Player)`. Только явное `false` этого метода даёт `BLOCKED/not_learned`; отсутствующий банк, метод, защищённый или `nil` ответ → `UNKNOWN/spell_known_unverified`. Это не утверждение, что алгоритм рангов (#20) полностью готов. Защищённый spellID отклоняется до `math.floor` и сравнений.
