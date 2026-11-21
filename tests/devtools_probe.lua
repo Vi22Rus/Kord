@@ -16,6 +16,10 @@ eq(D:ProbeMethod("UnitExists").matrix,1,"matrix 1")
 eq(D:ProbeMethod("RunMacroText").status,"UNAVAILABLE","no protected action")
 eq(D:ProbeMethod(secret).status,"UNAVAILABLE","secret name denied")
 eq(#called,2,"unknown methods never called")
+bridge.Probe=function() return {status=secret} end
+eq(D:ProbeMethod("UnitExists").status,"UNKNOWN","secret status not forwarded")
+bridge.Probe=function(_,name) called[#called+1]=name
+ return {status=name=="UnitExists" and "READY" or "UNAVAILABLE"} end
 local result=D:ProbeAll()
 eq(result.total,101,"101 matrix rows")
 eq(result.present>0,true,"presence recorded")

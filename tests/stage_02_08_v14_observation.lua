@@ -45,4 +45,11 @@ o=KR.CoreObservation:Read()
 eq(o.engineStatus,"READY","public status")
 eq(o.engineReason,nil,"unapproved reason format hidden")
 eq(reads,0,"no WoW API polling")
+KR.GameAPI.Probe=function(_,name)
+ return {status=name=="UnitExists" and "READY" or "UNAVAILABLE",reason="presence_only"}
+end
+local bridge=_G.KordRotationCoreObservation
+eq(bridge:Probe("UnitExists").status,"READY","allowlisted presence bridge")
+eq(bridge:Probe("PROTECTED").status,"UNAVAILABLE","protected API name denied")
+eq(bridge:Probe("SetBinding Action").status,"UNAVAILABLE","invalid API name denied")
 print("PASS 2.8.6 observer mock: "..n.." assertions")

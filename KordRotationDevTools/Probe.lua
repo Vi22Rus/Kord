@@ -21,9 +21,16 @@ function D:ProbeMethod(name)
     if not ok or type(value)~="table" then
         return {status="ERROR",reason="probe_failed",matrix=catalog[name]}
     end
-    local status=value.status
-    if status~="READY" and status~="UNAVAILABLE" and status~="UNKNOWN"
-        and status~="ERROR" then status="UNKNOWN" end
+    local safeStatus,status=pcall(function()
+        if not self:Safe(value) or not self:Safe(value.status) then
+            return "UNKNOWN"
+        end
+        return value.status
+    end)
+    if not safeStatus or (status~="READY" and status~="UNAVAILABLE"
+        and status~="UNKNOWN" and status~="ERROR") then
+        status="UNKNOWN"
+    end
     return {status=status,reason="presence_only",matrix=catalog[name]}
 end
 function D:ProbeAll()

@@ -19,20 +19,20 @@ local function field(record,key)
     return value
 end
 local function status(v)
-    if type(v)~="string" or not safe(v) or not statuses[v] then
+    if not safe(v) or type(v)~="string" or not statuses[v] then
         return "UNKNOWN"
     end
     return v
 end
 local function reason(v)
-    if type(v)~="string" or not safe(v)
+    if not safe(v) or type(v)~="string"
         or #v<1 or #v>64 or not string.match(v,"^[a-z][a-z0-9_]*$") then
         return nil
     end
     return v
 end
 local function nonnegativeInt(v)
-    if type(v)~="number" or not safe(v) or v~=v
+    if not safe(v) or type(v)~="number" or v~=v
         or v<0 or v>1000000000 or v~=math.floor(v) then return nil end
     return v
 end
@@ -69,7 +69,7 @@ _G.KordRotationCoreObservation = {
     end,
     Probe=function(_,name)
         -- Existing GameAPI returns presence-only results (NOT client proof).
-        if type(name)~="string" or #name<1 or #name>80
+        if not safe(name) or type(name)~="string" or #name<1 or #name>80
             or not string.match(name,"^[A-Za-z][A-Za-z0-9_.]*$") then
             return {status="UNAVAILABLE",reason="invalid_method"}
         end

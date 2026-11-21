@@ -1,3 +1,10 @@
+## KR-20261121-057 — DT-6 security regression: secret-safe CoreObservation probe
+- Дата UTC: 2026-11-21. Коммит: см. git log --grep KR-20261121-057.
+- Причина: read-only мост CoreObservation:Probe проверял длину имени перед вызовом GameAPI:IsSafeValue, что могло быть опасно для protected имени; DevTools:ProbeMethod читал status результата до проверки безопасности.
+- Исправлено: CoreObservation проверяет безопасную доступность до сравнений, ProbeMethod обрабатывает статус внутри pcall после проверки Safe. На недоступном ответе UNKNOWN. Добавлены тесты protected API name, invalid name, presence-only и malicious secret status. Не добавлены игровые API или новые привилегии.
+- Проверка: исходниковый статический анализ; новый Lua mock NOT RUN на этом SHA, CI NOT RUN (только ручной), WoW Forever NOT RUN. Это улучшение проверки секретов, но не доказательство клиента.
+- Общий каталог CoreObservation остаётся единственным, автоматически идентичным в обеих ZIP, DevTools-only Probe присутствует только во второй. Следующий этап: синхронизация источников истины и QA-матрицы.
+
 ## KR-20261121-056 — подключение v14 Registry в загрузку и все шесть языков
 - Дата: 2026-11-21 UTC; коммит: см. git log --grep KR-20261121-056.
 - Изменения: TOC DevTools теперь загружает V14Registry.lua перед Probe.lua; переводы отчёта во всех шести языках уточняют, что 79/101 source-probe — только наличие связанного метода, не игровой PASS. Локальный runner и ручной workflow включают семнадцатый Lua mock; обновлена документация двух поставок.
