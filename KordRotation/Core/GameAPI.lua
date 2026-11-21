@@ -186,7 +186,11 @@ end
 -- All structured data must pass this reader before consumers inspect fields.
 -- expectedType can be omitted for optional fields, but missing/secret is UNKNOWN.
 function API:ReadField(record, key, expectedType)
-    if type(record) ~= "table" or secret(record) then
+    -- WoW UI frames/buttons may be userdata rather than Lua tables.
+    -- Protected userdata still fails closed; field indexing is guarded by
+    -- pcall and never invokes the value as a gameplay action.
+    local recordType=type(record)
+    if (recordType~="table" and recordType~="userdata") or secret(record) then
         return outcome("UNKNOWN", "GameAPI.ReadField", "protected_or_invalid_table")
     end
     if type(key) ~= "string" and type(key) ~= "number" then
