@@ -124,9 +124,17 @@ function KR.RotationDisplay:Create()
             "target","cooldowns","resources","cast","combat","pet","auras"}
         for _,channel in ipairs(channels) do
             KR.EventBus:Subscribe(channel,"RotationDisplay",function()
-                if KR.RotationDisplay.frame then
-                    KR.RotationDisplay:Refresh(true)
-                end
+                local display=KR.RotationDisplay
+                if not display.frame then return end
+                local p=ensurePosition(KR.db)
+                if p.testMode then return end
+                -- No needless engine work in a normal install without
+                -- registered profiles; still clear an already visible icon.
+                local id=KR.RotationSettings and KR.RotationSettings:GetProfileID()
+                local hasProfile=id and KR.RotationProfiles
+                    and KR.RotationProfiles:Has(id)
+                if not display.productionReady and not hasProfile then return end
+                display:Refresh(true)
             end)
         end
     end
