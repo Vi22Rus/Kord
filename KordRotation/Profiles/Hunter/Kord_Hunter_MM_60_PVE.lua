@@ -1,6 +1,5 @@
 -- Kord Rotation | Hunter Marksmanship | Level 60 | WoW Forever
 -- Design profile: NOT loaded by TOC; no direct WoW API calls.
--- Sonah is primary reference; MaxDps, JustAC, RotationGuide, ForeverRotation corroborate.
 -- The shared GameData adapter supplies the fields described below.
 -- READY means an explicit known/ready true; UNKNOWN must never become true.
 -- Output: one suggested action; this module does not cast spells.
