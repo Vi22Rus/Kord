@@ -77,4 +77,19 @@ KR.GameState.current.target.exists={status="UNKNOWN",value=protected}
 t=bridge.Target()
 eq(t.snapshotStatus,"UNKNOWN","protected cached target hidden")
 eq(t.snapshotExists,nil,"no protected value exported")
+-- Explicit DevTools diagnosis is the only observation that reevaluates
+-- the engine; the ordinary read-only snapshot above never does.
+KR.RotationEngine.Evaluate=function()
+ reads=reads+1
+ return {status="UNKNOWN",reason="action_slot_unconfirmed",
+  diagnostics={{status="UNKNOWN",reason="action_slot_unconfirmed",
+   spellID=14283}}}
+end
+local diagnosis=bridge.Diagnose()
+eq(diagnosis.status,"UNKNOWN","explicit diagnosis status")
+eq(diagnosis.reason,"action_slot_unconfirmed","actual engine refusal")
+eq(diagnosis.firstReason,"action_slot_unconfirmed","first priority refusal")
+eq(diagnosis.spellID,nil,"no raw spell ID in DevTools")
+eq(diagnosis.diagnostics,nil,"no raw diagnostics exported")
+eq(reads,1,"engine reevaluates only for explicit diagnosis")
 print("PASS 2.8.6 observer mock: "..n.." assertions")
