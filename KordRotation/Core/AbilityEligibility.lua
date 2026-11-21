@@ -381,23 +381,59 @@ function A:Fact(id,kind,options)
         end
         return answer(field(r.value,"isActive"))
     elseif kind=="inRange" then
-        -- This fact always refers to the current target; never guess the unit.
+        -- A range fact must refer to the target of this evaluation, not
+        -- whichever target happens to exist when WoW resolves the spell.
+        local snapshot=options and api:ReadField(options,"stateSnapshot","table")
+        if not snapshot or snapshot.status~="READY" then
+            return {status="UNKNOWN",reason="range_target_unverified"}
+        end
+        local target=api:ReadField(snapshot.value,"target","table")
+        if not target or target.status~="READY" then
+            return {status="UNKNOWN",reason="range_target_unverified"}
+        end
+        local exists=api:ReadField(target.value,"exists","table")
+        local guid=api:ReadField(target.value,"guid","table")
+        if not exists or exists.status~="READY" or not guid
+            or guid.status~="READY" then
+            return {status="UNKNOWN",reason="range_target_unverified"}
+        end
+        local presence=api:ReadField(exists.value,"value","boolean")
+        local existenceStatus=api:ReadField(exists.value,"status","string")
+        local identity=api:ReadField(guid.value,"value","string")
+        local identityStatus=api:ReadField(guid.value,"status","string")
+        if not presence or presence.status~="READY" or presence.value~=true
+            or not existenceStatus or existenceStatus.value~="READY"
+            or not identity or identity.status~="READY" or identity.value==""
+            or not identityStatus or identityStatus.value~="READY" then
+            return {status="UNKNOWN",reason="range_target_unverified"}
+        end
+        local function sameTarget()
+            local r=get("UnitGUID","string","target")
+            return r and r.status=="READY" and r.value==identity.value
+        end
+        if not sameTarget() then
+            return {status="UNKNOWN",reason="range_target_changed"}
+        end
+        local result
         if type(api.Probe)=="function" and
             api:Probe("C_Spell.IsSpellInRange").status=="READY" then
             local r=get("C_Spell.IsSpellInRange","boolean",id,"target")
-            if not r or r.status~="READY" then
-                return {status="UNKNOWN",reason="range_fact_unavailable"}
+            if r and r.status=="READY" then result=r.value end
+        else
+            local r=multi("IsSpellInRange",id,"target")
+            if r and r.status=="READY" and type(r.value)=="table" then
+                local v=r.value[1]
+                if v==1 or v==true then result=true end
+                if v==0 or v==false then result=false end
             end
-            return answer(r.value)
         end
-        local r=multi("IsSpellInRange",id,"target")
-        if not r or r.status~="READY" or type(r.value)~="table" then
+        if not sameTarget() then
+            return {status="UNKNOWN",reason="range_target_changed"}
+        end
+        if type(result)~="boolean" then
             return {status="UNKNOWN",reason="range_fact_unavailable"}
         end
-        local v=r.value[1]
-        if v==1 or v==true then return answer(true) end
-        if v==0 or v==false then return answer(false) end
-        return {status="UNKNOWN",reason="range_fact_unavailable"}
+        return answer(result)
     end
     -- 'chargesAtLeast' has no threshold parameter in Profile Contract v1.
     return {status="UNKNOWN",reason="fact_provider_unimplemented"}
