@@ -24,6 +24,9 @@ local noPower=false
 local chargeCount=1
 local charging=true
 local distance=true
+local targetGUID="Creature-Target"
+local guidReadCount=0
+local switchTargetOnSecondRead=false
 local dead=false
 local targetExists=true
 local attackable=true
@@ -34,7 +37,7 @@ local targetPolicy={target="enemy",cast="idle",chargesRequired=true}
 local function r(value) return {status="READY",value=value} end
 KR.SpellCatalogue={Read=function() return {status="ready",entries= learned and {{id=101,known=true}} or {{id=102,known=true}}} end}
 KR.ActionBarScanner={FindSpell=function() return slot and {status="READY",slot=1} or {status="UNKNOWN"} end}
-KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead),level=levelAvailable and r(playerLevel) or {status="UNKNOWN"}},target={exists=r(targetExists),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
+KR.GameState={GetSnapshot=function()return {player={exists=r(true),dead=r(dead),level=levelAvailable and r(playerLevel) or {status="UNKNOWN"}},target={exists=r(targetExists),guid=r(targetGUID),dead=r(false),attackable=r(attackable),assistable=r(true)}} end}
 KR.EventBus={Subscribe=function() return true end}
 KR.GameAPI={
  IsSafeValue=function(_,value)
@@ -53,6 +56,11 @@ KR.GameAPI={
  Read=function(_,name,typ,...)
   local id=(...)
   if name=="GetTime" then return r(now) end
+  if name=="UnitGUID" then
+   guidReadCount=guidReadCount+1
+   if switchTargetOnSecondRead and guidReadCount%2==0 then return r("Creature-Switched") end
+   return r(targetGUID)
+  end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
   if name=="C_Spell.GetSpellCooldown" then
    if id==61304 and missingGcdField then return r({isOnGCD=true}) end
@@ -231,6 +239,27 @@ eq(fact("inRange").value,true,"range true retained")
 nilRange=true
 eq(fact("inRange").status,"UNKNOWN","nil range not inferred")
 nilRange=false
+local rangeBefore=guidReadCount
+targetExists=false
+eq(fact("inRange").status,"UNKNOWN","absent target cannot yield range")
+eq(guidReadCount,rangeBefore,"absent target does not read GUID")
+targetExists=true
+local oldGUID=targetGUID
+targetGUID="Creature-Other"
+local oldSnapshot=KR.GameState.GetSnapshot
+KR.GameState.GetSnapshot=function()
+ local record=oldSnapshot()
+ record.target.guid=r(oldGUID)
+ return record
+end
+eq(fact("inRange").status,"UNKNOWN","stale range target GUID")
+KR.GameState.GetSnapshot=oldSnapshot
+targetGUID=oldGUID
+switchTargetOnSecondRead=true
+guidReadCount=0
+eq(fact("inRange").status,"UNKNOWN","target switched mid-range read")
+switchTargetOnSecondRead=false
+guidReadCount=0
 protected=true
 eq(fact("cooldownActive").status,"UNKNOWN","protected cooldown field unknown")
 protected=false
