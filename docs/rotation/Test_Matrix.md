@@ -81,3 +81,11 @@
 ## Исполняемая регрессия на точном GitHub-коммите
 
 Добавлен workflow `.github/workflows/lua-regression.yml`: на push с Lua-изменениями и по ручному запуску устанавливает Lua 5.1, проверяет синтаксис Lua-модулей и запускает все семь существующих тестовых файлов, включая `tests/stage_02_08_v14_state.lua`. **Наличие workflow НЕ равно PASS:** результаты фиксировать только после завершённого GitHub Actions job с проверенным SHA; если GitHub Actions не запустится, отмечать NOT RUN. Это не тест в клиенте WoW Forever.
+
+## 2.8.2e: защита входных аргументов до сравнения (v14 #24/#80)
+
+| Test ID | Сценарий | Ожидаемое | Mock test | In-game |
+|---|---|---|---|---|
+| GAME-SECRET-ARG-001 | Secret unit/curve/powerType | UNKNOWN до числовой арифметики/сравнения, ноль вызовов WoW API | `tests/stage_02_08_v14_argument_guards.lua` — execution NOT RUN | NOT RUN |
+| GAME-SECRET-ARG-002 | Secret Auto Shot SpellID | UNKNOWN без `math.floor` или обращения к WoW API | same — execution NOT RUN | NOT RUN |
+| GAME-SECRET-ARG-003 | Валидные значения | обычные READY и всего 4 настоящих вызова | same — execution NOT RUN | NOT RUN |

@@ -270,7 +270,9 @@ end
 
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
 function S:ReadAutoShot(spellID)
-    if type(spellID)~="number" or spellID~=math.floor(spellID)
+    if not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"
+        or not KR.GameAPI:IsSafeValue(spellID)
+        or type(spellID)~="number" or spellID~=math.floor(spellID)
         or spellID<1 or spellID>99999999 then
         return {status="UNKNOWN",reason="auto_shot_spell_id_unverified"}
     end

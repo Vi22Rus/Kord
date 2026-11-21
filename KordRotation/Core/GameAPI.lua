@@ -235,18 +235,21 @@ local function validatedPercent(result)
 end
 
 function API:ReadHealthPercent(unit,curve)
-    if (unit~="player" and unit~="target" and unit~="pet") or curve==nil
-        or not self:IsSafeValue(curve) then
+    -- Secret arguments must be rejected BEFORE any equality/ordering.
+    if not self:IsSafeValue(unit) or not self:IsSafeValue(curve)
+        or (unit~="player" and unit~="target" and unit~="pet")
+        or curve==nil then
         return outcome("UNKNOWN","UnitHealthPercent","curve_or_unit_unverified")
     end
     return validatedPercent(self:Read("UnitHealthPercent","number",unit,false,curve))
 end
 
 function API:ReadPowerPercent(unit,powerType,curve)
-    if (unit~="player" and unit~="target" and unit~="pet")
+    if not self:IsSafeValue(unit) or not self:IsSafeValue(powerType)
+        or not self:IsSafeValue(curve)
+        or (unit~="player" and unit~="target" and unit~="pet")
         or type(powerType)~="number" or powerType~=math.floor(powerType)
-        or powerType<0 or powerType>100 or curve==nil
-        or not self:IsSafeValue(curve) then
+        or powerType<0 or powerType>100 or curve==nil then
         return outcome("UNKNOWN","UnitPowerPercent","curve_or_power_unverified")
     end
     return validatedPercent(self:Read("UnitPowerPercent","number",

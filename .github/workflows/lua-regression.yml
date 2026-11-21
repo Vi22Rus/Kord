@@ -38,7 +38,8 @@ jobs:
             tests/stage_02_06_bindings.lua \
             tests/stage_02_07_eligibility.lua \
             tests/stage_02_08_rotation_engine.lua \
-            tests/stage_02_08_v14_state.lua; do
+            tests/stage_02_08_v14_state.lua \
+            tests/stage_02_08_v14_argument_guards.lua; do
             echo "RUN $f"
             lua5.1 "$f"
           done
