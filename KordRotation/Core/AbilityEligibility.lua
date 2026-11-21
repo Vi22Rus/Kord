@@ -355,7 +355,15 @@ function A:Fact(id,kind,options)
         if not okCatalogue or type(record)~="table" then
             return {status="UNKNOWN",reason="spellbook_unavailable"}
         end
-        local knownStatus,knownReason=spellKnown(id,record)
+        local okSafe,safeRecord=pcall(api.IsSafeValue,api,record)
+        if not okSafe or safeRecord~=true then
+            return {status="UNKNOWN",reason="spellbook_unavailable"}
+        end
+        -- A malformed/protected catalogue must not throw into profile logic.
+        local checked,knownStatus,knownReason=pcall(spellKnown,id,record)
+        if not checked then
+            return {status="UNKNOWN",reason="spell_known_unverified"}
+        end
         if knownStatus=="READY" then return answer(true) end
         if knownStatus=="BLOCKED" and knownReason=="not_learned" then
             return answer(false)
