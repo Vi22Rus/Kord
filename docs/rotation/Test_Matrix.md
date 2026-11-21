@@ -89,3 +89,18 @@
 | GAME-SECRET-ARG-001 | Secret unit/curve/powerType | UNKNOWN до числовой арифметики/сравнения, ноль вызовов WoW API | `tests/stage_02_08_v14_argument_guards.lua` — execution NOT RUN | NOT RUN |
 | GAME-SECRET-ARG-002 | Secret Auto Shot SpellID | UNKNOWN без `math.floor` или обращения к WoW API | same — execution NOT RUN | NOT RUN |
 | GAME-SECRET-ARG-003 | Валидные значения | обычные READY и всего 4 настоящих вызова | same — execution NOT RUN | NOT RUN |
+
+## Подтверждённый GitHub Actions PASS на каноническом 2.8.2
+
+- **Фактический run:** [44885160182](https://github.com/Vi22Rus/Kord/actions/runs/44885160182), Git SHA `e6a7de617126e0e02a1282d36c173c731507ee02`, 2026-11-21 08:30 UTC, **completed/success**.
+- `luac5.1 -p` по Lua-файлам KordRotation и tests: **PASS** в журнале CI.
+- Все **8 из 8** Lua mock suites завершились PASS. В том числе v14 GameState **31 assertion**, v14 Secret argument guards **26 assertions**, предыдущий Eligibility **23 checks**, RotationEngine **29 assertions**. Эти результаты принадлежат указанному SHA, а не автоматически будущим коммитам.
+- **Во всех строках "In-game": NOT RUN.** Нет CLIENT PASS из CI. Отдельные матричные возможности v14, не охваченные тестами, остаются в прежнем статусе.
+
+## 2.8.3a — v14 #11/#25/#83, активный cooldown
+
+| ID | Сценарий | Критерий | Lua | Game |
+|---|---|---|---|---|
+| ELIG-083-001 | `isActive=true,isOnGCD=true` при обычном `Evaluate()` | BLOCKED с `cooldown_active_unclassified`, не ложный READY | Требуется новый CI | NOT RUN |
+| ELIG-083-002 | `isActive=true,isOnGCD=false` | BLOCKED; причина не утверждает индивидуальную или GCD категорию | Требуется новый CI | NOT RUN |
+| ELIG-083-003 | `isActive=false` | Отдельный cooldown READY, независимо от неприменимого `isOnGCD` | Требуется новый CI | NOT RUN |

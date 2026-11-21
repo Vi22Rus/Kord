@@ -1,3 +1,10 @@
+## KR-20261121-017 — 2.8.3a: запрет неавторизованного isOnGCD в Eligibility + подтверждение CI
+- **Дата UTC:** 2026-11-21T08:34:22.591Z. **Исходный SHA:** e6a7de617126e0e02a1282d36c173c731507ee02. **Область:** AbilityEligibility и регрессия; **версия .toc:** не менялась, стадия 2.8.3a.
+- **Результат проверки предыдущего коммита:** GitHub Actions run 44885160182, commit e6a7de617126e0e02a1282d36c173c731507ee02, завершился SUCCESS 2026-11-21 08:30 UTC, все 8 mock suites и luac5.1 syntax PASS; Games CLIENT PASS=0, NOT RUN. Получен полный job log, а не предположение по наличию workflow.
+- **Первопричина:** исходный cooldown() в AbilityEligibility мог вернуть READY при isActive=true и isOnGCD=true в обычном snapshot-poll, хотя утверждённая матрица v14 #83 позволяет доверять isOnGCD только во время SPELL_UPDATE_COOLDOWN. Это противоречило канонической семантике и было риском ложного READY.
+- **Исправление:** активный cooldown не классифицировать по isOnGCD вне события: возвращать BLOCKED/cooldown_active_unclassified, никогда READY по этому признаку; inactive остаётся READY; secret/unknown не конвертировать. Обновлён тест stage_02_07_eligibility.lua (проверка active+isOnGCD=true) и Test_Matrix/GameData_Contract. Hunter-профили, ST/AoE, GCD-отдельный метод и привязки клавиш не менялись.
+- **Проверка новой ревизии:** в следующем CI зафиксировать результат после публикации; статическая сверка source+tests; WoW Forever NOT RUN. **Открытый вопрос:** точная классификация shared vs GCD только с доказанным event-scoped наблюдением и игровым тестом; остальные v14 методы и полный новый Engine не объявлять завершёнными.
+
 ## KR-20261121-016 — 2.8.2e: обработка secret-аргументов до сравнений
 - **Дата UTC:** 2026-11-21T08:29:48.587Z. **Основание:** Canonical API Matrix v14 #24/#80, решение о чистом ядре и отдельном DevTools.
 - **Выявленный дефект:** guard в ReadPowerPercent/ReadHealthPercent/ReadAutoShot выполнял сравнения/математику над потенциально secret аргументами до проверки `GameAPI:IsSafeValue`. Это могло дать Lua error вместо консервативного UNKNOWN.

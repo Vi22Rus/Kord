@@ -51,7 +51,19 @@ slot=false;eq(eval().status,"UNKNOWN","slot");slot=true
 noPower=true;eq(eval().reason,"insufficient_resources");noPower=false
 usable=false;eq(eval().reason,"spell_unusable");usable=true
 chargeCount=0;eq(eval().reason,"no_charges");chargeCount=1
-active=true;eq(eval().reason,"individual_cooldown");active=false
+active=true;eq(eval().reason,"cooldown_active_unclassified");active=false
+-- v14 #83: even with isOnGCD=true, snapshot polling must not turn
+-- an active cooldown into a READY recommendation.
+local previousRead=KR.GameAPI.Read
+KR.GameAPI.Read=function(self,name,typ,...)
+ if name=="C_Spell.GetSpellCooldown" and (...)==101 then
+  return r({isActive=true,isOnGCD=true})
+ end
+ return previousRead(self,name,typ,...)
+end
+eq(eval().status,"BLOCKED","isOnGCD not authoritative outside event")
+eq(eval().reason,"cooldown_active_unclassified","active cannot be categorized")
+KR.GameAPI.Read=previousRead
 gcdActive=true;eq(eval().reason,"global_cooldown");gcdActive=false
 distance=false;eq(eval().reason,"out_of_range");distance=true
 targetExists=false;eq(eval().reason,"target_missing");targetExists=true

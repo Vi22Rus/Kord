@@ -40,12 +40,14 @@ local function cooldown(id)
         local r=get("C_Spell.GetSpellCooldown","table",id)
         if r.status~="READY" then return "UNKNOWN","cooldown_unavailable" end
         local active=field(r.value,"isActive")
-        local onGCD=field(r.value,"isOnGCD")
         if type(active)~="boolean" then return "UNKNOWN","cooldown_activity_unknown" end
         if active==false then return "READY" end
-        if onGCD==true then return "READY" end -- GCD is evaluated separately
-        if onGCD==false then return "BLOCKED","individual_cooldown" end
-        return "UNKNOWN","cooldown_gcd_ambiguous"
+        -- Canonical v14 #83: isOnGCD is reliable only during the
+        -- SPELL_UPDATE_COOLDOWN event. This path is a snapshot poll;
+        -- do NOT infer 'ready' from isOnGCD=true outside that event.
+        -- An active cooldown is not safe to recommend, but its category
+        -- (individual/shared/GCD) remains unknown in this context.
+        return "BLOCKED","cooldown_active_unclassified"
     end
     local r=multi("GetSpellCooldown",id)
     if r.status~="READY" then return "UNKNOWN","cooldown_unavailable" end
