@@ -344,7 +344,24 @@ function A:Fact(id,kind,options)
         end
         return {status="READY",value=value,source="AbilityEligibility.Fact"}
     end
-    if kind=="cooldownActive" then
+    if kind=="known" then
+        -- Reuse the same source-of-truth as Evaluate. Catalogue absence
+        -- is not proof that a talent/passive spell is unlearned (v14 #19/#81).
+        local catalogue=KR.SpellCatalogue
+        if not catalogue or type(catalogue.Read)~="function" then
+            return {status="UNKNOWN",reason="spellbook_unavailable"}
+        end
+        local okCatalogue,record=pcall(catalogue.Read,catalogue)
+        if not okCatalogue or type(record)~="table" then
+            return {status="UNKNOWN",reason="spellbook_unavailable"}
+        end
+        local knownStatus,knownReason=spellKnown(id,record)
+        if knownStatus=="READY" then return answer(true) end
+        if knownStatus=="BLOCKED" and knownReason=="not_learned" then
+            return answer(false)
+        end
+        return {status="UNKNOWN",reason=knownReason or "spell_known_unverified"}
+    elseif kind=="cooldownActive" then
         -- v14 #83: isActive is a fact; isOnGCD is NOT authoritative in a poll.
         if type(api.Probe)~="function" or
             api:Probe("C_Spell.GetSpellCooldown").status~="READY" then
@@ -374,7 +391,6 @@ function A:Fact(id,kind,options)
         if v==0 or v==false then return answer(false) end
         return {status="UNKNOWN",reason="range_fact_unavailable"}
     end
-    -- 'known' requires a separately audited fact-only spellbook path.
     -- 'chargesAtLeast' has no threshold parameter in Profile Contract v1.
     return {status="UNKNOWN",reason="fact_provider_unimplemented"}
 end
