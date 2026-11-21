@@ -11,7 +11,7 @@ fi
 runner=lua5.1
 version_check=$(mktemp)
 trap 'rm -f "$version_check"' EXIT
-printf 'assert(_VERSION == "Lua 5.1", "expected Lua 5.1, got "..tostring(_VERSION))\\n' > "$version_check"
+printf '%s\n' 'assert(_VERSION == "Lua 5.1", "expected Lua 5.1, got "..tostring(_VERSION))' > "$version_check"
 "$runner" "$version_check"
 # Syntax validation of all shipped addon modules and tests (without running them).
 while IFS= read -r -d '' f; do
