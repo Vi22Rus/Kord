@@ -276,6 +276,22 @@ function S:ReadAutoShot(spellID)
     return result
 end
 
+-- Matrix v14 #3-6: Curve-only percent probing is explicitly opt-in.
+-- This does not replace numeric UnitHealth when it is already plain/readable.
+function S:ReadHealthPercent(unit,curve)
+    if not KR.GameAPI or type(KR.GameAPI.ReadHealthPercent)~="function" then
+        return {status="UNAVAILABLE",reason="game_api_missing"}
+    end
+    return KR.GameAPI:ReadHealthPercent(unit,curve)
+end
+
+function S:ReadPowerPercent(unit,powerType,curve)
+    if not KR.GameAPI or type(KR.GameAPI.ReadPowerPercent)~="function" then
+        return {status="UNAVAILABLE",reason="game_api_missing"}
+    end
+    return KR.GameAPI:ReadPowerPercent(unit,powerType,curve)
+end
+
 function S:Initialize()
     if self.initialized then return true end
     if not KR.EventBus or type(KR.EventBus.Subscribe)~="function" then

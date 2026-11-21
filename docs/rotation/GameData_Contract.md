@@ -30,6 +30,10 @@
 | `ReadAutoShot(spellID).active` | `C_Spell.IsAutoRepeatSpell(spellID)` | #24 | UNKNOWN/UNAVAILABLE, no inferred swing |
 | `ReadAutoShot(spellID).current` | `C_Spell.IsCurrentSpell(spellID)` | #24 | UNKNOWN/UNAVAILABLE, no queued inference |
 
+## Проверяемые Curve-проценты — прямые методы 2.8.2c
+
+Матрица **v14 № 3–6, 41, 49–51**: `GameAPI:ReadHealthPercent(unit, curve)` и `GameAPI:ReadPowerPercent(unit,powerType,curve)` (переадресованы в `GameState`) возвращают обычный `{status,value?,source,reason,observedAt}`. Они **только читают** `UnitHealthPercent(unit,false,curve)` и `UnitPowerPercent(unit,powerType,false,curve)`; принимают только `player/target/pet`, обычный незащищённый `curve`, конечный Lua number `0..100`. Иначе — `UNKNOWN` или `UNAVAILABLE`, без заполнения ложным `0`, `100` или группой 5%-полос. В v14 **не доказано**, что Curve может выдать доступную Lua-цифру в бою. Сами Curve-объекты и их допустимые источники требуют отдельного клиентского подтверждения. Эти функции не активируют новые рекомендации и не создают адаптеров прежних профилей.
+
 ## Обязательные колонки
 `key | type/range | meaning | source/API | READY value | false/zero | nil/UNKNOWN | refresh trigger | consumers | evidence | implementation status`.
 

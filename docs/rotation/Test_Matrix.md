@@ -63,3 +63,12 @@
 | PET-203 | #77/#99 | UNIT_PET / UNIT_HEALTH(pet) | обновление канала pet/health | NOT RUN |
 | CONTEXT-201 | #18/#90 | in instance, GetInstanceInfo nil | UNKNOWN | NOT RUN |
 | AUTOSHOT-201 | #24 | valid/invalid ID, secret flag | раздельные статус active/current | NOT RUN |
+
+## v14 GameAPI Curve-проценты (2.8.2c)
+
+| Test ID | Matrix | Scenario | Expected | Lua | Game |
+|---|---|---|---|---|---|
+| GAME-CURVE-001 | #3/#4/#5/#41 | UnitHealthPercent returns ordinary 0, 40, 100 | READY and matching value | NOT RUN | NOT RUN |
+| GAME-CURVE-002 | #3/#4/#5/#41 | missing curve, nil, secret result or failing API | UNKNOWN; no arithmetic, no invented threshold | NOT RUN | NOT RUN |
+| GAME-CURVE-003 | #6/#49–51 | UnitPowerPercent with valid resource type | READY only for numeric 0..100 | NOT RUN | NOT RUN |
+| GAME-CURVE-004 | #6/#49–51 | unexpected >100, NaN, negative, unknown resource type | UNKNOWN and reason | NOT RUN | NOT RUN |

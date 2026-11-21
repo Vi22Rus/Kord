@@ -8,7 +8,8 @@ local API = KR.GameAPI
 local allowed = {
     GetBuildInfo=true, GetTime=true, UnitClass=true, UnitLevel=true,
     UnitGUID=true, UnitIsUnit=true, UnitCanAssist=true,
-    UnitHealth=true, UnitHealthMax=true, UnitPowerType=true,
+    UnitHealth=true, UnitHealthMax=true, UnitHealthPercent=true,
+    UnitPowerPercent=true, UnitPowerType=true,
     UnitExists=true, UnitIsDeadOrGhost=true, UnitIsPlayer=true, UnitAffectingCombat=true,
     IsPlayerMoving=true, IsInGroup=true, IsInRaid=true, IsInInstance=true,
     GetInstanceInfo=true, UnitThreatSituation=true, UnitDetailedThreatSituation=true,
@@ -217,6 +218,39 @@ function API:Probe(name)
     end
     return {status=type(resolve(name))=="function" and "READY" or "UNAVAILABLE",
         source=name, reason="presence_only_not_game_verified"}
+end
+
+-- Canonical Matrix v14 #3-6/#41/#49-51: safe numeric *read*, not
+-- a way to unwrap secret health/power or an automatic 5%-band converter.
+-- Caller must provide a non-secret client-supported curve object. Without
+-- it we refuse to guess. A plain numeric percentage is accepted only 0..100.
+local function validatedPercent(result)
+    if result.status~="READY" then return result end
+    local value=result.value
+    if type(value)~="number" or value~=value or value<0 or value>100 then
+        return {status="UNKNOWN",source=result.source,
+            reason="percentage_out_of_range",observedAt=result.observedAt}
+    end
+    return result
+end
+
+function API:ReadHealthPercent(unit,curve)
+    if (unit~="player" and unit~="target" and unit~="pet") or curve==nil
+        or not self:IsSafeValue(curve) then
+        return outcome("UNKNOWN","UnitHealthPercent","curve_or_unit_unverified")
+    end
+    return validatedPercent(self:Read("UnitHealthPercent","number",unit,false,curve))
+end
+
+function API:ReadPowerPercent(unit,powerType,curve)
+    if (unit~="player" and unit~="target" and unit~="pet")
+        or type(powerType)~="number" or powerType~=math.floor(powerType)
+        or powerType<0 or powerType>100 or curve==nil
+        or not self:IsSafeValue(curve) then
+        return outcome("UNKNOWN","UnitPowerPercent","curve_or_power_unverified")
+    end
+    return validatedPercent(self:Read("UnitPowerPercent","number",
+        unit,powerType,false,curve))
 end
 
 -- Return a standalone list, not the mutable allowlist table.
