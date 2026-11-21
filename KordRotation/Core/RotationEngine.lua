@@ -126,7 +126,7 @@ local function run()
  if mode~="single" and mode~="aoe" then return unknown("target_mode_invalid") end
  if type(KR.GameState.GetSnapshot)~="function" then
   return unknown("game_state_missing") end
- local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState)
+ local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState,true)
  if not ok or type(snapshot)~="table" or not safe(snapshot)
    or type(snapshot.player)~="table" or type(snapshot.target)~="table" then
   return unknown("game_state_unavailable") end
