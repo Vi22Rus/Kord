@@ -1,3 +1,8 @@
+## KR-20261121-082 — исправлена потеря false в настройках профиля
+- Дата UTC: 2026-11-21. Причина подтверждена короткой проверкой Lua в texlua: выражение `type(value)=="boolean" and value or default` возвращает `default`, когда `value=false`. Это могло молча включать отключённую настройку (например, useSting) при default=true. Аналогичная форма была в enum fallback.
+- `RotationEngine.config` теперь использует явные if/else для bool и enum; пользовательское false сохраняется. `tests/profile_contract_v1.lua` дополнен сценарием выключения флага и enum false, без внешнего API.
+- Локальный Lua воспроизводящий пример = PASS для подтверждения первопричины; **не** full repo test и **не** PASS новых скриптов. Полный Lua 5.1/CI/WoW client NOT RUN.
+
 ## KR-20261121-081 — актуальная матрица проверки контрактной миграции
 - Дата: 2026-11-21 UTC. Profile Registry, cleanup audit и Test Matrix теперь различают SOURCE IMPLEMENTED v1, непроверенные Lua 5.1 сценарии и отсутствие WoW Forever API PASS. Активный набор: 17 Lua scripts.
 - Зафиксированы PC-009…013: experimental opt-in в Engine/UI, отзыв разрешения, недекларированные ауры, трёхзначное S:any и отсутствие глубокого копирования при Evaluate.

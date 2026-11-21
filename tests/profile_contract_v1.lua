@@ -90,17 +90,27 @@ local function profile(spec,id,lo,hi,status)
   Spells={Sting=101,Arcane=102},
   Needs={auras={1978},ranges={102},enemyCount=false,ttd=false,swing=false},
   Config={{key="threshold",type="number",default=10,min=1,max=30,
-   group="damage",label="Threshold",desc="Mock threshold"}},
+   group="damage",label="Threshold",desc="Mock threshold"},
+   {key="useSting",type="bool",default=true,
+    group="buffs",label="Use Sting",desc="Mock boolean toggle"},
+   {key="alternate",type="enum",default=true,values={true,false},
+    group="damage",label="Alternate",desc="Mock enum false"}},
   Rules={rule("Arcane","Arcane",function() return true end)}
  }
 end
-local nilAura=function(S)
+local nilAura=function(S,cfg)
  conditionCalls=conditionCalls+1
+ if cfg and cfg.useSting==false then return false end
  return S:isNot("target.debuff",1978)
 end
 local p=profile(1,"HUNTER_BM_LEVELING_PVE",1,59)
 p.Rules={
- rule("OptionalSting","Sting",nilAura,{onUnknown="skip"}),
+ rule("OptionalSting","Sting",function(S,cfg)
+  if cfg.alternate==false then
+   return nilAura(S,cfg)
+  end
+  return nilAura(S,cfg)
+ end,{onUnknown="skip"}),
  rule("Arcane","Arcane",function()return true end)
 }
 local bad=profile(1,"BAD",1,59)
@@ -155,6 +165,14 @@ eq(auraReads,1,"one missing provider read")
 auraValue=false
 state=E:Evaluate()
 eq(state.queue[1].spellID,101,"first priority selected when aura absent")
+config.useSting=false
+state=E:Evaluate()
+eq(state.queue[1].spellID,102,"boolean false override disables first rule")
+config.useSting=true
+config.alternate=false
+state=E:Evaluate()
+eq(state.queue[1].spellID,101,"false enum value remains valid")
+config.alternate=true
 auraValue=true
 state=E:Evaluate()
 eq(state.queue[1].spellID,102,"present debuff blocks refresh")

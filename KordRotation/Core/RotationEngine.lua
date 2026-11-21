@@ -43,7 +43,11 @@ local function config(profile,saved)
   local value=options[def.key]
   if not safe(value) then value=nil end
   if def.type=="bool" then
-   cfg[def.key]=type(value)=="boolean" and value or def.default
+   if type(value)=="boolean" then
+    cfg[def.key]=value
+   else
+    cfg[def.key]=def.default
+   end
   elseif def.type=="number" then
    cfg[def.key]=type(value)=="number" and value==value and
     value~=math.huge and value~=-math.huge and value>=def.min
@@ -53,7 +57,8 @@ local function config(profile,saved)
    for _,candidate in ipairs(def.values) do
     if type(candidate)==type(value) and candidate==value then valid=true end
    end
-   cfg[def.key]=valid and value or def.default
+   if valid then cfg[def.key]=value
+   else cfg[def.key]=def.default end
   end
  end
  return cfg
