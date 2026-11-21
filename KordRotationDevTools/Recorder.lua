@@ -27,7 +27,10 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     arcane_rank_on_bar=true,arcane_findspell=true,
     panel_enabled=true,test_mode=true,recommendation_accepted=true,
     visibility_allowed=true,frame_created=true,frame_shown=true,
-    target_live=true,target_snapshot=true,ui_engine_status=true}
+    target_live=true,target_snapshot=true,ui_engine_status=true,
+    priority_1_rule=true,eligibility_ready_count=true,
+    eligibility_blocked_count=true,eligibility_unknown_count=true,
+    profile_ui=true}
 -- Only bounded scalar diagnostics can be exported. No user strings,
 -- frame objects, spell IDs, slot IDs or names are accepted.
 local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
