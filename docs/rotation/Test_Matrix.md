@@ -194,3 +194,13 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | DT-009 | Производительность | Время чтения observer; не выдавать за CPU всего аддона | NOT RUN | NOT RUN | NOT RUN |
 
 Полный мок-набор не является игровым доказательством; API матрица v14 CLIENT PASS по-прежнему 0/101. История предыдущих mock PASS к текущему SHA не переносится.
+
+### DT-1–DT-6: фактические локальные доказательства (не общий CI)
+| Проверка | Фактический результат | Граница доказательства |
+|---|---|---|
+| `scripts/build_variants.py` (Git blob `9ed24b775964ca3ff078577d0da3ac5e430ac779`) | **LOCAL PASS**: синтетические пользовательский/диагностический ZIP; общий файл совпадает, DevTools только во втором; отсутствующий TOC-модуль вызывает ошибку | Полная упаковка реального checkout NOT RUN |
+| Registry `ff4f3caa0e1d9e02051cedf921726595fed6c3f3`; тест `a2aef8763daba5cdd2ab3c688318af349da00170` | **LOCAL PASS:** 101 строка, 79 presence-only, 22 UNKNOWN | Не запуск игрового API |
+| Probe `e174c645cdead6547b9e0cb9a1d7ffa410cebb70`; тест `7c870986150daab4de717b60d61ffccbbbb2353c` | **LOCAL PASS 12 assertions** | Только mock bridge, не игровой PASS |
+| Aggregate Trace `bc06d83fafb6339a50882acd1c80572886c7c179`; тест `bdba8661768111a6db1a002dff02e4b61eb38e4f` | **LOCAL PASS 17 assertions** | Только агрегированные события mock, не per-spell trace |
+
+**Полная локальная регрессия (18 Lua suites), GitHub Actions и внутриигровой WoW Forever QA — NOT RUN.** В текущем dev-репозитории документация описывает исходники двух устанавливаемых аддонов, а не доказанную установленную сборку. CLIENT PASS API v14 остаётся 0/101.
