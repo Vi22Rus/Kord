@@ -1,3 +1,10 @@
+## KR-20261121-010 — исправление источников: Forever ≠ Classic
+
+- **Дата:** 2026-11-21. **Согласование:** пользователь прямо потребовал исключить Classic и продолжить исследование. **Тип:** docs/research correction.
+- **Причина:** предыдущий Hunter Research ошибочно использовал Classic Wowhead/Tavern/Icy Veins для сравнения с Forever; сравнение не доказывает игровые свойства Forever.
+- **Решение:** методология и AGENTS запрещают использовать Classic как источник игровых свойств Forever; прежние сравнения отозваны. Добавлены ForeverDB abilities, ForeverDiff, 60.tools (только Forever), Rexas Forever, WCLBox Forever, WarcraftForever.games с учётом разных билдов. Выделен пробел pet abilities Savage Rend/Swipe/Tendon Rip/Web.
+- **PASS:** документационное исправление и источники с явной Forever-применимостью. **NOT RUN:** игровой клиент, игровые ранги и Lua-тесты. **SHA:** git log --grep KR-20261121-010.
+
 ## KR-20261121-009 — Hunter BM/MM/SV: источники, способности, сигналы и тесты
 
 - **Дата:** 2026-11-21, точное время по Git. **Тип:** docs/research. **Согласование:** пользователь одобрил исследование и заполнение реестров без изменения Lua.
