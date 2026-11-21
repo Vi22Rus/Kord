@@ -2,14 +2,17 @@
 # Run locally in a checked-out Kord repository. No GitHub Actions usage.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-if command -v lua5.1 >/dev/null 2>&1; then
-  runner=lua5.1
-elif command -v texlua >/dev/null 2>&1; then
-  runner=texlua
-else
-  echo "Lua interpreter unavailable: install Lua 5.1 or TeX Lua" >&2
+# Contract acceptance must run under real Lua 5.1; texlua often embeds Lua 5.3.
+# Do not silently report Lua 5.3 mock results as 5.1 regression.
+if ! command -v lua5.1 >/dev/null 2>&1; then
+  echo "Lua 5.1 required for contract regression (texlua is not a substitute)" >&2
   exit 2
 fi
+runner=lua5.1
+version_check=$(mktemp)
+trap 'rm -f "$version_check"' EXIT
+printf 'assert(_VERSION == "Lua 5.1", "expected Lua 5.1, got "..tostring(_VERSION))\\n' > "$version_check"
+"$runner" "$version_check"
 # Syntax validation of all shipped addon modules and tests (without running them).
 while IFS= read -r -d '' f; do
   "$runner" scripts/check_lua_syntax.lua "$f"
