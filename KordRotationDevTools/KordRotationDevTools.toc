@@ -1,0 +1,15 @@
+## Interface: 16001
+## Title: Kord Rotation DevTools
+## Notes: Optional diagnostic extension for Kord Rotation
+## Author: Vi22Rus
+## Version: 0.1.0-dev
+## Dependencies: KordRotation
+## SavedVariables: KordRotationDevToolsDB
+
+Locale.lua
+Core.lua
+Recorder.lua
+Probe.lua
+Trace.lua
+Performance.lua
+UI.lua
