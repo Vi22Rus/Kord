@@ -40,4 +40,20 @@ eq(#D.settings.sessions,0,"history erased")
 eq(D:Start(),true,"start after clear")
 eq(D:Clear(),false,"cannot clear while recording")
 eq(D:Stop(),true,"final stop")
+-- Close-spaced distinct diagnostic events must never be dropped because
+-- a cooldown notification was recorded milliseconds earlier.
+D.maxRecords=20
+GetTime=function() return 200 end
+eq(D:Start(),true,"burst session starts")
+eq(D:Record("EVENT","READY","spell_update_cooldown",25),true,"first cooldown")
+eq(D:Record("EVENT","READY","spell_update_cooldown",25),false,
+ "duplicate cooldown is coalesced")
+eq(D:Record("TARGET","READY","target_present",1),true,
+ "target transition survives cooldown flood")
+eq(D:Record("ENGINE","UNKNOWN","action_slot_unconfirmed"),true,
+ "engine refusal survives same-frame events")
+eq(D:Record("EVENT","READY","unit_spellcast_succeeded",25),true,
+ "player cast survives same-frame events")
+eq(D.dropped,0,"intentional cooldown coalescing is not data loss")
+eq(D:Stop(),true,"burst session stops")
 print("PASS DevTools recorder mock "..n.." assertions")
