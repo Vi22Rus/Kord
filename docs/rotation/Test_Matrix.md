@@ -139,8 +139,8 @@
 
 | ID | Матрица | Проверка | CI | Игра |
 |---|---|---|---|---|
-| ELIG-CHARGE-002 | #26/#80 | Ноль зарядов при `isActive=true` = BLOCKED; при одном заряде и активном восстановлении допускается READY только по собственному count | PENDING | NOT RUN |
-| ELIG-CHARGE-003 | #26/#80 | Отсутствует `currentCharges` или `maxCharges` → UNKNOWN, не синтезировать count по isActive | PENDING | NOT RUN |
-| ELIG-CHARGE-004 | #26 | Дробное, отрицательное, больше max, max=0 → UNKNOWN/charges_invalid | PENDING | NOT RUN |
-| ELIG-GCD-004 | #25/#80 | `GetSpellCooldown(61304)` без подтверждённого `isActive` → UNKNOWN/gcd_activity_unknown даже с `isOnGCD=true` | PENDING | NOT RUN |
+| ELIG-CHARGE-002 | #26/#80 | Ноль зарядов при `isActive=true` = BLOCKED; при одном заряде и активном восстановлении допускается READY только по собственному count | PASS run 44887247067 / aff9473f | NOT RUN |
+| ELIG-CHARGE-003 | #26/#80 | Отсутствует `currentCharges` или `maxCharges` → UNKNOWN, не синтезировать count по isActive | PASS run 44887247067 / aff9473f | NOT RUN |
+| ELIG-CHARGE-004 | #26 | Дробное, отрицательное, больше max, max=0 → UNKNOWN/charges_invalid | PASS run 44887247067 / aff9473f | NOT RUN |
+| ELIG-GCD-004 | #25/#80 | `GetSpellCooldown(61304)` без подтверждённого `isActive` → UNKNOWN/gcd_activity_unknown даже с `isOnGCD=true` | PASS run 44887247067 / aff9473f | NOT RUN |
 | ELIG-RANK-002 | #20 | Проверка highest learned rank на актуальном клиенте остаётся открыта; никакого нового rank inference | NOT RUN | NOT RUN |

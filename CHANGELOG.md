@@ -1,3 +1,10 @@
+## KR-20261121-027 — доказанный CI PASS 2.8.3e: GCD и заряды
+- **Дата UTC:** 2026-11-21T08:58:19.274Z. **Тип:** docs/test evidence, без изменения Lua, TOC и ротаций.
+- **FAIL evidence:** GitHub Actions [run 44887103080](https://github.com/Vi22Rus/Kord/actions/runs/44887103080), SHA `05ffac3283332fae3474065be91cc509b1aa7b88`, FAILURE из-за неверного тестового выражения Lua 5.1 `condition and nil or value` (mock не моделировал отсутствие поля).
+- **PASS evidence:** GitHub Actions [run 44887247067](https://github.com/Vi22Rus/Kord/actions/runs/44887247067), SHA `aff9473fafadb3039a6bc229ec1cb66e55c8d951`, job `136795100392`, completed/success. По фактическому логу: luac5.1 -p PASS; все 8 Lua mock suites PASS; Eligibility **57 checks**, GameState v14 31 assertions, protected args 26, RotationEngine 29.
+- **Контракт:** 4 кейса ELIG-CHARGE-002..004 и ELIG-GCD-004 помечены с конкретным PASS CI SHA; rank #20 и все тесты игрового клиента остаются NOT RUN. Ни один CI PASS не является CLIENT PASS.
+- **Далее:** остальные вопросы 2.8.3 и переход к 2.8.4 RotationEngine по согласованному отдельному проектированию; DevTools и BM Hunter 1–59 ещё впереди.
+
 ## KR-20261121-026 — исправлен тестовый mock для отсутствующих полей зарядов
 - **Дата UTC:** 2026-11-21T08:56:53.887Z. **FAIL evidence:** [GitHub Actions run 44887103080](https://github.com/Vi22Rus/Kord/actions/runs/44887103080), SHA `05ffac3283332fae3474065be91cc509b1aa7b88`: syntax PASS, mock suite остановился на `tests/stage_02_07_eligibility.lua:120`, `missing currentCharges got READY expected UNKNOWN`. Не игнорировать этот FAILED run.
 - **Причина:** тестовая формула `missingChargeCount and nil or chargeCount` в Lua 5.1 не умеет создавать условное nil: выражение возвращает резервный chargeCount. Аналогичная ошибка была для maxCharges. **Это тестовая фикстура**, а не доказательство ошибки `AbilityEligibility`.
