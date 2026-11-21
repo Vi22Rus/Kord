@@ -169,6 +169,17 @@ eq(P:Register("HUNTER",1,at60),true,"second level range")
 eq(P:Has("HUNTER_TREE_1"),true,"multi range Has works")
 eq(P:Get("HUNTER_TREE_1",60).id,at60.id,"level60 profile selected")
 eq(P:Get("HUNTER_TREE_1",61),nil,"out of range no silent fallback")
+-- Profile lookup must not compare or use protected keys/levels.
+local originalSafeProfile=KR.GameAPI.IsSafeValue
+KR.GameAPI.IsSafeValue=function(self,value)
+ if value==22 then return false end
+ return originalSafeProfile(self,value)
+end
+eq(P:Get("HUNTER_TREE_1",22),nil,"protected level cannot resolve a profile")
+eq(P:Has("HUNTER_TREE_1",22),false,"protected level is not a registered match")
+eq(P:Get("SECRET",20),nil,"protected key cannot index registry")
+eq(P:Has("SECRET"),false,"protected key cannot be queried")
+KR.GameAPI.IsSafeValue=originalSafeProfile
 local exp=profile(2,"HUNTER_MM_60_PVE",60,60,"experimental")
 eq(P:Register("HUNTER",2,exp),true,"experimental profile registered")
 KR.characterState.index=2
