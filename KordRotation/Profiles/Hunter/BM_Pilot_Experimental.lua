@@ -20,8 +20,11 @@ KR.RotationProfiles:Register("HUNTER", 1, {
         category="damage",target="enemy",cast="idle",
         chargesRequired=false,mode="single",
         onUnknown="stop",reason="Experimental single-target Arcane Shot",
-        when=function(S)
-            return S:is("target.exists")
+        -- Target existence, relation, life and range are verified by
+        -- AbilityEligibility. Do not pre-block on a stale snapshot boolean;
+        -- this pilot's condition has no additional decision to make.
+        when=function()
+            return true
         end
     }}
 })
