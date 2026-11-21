@@ -60,6 +60,11 @@ end
 function D:Why()
     local summary=self:ReadCore()
     local bridge=_G.KordRotationCoreObservation
+    local diagnosis
+    if type(bridge)=="table" and type(bridge.Diagnose)=="function" then
+        local ok,value=pcall(bridge.Diagnose)
+        if ok and type(value)=="table" and self:Safe(value) then diagnosis=value end
+    end
     local target
     if type(bridge)=="table" and type(bridge.Target)=="function" then
         local ok,value=pcall(bridge.Target)
@@ -85,6 +90,10 @@ function D:Why()
     end
     local lines={
         "Kord Rotation DevTools - manual diagnosis",
+        "Engine (manual evaluation): "..status(diagnosis and diagnosis.status)
+            .." / "..reason(diagnosis and diagnosis.reason),
+        "Priority 1: "..status(diagnosis and diagnosis.firstStatus)
+            .." / "..reason(diagnosis and diagnosis.firstReason),
         "Engine (last UI evaluation): "..status(summary and summary.engineStatus)
             .." / "..reason(summary and summary.engineReason),
         "Target UnitExists (live): "..observation(target and target.liveStatus,
@@ -96,7 +105,7 @@ function D:Why()
             ..tostring(type(summary)=="table" and summary.eligibilityReady or 0)
             .."/"..tostring(type(summary)=="table" and summary.eligibilityBlocked or 0)
             .."/"..tostring(type(summary)=="table" and summary.eligibilityUnknown or 0),
-        "NOTE: report is read-only. No live engine evaluation is triggered."
+        "NOTE: diagnosis explicitly reevaluates the engine without casting."
     }
     return table.concat(lines,"\n")
 end
