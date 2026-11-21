@@ -1,3 +1,9 @@
+## KR-20261121-018 — зафиксирован подтверждённый CI PASS этапа 2.8.3a
+- **Дата UTC:** 2026-11-21T08:35:26.552Z. **Тип:** docs/test evidence, без изменения кода/TOC/профилей/сборки.
+- **Доказательство:** GitHub Actions [run 44885528119](https://github.com/Vi22Rus/Kord/actions/runs/44885528119), head SHA `0eec94612ad106cb3ba7eb57f758180adc33eccb`, completed/success; syntax Lua 5.1 PASS; все 8 mock suites PASS. Eligibility 25 checks (включая 2 новых по isOnGCD), GameState v14 31 assertions, secret inputs 26 assertions, RotationEngine 29 assertions. Записано из фактического job log.
+- **Причина:** после завершения CI новые кейсы ELIG-083 в Test Matrix ещё имели статус ожидания, что противоречило уже полученным доказательствам. **Исправление:** `docs/rotation/Test_Matrix.md` ссылается на проверенный запуск и SHA; **In-game NOT RUN**, 101 Client PASS не присваиваются.
+- **Следующий подэтап:** 2.8.3 — дальнейшая проверка eligibility по v14 (spellbook, ранги, заряды, ресурсы, range/cast), затем 2.8.4 engine. Боевая логика Hunter не изменена.
+
 ## KR-20261121-017 — 2.8.3a: запрет неавторизованного isOnGCD в Eligibility + подтверждение CI
 - **Дата UTC:** 2026-11-21T08:34:22.591Z. **Исходный SHA:** e6a7de617126e0e02a1282d36c173c731507ee02. **Область:** AbilityEligibility и регрессия; **версия .toc:** не менялась, стадия 2.8.3a.
 - **Результат проверки предыдущего коммита:** GitHub Actions run 44885160182, commit e6a7de617126e0e02a1282d36c173c731507ee02, завершился SUCCESS 2026-11-21 08:30 UTC, все 8 mock suites и luac5.1 syntax PASS; Games CLIENT PASS=0, NOT RUN. Получен полный job log, а не предположение по наличию workflow.

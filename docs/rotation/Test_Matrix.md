@@ -101,6 +101,6 @@
 
 | ID | Сценарий | Критерий | Lua | Game |
 |---|---|---|---|---|
-| ELIG-083-001 | `isActive=true,isOnGCD=true` при обычном `Evaluate()` | BLOCKED с `cooldown_active_unclassified`, не ложный READY | Требуется новый CI | NOT RUN |
-| ELIG-083-002 | `isActive=true,isOnGCD=false` | BLOCKED; причина не утверждает индивидуальную или GCD категорию | Требуется новый CI | NOT RUN |
-| ELIG-083-003 | `isActive=false` | Отдельный cooldown READY, независимо от неприменимого `isOnGCD` | Требуется новый CI | NOT RUN |
+| ELIG-083-001 | `isActive=true,isOnGCD=true` при обычном `Evaluate()` | BLOCKED с `cooldown_active_unclassified`, не ложный READY | PASS run 44885528119 / 0eec9461 | NOT RUN |
+| ELIG-083-002 | `isActive=true,isOnGCD=false` | BLOCKED; причина не утверждает индивидуальную или GCD категорию | PASS run 44885528119 / 0eec9461 | NOT RUN |
+| ELIG-083-003 | `isActive=false` | Отдельный cooldown READY, независимо от неприменимого `isOnGCD` | PASS run 44885528119 / 0eec9461 | NOT RUN |
