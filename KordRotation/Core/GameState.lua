@@ -268,6 +268,67 @@ function S:GetSnapshot()
     return copy(self.current,0)
 end
 
+-- Profile Contract v1: demand-driven, fail-closed signal provider.
+-- v14 #12/#13: a readable matching aura proves presence; a nil lookup
+-- cannot prove absence because access/visibility can be restricted.
+function S:ReadSignal(field,spellID,snapshot)
+    local function unknown(reason)
+        return {status="UNKNOWN",reason=reason,source="GameState.ReadSignal"}
+    end
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function"
+        or type(api.Read)~="function" or type(api.ReadField)~="function" then
+        return unknown("signal_api_unavailable")
+    end
+    local ok,safeField=pcall(api.IsSafeValue,api,field)
+    if not ok or safeField~=true or type(field)~="string" then
+        return unknown("signal_field_unverified")
+    end
+    if field~="player.buff" and field~="target.debuff" then
+        return unknown("signal_provider_unimplemented")
+    end
+    local idOK,idSafe=pcall(api.IsSafeValue,api,spellID)
+    if not idOK or idSafe~=true or not finite(spellID,1)
+        or spellID~=math.floor(spellID) or spellID>99999999 then
+        return unknown("aura_spell_id_unverified")
+    end
+    local name,unit,flag
+    if field=="player.buff" then
+        name,unit,flag="C_UnitAuras.GetPlayerAuraBySpellID","player","isHelpful"
+    else
+        name,unit,flag="C_UnitAuras.GetUnitAuraBySpellID","target","isHarmful"
+    end
+    -- Avoid a stale/recycled target result when the supplied evaluation
+    -- snapshot already establishes that the target is absent or unknown.
+    if unit=="target" and snapshot~=nil then
+        local okSnapshot,safeSnapshot=pcall(api.IsSafeValue,api,snapshot)
+        if not okSnapshot or safeSnapshot~=true or type(snapshot)~="table" then
+            return unknown("aura_target_unverified")
+        end
+        local target=snapshot.target
+        if type(target)~="table" or target.exists==nil
+            or type(target.exists)~="table"
+            or target.exists.status~="READY"
+            or target.exists.value~=true then
+            return unknown("aura_target_unverified")
+        end
+    end
+    local r
+    if unit=="player" then
+        r=api:Read(name,"table",spellID)
+    else
+        r=api:Read(name,"table",unit,spellID)
+    end
+    if not r or r.status~="READY" then return unknown("aura_lookup_unverified") end
+    local id=api:ReadField(r.value,"spellId","number")
+    local matching=api:ReadField(r.value,flag,"boolean")
+    if not id or id.status~="READY" or id.value~=spellID
+        or not matching or matching.status~="READY" or matching.value~=true then
+        return unknown("aura_identity_unverified")
+    end
+    return {status="READY",value=true,source="GameState.ReadSignal"}
+end
+
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
 function S:ReadAutoShot(spellID)
     if not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"
