@@ -39,7 +39,7 @@ local function safeDetail(v)
     if not D:Safe(v) then return nil end
     if type(v)=="number" and v==v and v==math.floor(v)
         and v>=0 and v<=1200 then return v end
-    if type(v)=="string" and detailWords[v] then return v end
+    if type(v)=="string" and #v<=64 and (detailWords[v] or reasons[v]) then return v end
     return nil
 end
 local function now()
