@@ -210,12 +210,49 @@ function O:ReadActionBar()
         arcaneFindStatus=findStatus,arcaneFindReason=findReason}
 end
 
+-- DevTools-only read of the FINAL UI stage. No test icons are inserted,
+-- no game values are exposed and no display state is changed.
+function O:ReadDisplay()
+    local display=KR.RotationDisplay
+    if not display then return {status="UNAVAILABLE",reason="display_unavailable"} end
+    local frame=field(display,"frame")
+    local ready=field(display,"productionReady")
+    local out={
+        status="READY",
+        frameCreated=frame~=nil,
+        recommendationAccepted=ready==true,
+        lastEngineStatus=status(field(display,"lastEngineStatus")),
+        lastEngineReason=reason(field(display,"lastEngineReason")) or "unknown",
+    }
+    if frame and safe(frame) then
+        local fn=field(frame,"IsShown")
+        if type(fn)=="function" then
+            local ok,value=pcall(fn,frame)
+            if ok and safe(value) and type(value)=="boolean" then
+                out.frameShown=value
+            end
+        end
+    end
+    if type(display.ShouldShow)=="function" then
+        local ok,value=pcall(display.ShouldShow,display)
+        if ok and safe(value) and type(value)=="boolean" then
+            out.visibilityAllowed=value
+        end
+    end
+    return out
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
     Read=function()
         local ok,result=pcall(O.Read,O)
         if not ok then return {version=1,status="ERROR",engineStatus="UNKNOWN"} end
+        return result
+    end,
+    Display=function()
+        local ok,result=pcall(O.ReadDisplay,O)
+        if not ok then return {status="UNKNOWN",reason="display_read_failed"} end
         return result
     end,
     ActionBar=function()
