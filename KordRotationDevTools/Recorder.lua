@@ -20,7 +20,9 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     player_regen_disabled=true,player_entering_world=true,
     unit_spellcast_succeeded=true,unit_spellcast_start=true,
     unit_spellcast_failed=true,unit_spellcast_interrupted=true,
-    target_observed=true}
+    target_observed=true,engine_exception=true,engine_dependency_missing=true,
+    condition_error=true,higher_priority_unknown=true,category_disabled=true,
+    no_eligible_rule=true,action_slot_unconfirmed=true}
 local function now()
     if type(GetTime)~="function" then return nil end
     local ok,t=pcall(GetTime)
@@ -53,6 +55,7 @@ function D:Start()
     self.dropped=0
     self.started=now()
     self.lastTick=nil
+    self.lastCooldownTick=nil
     self.session={matrix=self.matrix,version=self.version,
         started=self.started or 0,records=self.records}
     if self.TraceStart then self:TraceStart() end
@@ -104,14 +107,21 @@ function D:Record(kind,status,reason,matrix,elapsed)
     reason=sanitizeReason(reason)
     local v14=int(matrix,1,101)
     local latency=int(elapsed,0,1000000)
-    if self.lastTick and current and current-self.lastTick<0.05 then
-        self.dropped=self.dropped+1
-        return false,"rate_limited"
+    -- A cooldown storm may be throttled, but distinct target, engine,
+    -- profile and player-cast transitions are never lost to a global 50ms
+    -- gate. The bounded maxRecords/maxDuration limits still apply.
+    if kind=="EVENT" and reason=="spell_update_cooldown"
+        and self.lastCooldownTick and current
+        and current-self.lastCooldownTick<0.20 then
+        return false,"coalesced_cooldown"
     end
     self.sequence=self.sequence+1
     self.records[#self.records+1]={sequence=self.sequence,kind=kind,
         status=status,reason=reason,matrix=v14,elapsed=latency,time=current}
     self.lastTick=current
+    if kind=="EVENT" and reason=="spell_update_cooldown" then
+        self.lastCooldownTick=current
+    end
     return true
 end
 function D:Clear()
