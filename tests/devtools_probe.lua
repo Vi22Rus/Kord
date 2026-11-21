@@ -53,13 +53,16 @@ eq(manual:find("Engine %(manual evaluation%): UNKNOWN / action_slot_unconfirmed"
 eq(manual:find("Priority 1: UNKNOWN / action_slot_unconfirmed",1,true)~=nil,
  true,"manual diagnosis includes first priority reason")
 bridge.ActionBar=function()
- return {status="READY",confirmedSpellButtons=9,arcaneRankOnBar=4}
+ return {status="READY",confirmedSpellButtons=9,arcaneRankOnBar=4,
+ arcaneFindStatus="UNKNOWN",arcaneFindReason="spell_not_confirmed_on_visible_bar"}
 end
 local barReport=D:Why()
 eq(barReport:find("Confirmed spell buttons: 9",1,true)~=nil,true,
  "DevTools why includes confirmed button count")
 eq(barReport:find("Hunter Arcane Shot rank on bar: 4",1,true)~=nil,true,
  "DevTools why includes observed Arcane rank")
+eq(barReport:find("Arcane Shot FindSpell: UNKNOWN / spell_not_confirmed_on_visible_bar",1,true)~=nil,true,
+ "DevTools reports final action-slot revalidation result")
 _G.KordRotationCoreObservation=nil
 eq(D:ProbeMethod("UnitExists").status,"UNAVAILABLE","missing bridge")
 print("PASS DevTools probe mock "..n.." assertions")
