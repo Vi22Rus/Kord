@@ -241,3 +241,6 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | PC-013 | ResolveForEngine не копирует профиль; Get возвращает отдельную копию | SOURCE TEST ADDED / NOT RUN |
 
 Активный набор — **17** Lua suites; полный локальный Lua 5.1 / CI / WoW Forever NOT RUN.
+
+### Контрольная точка 2.9-C (KR-20261121-085)
+[Contract_v1_Status_2_9.md](Contract_v1_Status_2_9.md): единый фактический список внедрённого кода, проверенных статических инвариантов и блокирующих результатов Lua/игры. В исходниках добавлены сценарии false CFG, finite CFG, protected SpellID; их выполнение по точному SHA НЕ подтверждено. Оригинальный документ контракта v1 остался побайтово неизменным.

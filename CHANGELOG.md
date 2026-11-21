@@ -1,3 +1,8 @@
+## KR-20261121-085 — контрольная точка миграции Profile Contract v1
+- Дата UTC: 2026-11-21. Вынесен `docs/rotation/Contract_v1_Status_2_9.md`: реальный список SOURCE IMPLEMENTED в Registry/Conditions/Engine/Display и 17 тестов, ошибки/фиксы (unknown nil, CFG false, nonfinite/secret) и проверяемые границы текущего статуса.
+- `ROADMAP.md` и `docs/rotation/Test_Matrix.md` теперь ссылаются на контрольную точку. Полная Lua 5.1 регрессия, клиент, профиль Hunter и провайдеры v14 НЕ ГОТОВЫ. Только статические проверки и локальная репродукция Lua false выполнены; CI NOT RUN.
+- Клиентская поставка по-прежнему без DevTools; оригинальный профильный контракт пользователя не изменялся. Дальше — завершить локальное исполнение 17 suites на точном checkout, затем провайдеры и BM.
+
 ## KR-20261121-084 — fail-closed реестр: защищённые SpellID и нечисловые границы CFG
 - Дата: 2026-11-21 UTC. Валидация v1 не отвергала все бесконечные значения схемы Config и могла вызвать math.floor для секретного spellID без предварительного GameAPI guard.
 - `RotationProfiles.lua`: finite-check default/min/max числовой CFG; spellID guard через IsSafeValue до сравнения/математики; валидация и копирование профиля под pcall, ошибка возвращает отказ регистрации без побочных эффектов. Has(key,level) использует внутренний селектор без глубокой копии.
