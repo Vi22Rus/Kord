@@ -100,7 +100,8 @@ function D:Why()
             target and target.liveExists),
         "Target exists (cached snapshot): "..observation(
             target and target.snapshotStatus,target and target.snapshotExists),
-        "Profile status: "..status(summary and summary.profileStatus),
+        "Profile (manual evaluation): "..status(diagnosis and diagnosis.profileStatus),
+        "Profile (last UI evaluation): "..status(summary and summary.profileStatus),
         "Eligibility (ready/blocked/unknown): "
             ..tostring(type(summary)=="table" and summary.eligibilityReady or 0)
             .."/"..tostring(type(summary)=="table" and summary.eligibilityBlocked or 0)
