@@ -50,7 +50,7 @@ end
 local manual=D:Why()
 eq(manual:find("Engine %(manual evaluation%): UNKNOWN / action_slot_unconfirmed")~=nil,
  true,"manual diagnosis includes actual engine refusal")
-eq(manual:find("Priority 1: UNKNOWN / action_slot_unconfirmed",1,true)~=nil,
+eq(manual:find("Priority 1 (Arcane rank 8): UNKNOWN / action_slot_unconfirmed",1,true)~=nil,
  true,"manual diagnosis includes first priority reason")
 bridge.ActionBar=function()
  return {status="READY",confirmedSpellButtons=9,arcaneRankOnBar=4,
@@ -64,7 +64,7 @@ eq(barReport:find("Hunter Arcane Shot rank on bar: 4",1,true)~=nil,true,
 eq(barReport:find("Arcane Shot FindSpell: UNKNOWN / spell_not_confirmed_on_visible_bar",1,true)~=nil,true,
  "DevTools reports final action-slot revalidation result")
 bridge.Display=function()
- return {status="READY",lastEngineStatus="UNKNOWN",
+ return {status="READY",panelEnabled=true,testMode=false,lastEngineStatus="UNKNOWN",
   lastEngineReason="action_slot_unconfirmed",
   recommendationAccepted=false,visibilityAllowed=false,
   frameCreated=true,frameShown=false}
@@ -74,6 +74,10 @@ eq(uiReport:find("Display accepts recommendation: false",1,true)~=nil,
  true,"DevTools reports recommendation rejected by final UI")
 eq(uiReport:find("Display frame shown: false",1,true)~=nil,
  true,"DevTools reports actual hidden frame")
+eq(uiReport:find("Display panel enabled: true",1,true)~=nil,
+ true,"DevTools reports actual panel enabled setting")
+eq(uiReport:find("Display test mode: false",1,true)~=nil,
+ true,"DevTools distinguishes preview mode from live recommendations")
 _G.KordRotationCoreObservation=nil
 eq(D:ProbeMethod("UnitExists").status,"UNAVAILABLE","missing bridge")
 print("PASS DevTools probe mock "..n.." assertions")
