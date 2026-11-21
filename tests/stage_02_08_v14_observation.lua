@@ -91,6 +91,21 @@ eq(diagnosis.reason,"action_slot_unconfirmed","actual engine refusal")
 eq(diagnosis.firstReason,"action_slot_unconfirmed","first priority refusal")
 eq(diagnosis.spellID,nil,"no raw spell ID in DevTools")
 eq(diagnosis.diagnostics,nil,"no raw diagnostics exported")
+KR.RotationEngine.Evaluate=function()
+ reads=reads+1
+ return {status="BLOCKED",reason="no_eligible_rule",
+  profileID="HUNTER_BM_PILOT_EXPERIMENTAL",diagnostics={
+   {status="BLOCKED",reason="condition_false"},
+   {status="BLOCKED",reason="condition_false"},
+   {status="BLOCKED",reason="condition_false"},
+   {status="BLOCKED",reason="condition_false"},
+   {status="UNKNOWN",reason="action_slot_unconfirmed"}}}
+end
+local hunter=bridge.Diagnose()
+eq(hunter.firstReason,"condition_false","first high rank level-gated")
+eq(hunter.arcaneR4Status,"UNKNOWN","rank-4 rule inspected separately")
+eq(hunter.arcaneR4Reason,"action_slot_unconfirmed",
+ "actual rank-4 refusal exposed")
 eq(reads,1,"engine reevaluates only for explicit diagnosis")
 -- Scanner coverage is inspected only on manual DevTools request.
 KR.characterState={classToken="HUNTER",index=1}
@@ -135,7 +150,10 @@ KR.RotationDisplay.ShouldShow=function()
  visibilityChecks=visibilityChecks+1
  return false
 end
+KR.db={panel={showPanel=true,testMode=false}}
 local display=bridge.Display()
+eq(display.panelEnabled,true,"user panel is enabled")
+eq(display.testMode,false,"normal mode not test preview")
 eq(display.status,"READY","display observer accessible")
 eq(display.frameCreated,true,"frame is instantiated")
 eq(display.frameShown,false,"actual frame hidden")
