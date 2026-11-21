@@ -1,3 +1,9 @@
+## KR-20261121-205 — DevTools: end-to-end engine → display → frame
+- Клиент подтвердил `Arcane Shot FindSpell: READY / confirmed`, но иконка на фрейме не появляется. Это подтверждает только проверку action-slot, **не** финальный `AbilityEligibility READY` и не приём рекомендации UI.
+- Ревизия `CoreObservation.Display()` выдаёт только безопасные scalar-only результаты: существует ли фрейм, принял ли `RotationDisplay` рекомендацию (`productionReady`), разрешён ли `ShouldShow()`, реально ли `frame:IsShown()`, последний UI статус и причину движка. Не меняет UI и не вставляет тестовую иконку.
+- `/krdev why` показывает эти данные отдельно от прямой оценки движка и `FindSpell`. Добавлены mock-тесты финального UI-пути, включая невидимый фрейм и отказ в приёме рекомендации.
+- Поведение production-ротации не ослаблялось; пользовательский аддон не получает новых сообщений. **Lua 5.1/WoW runtime NOT RUN**.
+
 ## KR-20261121-199 — Hunter: snapshot-панель подтверждает Arcane Shot 4, но движок блокирует слот
 - В реальном WoW Forever пользователь получил `Action bar scan: READY`, `Confirmed spell buttons: 29`, `Hunter Arcane Shot rank on bar: 4`, `Profile: READY`, одновременно с `ENGINE UNKNOWN action_slot_unconfirmed` при бое.
 - Это исключает полное отсутствие распознавания панели, языковое несовпадение и отсутствие распознанного ID четвёртого ранга в момент ручного snapshot. **Не доказывает**, почему точная проверка `FindSpell` временно возвращает UNKNOWN.
