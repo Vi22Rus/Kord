@@ -1,3 +1,9 @@
+## KR-20261121-128 — inRange факт привязан к GUID цели в снимке
+- `AbilityEligibility:Fact(id,"inRange")`: чтение дальности теперь требует подтверждённую и неизменную идентичность цели (GUID снимка = UnitGUID перед и после чтения), иначе `UNKNOWN`; итоговое READY по-прежнему только у `Evaluate`.
+- `tests/stage_02_07_eligibility.lua`: добавлены mock-кейсы отсутствующей цели, устаревшего снимка и смены GUID при вызове API.
+- `docs/rotation/Contract_v1_Status_2_9.md`: записаны изменения и блокеры регрессии; локально не доступны Lua 5.1 и точный checkout из-за DNS.
+- **SOURCE UPDATED, 17 Lua 5.1 suites NOT RUN, WoW CLIENT NOT RUN, Actions NOT RUN.** Hunter BM и канонический контракт v1 не менялись.
+
 ## KR-20261121-124 — согласование текущей контрольной точки 2.9 с реальным кодом
 - `docs/rotation/Contract_v1_Status_2_9.md`: исправлены устаревшие утверждения об отсутствии `GameState.ReadSignal`, обновлён верхний статус на `SOURCE IMPLEMENTED (PARTIAL) / STATIC SOURCE AUDIT ONLY`, отдельно перечислены частичные провайдеры и неразрешённые факты.
 - Ревизия исходников на GitHub не заменяет исполнение: полный checkout локально недоступен, Lua 5.1 отсутствует; `17 SUITES NOT RUN`, WoW Forever и GitHub Actions не запускались.
