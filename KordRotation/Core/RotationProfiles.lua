@@ -189,13 +189,21 @@ function P:Register(classToken,specIndex,profile)
  registry[key]=list
  return true,profile.id
 end
+local function safeIdentityValue(value)
+ local api=KR.GameAPI
+ if not api or type(api.IsSafeValue)~="function" then return false end
+ local ok,safe=pcall(api.IsSafeValue,api,value)
+ return ok and safe==true
+end
 local function selectProfile(key,level)
- if type(key)~="string" then return nil end
+ -- Public lookups must never compare protected levels or index by a
+ -- protected key. Only trusted, ordinary values can select a profile.
+ if not safeIdentityValue(key) or type(key)~="string" then return nil end
  local list=registry[key]
  if not list then return nil end
  if level==nil then return #list==1 and list[1] or nil end
- if type(level)~="number" or level~=level
-     or level~=math.floor(level) then return nil end
+ if not safeIdentityValue(level) or type(level)~="number"
+     or level~=level or level~=math.floor(level) then return nil end
  for _,profile in ipairs(list) do
   if level>=profile.levelMin and level<=profile.levelMax then
    return profile
@@ -214,7 +222,8 @@ function P:ResolveForEngine(key,level)
  return selectProfile(key,level)
 end
 function P:Has(key,level)
- if type(key)~="string" or registry[key]==nil then return false end
+ if not safeIdentityValue(key) or type(key)~="string"
+     or registry[key]==nil then return false end
  if level==nil then return true end
  return selectProfile(key,level)~=nil
 end
