@@ -47,9 +47,17 @@
 
 ## Проверка границы фактов и провайдеров (KR-20261121-094)
 
-- В точном дереве `main` методы `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствуют. Вызовы условий через `S` остаются `UNKNOWN`/`nil` до реализации подтверждённых источников; наличие mock-заглушек в тесте не доказывает работоспособность WoW API.
+- До KR-20261121-097 методы `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствовали. Теперь `AbilityEligibility.Fact` частично реализован (см. ниже), а `GameState.ReadSignal` по-прежнему отсутствует. Вызовы условий через `S` остаются `UNKNOWN`/`nil` до реализации подтверждённых источников; наличие mock-заглушек в тесте не доказывает работоспособность WoW API.
 - Добавлен mock-контроль: `Needs.ranges` запрещает вызов даже при включённом провайдере; подтверждённое `READY(false)` сохраняется как `false`, повторное чтение внутри контекста не происходит, а новый контекст читает заново.
 - Проверки сохранены как исходный код; **Lua 5.1 runtime NOT RUN**. Они не повышают статус `experimental`/`verified` и не разрешают подключение Hunter BM.
+
+## Частичный фактический провайдер v14 (KR-20261121-097…098)
+
+- `AbilityEligibility:Fact(id, kind, options)` добавлен только для `cooldownActive` (читаемое `C_Spell.GetSpellCooldown(...).isActive`) и `inRange` (проверка текущей цели через `C_Spell.IsSpellInRange`, либо валидный legacy 0/1). Возвращает `{status="READY",value=<boolean>}` только при доступном обычном boolean; ошибка, nil, secret и неподдерживаемый источник = `UNKNOWN`.
+- `isOnGCD` не используется для вывода активности кулдауна. Положительная дальность / отрицательный факт кулдауна не означают итоговую пригодность способности: `Evaluate` остаётся единственным источником финального допуска.
+- `known` и `chargesAtLeast` пока отвечают `UNKNOWN`: требуется отдельная доказательная проверка spellbook, а у `chargesAtLeast` нет порога в текущем интерфейсе `spellFact(id,kind)`.
+- В `tests/stage_02_07_eligibility.lua` добавлены сценарии true/false/UNKNOWN, secret Spell ID, защищённого поля cooldown и запрета угадывать `isActive` по `isOnGCD`. `GameState.ReadSignal` остаётся отсутствующим.
+- **Статус:** SOURCE IMPLEMENTED (partial), MOCKS UPDATED, LUA 5.1 NOT RUN, CLIENT NOT RUN. Никакие API не объявлены подтверждёнными в реальном WoW клиенте.
 
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
