@@ -2,10 +2,28 @@
 
 **Статус:** проектная таблица для согласования, не описание уже доступного игрового API. Источник фактического контракта: `Core/GameState.lua`, `Core/GameAPI.lua`, `Core/AbilityEligibility.lua`. Существующие `status=READY/UNKNOWN/UNAVAILABLE` нельзя бездумно превращать в boolean.
 
+## Утверждённый слой v14 — прямые поля GameState (начальный охват 2.8.2)
+
+**Канон API:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md) v14. Канон имен полей — этот GameData Contract совместно с фактическим `GameState`; 101-строчная матрица **не** объявляет себя словарём `state` ключей. **Никаких временных runtime-адаптеров старых ротаций.** Имена новых профилей фиксировать после реализации прямого контракта. Отдельные черновые Hunter-профили не подключены в TOC и должны переноситься на эту схему позднее.
+
+| Поле снимка GameState | Тип | API из v14 | Матрица № | Статус nil/secret/error | Потребитель |
+|---|---|---|---:|---|---|
+| `player.moving` | `{status,value:boolean?}` | `IsPlayerMoving()` | 9 | UNKNOWN/UNAVAILABLE, не false | GameData, будущий Eligibility |
+| `target.isPlayer` | `{status,value:boolean?}` | `UnitIsPlayer("target")` | 38, 67, 100 | UNKNOWN/UNAVAILABLE, не false | target/context |
+| `target.threat` | `{status,value:0..3?}` | `UnitThreatSituation("player","target")` | 14,78,92 | UNKNOWN при nil и защищённых значениях | defensive policy |
+| `pet.exists` | `{status,value:boolean?}` | `UnitExists("pet")` | 5,77,99 | подтверждённое false = отсутствие; nil = UNKNOWN | Hunter |
+| `pet.dead` | `{status,value:boolean?}` | `UnitIsDeadOrGhost("pet")` | 5,77,99 | UNKNOWN если pet не подтверждён | Hunter |
+| `pet.health` | `{current,maximum,percent?,status}` | `UnitHealth("pet")`, `UnitHealthMax("pet")` | 5 | при secret нет числового процента | Hunter |
+| `context.inGroup` | `{status,value:boolean?}` | `IsInGroup()` | 17,72,73 | UNKNOWN/UNAVAILABLE | world/instance classification |
+| `context.inRaid` | `{status,value:boolean?}` | `IsInRaid()` | 17,72,73 | UNKNOWN/UNAVAILABLE | world/instance classification |
+| `context.inInstance` | `{status,value:boolean?}` | `IsInInstance()` — первый bool результата | 18,72,90–91 | UNKNOWN/UNAVAILABLE | instance classification |
+
+`player` и `target` остаются совместимы со старым ядром; новые данные добавляются без скрытого преобразования полей ротаций. `GameState` НЕ утверждает `isDungeon`, `isRaid`, `inPvP`, полное число врагов, TTD или safe AoE только по `inInstance=true`. Этим сигналам нужен отдельный подтверждённый контракт v14. Не сравнивать secret числовые значения; `GameAPI` отбрасывает их до `GameState`. Старые кандидаты ниже — исторические предварительные имена, **не перечень реализованных полей**.
+
 ## Обязательные колонки
 `key | type/range | meaning | source/API | READY value | false/zero | nil/UNKNOWN | refresh trigger | consumers | evidence | implementation status`.
 
-**Нормализация:** один адаптер между GameState и Next. В профилях только утверждённые ключи; старые snake_case и camelCase — алиасы лишь внутри адаптера. Ниже — **кандидаты**, не утверждённый контракт; перед реализацией сверить с реальными потребителями.
+**Нормализация:** прямой утверждённый GameData внутри ядра; без временных runtime-адаптеров. Старые snake_case и camelCase профилей подлежат будущему переносу на утверждённый контракт, не скрытому alias-mapping. Ниже — **кандидаты**, не утверждённый контракт; перед реализацией сверить с реальными потребителями.
 
 | Кандидат ключа | Тип/диапазон | Смысл | При UNKNOWN/nil | Источник/статус |
 |---|---|---|---|---|
@@ -37,11 +55,11 @@
 - Number: только finite, в границах; NaN/Infinity/отрицательные TTD запрещены.
 - `known`, `ready`, `usable`, `inRange`, `procActive` — разные факты; определить агрегирование совместно с Eligibility.
 - Указывать источник, событие/TTL, потребителя и тест для **каждого** нового поля.
-- При изменении поля: реестр → адаптер → профили → тесты → CHANGELOG.
+- При изменении поля: реестр → прямой provider GameState/GameAPI → профили (после согласованного переноса) → тесты → CHANGELOG.
 - До согласования нельзя объявлять перечисленные кандидаты существующими сигналами.
 
 ## Контроль расхождений
-BM сегодня использует snake_case и названия способностей в ready; MM/SV — camelCase и символьные ключи. Решение об алиасах/канонических ключах принять при интеграции; не плодить преобразователи в каждом профиле.
+BM сегодня использует snake_case и названия способностей в ready; MM/SV — camelCase и символьные ключи. Алиасы и runtime-адаптеры не использовать; канонические ключи зафиксировать в GameData Contract и переносить профили на них позднее.
 
 
 ## Hunter BM/MM/SV — исследование 2026-11-21
@@ -51,6 +69,6 @@ BM сегодня использует snake_case и названия спосо
 
 ## Canonical API Matrix — binding rule (2026-11-21)
 
-**Mandatory normative dictionary:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md). This file defines the sole canonical spelling of every profile-facing state key and links each key to the read-only GameAPI method and owning engine module. The current GameData table contains earlier candidate names; interpret them through the canonical matrix, never invent aliases. Source-level archive review is documented in that matrix. New profiles must use lowerCamelCase `state` keys and PascalCase ability keys. An unknown provider must remain UNKNOWN, never be guessed. Implementation and client verification are separate statuses.
+**Mandatory normative dictionary:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md). This matrix defines canonical API capabilities and selected read-only methods, **not** the spellings of profile-facing state keys. Those are specified here in GameData Contract and verified against the engine implementation. The current GameData table contains earlier candidate names; interpret them through the canonical matrix, never invent aliases. Source-level archive review is documented in that matrix. New profiles must use lowerCamelCase `state` keys and PascalCase ability keys. An unknown provider must remain UNKNOWN, never be guessed. Implementation and client verification are separate statuses.
 
-**Переоценка 2026-11-21:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md) v2 заменяет прежний Kord-first выбор на reference-first. Не реализовывать кандидатные методы без проверки клиента. Имена являются проектным контрактом, не свидетельством работающего провайдера.
+**Актуальная версия:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md) **v14** заменяет прежний Kord-first выбор на утверждённую source-baseline. Не реализовывать кандидатные методы без проверки клиента. Имена являются проектным контрактом, не свидетельством работающего провайдера.

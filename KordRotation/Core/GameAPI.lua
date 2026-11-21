@@ -9,7 +9,9 @@ local allowed = {
     GetBuildInfo=true, GetTime=true, UnitClass=true, UnitLevel=true,
     UnitGUID=true, UnitIsUnit=true, UnitCanAssist=true,
     UnitHealth=true, UnitHealthMax=true, UnitPowerType=true,
-    UnitExists=true, UnitIsDeadOrGhost=true, UnitAffectingCombat=true,
+    UnitExists=true, UnitIsDeadOrGhost=true, UnitIsPlayer=true, UnitAffectingCombat=true,
+    IsPlayerMoving=true, IsInGroup=true, IsInRaid=true, IsInInstance=true,
+    GetInstanceInfo=true, UnitThreatSituation=true, UnitDetailedThreatSituation=true,
     UnitCanAttack=true, UnitPower=true, UnitPowerMax=true,
     UnitCastingInfo=true, UnitChannelInfo=true, UnitAura=true,
     InCombatLockdown=true, IsMounted=true,
@@ -36,6 +38,15 @@ local allowed = {
     ["C_SpellBook.GetSpellBookItemTexture"]=true,
     ["C_Spell.GetSpellInfo"]=true,
     ["C_UnitAuras.GetAuraDataByIndex"]=true,
+    ["C_UnitAuras.GetPlayerAuraBySpellID"]=true,
+    ["C_UnitAuras.GetUnitAuraBySpellID"]=true,
+    ["C_UnitAuras.GetAuraDuration"]=true,
+    ["C_Spell.IsCurrentSpell"]=true,
+    ["C_Spell.IsAutoRepeatSpell"]=true,
+    ["C_SpellBook.IsSpellKnown"]=true,
+    ["C_SpellBook.FindSpellBookSlotForSpell"]=true,
+    ["C_Spell.GetSpellPowerCost"]=true,
+    ["C_NamePlate.GetNamePlates"]=true,
 }
 local validTypes = {boolean=true, number=true, string=true, table=true}
 

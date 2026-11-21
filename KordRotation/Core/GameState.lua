@@ -7,7 +7,7 @@ local S = KR.GameState
 
 local watched = {
     "identity", "target", "combat", "health", "resources", "cast",
-    "talents", "heartbeat",
+    "talents", "heartbeat", "auras", "cooldowns",
 }
 local function finite(number, minimum)
     return type(number) == "number" and number == number
@@ -126,10 +126,14 @@ local function unitSnapshot(unit)
         record.level=number("UnitLevel", 1, nil, "player")
         record.combat=read("UnitAffectingCombat", "boolean", "player")
         record.mounted=read("IsMounted", "boolean")
-    else
+        -- Matrix #9: a boolean, not an inferred movement flag from casting.
+        record.moving=read("IsPlayerMoving", "boolean")
+    elseif unit=="target" then
         record.attackable=read("UnitCanAttack", "boolean", "player", "target")
         record.assistable=read("UnitCanAssist", "boolean", "player", "target")
-        record.isPlayer=read("UnitIsUnit", "boolean", "player", "target")
+        -- Matrix #38/#67/#100: UnitIsUnit(player,target) is NOT UnitIsPlayer.
+        record.isPlayer=read("UnitIsPlayer", "boolean", "target")
+        record.threat=number("UnitThreatSituation",0,3,"player","target")
     end
     record.status=statusOf({record.guid, record.dead, record.exists})
     return record
@@ -160,6 +164,14 @@ end
 function S:ReadNow()
     local player=unitSnapshot("player")
     local target=unitSnapshot("target")
+    -- Matrix #5/#77/#99: pet absence is not a player/target proxy.
+    local pet=unitSnapshot("pet")
+    local context={
+        inGroup=read("IsInGroup","boolean"),
+        inRaid=read("IsInRaid","boolean"),
+        inInstance=read("IsInInstance","boolean"),
+    }
+    context.status=statusOf({context.inGroup,context.inRaid,context.inInstance})
     local combat={
         player=player.combat or invalid(player.exists, "player_missing"),
         lockdown=read("InCombatLockdown", "boolean"),
@@ -178,7 +190,8 @@ function S:ReadNow()
         and combat.status == "READY" and "READY" or "UNKNOWN"
     local result = {
         status=status, observedAt=now, revision=(self.revision or 0)+1,
-        player=player, target=target, combat=combat, resources=playerPower,
+        player=player, target=target, pet=pet, context=context,
+        combat=combat, resources=playerPower,
         casting=cast, reason=status=="UNKNOWN" and "critical_field_unknown" or nil,
     }
     self.revision=result.revision

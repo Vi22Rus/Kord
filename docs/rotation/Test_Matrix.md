@@ -42,3 +42,14 @@
 | DEV-005 | Сессия API v14 | Сценарные probe, 101 отдельных статусов; отсутствие client test не превращается в PASS | NOT RUN |
 | BM-LEVEL-001 | Перенос BM 1–59 | ST/AoE/CFG/priority сохраняют решения старой ротации на одинаковых проверенных состояниях | NOT RUN |
 | BM-LEVEL-002 | Игровой тест | Pet, Auto Shot, ammo, GCD, ресурсы, дальность, threat, solo/dungeon, смена level/target | NOT RUN |
+
+## Canonical v14 — GameState прямые сигналы (2.8.2)
+
+| ID | Метод/строка v14 | Сценарий | Ожидаемое | Статус |
+|---|---|---|---|---|
+| GAME-009 | IsPlayerMoving #9 | true / false / nil / secret / unsupported | отдельные READY(true/false) и UNKNOWN/UNAVAILABLE | NOT RUN |
+| GAME-067 | UnitIsPlayer #38/#67 | игрок в цели / NPC / отсутствующая цель | не заменять UnitIsPlayer через UnitIsUnit | NOT RUN |
+| GAME-092 | Threat #14/#78/#92 | 0..3 / nil / secret | READY только для finite 0..3; иначе UNKNOWN | NOT RUN |
+| GAME-099 | Pet #5/#77/#99 | живой, мёртвый, отсутствует, secret | pet.exists отдельно от pet.dead/health; отсутствие не равно UNKNOWN | NOT RUN |
+| GAME-018 | Context #17/#18/#72/#73 | solo, world party, dungeon, raid, nil | не выводить инстанс/группу из одного флага; нет ложного boolean | NOT RUN |
+| GAME-080 | Secret #3-6/#80 | secret health/power | никакая арифметика по секретному числу | NOT RUN |
