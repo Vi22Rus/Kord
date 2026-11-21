@@ -148,6 +148,36 @@ auraTarget={spellId=1978,isHarmful="SECRET"}
 eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
  "secret aura property fails closed")
 auraTarget={spellId=1978,isHarmful=true}
+-- A full protected AuraData record, not just a protected scalar field.
+local originalSecretProbe=issecretvalue
+local protectedAura={spellId=1978,isHarmful=true}
+issecretvalue=function(v)
+ return rawequal(v,protectedAura) or originalSecretProbe(v)
+end
+auraTarget=protectedAura
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "protected AuraData table is not readable")
+issecretvalue=originalSecretProbe
+auraTarget={spellId=1978,isHarmful=true}
+-- An API exception must never be interpreted as proof of absence.
+local realAuraLookup=C_UnitAuras.GetUnitAuraBySpellID
+C_UnitAuras.GetUnitAuraBySpellID=function() error("aura access restricted") end
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "aura provider exception remains UNKNOWN")
+C_UnitAuras.GetUnitAuraBySpellID=realAuraLookup
+-- Identity lost after a successful aura lookup is still UNKNOWN.
+local originalUnitGUID=UnitGUID
+local guidCalls=0
+UnitGUID=function(unit)
+ if unit=="target" then
+  guidCalls=guidCalls+1
+  if guidCalls==2 then return "SECRET" end
+ end
+ return originalUnitGUID(unit)
+end
+eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).status,"UNKNOWN",
+ "protected post-read target GUID fails closed")
+UnitGUID=originalUnitGUID
 local missingGuid={target={exists={status="READY",value=true}}}
 local beforeGuid=auraReads
 eq(KR.GameState:ReadSignal("target.debuff",1978,missingGuid).status,"UNKNOWN",
