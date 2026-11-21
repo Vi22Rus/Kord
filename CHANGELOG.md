@@ -1,3 +1,9 @@
+## KR-20261121-075 — новый сценарный mock профиля v1 и тестовый манифест
+- Дата: 2026-11-21 UTC. Реальный файл `tests/profile_contract_v1.lua` проверяет registry contractVersion/Needs/SkipExceptions/Spell IDs/диапазоны уровней, engine UNKNOWN/skip/pcall/PET_COMMAND/Eligibility, target mode, immutable Get, restricted S и ленивые all/any, per-evaluation cache, отсутствие необъявленного SpellID и непридуманных фактов кулдауна.
+- `scripts/run_local_lua_regression.sh` и `.github/workflows/lua-regression.yml` теперь ссылаются на новый тест вместо двух устаревших наборов 2.8. Остальные GameAPI, GameState, AbilityEligibility, UI и DevTools mock сохранены; GitHub workflow остаётся ТОЛЬКО `workflow_dispatch`.
+- Два старых теста 2.8 физически пока ещё существуют, их удаление будет отдельным проверяемым изменением после анализа ссылок; они не являются действующей регрессией контрактного движка. Это не доказательство прохождения new mock: LOCAL NOT RUN, CI NOT RUN, CLIENT NOT RUN на SHA.
+- Цель: проверять новый контракт, а не пытаться восстановить старую статическую схему из семи requires. Следующий шаг — выполнить targeted Lua test на точном Git snapshot и довести тестовый набор.
+
 ## KR-20261121-074 — строгая трёхзначная проверка дочерних условий и secret аргументов
 - Дата: 2026-11-21 UTC. По исходниковому аудиту обнаружена возможность неверного `skip`: `S.all/S.any` трактовали ошибочный строковый результат дочерней проверки как nil, позволяя пропустить недопустимое условие. Теперь значение вне true/false/nil бросает исключение; Engine превращает его в `condition_error` и останавливается.
 - Порядок Secret API guards в `RotationConditions:Check` и `S:spellFact` исправлен: `IsSafeValue` вызывается перед сравнением потенциально защищённых полей. Без изменения actual WoW API.

@@ -24,10 +24,9 @@ else
     tests/stage_02_05_actionbar.lua
     tests/stage_02_06_bindings.lua
     tests/stage_02_07_eligibility.lua
-    tests/stage_02_08_rotation_engine.lua
+    tests/profile_contract_v1.lua
     tests/stage_02_08_v14_state.lua
     tests/stage_02_08_v14_argument_guards.lua
-    tests/stage_02_08_v14_rotation_contract.lua
     tests/stage_02_08_v14_display.lua
     tests/stage_02_08_v14_observation.lua
     tests/devtools_recorder.lua
