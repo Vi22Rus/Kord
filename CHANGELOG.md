@@ -1,3 +1,9 @@
+## KR-20261121-032 — подтверждение итогового CI этапа 2.8.4a–d
+- **Дата/зона:** 2026-11-21 UTC. **Тип:** documentation evidence, Lua/TOC/UI не изменяются.
+- **Проверенный источник:** [GitHub Actions run 44888049693](https://github.com/Vi22Rus/Kord/actions/runs/44888049693), SHA `28104bbb9920fdba46170426e8c6eb621a243b17`, job `136797558374`, completed/success. Проверка синтаксиса всех Lua через luac5.1 PASS. **Девять из девяти mock suites PASS**: Stage 2.3 GameState, 2.4 SpellCatalogue, 2.5 ActionBar, 2.6 Bindings (25), Eligibility (57), RotationEngine (38), v14 GameState (31), v14 argument guards (26), v14 real-module integration (28). Лог получен непосредственно из job.
+- **Документы:** зафиксированы действующий 2.8.4 контракт, перечень разрешённых boolean GameData requirements, критерии UNKNOWN/BLOCKED, новый integration test и точные результаты в Test Matrix и Stage 2.8.
+- **Не выполнено:** клиентский тест WoW Forever, проверка максимального изученного ранга v14 #20, FPS/RAM, все будущие игровые профили; не считать mock PASS игровым PASS.
+
 ## KR-20261121-031 — 2.8.4d: интеграционная Lua mock-регрессия
 - **Дата/зона:** 2026-11-21 UTC. **Статус:** CI pending; WoW Forever NOT RUN.
 - **Проблема:** только изолированные тесты контрактов не подтверждали цепочку настоящих RotationProfiles→RotationEngine→AbilityEligibility.

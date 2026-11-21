@@ -148,11 +148,11 @@
 ## 2.8.4a–d — канонический RotationEngine и GameData
 | ID | Сценарий | Ожидаемое | Mock CI | WoW Forever |
 |---|---|---|---|---|
-| ENG-284A-001 | Один GameState снимок на проход, общий для Eligibility | Одна оценка состояния, без отдельного снимка на кандидата | PENDING | NOT RUN |
-| ENG-284A-002 | GameState недоступен или падает | UNKNOWN и пустая очередь | PENDING | NOT RUN |
-| ENG-284B-001 | Условия только из утверждённых boolean полей | Недопустимое поле отвергнуто при регистрации | PENDING | NOT RUN |
-| ENG-284B-002 | required GameData UNKNOWN / mismatch | UNKNOWN / BLOCKED соответственно | PENDING | NOT RUN |
-| ENG-284C-001 | Неверный status или чужой spellID | UNKNOWN без перехода к младшему правилу | PENDING | NOT RUN |
-| ENG-284D-001 | Настоящие Profiles+Engine+Eligibility, mock API | Порядок, cooldown, GCD, target, context, snapshot failure | PENDING | NOT RUN |
+| ENG-284A-001 | Один GameState снимок на проход, общий для Eligibility | Одна оценка состояния, без отдельного снимка на кандидата | PASS run 44888049693 / 28104bbb | NOT RUN |
+| ENG-284A-002 | GameState недоступен или падает | UNKNOWN и пустая очередь | PASS run 44888049693 / 28104bbb | NOT RUN |
+| ENG-284B-001 | Условия только из утверждённых boolean полей | Недопустимое поле отвергнуто при регистрации | PASS run 44888049693 / 28104bbb | NOT RUN |
+| ENG-284B-002 | required GameData UNKNOWN / mismatch | UNKNOWN / BLOCKED соответственно | PASS run 44888049693 / 28104bbb | NOT RUN |
+| ENG-284C-001 | Неверный status или чужой spellID | UNKNOWN без перехода к младшему правилу | PASS run 44888049693 / 28104bbb | NOT RUN |
+| ENG-284D-001 | Настоящие Profiles+Engine+Eligibility, mock API | Порядок, cooldown, GCD, target, context, snapshot failure | PASS run 44888049693 / 28104bbb | NOT RUN |
 
-CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua`; только завершённый Action run на SHA может изменить PENDING на PASS. Игровые тесты, диагностика CPU/RAM и v14 #20 highest learned rank остаются NOT RUN.
+CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua`; подтверждено логу Actions: 9/9 Lua mock suites PASS, including integration 28 assertions. Игровые тесты, диагностика CPU/RAM и v14 #20 highest learned rank остаются NOT RUN.

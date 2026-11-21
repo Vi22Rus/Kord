@@ -23,3 +23,13 @@
 ## Остаточные ограничения
 
 Уже имеющийся `AbilityEligibility` может возвращать UNKNOWN, если Forever API секретен или контракт не подтверждён; этот этап не пытается обходить защиту. Режим auto пока не выбирает наугад одну цель; для будущей игры потребуется достоверное определение AoE. UI отображает одну текущую рекомендацию, но не прогнозирует вторую. `RotationSettings.keyLabel` не считается автоматически определённой клавишей. OPie не интегрируется. Первый профиль «Воин — Оружие» остаётся задачей этапа 3, по предварительному исследованию и одобрению.
+
+## 2.8.4a–d — каноническая оценка GameData (2026-11-21)
+**Статус:** IMPLEMENTED / MOCK CI PASS / AWAITING IN-GAME QA. Утверждено заказчиком до изменения исходников. Коммиты KR-20261121-028..031; итоговый CI [44888049693](https://github.com/Vi22Rus/Kord/actions/runs/44888049693), SHA `28104bbb9920fdba46170426e8c6eb621a243b17`, completed/success.
+
+- **a:** `RotationEngine` получает один `GameState:GetSnapshot()` через pcall на проход, после выбора режима. Поле `status` снимка не обязано быть глобально READY. Отсутствие структуры → UNKNOWN. `AbilityEligibility` принимает опциональный `stateSnapshot`, прямые вызовы без него сохраняются. Оценка требования цели использует этот же снимок.
+- **b:** `RotationProfiles` валидирует и копирует необязательные `requires={{field="context.inGroup",equals=false}}` (до 8 уникальных проверок). Разрешены только `player.moving`, `target.isPlayer`, `pet.exists`, `pet.dead`, `context.inGroup`, `context.inRaid`, `context.inInstance`. Фактические GameData-сигналы статуса READY и обычного boolean сравниваются; отсутствие/Secret/не-boolean → UNKNOWN, явное несовпадение → BLOCKED. Проверка не объявляет кандидатные поля реализованными.
+- **c:** недействительный ответ Eligibility, неожиданный статус или несовпадение `spellID` → UNKNOWN, а не пропуск следующего правила.
+- **d:** добавлен интеграционный mock реальных модулей `RotationProfiles + RotationEngine + AbilityEligibility`, подключён девятым Lua suite к Actions. По итоговому логу 9/9 PASS: Eligibility 57 checks; RotationEngine 38 assertions; GameState v14 31; guards 26; integration 28 assertions. `luac5.1 -p` PASS.
+- **Границы:** классные профили по-прежнему не активированы; Hunter priorities, ранги, v14 API, механизм двух аддонов и UI не менялись. Максимальный изученный ранг v14 #20, все 101 клиентских проверки, FPS/RAM и настоящая игра — **NOT RUN**. CI не доказывает клиентский API.
+
