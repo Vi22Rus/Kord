@@ -1,3 +1,10 @@
+## KR-20261121-031 — 2.8.4d: интеграционная Lua mock-регрессия
+- **Дата/зона:** 2026-11-21 UTC. **Статус:** CI pending; WoW Forever NOT RUN.
+- **Проблема:** только изолированные тесты контрактов не подтверждали цепочку настоящих RotationProfiles→RotationEngine→AbilityEligibility.
+- **Изменения:** новый тест `tests/stage_02_08_v14_rotation_contract.lua` загружает все три реальные Lua-модуля с mock GameAPI/GameState; проверяет readiness, fallback при BLOCKED, остановку при UNKNOWN, GCD, отсутствие цели, недоступность способности, контекст и исключение GetSnapshot. Workflow выполняет девять Lua mock-наборов. Матрица тестов дополнена явными PENDING/NOT RUN.
+- **Референсы и контракт:** Sonah/MaxDps/JustAC/ForeverRotation/ForeverAuras/RotationGuide, v14; не меняет Hunter priorities, ранги, API, архитектуру двух пакетов или production-профили. Игровой тест и #20 НЕ выполнены.
+- **Проверка:** требуются завершённый CI SHA и лог; PASS здесь заранее не заявлен.
+
 ## KR-20261121-030 — 2.8.4c: fail-closed результат Eligibility
 - **Дата/зона:** 2026-11-21 UTC. **Статус:** IMPLEMENTED / CI pending / WoW Forever NOT RUN.
 - **Проблема:** нераспознанный статус Eligibility мог быть пропущен подобно BLOCKED; ответ с чужим spellID мог сформировать рекомендацию для неправильной способности.

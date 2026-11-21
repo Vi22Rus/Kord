@@ -144,3 +144,15 @@
 | ELIG-CHARGE-004 | #26 | Дробное, отрицательное, больше max, max=0 → UNKNOWN/charges_invalid | PASS run 44887247067 / aff9473f | NOT RUN |
 | ELIG-GCD-004 | #25/#80 | `GetSpellCooldown(61304)` без подтверждённого `isActive` → UNKNOWN/gcd_activity_unknown даже с `isOnGCD=true` | PASS run 44887247067 / aff9473f | NOT RUN |
 | ELIG-RANK-002 | #20 | Проверка highest learned rank на актуальном клиенте остаётся открыта; никакого нового rank inference | NOT RUN | NOT RUN |
+
+## 2.8.4a–d — канонический RotationEngine и GameData
+| ID | Сценарий | Ожидаемое | Mock CI | WoW Forever |
+|---|---|---|---|---|
+| ENG-284A-001 | Один GameState снимок на проход, общий для Eligibility | Одна оценка состояния, без отдельного снимка на кандидата | PENDING | NOT RUN |
+| ENG-284A-002 | GameState недоступен или падает | UNKNOWN и пустая очередь | PENDING | NOT RUN |
+| ENG-284B-001 | Условия только из утверждённых boolean полей | Недопустимое поле отвергнуто при регистрации | PENDING | NOT RUN |
+| ENG-284B-002 | required GameData UNKNOWN / mismatch | UNKNOWN / BLOCKED соответственно | PENDING | NOT RUN |
+| ENG-284C-001 | Неверный status или чужой spellID | UNKNOWN без перехода к младшему правилу | PENDING | NOT RUN |
+| ENG-284D-001 | Настоящие Profiles+Engine+Eligibility, mock API | Порядок, cooldown, GCD, target, context, snapshot failure | PENDING | NOT RUN |
+
+CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua`; только завершённый Action run на SHA может изменить PENDING на PASS. Игровые тесты, диагностика CPU/RAM и v14 #20 highest learned rank остаются NOT RUN.
