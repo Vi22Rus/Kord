@@ -1,3 +1,9 @@
+## KR-20261121-132 — исправлена Lua 5.1 проверка плотности массивов
+- `RotationProfiles.lua`: проверка `dense` больше не использует `#t` для массива с пропущенными индексами; границы проверяются по ключам `pairs`, непрерывность — через `rawget`. Пустые массивы сохраняют допустимость там, где она была предусмотрена.
+- `tests/profile_contract_v1.lua`: добавлено пять сценариев для дыр в `Needs.auras`, `Needs.ranges`, `Config`, `Rules`, а также индекса выше лимита.
+- `docs/rotation/Contract_v1_Status_2_9.md` актуализирован. **Lua 5.1 17-suite NOT RUN, CI NOT RUN, WoW client NOT RUN**; изменения подтверждены в источниках, но не runtime.
+- Hunter BM и канонический `Profile_Contract.md` не менялись.
+
 ## KR-20261121-128 — inRange факт привязан к GUID цели в снимке
 - `AbilityEligibility:Fact(id,"inRange")`: чтение дальности теперь требует подтверждённую и неизменную идентичность цели (GUID снимка = UnitGUID перед и после чтения), иначе `UNKNOWN`; итоговое READY по-прежнему только у `Evaluate`.
 - `tests/stage_02_07_eligibility.lua`: добавлены mock-кейсы отсутствующей цели, устаревшего снимка и смены GUID при вызове API.
