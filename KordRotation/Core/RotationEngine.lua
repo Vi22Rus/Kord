@@ -40,6 +40,15 @@ function E:Evaluate()
     if mode~="single" and mode~="aoe" then return empty("target_mode_invalid") end
     local rules=ruleset[mode]
     if type(rules)~="table" or #rules==0 then return empty("no_rules_for_mode") end
+    -- One GameState snapshot per pass; per-field UNKNOWN remains valid.
+    if not KR.GameState or type(KR.GameState.GetSnapshot)~="function" then
+        return empty("game_state_missing")
+    end
+    local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState)
+    if not ok or type(snapshot)~="table"
+        or type(snapshot.player)~="table" or type(snapshot.target)~="table" then
+        return empty("game_state_unavailable")
+    end
     local book=KR.SpellCatalogue:Read()
     if not book or book.status~="ready" then return empty("spellbook_unavailable") end
     local catalogue={}
@@ -61,7 +70,7 @@ function E:Evaluate()
         else
             local ok,value=pcall(KR.AbilityEligibility.Evaluate,KR.AbilityEligibility,
                 rule.spellID,{target=rule.target,cast=rule.cast,
-                    chargesRequired=rule.chargesRequired})
+                    chargesRequired=rule.chargesRequired,stateSnapshot=snapshot})
             if not ok or type(value)~="table" then
                 status,reason="UNKNOWN","eligibility_error"
             else status,reason=value.status,value.reason end

@@ -167,12 +167,13 @@ local function usability(id)
     if not usable then return "BLOCKED","spell_unusable" end
     return "READY"
 end
-local function targetAndRange(id,policy)
+local function targetAndRange(id,policy,stateSnapshot)
     if policy=="none" or policy=="self" then return "READY" end
     if policy~="enemy" and policy~="friendly" then
         return "UNKNOWN","target_policy_required"
     end
-    local state=KR.GameState and KR.GameState:GetSnapshot()
+    local state=stateSnapshot
+    if not state then state=KR.GameState and KR.GameState:GetSnapshot() end
     local target=state and state.target
     if not target or not target.exists or target.exists.status~="READY" then
         return "UNKNOWN","target_unknown"
@@ -232,7 +233,8 @@ function A:Evaluate(id,options)
         return candidate("UNKNOWN","options_protected",id)
     end
     options=type(options)=="table" and options or {}
-    if not api:IsSafeValue(options.target)
+    if not api:IsSafeValue(options.stateSnapshot)
+        or not api:IsSafeValue(options.target)
         or not api:IsSafeValue(options.cast)
         or not api:IsSafeValue(options.chargesRequired)
         or not api:IsSafeValue(options.minLevel) then
@@ -268,7 +270,8 @@ function A:Evaluate(id,options)
     if not bar or bar.status~="READY" then
         return candidate("UNKNOWN","action_slot_unconfirmed",id)
     end
-    local state=KR.GameState and KR.GameState:GetSnapshot()
+    local state=options.stateSnapshot
+    if state==nil then state=KR.GameState and KR.GameState:GetSnapshot() end
     if not state or not state.player or not state.player.exists
         or state.player.exists.status~="READY" then
         return candidate("UNKNOWN","player_unknown",id)
@@ -303,11 +306,11 @@ function A:Evaluate(id,options)
         {charges,id,options.chargesRequired==true},
         {cooldown,id},
         {gcd},
-        {targetAndRange,id,options.target},
+        {targetAndRange,id,options.target,state},
     }
     -- A definite BLOCKED beats UNKNOWN; UNKNOWN never becomes READY.
     for _,entry in ipairs(checks) do
-        local status,reason=entry[1](entry[2],entry[3])
+        local status,reason=entry[1](entry[2],entry[3],entry[4])
         if status=="BLOCKED" then return candidate("BLOCKED",reason,id) end
         if status~="READY" then unknown=choose(unknown,reason or "unverified") end
     end

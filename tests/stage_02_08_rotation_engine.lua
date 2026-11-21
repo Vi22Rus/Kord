@@ -12,6 +12,13 @@ local catalogue={status="ready",entries={
     {id=103,known=true,name="Gamma",texture=9012},
 }}
 KR.SpellCatalogue={Read=function() return catalogue end}
+local snapshotReads=0
+local snapshotInvalid=false
+KR.GameState={GetSnapshot=function()
+ snapshotReads=snapshotReads+1
+ if snapshotInvalid then return nil end
+ return {player={exists={status="READY",value=true}},target={exists={status="UNKNOWN"}}}
+end}
 KR.RotationSettings={
  GetProfileID=function() return KR.characterState.classToken.."_TREE_"..KR.characterState.index end,
  GetProfile=function()
@@ -67,6 +74,15 @@ eq(#called>=2,true,"eligibility checks occurred")
 eq(called[1].opts.target,"enemy","target policy passed")
 eq(called[1].opts.cast,"idle","casting policy passed")
 eq(called[1].opts.chargesRequired,false,"charges policy passed")
+local previousReads=snapshotReads
+called={}
+E:Evaluate()
+eq(snapshotReads,previousReads+1,"one snapshot read per evaluation")
+eq(called[1].opts.stateSnapshot,called[2].opts.stateSnapshot,"shared per-pass snapshot")
+eq(type(called[1].opts.stateSnapshot),"table","snapshot passed")
+snapshotInvalid=true
+eq(E:Evaluate().reason,"game_state_unavailable","missing snapshot fails closed")
+snapshotInvalid=false
 results[101]="UNKNOWN"
 eq(E:Evaluate().status,"UNKNOWN","high priority unknown")
 eq(#E:Evaluate().queue,0,"no lower priority leak")

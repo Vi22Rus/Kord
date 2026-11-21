@@ -1,3 +1,10 @@
+## KR-20261121-028 — 2.8.4a: единый снимок GameState
+- **Дата/зона:** 2026-11-21 UTC. **Статус:** IMPLEMENTED / CI pending / game NOT RUN. Решение: заказчик утвердил 2.8.4a–d.
+- **Симптом и причина:** движок не закреплял один снимок и Eligibility перечитывал GameState для каждого кандидата. Ожидаем единое согласованное состояние на проход.
+- **Изменения:** защищённый единичный GetSnapshot после выбора правил, UNKNOWN при отсутствии/повреждении, передача snapshot в Eligibility, прямой вызов Eligibility сохраняет старый путь. Не требуется глобальный status READY, не добавлены WoW API, профили, ранги, приоритеты и зависимости.
+- **Сверка:** Sonah/Core/Organisms/Engine.lua BuildContext/Secret.BeginEpoch; MaxDps/Core.lua; JustAC/RotationImport.lua; ForeverRotation/Engine.lua; RotationGuide/Core/State.lua; ForeverAuras/SpellCooldown.lua.
+- **Проверки:** stage_02_08_rotation_engine.lua дополнен проверками общего snapshot/одного чтения/отсутствия; GitHub Actions pending; игровой тест NOT RUN. **Открыто:** 2.8.4b–d, highest rank #20, WoW Forever, FPS/RAM.
+
 ## KR-20261121-027 — доказанный CI PASS 2.8.3e: GCD и заряды
 - **Дата UTC:** 2026-11-21T08:58:19.274Z. **Тип:** docs/test evidence, без изменения Lua, TOC и ротаций.
 - **FAIL evidence:** GitHub Actions [run 44887103080](https://github.com/Vi22Rus/Kord/actions/runs/44887103080), SHA `05ffac3283332fae3474065be91cc509b1aa7b88`, FAILURE из-за неверного тестового выражения Lua 5.1 `condition and nil or value` (mock не моделировал отсутствие поля).
