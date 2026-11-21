@@ -1,3 +1,9 @@
+## KR-20261121-122 — chargesAtLeast fail-closed без неявного порога
+- `RotationConditions.lua`: `S:spellFact(id,"chargesAtLeast")` всегда возвращает `nil` без вызова `AbilityEligibility.Fact`: в Profile Contract v1 нет явного аргумента минимального числа зарядов, и даже неверный `READY(true)` провайдера не должен разрешить условие.
+- `tests/profile_contract_v1.lua`: сценарий с ошибочным `READY(true)` от mock-факта зарядов, проверка отсутствия вызова.
+- `docs/rotation/Contract_v1_Status_2_9.md`: записано **неутверждённое** предложение `spellFact(id,"chargesAtLeast",minimum)` для будущей отдельной версии контракта, без изменения канонического `Profile_Contract.md`.
+- В локальной среде отсутствуют Lua 5.1/LuaJIT и полный checkout (DNS недоступен). **17-suite LUA 5.1 NOT RUN; CLIENT NOT RUN; CI NOT RUN.** Hunter BM не затронут.
+
 ## KR-20261121-118 — факт known через единый spellKnown
 - `AbilityEligibility.lua`: реализован `Fact(id,"known")` без второго алгоритма; повторно использует проверку `spellKnown`, различая `READY(true)`, строго подтверждённый `READY(false)` (SpellBook API `not_learned`) и `UNKNOWN` при недоступных/повреждённых данных. Защита `pcall` и `IsSafeValue` для каталога.
 - `tests/stage_02_07_eligibility.lua`: добавлены mock-сценарии известного заклинания, подтверждённого отрицания, отсутствующей записи без API, сбоя и повреждённой структуры каталога.
