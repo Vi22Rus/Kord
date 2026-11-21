@@ -339,6 +339,30 @@ assert(loadfile("KordRotation/Profiles/Hunter/BM_Pilot_Experimental.lua"))("Kord
 eq(pilotRegistration.class,"HUNTER","shipped pilot belongs to Hunter")
 eq(pilotRegistration.index,1,"shipped pilot uses BM tree 1")
 eq(pilotRegistration.profile.status,"experimental","pilot cannot claim verification")
-eq(pilotRegistration.profile.Rules[1].spell,"ArcaneShot","pilot single-spell scope")
-eq(#pilotRegistration.profile.Rules,1,"pilot does not pretend to be full rotation")
+eq(pilotRegistration.profile.Rules[1].spell,"ArcaneShotR8",
+ "pilot prefers higher verified Arcane Shot rank")
+eq(#pilotRegistration.profile.Rules,8,
+ "pilot declares eight verified ranks of one spell family")
+eq(pilotRegistration.profile.Spells.ArcaneShotR4,14283,
+ "level-30 Arcane Shot rank four is declared")
+eq(pilotRegistration.profile.Spells.ArcaneShotR1,3044,
+ "low-level Arcane Shot rank remains declared")
+eq(pilotRegistration.profile.Rules[1].onUnknown,"stop",
+ "unknown higher-rank evidence must not be skipped")
+local recordedS={
+ ge=function(_,_,minimum) return 30>=minimum end,
+ spellFact=function(_,id,kind)
+  eq(kind,"known","rank selected only after known fact")
+  return id==14283
+ end,
+ is=function(_,field)
+  eq(field,"target.exists","target condition after rank check")
+  return true
+ end
+}
+eq(pilotRegistration.profile.Rules[1].when(recordedS),false,
+ "rank 8 is level-gated out at level 30")
+eq(pilotRegistration.profile.Rules[5].when(recordedS),true,
+ "level-30 pilot chooses verified rank 4")
+
 print("PASS profile contract v1 mock: "..n.." assertions")
