@@ -1,3 +1,9 @@
+## KR-20261121-073 — закрытие регрессии трёхзначной логики и допуск отображения
+- Время: 2026-11-21 11:10 UTC. Проверка исходников после 2.9-C выявила баг: Lua выражение `unknown and nil or false` всегда возвращало false; `S:any` теперь возвращает именно nil при неопределённости без true. Это важно для fail-closed.
+- `RotationProfiles:Has(key)` подтверждает наличие диапазонов без конкретного уровня; `Get(key,level)` выбирает правильный профиль. Проверяются `mode`, а `skip` запрещается для категорий defensive/cooldowns/interrupts.
+- `RotationDisplay` допускает `experimental_profile` только при явном `settings.allowUnverifiedProfiles == true`, в обычной поставке такой флаг по умолчанию отсутствует. Строгий валидатор рекомендуемого spellID/texture остаётся прежним.
+- Не тронуты Hunter TOC, пользовательские локали, автоматические действия; нового набора тестов ещё нет, поэтому full regression/CI/client NOT RUN. Следующий шаг: сценарные проверки нового контракта и ревизия старых 2.8 тестов.
+
 ## KR-20261121-072 — RotationEngine v1: ленивый обход, stop/skip и единый Eligibility
 - Дата: 2026-11-21 11:00 UTC; этап 2.9-C IN PROGRESS, заменён ограниченный исполнитель семи `requires`.
 - `RotationEngine.lua`: выбор профиля по классу, дереву и подтверждённому уровню; только `verified` или явно разрешённый `experimental`; режимы single/aoe, auto fail-closed; проверка одного правила за раз с pcall, UNKNOWN стоп, документированный condition_unknown skip, ошибок не пропускаем; `PET_COMMAND` unsupported_action без иконки; `AbilityEligibility` — единственная окончательная проверка; catalogue и binding читаются только после READY. UI использует прежний формат `queue` из 1 элемента.

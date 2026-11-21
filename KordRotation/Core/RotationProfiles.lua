@@ -126,7 +126,14 @@ local function validate(profile,classToken,specIndex)
    end
   else return false,"invalid_action" end
   ruleKeys[rule.id]=true
-  if rule.onUnknown=="skip" then usedSkip[rule.id]=true end
+  if rule.mode~=nil and rule.mode~="any" and rule.mode~="single"
+      and rule.mode~="aoe" then return false,"invalid_rule_mode" end
+  if rule.onUnknown=="skip" then
+   -- Defensive/cooldown actions are not optional improvements by default.
+   if rule.category=="defensive" or rule.category=="cooldowns"
+       or rule.category=="interrupts" then return false,"skip_not_approved" end
+   usedSkip[rule.id]=true
+  end
  end
  local skips=profile.SkipExceptions or {}
  if type(skips)~="table" then return false,"invalid_skip_registry" end
@@ -177,6 +184,8 @@ function P:Get(key,level)
  return nil
 end
 function P:Has(key,level)
+ if type(key)~="string" or registry[key]==nil then return false end
+ if level==nil then return true end
  return self:Get(key,level)~=nil
 end
 -- No profiles are registered by default; old Hunter sources remain unloaded.

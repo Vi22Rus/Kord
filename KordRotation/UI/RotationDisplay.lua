@@ -253,7 +253,14 @@ local function verifiedRecommendation(result)
         or result.source~="RotationEngine" or type(result.queue)~="table"
         or #result.queue~=1 then return nil end
     local item=result.queue[1]
-    if type(item)~="table" or item.source~="verified_profile" then return nil end
+    if type(item)~="table" then return nil end
+    if item.source=="experimental_profile" then
+        -- No implicit activation via a SavedVariables migration.
+        local settings=KR.RotationSettings and KR.RotationSettings:GetProfile(false)
+        if type(settings)~="table" or settings.allowUnverifiedProfiles~=true then
+            return nil
+        end
+    elseif item.source~="verified_profile" then return nil end
     local api=KR.GameAPI
     if not api or type(api.IsSafeValue)~="function" then return nil end
     local function safe(v) return api:IsSafeValue(v) end

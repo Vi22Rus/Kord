@@ -186,7 +186,8 @@ function methods:any(...)
   if v==true then return true end
   if v~=false then unknown=true end
  end
- return unknown and nil or false
+ if unknown then return nil end
+ return false
 end
 function methods:spellAvailable(id)
  local ctx=contexts[self]
