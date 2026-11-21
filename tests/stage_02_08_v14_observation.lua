@@ -57,4 +57,24 @@ local bridge=_G.KordRotationCoreObservation
 eq(bridge:Probe("UnitExists").status,"READY","allowlisted presence bridge")
 eq(bridge:Probe("PROTECTED").status,"UNAVAILABLE","protected API name denied")
 eq(bridge:Probe("SetBinding Action").status,"UNAVAILABLE","invalid API name denied")
+-- The optional DevTools bridge can compare live and cached target booleans
+-- without returning a GUID or forcing a rotation evaluation.
+KR.GameAPI.Read=function(_,name,kind,unit)
+ if name=="UnitExists" and kind=="boolean" and unit=="target" then
+  return {status="READY",value=true}
+ end
+ return {status="UNKNOWN"}
+end
+KR.GameState.current.target={exists={status="READY",value=false}}
+local t=bridge.Target()
+eq(t.liveExists,true,"explicit live target observation")
+eq(t.snapshotExists,false,"stale cached target exposed as boolean only")
+eq(t.liveStatus,"READY","live status")
+eq(t.snapshotStatus,"READY","cached status")
+eq(t.guid,nil,"no target GUID exported")
+eq(reads,0,"target observation never invokes engine")
+KR.GameState.current.target.exists={status="UNKNOWN",value=protected}
+t=bridge.Target()
+eq(t.snapshotStatus,"UNKNOWN","protected cached target hidden")
+eq(t.snapshotExists,nil,"no protected value exported")
 print("PASS 2.8.6 observer mock: "..n.." assertions")
