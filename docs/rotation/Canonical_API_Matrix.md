@@ -119,3 +119,38 @@
 ### Статус полноты
 
 **Минимум 83 выявленных строк** в основном реестре и дополнении; это НЕ окончательное число. Полный построчный cross-reference по всем методам шести архивов, полное заполнение шести столбцов каждой строки и игровой тест НЕ завершены. Перед переписыванием движка нужно объединить строки в одну таблицу, проверить все альтернативы и классифицировать каждую по SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN.
+
+
+## Третий проход — скан всех шести архивов (2026-11-21)
+
+Проверены непосредственно доступные ZIP: **Sonah 83, MaxDps 252, JustAC 125, ForeverAuras 290, ForeverRotation 28, RotationGuide 20 Lua-файлов** (всего 798, включая встроенные библиотеки, локализации и технические модули). Автоматический поиск по 16 категориям API выполнен по всем Lua-файлам; результаты далее сверены с конкретными строками в указанных файлах. Это **статический поиск, не полное семантическое ревью всех 798 файлов**. Фактическое использование метода в конкретной ротации требует отдельной трассировки от профиля до helper. Файлы `Specialization/TWW`, `Classic`, `Cata` MaxDps **не являются Forever-источниками** и не должны использоваться как доказательство Forever.
+
+**Новые явные разделения (ещё 18 строк, итого не менее 101 выявленных потребностей; возможны пересечения по предметной области, поэтому итоговое число не считать дедуплицированным):**
+
+| Дополнительная отдельная потребность | Реальное место в референсе | Требование к контракту |
+|---|---|---|
+| Слот экипировки → itemID | Sonah/Core/Atoms/Items.lua:46; JustAC/PrecombatEngine.lua:115; ForeverAuras/GenericTrigger.lua:3790 | GetInventoryItemID; отдельный сигнал от наличия предмета в сумке |
+| Кулдаун экипированного предмета | Sonah/Core/Atoms/Items.lua:124–125 | GetInventoryItemCooldown; не spell cooldown |
+| Наличие оружия дальнего боя по слоту | Sonah/Core/Atoms/Items.lua:192–193 | GetInventoryItemID slot RANGED; не дальность цели |
+| Боеприпасы: слот/количество | Sonah/Core/Atoms/Items.lua:206–212 | GetInventoryItemID/Count; отдельная механика Hunter |
+| Считывание tooltip экипировки | Sonah/Core/Atoms/Items.lua:275–280 | C_TooltipInfo.GetInventoryItem; защищённые значения |
+| Ссылка предмета экипировки | Sonah/Core/Atoms/Items.lua:310; MaxDps/Helper.lua:1660 | GetInventoryItemLink; не подтверждает применимость |
+| Идентификатор инстанса | ForeverAuras/Prototypes.lua:180 | GetInstanceInfo select(8); не равен inDungeon/inRaid |
+| Контекст вне инстанса | MaxDps/SecretHelper.lua:332 | IsInInstance; не гарантирует solo |
+| Threat по паре юнитов | ForeverAuras/Prototypes.lua:97 | UnitDetailedThreatSituation wrapper; надо изучить возвращаемые значения |
+| Время последнего изменения cooldown | JustAC/BlizzardAPI/CooldownTracking.lua:15 | Инвалидация/кэш cooldown; отдельно от его числовой длительности |
+| Форма друида через кэш | JustAC/FormCache.lua:30 | Форма требует отдельной стратегии refresh |
+| Предбоевое состояние/подготовка | JustAC/PrecombatEngine.lua:115 | Precombat отличается от combat rotation |
+| Защитная ветка вне обычного DPS | JustAC/DefensiveEngine.lua:228 | Защитные правила/сигналы не смешивать с DPS приоритетом |
+| Диапазон действия предмета | ForeverAuras/ActionRange.lua:18 | Отдельный диапазон предмета и заклинания |
+| Статус видимости/доступности кнопки | JustAC/ActionBarScanner.lua:16–17; ForeverAuras/ActionRange.lua:43 | Action slot vs binding vs usable |
+| Наличие питомца в контексте классового профиля | RotationGuide/Core/State.lua:313; Sonah/Core/Atoms/Units.lua:1191 | Pet existence vs pet health/attack state |
+| Определение цели-игрока и классификации | RotationGuide/Core/State.lua:308; ForeverRotation/CC.lua:46 | PvP unit vs elite/boss; проверить семантику |
+| Различие combat lockdown и actual combat | ForeverRotation/Core.lua:127; Sonah/Core/Atoms/Units.lua:120 | UI lockdown не означает агро |
+
+### Результаты и исправления предыдущего аудита
+
+- **Исправление:** ранее помеченный как невыбранный источник инстанса требует нового исследования: в `ForeverAuras/Prototypes.lua:180` встречается `GetInstanceInfo()`, а в `MaxDps/SecretHelper.lua:332` — `IsInInstance()`. Эти примеры не доказывают наличие корректного `inDungeon/inRaid` на текущем Forever, но опровергают прежнюю идею, что нет даже кандидатов.
+- **Исправление:** `Sonah/Core/Atoms/Items.lua:192–212` отдельно работает с дальнобойным оружием и боеприпасами. В матрице Hunter это нужно разделять на `rangedWeaponEquipped` и `ammoAvailable`, если профиль реально использует эти факты.
+- **Ограничение:** часть результатов regex относится к комментариям, helper-файлам, UI, библиотекам или не-Forever веткам; автоматический hit **не равен** подтверждённому способу для ротации.
+- **Статус:** не выполнены исчерпывающая ручная трассировка каждого условия каждого профиля, шесть точных сопоставлений для каждой строки, проверка всех клиентских API в игре. Полнота **NOT VERIFIED**. Нельзя объявлять матрицу завершённой или начинать удаление движка только по этому скану.
