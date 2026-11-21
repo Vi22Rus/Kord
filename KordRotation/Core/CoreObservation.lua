@@ -124,12 +124,79 @@ function O:ReadEngineDiagnostic()
     return out
 end
 
+-- Manual DevTools-only action-bar coverage inspection. No spell IDs,
+-- keys, button objects or action-slot numbers leave the core namespace.
+function O:ReadActionBar()
+    local scanner=KR.ActionBarScanner
+    if not scanner or type(scanner.GetSnapshot)~="function" then
+        return {status="UNAVAILABLE",reason="scanner_unavailable"}
+    end
+    local ok,snapshot=pcall(scanner.GetSnapshot,scanner,true)
+    if not ok or not safe(snapshot) or type(snapshot)~="table" then
+        return {status="UNKNOWN",reason="scan_unavailable"}
+    end
+    local entries=field(snapshot,"entries")
+    if type(entries)~="table" then
+        return {status="UNKNOWN",reason="scan_unavailable"}
+    end
+    local count=0
+    local detected={}
+    for _,entry in ipairs(entries) do
+        if count>=1200 then break end
+        local id=field(entry,"spellID")
+        if type(id)=="number" and id==id and id>0 and id<=99999999 then
+            count=count+1
+            detected[id]=true
+        end
+    end
+    local rank=nil
+    local profileModule=KR.RotationProfiles
+    local identity=KR.characterState
+    if type(profileModule)=="table"
+        and type(profileModule.ResolveForEngine)=="function"
+        and safe(identity) and type(identity)=="table" then
+        local class=field(identity,"classToken")
+        local tree=field(identity,"index")
+        if class=="HUNTER" and tree==1 then
+            local level=KR.GameState and KR.GameState.current
+            local player=field(level,"player")
+            local levelRecord=field(player,"level")
+            local lv=field(levelRecord,"value")
+            if type(lv)=="number" and lv==math.floor(lv)
+                and lv>=1 and lv<=100 then
+                local okProfile,p=pcall(profileModule.ResolveForEngine,
+                    profileModule,"HUNTER_TREE_1",lv)
+                if okProfile and safe(p) and type(p)=="table" then
+                    local spells=field(p,"Spells")
+                    if type(spells)=="table" then
+                        for i=8,1,-1 do
+                            local id=field(spells,"ArcaneShotR"..i)
+                            if type(id)=="number" and detected[id] then
+                                rank=i
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+    return {status=count>0 and "READY" or "UNKNOWN",
+        reason=count>0 and "scan_has_spells" or "no_confirmed_visible_slots",
+        confirmedSpellButtons=count,arcaneRankOnBar=rank}
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
     Read=function()
         local ok,result=pcall(O.Read,O)
         if not ok then return {version=1,status="ERROR",engineStatus="UNKNOWN"} end
+        return result
+    end,
+    ActionBar=function()
+        local ok,result=pcall(O.ReadActionBar,O)
+        if not ok then return {status="UNKNOWN",reason="scan_unavailable"} end
         return result
     end,
     Diagnose=function()
