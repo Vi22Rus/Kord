@@ -106,6 +106,19 @@ function KR.RotationDisplay:Create()
         end
     end)
     self.visibilityFrame = visibility
+    -- EventBus batches invalidations; refresh only on relevant changes.
+    -- The existing 0.4s bounded refresh remains a fallback.
+    if KR.EventBus and type(KR.EventBus.Subscribe)=="function" then
+        local channels={"bindings","actionbar","spellbook","identity","talents",
+            "target","cooldowns","resources","cast","combat","pet","auras"}
+        for _,channel in ipairs(channels) do
+            KR.EventBus:Subscribe(channel,"RotationDisplay",function()
+                if KR.RotationDisplay.frame then
+                    KR.RotationDisplay:Refresh(true)
+                end
+            end)
+        end
+    end
     self:RefreshLayout()
     self:Refresh()
     return frame
