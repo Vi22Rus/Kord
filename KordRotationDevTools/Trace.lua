@@ -107,7 +107,7 @@ end
 -- A compact session journal instead of an ever-growing UI report.
 -- Sample at most once per two seconds (or immediately after target change),
 -- record only changes, and never serialize raw game objects.
-function D:ObserveDetails(diagnosis,force)
+function D:ObserveDetails(diagnosis,force,summary)
     if not self.active then return false end
     local bridge=_G.KordRotationCoreObservation
     if type(bridge)~="table" then return false end
@@ -151,8 +151,26 @@ function D:ObserveDetails(diagnosis,force)
     end
     local diag=diagnosis or fetch("Diagnose")
     if diag then
+        add("CHECK",diag.firstStatus,"priority_1_rule",diag.firstReason)
         add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
             diag.arcaneR4Reason)
+    end
+    local core=summary or self:ReadCore()
+    if core then
+        add("CHECK",core.profileStatus,"profile_ui")
+        local function count(value)
+            if not D:Safe(value) or type(value)~="number" or value~=value
+                or value<0 or value>1200 or value~=math.floor(value) then
+                return nil
+            end
+            return value
+        end
+        local er=count(core.eligibilityReady)
+        local eb=count(core.eligibilityBlocked)
+        local eu=count(core.eligibilityUnknown)
+        add("CHECK",er and "READY" or "UNKNOWN","eligibility_ready_count",er)
+        add("CHECK",eb and "READY" or "UNKNOWN","eligibility_blocked_count",eb)
+        add("CHECK",eu and "READY" or "UNKNOWN","eligibility_unknown_count",eu)
     end
     local bar=fetch("ActionBar")
     if bar then
@@ -198,7 +216,7 @@ function D:ObserveTransition()
             diagnostic=record
         end
     end
-    self:ObserveDetails(diagnostic,false)
+    self:ObserveDetails(diagnostic,false,snapshot)
     local status=diagnostic and diagnostic.status
         or (snapshot and snapshot.engineStatus)
     if type(status)~="string" or not self:Safe(status) then status="UNKNOWN" end
