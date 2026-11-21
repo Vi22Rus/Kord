@@ -1,3 +1,9 @@
+## KR-20261121-099 — частичная реализация AbilityEligibility.Fact по v14
+- `AbilityEligibility.lua`: введён узкий факт-провайдер `cooldownActive` через `C_Spell.GetSpellCooldown.isActive` и `inRange` через `C_Spell.IsSpellInRange` с legacy fallback 0/1. Результаты только `READY(boolean)` или `UNKNOWN`; это не рекомендация к касту.
+- `known`, `chargesAtLeast` и GameState.ReadSignal остаются неподтверждёнными; `isOnGCD` не используется для подмены активности кулдауна.
+- `tests/stage_02_07_eligibility.lua`: 12 новых mock-проверок для фактов, защит и неполных структур. `docs/rotation/Contract_v1_Status_2_9.md` синхронизирован.
+- **Lua 5.1 / 17 suites NOT RUN, CI NOT RUN, CLIENT NOT RUN.** Hunter BM и канонический `Profile_Contract.md` не изменены.
+
 ## KR-20261121-095 — расширены тесты границы Needs и кэширования Fact
 - В `tests/profile_contract_v1.lua` добавлен сценарий провайдера `inRange`, возвращающего `READY(false)`: запрет вне `Needs.ranges`, сохранение `false`, одно обращение в рамках оценки и новое обращение в следующем контексте.
 - `docs/rotation/Contract_v1_Status_2_9.md`: зафиксировано, что в исходниках `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствуют; mock-провайдеры не означают реализации в WoW Forever.
