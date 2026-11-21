@@ -59,3 +59,63 @@
 3. Сравнить альтернативы по точности, безопасности, покрытию потребности, ограничениям и частоте обновления; лишь после этого зафиксировать окончательный выбор Kord.
 4. Выполнить проверки на актуальном Forever-клиенте; отдельные статусы SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN.
 5. Только после завершения матрицы планировать замену движка. **Никакой метод не сохраняется исключительно потому, что он уже реализован в Kord.**
+
+
+## Дополнительная сверка потребностей по реальным профилям (2026-11-21)
+
+**Результат:** исходные 39 строк НЕ покрывали все условия. Дополнительно выявлено **44** отдельных потребностей из классовых профилей Sonah, 27 файлов MaxDps `Specialization/Forever`, Forever-APL JustAC и профилей ForeverRotation. Это **список обнаруженных пропусков**, не заявление о полном покрытии. В столбце источника приводится файл/строка или явно обозначен требующий аудита участок. Прочерк в основной таблице нельзя считать доказательством отсутствия функции. В этой сверке не утверждается, что клиент Forever проверен.
+
+| Пропущенная потребность (отдельная строка) | Реальный референс / свидетельство | Почему требуется отдельный контракт |
+|---|---|---|
+| Процент здоровья союзника / выбор цели лечения | Sonah/Classes/Druid.lua:527 C.healBelow; Sonah/Classes/Paladin.lua:202 C.healingOther | healing target != enemy target |
+| Невидимое/защищённое значение здоровья | Sonah/Classes/Druid.lua:162 C.healHidden; ForeverRotation/Rotations/Signals.lua:1–15 | secret-safe hint != numeric HP available to priority engine |
+| Порог здоровья цели / execute | Sonah/Classes/Mage.lua:189 C.targetBelow; JustAC/Data/Forever/Rotations.lua:633 t=execute | execute threshold separate from target health |
+| Наличие/обновление DoT по времени | Sonah/Classes/Druid.lua:185–186 C.dotRefresh; JustAC/Data/Forever/Rotations.lua:46 t=dot | refresh window separate from aura existence |
+| Проверка владельца HoT/DoT | Sonah/Classes/Priest.lua (header: own Renew) | own aura != any aura; exact implementation audit |
+| Стеки ауры | Sonah/Classes/Druid.lua:151 C.stacksBelow; MaxDps_Druid/Specialization/Forever/Balance.lua:28 MaxDps.Stacks; JustAC/Data/Forever/Rotations.lua:83 t=stack | count separate from aura active |
+| Стеки проков | Sonah/Classes/Druid.lua:338 C.proc | proc activation/stack semantics audit |
+| Оружейное зачарование | Sonah/Classes/Rogue.lua:196 C.weaponEnchantMissing | weapon enchant != player aura |
+| Тотем активен / нужен | JustAC/Data/Forever/Rotations.lua:492 t=totem | totem slot/existence audit |
+| Комбо-поинты | Sonah/Classes/Druid.lua:178 C.combo; JustAC/Data/Forever/Rotations.lua:71 res=combo_points | resource combo points separate from mana |
+| Энергия | JustAC/Data/Forever/Rotations.lua:68 res=energy; ForeverRotation/Rotations/Signals.lua:49 | resource typed and secret-safe |
+| Ярость | JustAC/Data/Forever/Rotations.lua:84 res=rage; ForeverRotation/Rotations/Signals.lua:59 | resource typed and secret-safe |
+| Нехватка ресурса / starved | MaxDps_Druid/Specialization/Forever/Balance.lua:45 MaxDps.Starved; JustAC/Data/Forever/Rotations.lua:45 t=starved | not equivalent to numeric mana |
+| Прогноз расхода ресурса | Sonah/Classes/Hunter.lua:136 C.spareMana; Sonah/Classes/Druid.lua:322 C.efficient | requires explicit resource cost and policy |
+| Доступность предмета в сумке | Sonah/Classes/Mage.lua:243 C.hasItem | inventory ownership vs cooldown |
+| Недавнее применение способности | Sonah/Classes/Druid.lua:540 C.notRecent | cast history separate from cooldown |
+| Очередь/ожидание каста | Sonah/Classes/Druid.lua:156 C.castPending | pending cast separate from currently casting |
+| Проверка возможности закончить каст | Sonah/Classes/Mage.lua:302 C.notCasting; Sonah/Classes/Druid.lua:156 C.castPending | channel/cast interruption audit |
+| Окно автоатаки / swing timer | JustAC/Data/Forever/Rotations.lua:121 t=swing; Sonah/Classes/Druid.lua:447 C.autoActive | timing != autoattack active |
+| Тик периодического урона | JustAC/Data/Forever/Rotations.lua:450 t=tick | tick timing distinct from DoT duration |
+| Стелс | JustAC/Data/Forever/Rotations.lua:435 t=stealth | stealth state != combat |
+| Контроль персонажа / root | Sonah/Classes/Druid.lua:197 C.lossOfControl('root') | root/stun/silence separate signals |
+| Прерываемость вражеского каста | Sonah/Classes/Druid.lua:26 C.targetInterruptible | cast present != interruptible |
+| Снятие дебафа с союзника | Sonah/Classes/Druid.lua:548–550 C.healDispellable('Curse'/'Poison') | debuff type and dispel capability |
+| Самодиспел | Sonah/Classes/Mage.lua:309 C.selfDispellable | self vs party target |
+| Групповой баф отсутствует | Sonah/Classes/Mage.lua:231 C.partyBuffMissing | party coverage != player buff |
+| Классовый баф отсутствует | Sonah/Classes/Druid.lua:233 C.buffMissing | buff scope / owner |
+| Тип цели: игрок | Sonah/Classes/Druid.lua:196 C.targetIsPlayer | PVP player-target detection |
+| Тип цели: элита/босс | Sonah/Classes/Druid.lua:176 C.targetElite; Sonah/Classes/Hunter.lua:310 C.targetBoss | elite != boss |
+| Класс вражеской цели | Sonah/Classes/Hunter.lua:129 C.targetClass; Sonah/Classes/Druid.lua:199 C.targetClassOrUnknown | class-aware PVP |
+| Наличие оружия дальнего боя | Sonah/Classes/Hunter.lua:219 C.rangedWeapon | equipment prerequisite |
+| Достаточное количество противников для AoE | MaxDps_Druid/Specialization/Forever/Balance.lua:24 MaxDps:SmartAoe; JustAC/Data/Forever/Rotations.lua:58 t=targets | observable count + thresholds |
+| Состояние игрока в соло/квестах | Sonah/Classes/Druid.lua:237 C.solo; Sonah/Classes/Druid.lua:319 C.questing | solo != open world != dungeon |
+| Наличие группы и число участников | Sonah/Classes/Druid.lua:219 C.inGroup; Sonah/Classes/Druid.lua:531 C.groupBelow | group count separate from instance type |
+| Наличие талантов/рангов талантов | Sonah/Classes/Druid.lua:147 C.talent; Sonah/Classes/Druid.lua:243 C.noTalent | known spell != talent rank |
+| Специализация / дерево | Sonah/Classes/Hunter.lua:149 C.spec | spec ID mapping |
+| Изменение формы и запрет способностей | Sonah/Classes/Druid.lua:164 C.form; Sonah/Classes/Druid.lua:169 C.noForm | form gating |
+| Состояние pet отсутствует / призыв | Sonah/Classes/Hunter.lua:110 C.noPet; Sonah/Classes/Hunter.lua:159 C.hasPet | pet existence separate from alive/dead |
+| Агро отсутствует / высокое агро | Sonah/Classes/Druid.lua:184 C.aggro; Sonah/Classes/Druid.lua:430 C.noAggro | threat thresholds and roles |
+| Защитная рекомендация вне ротации | ForeverRotation/Rotations/Signals.lua:1–15,31–42 | UI hint separate from priority action |
+| Проверка ограничения секретных чисел | ForeverRotation/Rotations/Signals.lua:1–15 | curve UI cannot imply readable percentage |
+| Условие неизвестности заклинания | Sonah/Classes/Druid.lua:180 C.unknown; JustAC/Data/Forever/Rotations.lua:160 t=unconfirmed | unknown != unavailable |
+| Проверка таланта / уровня до применения | Sonah/Classes/Druid.lua:325 C.level; Sonah/Classes/Druid.lua:322 C.levelBelow | level-gated rank |
+| Проверка GCD vs общего/shared cooldown | Sonah/Classes/Hunter.lua:24–27 sharedCd fields | shared cooldown separate from GCD and spell CD |
+
+### Обнаруженная архитектурная проблема
+
+`ForeverRotation/Rotations/Signals.lua` прямо описывает `UnitPowerPercent`/`UnitHealthPercent` с `C_CurveUtil`: **скрытый процент передаётся в прозрачность индикатора, аддон не читает число**. Поэтому `playerHealthPercent`, `manaPercent`, `targetHealthPercent` нельзя объявлять универсально доступными числовыми сигналами без проверки на актуальном билде. Необходимо отдельно учитывать: (a) точный числовой сигнал, (b) защищённый/нечитаемый сигнал, (c) визуальный threshold hint, который не влияет на приоритет ротации. Это критическая недоработка первоначальной матрицы.
+
+### Статус полноты
+
+**Минимум 83 выявленных строк** в основном реестре и дополнении; это НЕ окончательное число. Полный построчный cross-reference по всем методам шести архивов, полное заполнение шести столбцов каждой строки и игровой тест НЕ завершены. Перед переписыванием движка нужно объединить строки в одну таблицу, проверить все альтернативы и классифицировать каждую по SOURCE VERIFIED / CLIENT PASS / CLIENT FAIL / NOT RUN.
