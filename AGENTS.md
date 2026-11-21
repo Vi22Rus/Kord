@@ -2,6 +2,19 @@
 
 **Сначала прочитать:** `README.md` → `docs/PROJECT_CONTEXT.md` → `docs/ROADMAP.md` → `docs/STAGE_01_INTERFACE.md` → `docs/CHANGELOG_RULES.md` → **последние записи `CHANGELOG.md`** → `git log` / Issues / PR. Эти файлы — переносимый контекст проекта. Не полагаться на память предыдущего чата.
 
+## Единые документы ротаций для всех классов
+
+**Обязательный индекс:** [docs/rotation/README.md](docs/rotation/README.md). Перед созданием или изменением любой ротации заполнить и проверить относящиеся к ней записи:
+- [Profile_Registry.md](docs/rotation/Profile_Registry.md) — ID, диапазоны уровней, режимы, реальные статусы подключения и тестов;
+- [Research_Evidence.md](docs/rotation/Research_Evidence.md) — проверенные источники, версии, факты и расхождения;
+- [Ability_Catalogue.md](docs/rotation/Ability_Catalogue.md) — spell/command, SpellID, ранги, тайминги и ограничения;
+- [GameData_Contract.md](docs/rotation/GameData_Contract.md) — канонические сигналы, типы, источники, nil и потребители;
+- [Priority_Matrix.md](docs/rotation/Priority_Matrix.md) — условия, порядок, reason и контексты;
+- [Configuration_Registry.md](docs/rotation/Configuration_Registry.md) — CFG, допустимые значения, UI и шесть языков;
+- [Test_Matrix.md](docs/rotation/Test_Matrix.md) — сценарии, ожидаемые результаты и доказательства проверок.
+
+**Эти реестры общие для девяти классов**, не создавать восемь комплектов пустых классовых документов. Не выдавать TODO/шаблоны за подтверждённые факты. При изменении GameData/способностей/общей логики обновлять соответствующие реестры и регрессионные сценарии. Исполняемые Lua-модули и игровые тесты отдельно. SpecCore — только по необходимости; BM_Core не обязателен. Все правила предварительного согласования и CHANGELOG сохраняются.
+
 ## ОБЯЗАТЕЛЬНЫЙ СТАНДАРТ ИМЁН И ХРАНЕНИЯ ПРОФИЛЕЙ
 
 **Прямое решение заказчика от 2026-11-21 (уточнение PvE/PvP).** Все классовые профили именовать строго по схеме `Kord_<Class>_<Spec>_<Mode>_<ContentType>.lua`. `Class` — английское имя класса в PascalCase (например, `Hunter`); `Spec` — согласованное сокращение специализации заглавными буквами (`BM`, `MM`); `Mode` — `Leveling` (уровни 1–59) или `60` (уровень 60); `ContentType` — **обязательный последний сегмент**, строго `PVE` или `PVP` заглавными буквами. PvE и PvP — разные профили, их нельзя смешивать или хранить под одним именем. Путь: `KordRotation/Profiles/<Class>/Kord_<Class>_<Spec>_<Mode>_<ContentType>.lua`. Утверждённые PvE-примеры: `Kord_Hunter_BM_Leveling_PVE.lua`, `Kord_Hunter_BM_60_PVE.lua`, `Kord_Hunter_MM_Leveling_PVE.lua`, `Kord_Hunter_MM_60_PVE.lua`. Для будущих PvP-профилей использовать аналогичные имена с окончанием `_PVP.lua`. Не добавлять версии или диапазоны уровней в имя файла. Новые сокращения специализаций сначала согласовать и зафиксировать. Это обязательное правило для создания, переименования и аудита всех профилей. Наличие файла в папке не означает его подключения в `.toc` или прохождения игровой приёмки.

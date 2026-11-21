@@ -4,6 +4,25 @@
 **Область применения:** все классы, специализации, диапазоны уровней и поддерживаемые режимы WoW Forever.  
 **Статус:** нормативная методика разработки; игровые факты и конкретные API требуют проверки для используемой версии клиента.
 
+## Обязательные проектные реестры (для всех 9 классов)
+
+**Перед шагами 1–13 открыть [индекс документов](rotation/README.md).** Документы общие для всего проекта; дополнительные классовые файлы создаются только при доказанной необходимости. Таблицы являются реестрами исследований и спецификаций, не исполняемыми модулями и не доказательством игрового теста.
+
+| Шаг гайда | Обязательный документ | Что записать |
+|---|---|---|
+| 1: рамки | [Profile Registry](rotation/Profile_Registry.md) | ID, версия, уровни, контент, статус |
+| 2: источники и конфликты | [Research Evidence](rotation/Research_Evidence.md) | URL, даты, применимость, факты, разногласия |
+| 3: способности и тайминги | [Ability Catalogue](rotation/Ability_Catalogue.md) | spell/command, ранги, ограничения, доказательства |
+| 4: интерфейсы | [GameData Contract](rotation/GameData_Contract.md), [Profile Registry](rotation/Profile_Registry.md) | границы Engine/Eligibility/UI и зависимости |
+| 5: сигналы | [GameData Contract](rotation/GameData_Contract.md) | канонические поля, nil, источники, потребители |
+| 6–7: слои и приоритеты | [Priority Matrix](rotation/Priority_Matrix.md) | повторное использование и сценарии |
+| 8: CFG | [Configuration Registry](rotation/Configuration_Registry.md) | типы, defaults, UI и 6 языков |
+| 9–10: действие, регистрация, TOC | [Profile Registry](rotation/Profile_Registry.md), [Test Matrix](rotation/Test_Matrix.md) | Next/Eligibility/BindingResolver и порядок загрузки |
+| 11–12: проверки и выпуск | [Test Matrix](rotation/Test_Matrix.md), [Profile Registry](rotation/Profile_Registry.md) | PASS/FAIL/NOT RUN и реальные статусы |
+| 13: сопровождение | все затронутые реестры | источник → контракт → код → регрессия |
+
+**Не добавлять обязательный BM_Core**: SpecCore необязателен и оправдан только реальным повторением специализированной логики. Существующий Hunter_Common использовать для общих правил.
+
 ## 0. Непреложные правила
 
 1. **Одна архитектура:** `RotationEngine → ClassCommon → SpecCore (когда требуется) → Profile`. Это разделение ответственности, а не требование создавать лишний файл для каждого спека.
