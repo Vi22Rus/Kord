@@ -12,12 +12,16 @@ local catalogue={status="ready",entries={
     {id=103,known=true,name="Gamma",texture=9012},
 }}
 KR.SpellCatalogue={Read=function() return catalogue end}
+local requirementValue=false
+local requirementKnown=true
+KR.GameAPI={IsSafeValue=function() return true end}
 local snapshotReads=0
 local snapshotInvalid=false
 KR.GameState={GetSnapshot=function()
  snapshotReads=snapshotReads+1
  if snapshotInvalid then return nil end
- return {player={exists={status="READY",value=true}},target={exists={status="UNKNOWN"}}}
+ return {player={exists={status="READY",value=true}},
+    target={exists={status="UNKNOWN"}},context={inGroup={status=requirementKnown and "READY" or "UNKNOWN",value=requirementValue}}}
 end}
 KR.RotationSettings={
  GetProfileID=function() return KR.characterState.classToken.."_TREE_"..KR.characterState.index end,
@@ -48,10 +52,12 @@ local P=KR.RotationProfiles
 local E=KR.RotationEngine
 local rule1={spellID=101,category="damage",target="enemy",cast="idle",chargesRequired=false}
 local rule2={spellID=102,category="damage",target="enemy",cast="idle",chargesRequired=false}
-local rule3={spellID=103,category="cooldowns",target="self",cast="allow",chargesRequired=true}
+local rule3={spellID=103,category="cooldowns",target="self",cast="allow",chargesRequired=true,
+ requires={{field="context.inGroup",equals=false}}}
 eq(E:Evaluate().reason,"profile_not_registered","empty registry")
 eq(P:Register("WARRIOR",1,{verified=false,single={rule1},aoe={rule3}}),false,"reject unverified")
 eq(P:Register("WARRIOR",1,{verified=true,single={{spellID=101,category="damage"}},aoe={rule3}}),false,"reject missing policy")
+eq(P:Register("WARRIOR",1,{verified=true,single={{spellID=104,category="damage",target="self",cast="allow",chargesRequired=false,requires={{field="target.unapproved",equals=true}}}},aoe={}}),false,"reject unapproved GameData key")
 eq(P:Register("WARRIOR",1,{verified=true,single={rule1,rule2,rule3},aoe={rule3}}),true,"register mock profile")
 eq(P:Has("WARRIOR_TREE_1"),true,"registered")
 eq(P:Register("WARRIOR",1,{verified=true,single={rule1},aoe={}}),false,"duplicate rejected")
@@ -95,6 +101,12 @@ eq(E:Evaluate().queue[1].spellID,103,"disabled category skipped")
 categories.damage=true
 mode="aoe"
 eq(E:Evaluate().queue[1].spellID,103,"aoe rules selected")
+requirementKnown=false
+eq(E:Evaluate().status,"UNKNOWN","unknown requirement stays UNKNOWN")
+requirementKnown=true
+requirementValue=true
+eq(E:Evaluate().status,"BLOCKED","proven mismatch blocks rule")
+requirementValue=false
 mode="single"
 bindingReady=false
 eq(E:Evaluate().queue[1].keybind,nil,"unknown binding blank")

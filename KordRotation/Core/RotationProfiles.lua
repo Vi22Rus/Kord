@@ -8,8 +8,30 @@ local categories = {damage=true,cooldowns=true,buffs=true,racial=true,
     trinkets=true,consumables=true,defensive=true,interrupts=true,movement=true}
 local targets = {enemy=true,friendly=true,self=true,none=true}
 local casts = {idle=true,allow=true}
+-- Only approved direct boolean GameData fields, not candidate aliases.
+local requirements = {["player.moving"]=true,["target.isPlayer"]=true,
+    ["pet.exists"]=true,["pet.dead"]=true,["context.inGroup"]=true,
+    ["context.inRaid"]=true,["context.inInstance"]=true}
 local function id(n)
     return type(n)=="number" and n==math.floor(n) and n>=1 and n<=99999999
+end
+local function validRequirements(req)
+    if req==nil then return true end
+    if type(req)~="table" or #req>8 then return false end
+    local used={}
+    local count=0
+    for k in pairs(req) do
+        if type(k)~="number" or k~=math.floor(k) or k<1 or k>#req then return false end
+        count=count+1
+    end
+    if count~=#req then return false end
+    for _,item in ipairs(req) do
+        if type(item)~="table" or type(item.field)~="string"
+            or not requirements[item.field] or type(item.equals)~="boolean"
+            or used[item.field] then return false end
+        used[item.field]=true
+    end
+    return true
 end
 local function validGroup(group)
     if type(group)~="table" or #group>64 then return false end
@@ -25,7 +47,8 @@ local function validGroup(group)
             or not targets[rule.target]
             or not casts[rule.cast]
             or type(rule.chargesRequired)~="boolean"
-            or (rule.enabled~=nil and type(rule.enabled)~="boolean") then
+            or (rule.enabled~=nil and type(rule.enabled)~="boolean")
+            or not validRequirements(rule.requires) then
             return false
         end
     end
@@ -34,9 +57,16 @@ end
 local function copyGroup(group)
     local copy={}
     for i,rule in ipairs(group) do
+        local req=nil
+        if rule.requires then
+            req={}
+            for j,item in ipairs(rule.requires) do
+                req[j]={field=item.field,equals=item.equals}
+            end
+        end
         copy[i]={spellID=rule.spellID,category=rule.category,
             target=rule.target,cast=rule.cast,
-            chargesRequired=rule.chargesRequired,
+            chargesRequired=rule.chargesRequired,requires=req,
             enabled=rule.enabled~=false}
     end
     return copy

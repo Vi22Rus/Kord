@@ -1,3 +1,10 @@
+## KR-20261121-029 — 2.8.4b: проверяемые GameData requirements
+- **Дата/зона:** 2026-11-21 UTC. **Статус:** IMPLEMENTED / CI pending / game NOT RUN. 2.8.4a PASS: [run 44887845208](https://github.com/Vi22Rus/Kord/actions/runs/44887845208), SHA 98e76571.
+- **Проблема:** без декларативного контракта будущие профили могли бы вызывать произвольные ключи GameData или превращать неизвестное состояние в false.
+- **Решение:** необязательный список до 8 проверяемых boolean-требований на правило, строго из уже реализованных player.moving, target.isPlayer, pet.exists, pet.dead, context.inGroup/inRaid/inInstance. Отсутствие/Secret/не-boolean/status не READY = UNKNOWN; явное несовпадение = BLOCKED. Профиль копирует вложенные требования; неизвестные имена/дубли отвергаются.
+- **Файлы:** RotationProfiles.lua, RotationEngine.lua, stage_02_08_rotation_engine.lua; новые зависимости отсутствуют, действующие правила без requires неизменны; игровые профили по-прежнему не зарегистрированы. Ранг #20 и Hunter priorities не менялись.
+- **Тест:** mock на неверное поле, UNKNOWN и несовпадение; CI пока NOT RUN, игра NOT RUN. Дальше 2.8.4c–d.
+
 ## KR-20261121-028 — 2.8.4a: единый снимок GameState
 - **Дата/зона:** 2026-11-21 UTC. **Статус:** IMPLEMENTED / CI pending / game NOT RUN. Решение: заказчик утвердил 2.8.4a–d.
 - **Симптом и причина:** движок не закреплял один снимок и Eligibility перечитывал GameState для каждого кандидата. Ожидаем единое согласованное состояние на проход.

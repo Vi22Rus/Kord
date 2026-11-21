@@ -20,6 +20,36 @@ local function identity()
         or s.index<1 or s.index>3 then return nil end
     return s.classToken.."_TREE_"..s.index
 end
+-- A strict v14 GameData subset: no dynamic field paths or truthiness coercion.
+local requirementPaths={["player.moving"]={"player","moving"},
+    ["target.isPlayer"]={"target","isPlayer"},["pet.exists"]={"pet","exists"},
+    ["pet.dead"]={"pet","dead"},["context.inGroup"]={"context","inGroup"},
+    ["context.inRaid"]={"context","inRaid"},
+    ["context.inInstance"]={"context","inInstance"}}
+local function requirementStatus(snapshot,requires)
+    if not requires then return "READY" end
+    for _,condition in ipairs(requires) do
+        local path=requirementPaths[condition.field]
+        if not path then return "UNKNOWN","requirement_unsupported" end
+        local ok,signal=pcall(function()
+            local section=snapshot[path[1]]
+            return type(section)=="table" and section[path[2]] or nil
+        end)
+        if not ok or type(signal)~="table" then
+            return "UNKNOWN","requirement_unavailable"
+        end
+        local safe,value=pcall(function() return signal.value end)
+        local statusOK,status=pcall(function() return signal.status end)
+        if not safe or not statusOK or status~="READY"
+            or type(value)~="boolean"
+            or not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"
+            or not KR.GameAPI:IsSafeValue(value) then
+            return "UNKNOWN","requirement_unverified"
+        end
+        if value~=condition.equals then return "BLOCKED","requirement_not_met" end
+    end
+    return "READY"
+end
 function E:Evaluate()
     if not KR.RotationProfiles or not KR.RotationSettings
         or not KR.AbilityEligibility or not KR.SpellCatalogue then
@@ -68,12 +98,17 @@ function E:Evaluate()
         elseif type(settings.categories)~="table" or settings.categories[category]~=true then
             status,reason="BLOCKED","category_disabled"
         else
+            local requirement,requirementReason=requirementStatus(snapshot,rule.requires)
+            if requirement~="READY" then
+                status,reason=requirement,requirementReason
+            else
             local ok,value=pcall(KR.AbilityEligibility.Evaluate,KR.AbilityEligibility,
                 rule.spellID,{target=rule.target,cast=rule.cast,
                     chargesRequired=rule.chargesRequired,stateSnapshot=snapshot})
             if not ok or type(value)~="table" then
                 status,reason="UNKNOWN","eligibility_error"
             else status,reason=value.status,value.reason end
+            end
         end
         diagnostics[#diagnostics+1]={priority=i,spellID=rule.spellID,status=status,reason=reason}
         if status=="READY" then
