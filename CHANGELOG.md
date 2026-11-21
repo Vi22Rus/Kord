@@ -1,3 +1,15 @@
+## KR-20261121-006 — этап 2.7: AbilityEligibility и fail-closed проверка способностей
+- **Дата:** 2026-11-21; SHA коммита через `git log --grep KR-20261121-006`; версия `0.1.8.3-rc8`; тип feature/test/docs.
+- **Задача:** после прямого одобрения реализовать подтверждённую применимость изученной способности со слотом, кулдаунами, GCD, зарядами, ресурсами, целью, дальностью и кастом; не включать автоматический каст/приоритеты.
+- **До:** существовали SpellCatalogue, GameState, ActionBarScanner и BindingResolver, но общего проверяющего слоя не было; отдельные API чтения зарядов/usable/range отсутствовали в whitelist. Причина — незавершённый этап 2.7.
+- **Исследование:** перед реализацией просмотрены `Sonah/Core/Atoms/Spells.lua`, `JustAC/BlizzardAPI/SpellQuery.lua`, `JustAC/BlizzardAPI/CooldownTracking.lua`, `MaxDps/Cooldowns.lua` и остальные ZIP проекта. Использованы идеи, без копирования стороннего кода.
+- **Изменения:** `Core/AbilityEligibility.lua`: новая проверка `Evaluate(spellID,options)` со строгими READY/BLOCKED/UNKNOWN, обязательной политикой цели, каста и зарядов, отказом от секретных cooldown timing; `Core/GameAPI.lua`: read-only whitelist; `Core/EventBus.lua`: каналы cooldown/charges/usability и cast events; `Init.lua`, `.toc`: версия rc8/инициализация; `tests/stage_02_07_eligibility.lua`: mock-проверки; `docs/STAGE_02_07_ELIGIBILITY.md`, `docs/ROADMAP.md`, `CHANGELOG.md`: документация.
+- **Ранее обнаруженная ошибка:** локальный Lua-тест выявил, что выражение `status=="READY" and value or nil` теряет достоверное булево `false`; заменено на явный `if`. Также запрещены неявные политики charges и неопределённое состояние игрока/цели.
+- **PASS:** `texlua tests/stage_02_07_eligibility.lua`: **23 mock-утверждения**, включая modern и legacy; исходные байты двух новых Lua-файлов сверены с Git blob SHA. Статическую проверку Git HEAD выполняем отдельно после публикации.
+- **NOT RUN:** реальная WoW Forever игра, полный совместный запуск с реальными GameAPI/GameState/SpellCatalogue/ActionBarScanner, FPS/RAM, 27 профилей. Это не следует трактовать как 100% боевую совместимость.
+- **Риски:** в отсутствие читаемых полей modern cooldown, доказанной политики цели/зарядов, применимости к цели, определённой дальности возвращается UNKNOWN; GCD dummy 61304 зависит от клиента. Выбран приоритет безопасности над ложным READY.
+- **Результат/выдача:** коммит `main`, ZIP по SHA и `docs/STAGE_02_07_ELIGIBILITY.md`. Следующая задача требует согласования по правилу №1.
+
 ## KR-20261121-005 — Stage 2.6: выполнены автономные Lua-тесты, исправлен TTL-сценарий
 - **Дата:** 2026-11-21; точный timestamp SHA см. в Git; **ID:** `git log --grep KR-20261121-005`.
 - **Тип / версия:** test/docs, `0.1.8.3-rc7` без изменения игрового кода; связь: `720629cad367a0e9721e326e8ca6817606daad32`.
