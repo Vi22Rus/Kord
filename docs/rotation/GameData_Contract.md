@@ -52,3 +52,5 @@ BM сегодня использует snake_case и названия спосо
 ## Canonical API Matrix — binding rule (2026-11-21)
 
 **Mandatory normative dictionary:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md). This file defines the sole canonical spelling of every profile-facing state key and links each key to the read-only GameAPI method and owning engine module. The current GameData table contains earlier candidate names; interpret them through the canonical matrix, never invent aliases. Source-level archive review is documented in that matrix. New profiles must use lowerCamelCase `state` keys and PascalCase ability keys. An unknown provider must remain UNKNOWN, never be guessed. Implementation and client verification are separate statuses.
+
+**Переоценка 2026-11-21:** [Canonical_API_Matrix.md](Canonical_API_Matrix.md) v2 заменяет прежний Kord-first выбор на reference-first. Не реализовывать кандидатные методы без проверки клиента. Имена являются проектным контрактом, не свидетельством работающего провайдера.
