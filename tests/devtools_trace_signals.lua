@@ -86,6 +86,11 @@ for i=beforeDetails+1,#D.entries do
  matches[entry.reason]=entry.status
 end
 eq(matches.arcane_rank_4_rule,"UNKNOWN","rank four recorded")
+eq(matches.priority_1_rule,"UNKNOWN","priority 1 recorded")
+eq(matches.profile_ui,"UNAVAILABLE","UI profile status recorded")
+eq(matches.eligibility_ready_count,"READY","ready count including zero supported")
+eq(matches.eligibility_blocked_count,"READY","blocked count recorded")
+eq(matches.eligibility_unknown_count,"READY","unknown count recorded")
 eq(matches.actionbar_scan,"READY","scanner recorded")
 eq(matches.actionbar_buttons,"READY","confirmed buttons recorded")
 eq(matches.arcane_rank_on_bar,"READY","rank on bar recorded")
