@@ -108,9 +108,9 @@ local function eligibility(ctx,id,opts)
   return {status="UNKNOWN",reason="eligibility_policy_unverified"}
  end
  local target,cast,charges=opts.target,opts.cast,opts.chargesRequired
- if (target~="enemy" and target~="friendly" and target~="self" and target~="none")
-   or (cast~="idle" and cast~="allow") or type(charges)~="boolean"
-   or not safe(target) or not safe(cast) or not safe(charges) then
+ if not safe(target) or not safe(cast) or not safe(charges)
+   or (target~="enemy" and target~="friendly" and target~="self" and target~="none")
+   or (cast~="idle" and cast~="allow") or type(charges)~="boolean" then
   return {status="UNKNOWN",reason="eligibility_policy_unverified"}
  end
  local key=tostring(id)..":"..target..":"..cast..":"..tostring(charges)
@@ -172,6 +172,7 @@ function methods:all(...)
  for i=1,select("#",...) do
   if type(args[i])~="function" then error("condition_not_callable") end
   local v=args[i]()
+  if v~=true and v~=false and v~=nil then error("invalid_condition_result") end
   if v==false then return false end
   if v~=true then return nil end
  end
@@ -183,6 +184,7 @@ function methods:any(...)
  for i=1,select("#",...) do
   if type(args[i])~="function" then error("condition_not_callable") end
   local v=args[i]()
+  if v~=true and v~=false and v~=nil then error("invalid_condition_result") end
   if v==true then return true end
   if v~=false then unknown=true end
  end
@@ -197,10 +199,9 @@ function methods:spellAvailable(id)
 end
 function methods:spellFact(id,kind)
  local ctx=contexts[self]
- if not ctx or not spellAllowed(ctx,id)
+ if not ctx or not spellAllowed(ctx,id) or not safe(kind)
      or (kind~="known" and kind~="cooldownActive"
-      and kind~="inRange" and kind~="chargesAtLeast")
-     or not safe(kind) then return nil end
+      and kind~="inRange" and kind~="chargesAtLeast") then return nil end
  local key=tostring(id)..":"..kind
  if ctx.factDone[key] then return ctx.factCache[key] end
  ctx.factDone[key]=true
