@@ -56,6 +56,7 @@ local results={[101]="READY",[102]="READY"}
 local eligibilityCalls=0
 local factCalls=0
 local factEnabled=false
+local rangeFactEnabled=false
 KR.AbilityEligibility={
  Evaluate=function(_,id,opts)
   eligibilityCalls=eligibilityCalls+1
@@ -66,6 +67,9 @@ KR.AbilityEligibility={
  Fact=function(_,id,kind)
   factCalls=factCalls+1
   if factEnabled and id==102 and kind=="cooldownActive" then
+   return r(false)
+  end
+  if rangeFactEnabled and id==102 and kind=="inRange" then
    return r(false)
   end
   return {status="UNKNOWN"}
@@ -275,4 +279,16 @@ local prevFact=factCalls
 eq(S2:spellFact(102,"cooldownActive"),false,"confirmed false fact")
 eq(S2:spellFact(102,"cooldownActive"),false,"fact cached")
 eq(factCalls,prevFact+1,"one fact provider read")
+-- A confirmed false range fact is cached, not confused with unknown.
+rangeFactEnabled=true
+local S3=C:Create(direct,KR.GameState:GetSnapshot())
+local beforeRange=factCalls
+eq(S3:spellFact(101,"inRange"),nil,"undeclared range denied even with active provider")
+eq(factCalls,beforeRange,"undeclared range must not invoke provider")
+eq(S3:spellFact(102,"inRange"),false,"verified false range preserved")
+eq(S3:spellFact(102,"inRange"),false,"false range cached in one evaluation")
+eq(factCalls,beforeRange+1,"range false read exactly once per evaluation")
+local S4=C:Create(direct,KR.GameState:GetSnapshot())
+eq(S4:spellFact(102,"inRange"),false,"fresh evaluation reads confirmed range")
+eq(factCalls,beforeRange+2,"range fact cache does not leak across evaluations")
 print("PASS profile contract v1 mock: "..n.." assertions")
