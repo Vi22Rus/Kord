@@ -202,6 +202,9 @@ function methods:spellFact(id,kind)
  if not ctx or not spellAllowed(ctx,id) or not safe(kind)
      or (kind~="known" and kind~="cooldownActive"
       and kind~="inRange" and kind~="chargesAtLeast") then return nil end
+ -- Needs is an allowlist for profile facts, not an eager preload request.
+ -- Range facts may be queried only for explicitly declared spell IDs.
+ if kind=="inRange" and not has(ctx.profile.Needs.ranges,id) then return nil end
  local key=tostring(id)..":"..kind
  if ctx.factDone[key] then return ctx.factCache[key] end
  ctx.factDone[key]=true
