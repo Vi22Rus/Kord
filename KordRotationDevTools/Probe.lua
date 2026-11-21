@@ -106,8 +106,10 @@ function D:Why()
         "Kord Rotation DevTools - manual diagnosis",
         "Engine (manual evaluation): "..status(diagnosis and diagnosis.status)
             .." / "..reason(diagnosis and diagnosis.reason),
-        "Priority 1: "..status(diagnosis and diagnosis.firstStatus)
+        "Priority 1 (Arcane rank 8): "..status(diagnosis and diagnosis.firstStatus)
             .." / "..reason(diagnosis and diagnosis.firstReason),
+        "Priority 5 (Arcane rank 4): "..status(diagnosis and diagnosis.arcaneR4Status)
+            .." / "..reason(diagnosis and diagnosis.arcaneR4Reason),
         "Engine (last UI evaluation): "..status(summary and summary.engineStatus)
             .." / "..reason(summary and summary.engineReason),
         "Target UnitExists (live): "..observation(target and target.liveStatus,
@@ -125,6 +127,8 @@ function D:Why()
             and tostring(actionBar.arcaneRankOnBar) or "NOT CONFIRMED"),
         "Arcane Shot FindSpell: "..status(actionBar and actionBar.arcaneFindStatus)
             .." / "..reason(actionBar and actionBar.arcaneFindReason),
+        "Display panel enabled: "..observation("READY",display and display.panelEnabled),
+        "Display test mode: "..observation("READY",display and display.testMode),
         "Display last engine: "..status(display and display.lastEngineStatus)
             .." / "..reason(display and display.lastEngineReason),
         "Display accepts recommendation: "..observation("READY",
