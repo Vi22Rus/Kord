@@ -73,10 +73,20 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
                             end
                             return "UNKNOWN"
                         end
-                        KR:Print("Target: live="..printable(live)
-                            ..", snapshot="..printable(record))
+                        KR:Print("Target before evaluate: live="..printable(live)
+                            ..", cached="..printable(record))
                     end
                     local ok,result=pcall(evaluator,KR.RotationEngine)
+                    local current=KR.GameState and KR.GameState.current
+                    local exists=current and current.target and current.target.exists
+                    local verified="UNKNOWN"
+                    if api and type(api.IsSafeValue)=="function"
+                        and type(exists)=="table" and exists.status=="READY"
+                        and type(exists.value)=="boolean"
+                        and api:IsSafeValue(exists.value) then
+                        verified=tostring(exists.value)
+                    end
+                    KR:Print("Target evaluated: exists="..verified)
                     local function ordinary(v)
                         if not api or type(api.IsSafeValue)~="function" then return false end
                         local checked,safe=pcall(api.IsSafeValue,api,v)
