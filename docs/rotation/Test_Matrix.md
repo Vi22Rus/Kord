@@ -216,3 +216,17 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | CLEAN-006 | Полный Lua 5.1 и Python прогон по реальному checkout | NOT RUN | Не переносить PASS с прошлого SHA |
 | CLEAN-007 | CI manual-only, игровая проверка | NOT RUN | Перед общим QA |
 
+
+## Контракт v1 — замена устаревших тестов этапа 2.8 (KR-20261121-076)
+| ID | Предмет | Новый актуальный файл | Статус |
+|---|---|---|---|
+| PC-001 | Схема v1: Spells, Needs, Config, Rules, version, status, диапазоны уровней | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-002 | UNKNOWN выше READY и разрешённый необязательный skip | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-003 | Ошибка условия при skip всегда останавливает выбор | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-004 | Ленивые all/any и правила, raw snapshot недоступен | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-005 | Eligibility BLOCKED → следующий, UNKNOWN → стоп и кэш за оценку | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-006 | Неподдерживаемый PET_COMMAND пропускается без иконки | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-007 | Разные уровни профилей и draft/mock_tested недопуск в бой | `tests/profile_contract_v1.lua` | SOURCE IMPLEMENTED / LOCAL NOT RUN |
+| PC-008 | Реальные GameData providers, 5.1, Secret & client | будущий stage 2.9-D / WoW Forever | NOT RUN |
+
+`tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua` — **удалены из текущего дерева** как тесты прежнего архитектурного формата; их прежние результаты и исходники остаются в Git history. Другие GameAPI/GameState/Eligibility/UI/DevTools тесты сохранены. Никакого выполнения GitHub Actions на этом SHA не было.

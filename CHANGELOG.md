@@ -1,3 +1,9 @@
+## KR-20261121-076 — удалить две устаревшие контрактные фикстуры 2.8
+- Дата: 2026-11-21 UTC. Согласованная миграция тестов после изменения RotationProfiles/RotationEngine; из текущего Git-дерева удаляются `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua`, проверявшие исключительно старый static requires/verified=true контракт.
+- Заменены `tests/profile_contract_v1.lua`; оба runner-манифеста уже используют новый набор. Не удалены проверки GameState, GameAPI, AbilityEligibility, UI и DevTools.
+- `docs/STAGE_02_08_ROTATION_ENGINE.md` явно отмечен историческим; `docs/rotation/Test_Matrix.md` разделяет старые прошлые PASS и новые v1 сценарии SOURCE IMPLEMENTED / LOCAL NOT RUN. Git сохраняет удалённые версии.
+- CI manual-only без запуска; полный локальный 5.1, полный checkout и WoW Forever NOT RUN. Приложение не выполняет игровой каст.
+
 ## KR-20261121-075 — новый сценарный mock профиля v1 и тестовый манифест
 - Дата: 2026-11-21 UTC. Реальный файл `tests/profile_contract_v1.lua` проверяет registry contractVersion/Needs/SkipExceptions/Spell IDs/диапазоны уровней, engine UNKNOWN/skip/pcall/PET_COMMAND/Eligibility, target mode, immutable Get, restricted S и ленивые all/any, per-evaluation cache, отсутствие необъявленного SpellID и непридуманных фактов кулдауна.
 - `scripts/run_local_lua_regression.sh` и `.github/workflows/lua-regression.yml` теперь ссылаются на новый тест вместо двух устаревших наборов 2.8. Остальные GameAPI, GameState, AbilityEligibility, UI и DevTools mock сохранены; GitHub workflow остаётся ТОЛЬКО `workflow_dispatch`.
