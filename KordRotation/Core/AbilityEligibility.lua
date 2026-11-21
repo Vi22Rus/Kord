@@ -103,8 +103,11 @@ local function gcd()
         local r=get("C_Spell.GetSpellCooldown","table",GCD_SPELL_ID)
         if r.status~="READY" then return "UNKNOWN","gcd_unavailable" end
         local active=field(r.value,"isActive")
+        -- Matrix v14 #25/#80: only a confirmed plain boolean can
+        -- establish GCD state. Never derive it from startTime/duration,
+        -- which may be protected in combat.
         if type(active)~="boolean" then return "UNKNOWN","gcd_activity_unknown" end
-        if active then return "BLOCKED","global_cooldown" end
+        if active==true then return "BLOCKED","global_cooldown" end
         return "READY"
     end
     local r=multi("GetSpellCooldown",GCD_SPELL_ID)
@@ -127,14 +130,22 @@ local function charges(id,required)
     if api:Probe("C_Spell.GetSpellCharges").status=="READY" then
         local r=get("C_Spell.GetSpellCharges","table",id)
         if r.status~="READY" then return "UNKNOWN","charges_unavailable" end
+        -- Matrix v14 #26: currentCharges may be secret. maxCharges
+        -- and isActive are NOT substitutes for a known usable count.
+        -- In particular isActive=true describes recharge, not 0 charges.
         current,max=field(r.value,"currentCharges"),field(r.value,"maxCharges")
     else
         local r=multi("GetSpellCharges",id)
         if r.status~="READY" then return "UNKNOWN","charges_unavailable" end
         current,max=r.value[1],r.value[2]
     end
-    if not number(current) or not number(max) or current<0 or max<1
-        or current>max or current~=math.floor(current) or max~=math.floor(max) then
+    -- The legacy and modern readers must both deliver ordinary,
+    -- finite integers. Zero is confirmed exhaustion, not a nil proxy.
+    if not number(current) or not number(max) then
+        return "UNKNOWN","charges_invalid"
+    end
+    if current<0 or max<1 or current>max
+        or current~=math.floor(current) or max~=math.floor(max) then
         return "UNKNOWN","charges_invalid"
     end
     if current==0 then return "BLOCKED","no_charges" end

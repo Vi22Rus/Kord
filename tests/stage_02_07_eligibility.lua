@@ -5,6 +5,11 @@ local spellKnownAvailable=true
 local secretSpellId={}
 local secretPolicy={}
 local protectedCharges=false
+local chargeMaximum=2
+local chargeIsActive=false
+local missingGcdField=false
+local missingChargeCount=false
+local missingChargeMax=false
 local nilUsability=false
 local nilRange=false
 local protectedUsability=false
@@ -49,8 +54,17 @@ KR.GameAPI={
   local id=(...)
   if name=="GetTime" then return r(now) end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
-  if name=="C_Spell.GetSpellCooldown" then return r({isActive=id==61304 and gcdActive or active,isOnGCD=false}) end
-  if name=="C_Spell.GetSpellCharges" then return r({currentCharges=chargeCount,maxCharges=2}) end
+  if name=="C_Spell.GetSpellCooldown" then
+   if id==61304 and missingGcdField then return r({isOnGCD=true}) end
+   return r({isActive=id==61304 and gcdActive or active,isOnGCD=false})
+  end
+  if name=="C_Spell.GetSpellCharges" then
+   return r({
+    currentCharges=missingChargeCount and nil or chargeCount,
+    maxCharges=missingChargeMax and nil or chargeMaximum,
+    isActive=chargeIsActive
+   })
+  end
   if name=="C_Spell.IsSpellInRange" then
    return nilRange and {status="UNKNOWN"} or r(distance)
   end
@@ -99,6 +113,21 @@ chargeCount=0;eq(eval().reason,"no_charges");chargeCount=1
 protectedCharges=true;eq(eval().status,"UNKNOWN","secret charge remains unknown")
 eq(eval().reason,"charges_invalid","secret charge cannot be treated as zero")
 protectedCharges=false
+-- v14 #26: recharge activity cannot synthesize protected/absent count.
+chargeIsActive=true
+chargeCount=0;eq(eval().reason,"no_charges","zero remains blocked during recharge")
+chargeCount=1;eq(eval().status,"READY","recharge while count is banked")
+missingChargeCount=true;eq(eval().status,"UNKNOWN","missing currentCharges")
+missingChargeCount=false
+missingChargeMax=true;eq(eval().status,"UNKNOWN","missing maxCharges")
+missingChargeMax=false
+chargeCount=2.5;eq(eval().reason,"charges_invalid","fractional currentCharges")
+chargeCount=3;eq(eval().reason,"charges_invalid","current exceeds max")
+chargeCount=-1;eq(eval().reason,"charges_invalid","negative currentCharges")
+chargeCount=1
+chargeMaximum=0;eq(eval().reason,"charges_invalid","zero maxCharges")
+chargeMaximum=2
+chargeIsActive=false
 nilUsability=true;eq(eval().status,"UNKNOWN","nil usability remains unknown")
 nilUsability=false
 protectedUsability=true;eq(eval().status,"UNKNOWN","secret usability remains unknown")
@@ -120,6 +149,12 @@ eq(eval().status,"BLOCKED","isOnGCD not authoritative outside event")
 eq(eval().reason,"cooldown_active_unclassified","active cannot be categorized")
 KR.GameAPI.Read=previousRead
 gcdActive=true;eq(eval().reason,"global_cooldown");gcdActive=false
+-- v14 #25: secret/missing GCD isActive must not become ready,
+-- even when isOnGCD=true or timing fields are present.
+missingGcdField=true
+eq(eval().status,"UNKNOWN","GCD missing isActive")
+eq(eval().reason,"gcd_activity_unknown","GCD incomplete table")
+missingGcdField=false
 distance=false;eq(eval().reason,"out_of_range");distance=true
 targetExists=false;eq(eval().reason,"target_missing");targetExists=true
 attackable=false;eq(eval().reason,"target_relation_invalid");attackable=true

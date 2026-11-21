@@ -134,3 +134,13 @@
 | ELIG-LEVEL-003 | #80/#82 | level UNKNOWN / нецелое / secret | UNKNOWN, без угадывания уровня | PASS run 44886522419 / 5ac5d0fe | NOT RUN |
 | ELIG-LEVEL-004 | #82 | minLevel нецелое/0/>100/Secret | UNKNOWN/level_policy_invalid или policy_protected | PASS run 44886522419 / 5ac5d0fe | NOT RUN |
 | ELIG-RANK-001 | #20/#82 | highest learned rank и допустимый Spell ID | НЕ РЕАЛИЗОВАНО: точный алгоритм требует доказательства; не считать наличие ID проверкой ранга | NOT RUN | NOT RUN |
+
+## Eligibility v14 2.8.3e — заряды и GCD
+
+| ID | Матрица | Проверка | CI | Игра |
+|---|---|---|---|---|
+| ELIG-CHARGE-002 | #26/#80 | Ноль зарядов при `isActive=true` = BLOCKED; при одном заряде и активном восстановлении допускается READY только по собственному count | PENDING | NOT RUN |
+| ELIG-CHARGE-003 | #26/#80 | Отсутствует `currentCharges` или `maxCharges` → UNKNOWN, не синтезировать count по isActive | PENDING | NOT RUN |
+| ELIG-CHARGE-004 | #26 | Дробное, отрицательное, больше max, max=0 → UNKNOWN/charges_invalid | PENDING | NOT RUN |
+| ELIG-GCD-004 | #25/#80 | `GetSpellCooldown(61304)` без подтверждённого `isActive` → UNKNOWN/gcd_activity_unknown даже с `isOnGCD=true` | PENDING | NOT RUN |
+| ELIG-RANK-002 | #20 | Проверка highest learned rank на актуальном клиенте остаётся открыта; никакого нового rank inference | NOT RUN | NOT RUN |

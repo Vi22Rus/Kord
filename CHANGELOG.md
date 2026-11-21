@@ -1,3 +1,9 @@
+## KR-20261121-025 — 2.8.3e: строгие заряды и GCD, пограничная регрессия
+- **Дата UTC:** 2026-11-21T08:54:49.504Z. **Решение:** согласованный продолжением вариант 2.8.3e; референсы `Sonah/Core/Atoms/Spells.lua` (GetSpellCharges и GCD), `JustAC/BlizzardAPI/CooldownTracking.lua`, MaxDps (Cooldowns.lua, SpellData.lua). Канон — матрица v14 #25/#26/#80/#83.
+- **Дефект/риск:** логическая путаница `isActive` у зарядов (recharge ≠ count), а также неявное принятие неполных ответов GCD как подтверждённой готовности. Рефакторинг сохраняет fail-closed и делает семантику явной.
+- **Изменено:** `AbilityEligibility` раздельно требует доступные finite integer current/max, не выводит count из recharge.isActive; GCD принимает только доступный boolean isActive, не выводит его из `isOnGCD`/secret timing. В `tests/stage_02_07_eligibility.lua` добавлены кейсы recharge при 0/1, отсутствующие поля, дроби, превышения max, отсутствие GCD isActive. Обновлены GameData_Contract и Test_Matrix; состав API и Hunter профили не менялись.
+- **Проверки:** CI Lua 5.1 на точном SHA после коммита; **игра WoW Forever NOT RUN**; алгоритм highest known rank #20 остаётся открытым, CLIENT PASS 0/101.
+
 ## KR-20261121-024 — подтверждена регрессия уровня 2.8.3d
 - **Дата UTC:** 2026-11-21T08:48:33.763Z. **Тип:** docs/test evidence, без изменения Lua, профилей или .toc.
 - **Проверенный результат:** [GitHub Actions run 44886522419](https://github.com/Vi22Rus/Kord/actions/runs/44886522419), SHA `5ac5d0fee8805d0b6f0054cbb28e9dbdc1341ac8`, completed/success, job 136792876252. Проверены job logs: `luac5.1 -p` PASS по Lua; **8/8** mock suites PASS; `AbilityEligibility` **47 checks**, `GameState v14` 31, secret input guards 26, `RotationEngine` 29. Новые minLevel 4 сценария помечены PASSED CI в Test_Matrix.
