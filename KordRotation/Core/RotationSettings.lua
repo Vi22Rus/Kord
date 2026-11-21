@@ -10,7 +10,7 @@ local categories = {
     "consumables", "defensive", "interrupts", "movement",
 }
 local defaults = {
-    enabled = false, targetMode = "auto", cooldownsOnlyInCombat = true,
+    enabled = false, allowUnverifiedProfiles = false, targetMode = "auto", cooldownsOnlyInCombat = true,
     conserveResources = false, prebuffs = false,
     categories = {
         damage = true, cooldowns = true, buffs = true, racial = false,
