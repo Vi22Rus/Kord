@@ -47,6 +47,7 @@ function O:Read()
     local engineStatus=status(field(display,"lastEngineStatus"))
     local engineReason=reason(field(display,"lastEngineReason"))
     local current=field(game,"current")
+    local summary=field(display,"lastSummary")
     local result={
         version=1,
         status="READY",
@@ -55,6 +56,10 @@ function O:Read()
         stateRevision=nonnegativeInt(field(current,"revision")),
         eventListenerErrors=nonnegativeInt(field(bus,"listenerErrors")) or 0,
         bindingDirty=field(bindings,"dirty")==true,
+        profileStatus=status(field(summary,"profileStatus")),
+        eligibilityReady=nonnegativeInt(field(summary,"eligibilityReady")) or 0,
+        eligibilityBlocked=nonnegativeInt(field(summary,"eligibilityBlocked")) or 0,
+        eligibilityUnknown=nonnegativeInt(field(summary,"eligibilityUnknown")) or 0,
         -- Never include Spell ID, target, GUID, key, frame, timestamp or name.
     }
     return result

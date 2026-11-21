@@ -270,11 +270,59 @@ local function verifiedRecommendation(result)
     return item
 end
 
+-- Aggregate-only diagnostics from the already computed outcome.
+-- Never retain candidate spell IDs, target identities or secret field values.
+local function summarizeOutcome(result)
+    local out={profileStatus="UNKNOWN",eligibilityReady=0,
+        eligibilityBlocked=0,eligibilityUnknown=0}
+    local api=KR.GameAPI
+    if type(result)~="table" or not api
+        or type(api.IsSafeValue)~="function"
+        or not api:IsSafeValue(result) then return out end
+    local profile=result.profileID
+    if api:IsSafeValue(profile) and type(profile)=="string"
+        and #profile>0 and #profile<=48 then
+        out.profileStatus="READY"
+    else
+        local why=result.reason
+        if api:IsSafeValue(why) and why=="profile_not_registered" then
+            out.profileStatus="UNAVAILABLE"
+        elseif api:IsSafeValue(why) and why=="rotation_disabled" then
+            out.profileStatus="BLOCKED"
+        end
+    end
+    local diagnostics=result.diagnostics
+    if type(diagnostics)~="table"
+        or not api:IsSafeValue(diagnostics) or #diagnostics>64 then
+        return out
+    end
+    for i=1,#diagnostics do
+        local record=diagnostics[i]
+        if not api:IsSafeValue(record) or type(record)~="table" then
+            out.eligibilityUnknown=out.eligibilityUnknown+1
+        else
+            local status=record.status
+            if not api:IsSafeValue(status) then
+                out.eligibilityUnknown=out.eligibilityUnknown+1
+            elseif status=="READY" then
+                out.eligibilityReady=out.eligibilityReady+1
+            elseif status=="BLOCKED" then
+                out.eligibilityBlocked=out.eligibilityBlocked+1
+            else
+                out.eligibilityUnknown=out.eligibilityUnknown+1
+            end
+        end
+    end
+    return out
+end
+
 function KR.RotationDisplay:Refresh(skipLayout)
     if not self.frame then return end
     local p = ensurePosition(KR.db)
     if not skipLayout then self:RefreshLayout() end
     self.productionReady=false
+    self.lastSummary={profileStatus="UNKNOWN",eligibilityReady=0,
+        eligibilityBlocked=0,eligibilityUnknown=0}
     if p.testMode then
         -- Preserve preview artwork and numbers, never mark it live.
         for i,slot in ipairs(self.slots or {}) do
@@ -299,6 +347,8 @@ function KR.RotationDisplay:Refresh(skipLayout)
         end)
         self.lastEngineStatus=okMeta and status or "UNKNOWN"
         self.lastEngineReason=okMeta and reason or "engine_unavailable"
+        local okSummary,summary=pcall(summarizeOutcome,result)
+        if okSummary and type(summary)=="table" then self.lastSummary=summary end
         local okItem,item=pcall(verifiedRecommendation,result)
         if not okItem then item=nil end
         if item then

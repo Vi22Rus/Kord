@@ -1,3 +1,11 @@
+## KR-20261121-058 — DT-4: агрегированные ELIGIBILITY/PROFILE/ERROR сигналы без Spell ID
+- Дата: 2026-11-21 UTC, см. git log --grep KR-20261121-058. Объём утверждённого DevTools.
+- Проблема: ранее DevTools собирал EVENT и общий ENGINE, но не различал сводные изменения PROFILE/ELIGIBILITY и факт ошибок EventBus.
+- Изменения: `RotationDisplay` после одного обычного Evaluate сохраняет только счётчики READY/BLOCKED/UNKNOWN и безопасный статус профиля, без Spell ID/GUID/имен/целей; `CoreObservation:Read()` отдаёт исключительно ограниченные скалярные значения; `DevTools/Trace.lua` записывает изменения PROFILE/ELIGIBILITY/ERROR только при Start и через bounded Recorder, максимум одну агрегированную запись за обновление с повтором при rate-limit. Без дополнительных GameAPI вызовов или нового боевого OnUpdate.
+- Тесты: расширен observer mock, отдельный trace mock добавится в следующем коммите; пока LUA LOCAL NOT RUN, CI NOT RUN, Forever NOT RUN.
+- Граница: это агрегированная диагностика, не per-rule spell trace; не представлять как точный журнал приоритетов. Общие модули KordRotation публикуются один раз для обеих поставок; DevTools-only Trace остаётся отдельно.
+- Выдано тестировщику: точный коммит и новый сценарий для единого QA.
+
 ## KR-20261121-057 — DT-6 security regression: secret-safe CoreObservation probe
 - Дата UTC: 2026-11-21. Коммит: см. git log --grep KR-20261121-057.
 - Причина: read-only мост CoreObservation:Probe проверял длину имени перед вызовом GameAPI:IsSafeValue, что могло быть опасно для protected имени; DevTools:ProbeMethod читал status результата до проверки безопасности.

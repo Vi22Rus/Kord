@@ -6,7 +6,8 @@ KR.GameAPI={IsSafeValue=function(_,v)return v~=protected end}
 KR.GameState={current={revision=9},GetSnapshot=function()reads=reads+1;error("unexpected read")end}
 KR.EventBus={listenerErrors=2}
 KR.BindingResolver={dirty=true}
-KR.RotationDisplay={lastEngineStatus="UNKNOWN",lastEngineReason="cooldown_unavailable"}
+KR.RotationDisplay={lastEngineStatus="UNKNOWN",lastEngineReason="cooldown_unavailable",
+ lastSummary={profileStatus="READY",eligibilityReady=1,eligibilityBlocked=2,eligibilityUnknown=0}}
 KR.RotationEngine={Evaluate=function()reads=reads+1;error("unexpected evaluation")end}
 assert(loadfile("KordRotation/Core/CoreObservation.lua"))("KordRotation",KR)
 local n=0
@@ -22,6 +23,10 @@ eq(o.engineReason,"cooldown_unavailable","reason allowlist")
 eq(o.stateRevision,9,"snapshot revision")
 eq(o.eventListenerErrors,2,"bounded event count")
 eq(o.bindingDirty,true,"binding invalidation flag")
+eq(o.profileStatus,"READY","profile status no raw ID")
+eq(o.eligibilityReady,1,"eligible count")
+eq(o.eligibilityBlocked,2,"blocked count")
+eq(o.eligibilityUnknown,0,"unknown count")
 eq(o.spellID,nil,"no Spell ID")
 eq(o.target,nil,"no target")
 eq(o.keybind,nil,"no key")

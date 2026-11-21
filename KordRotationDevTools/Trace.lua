@@ -40,6 +40,9 @@ function D:TraceStart()
         D:ObserveTransition()
     end)
     self.lastObserved=nil
+    self.lastProfile=nil
+    self.lastEligibility=nil
+    self.lastErrors=nil
     return true
 end
 function D:TraceStop()
@@ -52,6 +55,9 @@ function D:TraceStop()
         end
     end
     self.lastObserved=nil
+    self.lastProfile=nil
+    self.lastEligibility=nil
+    self.lastErrors=nil
     return true
 end
 function D:ObserveTransition()
@@ -62,8 +68,58 @@ function D:ObserveTransition()
     if status~="READY" and status~="BLOCKED" and status~="UNKNOWN" then
         status="UNKNOWN"
     end
-    if status==self.lastObserved then return false end
-    self.lastObserved=status
-    -- Coarse ENGINE transition only; never claim per-rule Eligibility trace.
-    return self:Record("ENGINE",status,"manual_sample")
+    -- At most one aggregate transition per read. Rate-limited recorder may
+    -- reject a sample; preserve previous marker and retry on the next tick.
+    local errors=tonumber(snapshot and snapshot.eventListenerErrors) or 0
+    if errors<0 or errors>1000000000 or errors~=math.floor(errors)
+        or not self:Safe(errors) then errors=0 end
+    if self.lastErrors==nil then self.lastErrors=errors end
+    if errors>self.lastErrors then
+        if self:Record("ERROR","ERROR","manual_sample") then
+            self.lastErrors=errors
+            return true
+        end
+        return false
+    end
+    if errors<self.lastErrors then self.lastErrors=errors end
+
+    local profile=snapshot and snapshot.profileStatus
+    if not self:Safe(profile) or (profile~="READY" and profile~="BLOCKED"
+        and profile~="UNAVAILABLE" and profile~="UNKNOWN") then
+        profile="UNKNOWN"
+    end
+    if profile~=self.lastProfile then
+        if self:Record("PROFILE",profile,"manual_sample") then
+            self.lastProfile=profile
+            return true
+        end
+        return false
+    end
+
+    local function count(v)
+        if not D:Safe(v) or type(v)~="number" or v~=v
+            or v<0 or v>64 or v~=math.floor(v) then return 0 end
+        return v
+    end
+    local r=count(snapshot and snapshot.eligibilityReady)
+    local b=count(snapshot and snapshot.eligibilityBlocked)
+    local u=count(snapshot and snapshot.eligibilityUnknown)
+    local key=r..":"..b..":"..u
+    if (r+b+u)>0 and key~=self.lastEligibility then
+        local eligibility=u>0 and "UNKNOWN" or
+            (r>0 and "READY" or "BLOCKED")
+        if self:Record("ELIGIBILITY",eligibility,"manual_sample") then
+            self.lastEligibility=key
+            return true
+        end
+        return false
+    end
+
+    if status~=self.lastObserved then
+        if self:Record("ENGINE",status,"manual_sample") then
+            self.lastObserved=status
+            return true
+        end
+    end
+    return false
 end
