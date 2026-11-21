@@ -93,7 +93,18 @@ function D:CreateUI()
     frame:Hide()
     self:RefreshUI()
     SLASH_KORDROTATIONDEVTOOLS1="/krdev"
-    SlashCmdList["KORDROTATIONDEVTOOLS"]=function()
+    SlashCmdList["KORDROTATIONDEVTOOLS"]=function(message)
+        message=type(message)=="string" and message:lower():match("^%s*(.-)%s*$") or ""
+        if message=="why" then
+            if D.ui and D.ui.report and type(D.Why)=="function" then
+                local ok,report=pcall(D.Why,D)
+                D.ui.report:SetText(ok and type(report)=="string"
+                    and report or D:L("UNAVAILABLE"))
+                D.ui.frame:Show()
+                D:RefreshUI()
+            end
+            return
+        end
         if D.ui and D.ui.frame:IsShown() then D.ui.frame:Hide()
         else D.ui.frame:Show();D:RefreshUI() end
     end
