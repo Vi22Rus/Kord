@@ -9,6 +9,7 @@
 Locale.lua
 Core.lua
 Recorder.lua
+V14Registry.lua
 Probe.lua
 Trace.lua
 Performance.lua

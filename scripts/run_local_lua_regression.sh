@@ -35,6 +35,7 @@ else
     tests/devtools_trace.lua
     tests/devtools_boot.lua
     tests/devtools_ui_locale.lua
+    tests/devtools_v14_registry.lua
   )
 fi
 for t in "${tests[@]}"; do

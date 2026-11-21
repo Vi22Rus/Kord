@@ -43,7 +43,8 @@ jobs:
             tests/devtools_probe.lua \
             tests/devtools_trace.lua \
             tests/devtools_boot.lua \
-            tests/devtools_ui_locale.lua; do
+            tests/devtools_ui_locale.lua \
+            tests/devtools_v14_registry.lua; do
             echo "RUN $f"
             lua5.1 "$f"
           done
