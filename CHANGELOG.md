@@ -1,3 +1,9 @@
+## KR-20261121-112 — fail-closed aura guard и расширение mock-фикстур
+- `GameState.ReadSignal("player.buff")`: при наличии снимка проверяется `player.exists=READY(true)`; неизвестный/отсутствующий игрок не получает `READY(true)` по Aura lookup.
+- `tests/stage_02_03_game_state.lua`: проверены сценарии секретной AuraData, исключения провайдера, защищённого GUID после чтения, а также противоречащих снимков игрока и отсутствие лишних запросов.
+- `docs/rotation/Contract_v1_Status_2_9.md`: отрицательное подтверждение ауры не реализовано — `nil` остаётся `UNKNOWN`.
+- **Только SOURCE / MOCKS ADDED: Lua 5.1 17-suite NOT RUN, WoW Forever NOT RUN, CI NOT RUN.** Hunter BM и контракт пользователя не изменялись.
+
 ## KR-20261121-107 — целостность target.debuff при смене цели
 - `GameState.ReadSignal`: для целевых дебаффов требуется подтверждённый GUID цели из снимка; `UnitGUID("target")` проверяется до и после aura lookup через безопасный `GameAPI`. Несовпадение, отсутствие или секретное значение возвращает `UNKNOWN` без заявления об отсутствии ауры.
 - `tests/stage_02_03_game_state.lua`: добавлены mock-сценарии отсутствующего/устаревшего/secret GUID и смены цели посреди чтения.
