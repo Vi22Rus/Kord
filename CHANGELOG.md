@@ -1,3 +1,8 @@
+## KR-20261121-124 — согласование текущей контрольной точки 2.9 с реальным кодом
+- `docs/rotation/Contract_v1_Status_2_9.md`: исправлены устаревшие утверждения об отсутствии `GameState.ReadSignal`, обновлён верхний статус на `SOURCE IMPLEMENTED (PARTIAL) / STATIC SOURCE AUDIT ONLY`, отдельно перечислены частичные провайдеры и неразрешённые факты.
+- Ревизия исходников на GitHub не заменяет исполнение: полный checkout локально недоступен, Lua 5.1 отсутствует; `17 SUITES NOT RUN`, WoW Forever и GitHub Actions не запускались.
+- Программный контракт v1 и реализация Hunter BM не изменены.
+
 ## KR-20261121-122 — chargesAtLeast fail-closed без неявного порога
 - `RotationConditions.lua`: `S:spellFact(id,"chargesAtLeast")` всегда возвращает `nil` без вызова `AbilityEligibility.Fact`: в Profile Contract v1 нет явного аргумента минимального числа зарядов, и даже неверный `READY(true)` провайдера не должен разрешить условие.
 - `tests/profile_contract_v1.lua`: сценарий с ошибочным `READY(true)` от mock-факта зарядов, проверка отсутствия вызова.
