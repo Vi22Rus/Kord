@@ -1,3 +1,8 @@
+## KR-20261121-095 — расширены тесты границы Needs и кэширования Fact
+- В `tests/profile_contract_v1.lua` добавлен сценарий провайдера `inRange`, возвращающего `READY(false)`: запрет вне `Needs.ranges`, сохранение `false`, одно обращение в рамках оценки и новое обращение в следующем контексте.
+- `docs/rotation/Contract_v1_Status_2_9.md`: зафиксировано, что в исходниках `GameState.ReadSignal` и `AbilityEligibility.Fact` отсутствуют; mock-провайдеры не означают реализации в WoW Forever.
+- Контейнер по-прежнему не имеет Lua 5.1 и доступа к GitHub checkout по DNS. **Lua 5.1/17 suites NOT RUN, CI NOT RUN, client NOT RUN.** Оригинал `Profile_Contract.md` не менялся.
+
 ## KR-20261121-091 — локальная регрессия строго на Lua 5.1
 - `scripts/run_local_lua_regression.sh`: удалён автоматический fallback на `texlua` (на доступном хосте это Lua 5.3), добавлены проверка наличия `lua5.1` и исполнение отдельного version-probe `_VERSION == "Lua 5.1"` до проверок исходников.
 - Проверен фактический `texlua`: `Lua 5.3`; он не является доказательством совместимости Lua 5.1. Локальный checkout из контейнера недоступен из-за DNS, поэтому 17 тестов **не запускались** и статус этапа не повышен.
