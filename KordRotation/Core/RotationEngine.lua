@@ -107,6 +107,11 @@ function E:Evaluate()
                     chargesRequired=rule.chargesRequired,stateSnapshot=snapshot})
             if not ok or type(value)~="table" then
                 status,reason="UNKNOWN","eligibility_error"
+            elseif value.status~="READY" and value.status~="BLOCKED"
+                and value.status~="UNKNOWN" then
+                status,reason="UNKNOWN","eligibility_status_invalid"
+            elseif value.spellID~=rule.spellID then
+                status,reason="UNKNOWN","eligibility_spell_mismatch"
             else status,reason=value.status,value.reason end
             end
         end

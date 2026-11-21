@@ -32,9 +32,11 @@ KR.RotationSettings={
 local results={[101]="BLOCKED",[102]="READY",[103]="READY"}
 local reasons={[101]="cooldown"}
 local called={}
+local wrongEligibilityID=false
 KR.AbilityEligibility={Evaluate=function(_,id,opts)
  called[#called+1]={id=id,opts=opts}
- return {status=results[id] or "UNKNOWN",reason=reasons[id] or "unavailable"}
+ return {status=results[id] or "UNKNOWN",reason=reasons[id] or "unavailable",
+  spellID=wrongEligibilityID and 999 or id}
 end}
 local bindingReady=true
 KR.BindingResolver={Resolve=function(_,id)
@@ -89,6 +91,12 @@ eq(type(called[1].opts.stateSnapshot),"table","snapshot passed")
 snapshotInvalid=true
 eq(E:Evaluate().reason,"game_state_unavailable","missing snapshot fails closed")
 snapshotInvalid=false
+results[101]="ILLEGAL"
+eq(E:Evaluate().reason,"eligibility_status_invalid","invalid outcome cannot fall through")
+results[101]="READY"
+wrongEligibilityID=true
+eq(E:Evaluate().reason,"eligibility_spell_mismatch","wrong spell cannot be recommended")
+wrongEligibilityID=false
 results[101]="UNKNOWN"
 eq(E:Evaluate().status,"UNKNOWN","high priority unknown")
 eq(#E:Evaluate().queue,0,"no lower priority leak")
