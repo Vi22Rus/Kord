@@ -119,6 +119,21 @@ local bad=profile(1,"BAD",1,59)
 bad.contractVersion=2
 eq(P:Register("HUNTER",1,bad),false,"contract version rejected")
 bad=profile(1,"BAD",1,59)
+bad.Needs.auras={[1]=1978,[3]=1979}
+eq(P:Register("HUNTER",1,bad),false,"sparse Needs list rejected independently of #")
+bad=profile(1,"BAD",1,59)
+bad.Needs.ranges={[2]=102}
+eq(P:Register("HUNTER",1,bad),false,"leading hole in Needs ranges rejected")
+bad=profile(1,"BAD",1,59)
+bad.Config={[1]=bad.Config[1],[3]=bad.Config[2]}
+eq(P:Register("HUNTER",1,bad),false,"sparse Config rejected independently of #")
+bad=profile(1,"BAD",1,59)
+bad.Rules={[2]=bad.Rules[1]}
+eq(P:Register("HUNTER",1,bad),false,"sparse Rules rejected independently of #")
+bad=profile(1,"BAD",1,59)
+bad.Needs.auras={[999999]=1978}
+eq(P:Register("HUNTER",1,bad),false,"out-of-bounds array index rejected without #")
+bad=profile(1,"BAD",1,59)
 bad.Needs.unknownProvider=true
 eq(P:Register("HUNTER",1,bad),false,"unknown needs rejected")
 bad=profile(1,"BAD",1,59)
