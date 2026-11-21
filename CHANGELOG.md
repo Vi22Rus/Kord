@@ -1,3 +1,10 @@
+## KR-20261121-146 — минимальный устанавливаемый экспериментальный Hunter BM пилот
+- В `KordRotation.toc` подключён `BM_Pilot_Experimental.lua`: одно правило Arcane Shot (3044), Hunter BM tree 1, явно `experimental`, без прямых WoW API и без автоматического каста. Это **не полная ротация**.
+- `RotationSettings`: `allowUnverifiedProfiles=false` по умолчанию; в UI добавлено отдельное ручное включение experimental. Подсказки и текст состояния актуализированы на enUS/ruRU/frFR/deDE/ptBR/esES.
+- `README.md` — установка из GitHub ZIP и запуск минимального пилота; `tests/profile_contract_v1.lua` — фиксация статуса и состава пилота.
+- Исходное общее ядро `KordRotation/` используется в двух вариантах сборки; `KordRotationDevTools/` остаётся отдельным аддоном.
+- **NO LUA 5.1 PASS, NO CLIENT PASS, NO GITHUB ACTIONS.** Ранг заклинания и фактическая иконка в игровом клиенте не подтверждены.
+
 ## KR-20261121-136 — защита публичного выбора профиля от protected значений
 - `RotationProfiles.lua`: `Get`/`Has` проверяют ключ и уровень через `GameAPI:IsSafeValue` под `pcall` до использования значения в индексах/сравнениях. Неизвестный или защищённый идентификатор не выбирает профиль.
 - `tests/profile_contract_v1.lua`: четыре mock-проверки недоверенного ключа/уровня и отказа выбора.
