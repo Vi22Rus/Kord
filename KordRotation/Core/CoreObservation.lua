@@ -225,7 +225,10 @@ function O:ReadDisplay()
         lastEngineReason=reason(field(display,"lastEngineReason")) or "unknown",
     }
     if frame and safe(frame) then
-        local fn=field(frame,"IsShown")
+        local api=KR.GameAPI
+        local method=api and type(api.ReadField)=="function"
+            and api:ReadField(frame,"IsShown","function")
+        local fn=method and method.status=="READY" and method.value
         if type(fn)=="function" then
             local ok,value=pcall(fn,frame)
             if ok and safe(value) and type(value)=="boolean" then
