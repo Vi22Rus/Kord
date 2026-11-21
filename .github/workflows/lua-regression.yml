@@ -1,0 +1,44 @@
+name: Lua regression (WoW mock, not in-game)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'KordRotation/**/*.lua'
+      - 'tests/**/*.lua'
+      - '.github/workflows/lua-regression.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lua-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact pushed commit
+        uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y lua5.1
+      - name: Check syntax of all game modules and mock tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' f; do
+            lua5.1 -e 'assert(loadfile(arg[1]))' "$f"
+          done < <(find KordRotation tests -name '*.lua' -type f -print0)
+      - name: Run existing and canonical v14 mock tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for f in \
+            tests/stage_02_03_game_state.lua \
+            tests/stage_02_04_spell_catalogue.lua \
+            tests/stage_02_05_actionbar.lua \
+            tests/stage_02_06_bindings.lua \
+            tests/stage_02_07_eligibility.lua \
+            tests/stage_02_08_rotation_engine.lua \
+            tests/stage_02_08_v14_state.lua; do
+            echo "RUN $f"
+            lua5.1 "$f"
+          done

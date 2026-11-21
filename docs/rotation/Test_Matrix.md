@@ -77,3 +77,7 @@
 
 - **Файл:** `tests/stage_02_08_v14_state.lua`; изолированные mock-значения здоровья/ресурса, API error, Secret API, pet/pettarget, instance status, Auto Shot, границы threat. **Синтаксис теста** проверен texluac; **исполнение на реальном исходном ядре** требуется при наличии всех файлов в локальном workspace — не выдавать syntax-only за PASS assertions.
 - **Обязательные FAIL cases:** fractional threat; GetInstanceInfo second return nil при IsInInstance true; UnitPowerPercent secret; ошибочный UnitHealthPercent; отсутствующий Curve. **Игра:** NOT RUN.
+
+## Исполняемая регрессия на точном GitHub-коммите
+
+Добавлен workflow `.github/workflows/lua-regression.yml`: на push с Lua-изменениями и по ручному запуску устанавливает Lua 5.1, проверяет синтаксис Lua-модулей и запускает все семь существующих тестовых файлов, включая `tests/stage_02_08_v14_state.lua`. **Наличие workflow НЕ равно PASS:** результаты фиксировать только после завершённого GitHub Actions job с проверенным SHA; если GitHub Actions не запустится, отмечать NOT RUN. Это не тест в клиенте WoW Forever.
