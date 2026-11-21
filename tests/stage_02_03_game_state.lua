@@ -128,6 +128,19 @@ local targetPresent={target={exists={status="READY",value=true},
  guid={status="READY",value="Creature-2"}}}
 local targetMissing={target={exists={status="READY",value=false}}}
 eq(KR.GameState:ReadSignal("player.buff",1978).value,true,"verified player buff")
+local playerPresent={player={exists={status="READY",value=true}}}
+local playerAbsent={player={exists={status="READY",value=false}}}
+local playerUnknown={player={exists={status="UNKNOWN"}}}
+eq(KR.GameState:ReadSignal("player.buff",1978,playerPresent).value,true,
+ "confirmed snapshot permits player buff")
+local readsBeforePlayerGuard=auraReads
+eq(KR.GameState:ReadSignal("player.buff",1978,playerAbsent).status,"UNKNOWN",
+ "absent player snapshot cannot produce READY aura")
+eq(KR.GameState:ReadSignal("player.buff",1978,playerUnknown).status,"UNKNOWN",
+ "unknown player existence cannot produce READY aura")
+eq(KR.GameState:ReadSignal("player.buff",1978,{}).status,"UNKNOWN",
+ "missing player state cannot produce READY aura")
+eq(auraReads,readsBeforePlayerGuard,"invalid player snapshot skips aura API")
 eq(KR.GameState:ReadSignal("target.debuff",1978,targetPresent).value,true,
  "verified target debuff")
 eq(KR.GameState:ReadSignal("player.buff",12345).status,"UNKNOWN",
