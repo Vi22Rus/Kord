@@ -106,9 +106,7 @@ end
 local p=profile(1,"HUNTER_BM_LEVELING_PVE",1,59)
 p.Rules={
  rule("OptionalSting","Sting",function(S,cfg)
-  if cfg.alternate==false then
-   return nilAura(S,cfg)
-  end
+  if cfg.alternate==false then return false end
   return nilAura(S,cfg)
  end,{onUnknown="skip"}),
  rule("Arcane","Arcane",function()return true end)
@@ -171,7 +169,7 @@ eq(state.queue[1].spellID,102,"boolean false override disables first rule")
 config.useSting=true
 config.alternate=false
 state=E:Evaluate()
-eq(state.queue[1].spellID,101,"false enum value remains valid")
+eq(state.queue[1].spellID,102,"false enum value prevents first rule")
 config.alternate=true
 auraValue=true
 state=E:Evaluate()
