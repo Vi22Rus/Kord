@@ -27,6 +27,13 @@ eq(type(lastframe.scripts.OnEvent),"function","event handler enabled")
 eq(lastframe.events.UPDATE_BINDINGS,true,"event registered")
 lastframe.scripts.OnEvent(lastframe,"UPDATE_BINDINGS")
 eq(#D.records>0,true,"recorded events")
+eq(D.records[1].reason,"update_bindings","named event not manual_sample")
+eq(lastframe.events.UNIT_SPELLCAST_SUCCEEDED,true,"player cast event registered")
+local beforeOtherUnit=#D.records
+lastframe.scripts.OnEvent(lastframe,"UNIT_SPELLCAST_SUCCEEDED","target")
+eq(#D.records,beforeOtherUnit,"other unit cast ignored")
+lastframe.scripts.OnEvent(lastframe,"UNIT_SPELLCAST_SUCCEEDED","player")
+eq(D.records[#D.records].reason,"unit_spellcast_succeeded","player cast named")
 D:ObserveTransition()
 local count=#D.records
 D:ObserveTransition()
