@@ -1,6 +1,4 @@
 -- Kord Rotation | Hunter Survival | Leveling 1-59 | PVE | WoW Forever
--- Design profile (standalone, NOT registered in TOC). Reference priority: Sonah,
--- cross-checked against MaxDps Forever, ForeverRotation, RotationGuide, JustAC.
 -- No direct WoW API. Shared GameData adapter supplies canonical, verified signals.
 -- UNKNOWN is nil; only explicit true/false may prove a condition.
 -- Interface: SV.Next(state, options) -> {spellID, spell, phase, reason} or nil.
@@ -99,7 +97,6 @@ local function maintenance(s,o)
   end
  end
  if opt(o,'aspectReminder') and s.inCombat==false then
-  -- Sonah: Monkey before Beast is learned, Beast after level 30 if known.
   if type(s.known)=='table' and s.known.AspectBeast==true then
    local r=attempt(s,'AspectBeast',absent(s.playerBuffs,'AspectBeast')
     and s.otherAspectActive==false,'buff','Survival melee aspect')
@@ -171,7 +168,6 @@ local function meleeDamage(s,o)
  local style=opt(o,'manaStyle')
  local lvl=s.playerLevel
  local r
- -- Sonah questing opener precedes Mark and reactive attacks.
  if not weaving and questing(s) and opt(o,'manaStyle')~='efficient' then
   r=recommend(s,'StriderKick','melee','Questing opener: Strider Kick')
   if r then return r end
@@ -184,7 +180,6 @@ local function meleeDamage(s,o)
  if r then return r end
  r=recommend(s,'Counterattack','melee','Reactive parry window')
  if r then return r end
- -- Sonah: skip Strider Kick in dungeons at 40+ for Efficient,
  -- and for Balanced at 40-49.
  local skipKick=dungeon and type(lvl)=='number' and lvl>=40
   and (style=='efficient' or (style=='balanced' and lvl<50))
@@ -192,7 +187,6 @@ local function meleeDamage(s,o)
   r=recommend(s,'StriderKick','melee','Weapon-damage kick')
   if r then return r end
  end
- -- Sonah: dungeon Balanced/Efficient skip Raptor Strike;
  -- Maximum skips it at 30-39. Never queue twice.
  local skipRaptor=dungeon and (style=='balanced' or style=='efficient'
   or (style=='maximum' and type(lvl)=='number' and lvl>=30 and lvl<40))
