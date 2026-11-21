@@ -264,6 +264,11 @@ eq(C:Check(S,102,{target="enemy",cast="idle",chargesRequired=false}).status,
 eq(eligibilityCalls,before+1,"one Eligibility call per exact policy")
 eq(S:spellAvailable(987654),"UNKNOWN","spell outside registry never checked")
 eq(S:spellFact(102,"cooldownActive"),nil,"unproven fact UNKNOWN")
+local beforeRangeFact=factCalls
+eq(S:spellFact(101,"inRange"),nil,"undeclared range fact is UNKNOWN")
+eq(factCalls,beforeRangeFact,"undeclared range does not reach Fact provider")
+eq(S:spellFact(102,"inRange"),nil,"declared but unavailable range UNKNOWN")
+eq(factCalls,beforeRangeFact+1,"declared range reaches Fact provider once")
 factEnabled=true
 local S2=C:Create(direct,KR.GameState:GetSnapshot())
 local prevFact=factCalls
