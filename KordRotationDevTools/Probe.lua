@@ -65,6 +65,13 @@ function D:Why()
         local ok,value=pcall(bridge.Diagnose)
         if ok and type(value)=="table" and self:Safe(value) then diagnosis=value end
     end
+    local display
+    if type(bridge)=="table" and type(bridge.Display)=="function" then
+        local ok,value=pcall(bridge.Display)
+        if ok and type(value)=="table" and self:Safe(value) then
+            display=value
+        end
+    end
     local actionBar
     if type(bridge)=="table" and type(bridge.ActionBar)=="function" then
         local ok,value=pcall(bridge.ActionBar)
@@ -118,6 +125,16 @@ function D:Why()
             and tostring(actionBar.arcaneRankOnBar) or "NOT CONFIRMED"),
         "Arcane Shot FindSpell: "..status(actionBar and actionBar.arcaneFindStatus)
             .." / "..reason(actionBar and actionBar.arcaneFindReason),
+        "Display last engine: "..status(display and display.lastEngineStatus)
+            .." / "..reason(display and display.lastEngineReason),
+        "Display accepts recommendation: "..observation("READY",
+            display and display.recommendationAccepted),
+        "Display visibility allowed: "..observation("READY",
+            display and display.visibilityAllowed),
+        "Display frame created: "..observation("READY",
+            display and display.frameCreated),
+        "Display frame shown: "..observation("READY",
+            display and display.frameShown),
         "Profile (manual evaluation): "..status(diagnosis and diagnosis.profileStatus),
         "Profile (last UI evaluation): "..status(summary and summary.profileStatus),
         "Eligibility (ready/blocked/unknown): "
