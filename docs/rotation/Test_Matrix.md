@@ -230,3 +230,14 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | PC-008 | Реальные GameData providers, 5.1, Secret & client | будущий stage 2.9-D / WoW Forever | NOT RUN |
 
 `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_contract.lua` — **удалены из текущего дерева** как тесты прежнего архитектурного формата; их прежние результаты и исходники остаются в Git history. Другие GameAPI/GameState/Eligibility/UI/DevTools тесты сохранены. Никакого выполнения GitHub Actions на этом SHA не было.
+
+### Новые проверки перед финальной локальной регрессией (2.9-C)
+| ID | Сценарий | Статус |
+|---|---|---|
+| PC-009 | Экспериментальный профиль только с явным allowUnverifiedProfiles | SOURCE TEST ADDED / NOT RUN |
+| PC-010 | RotationDisplay скрывает experimental без разрешения и после его отзыва | SOURCE TEST ADDED / NOT RUN |
+| PC-011 | S:any различает false/nil, некорректный тип не приводит к skip | SOURCE TEST ADDED / NOT RUN |
+| PC-012 | Needs не вызывает провайдер для необъявленного Spell ID | SOURCE TEST ADDED / NOT RUN |
+| PC-013 | ResolveForEngine не копирует профиль; Get возвращает отдельную копию | SOURCE TEST ADDED / NOT RUN |
+
+Активный набор — **17** Lua suites; полный локальный Lua 5.1 / CI / WoW Forever NOT RUN.

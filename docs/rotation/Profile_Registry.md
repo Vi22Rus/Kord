@@ -1,6 +1,6 @@
 # Profile Registry — инвентарь и допуск к использованию
 
-**Нормативная цель:** [Profile Contract v1](Profile_Contract.md), статусы `draft/mock_tested/experimental/verified`, раздельный тестовый и игровой допуск. **SPEC ONLY:** действующий `RotationProfiles.lua` пока проверяет `verified=true`; ни один Hunter не зарегистрирован/не загружен в TOC. Новые статусы нельзя объявить реализованными до Lua-миграции.
+**Нормативная цель:** [Profile Contract v1](Profile_Contract.md), статусы `draft/mock_tested/experimental/verified`, раздельный тестовый и игровой допуск. **SOURCE IMPLEMENTED / LUA 5.1 NOT RUN:** действующий `RotationProfiles.lua` проверяет `contractVersion=1` и статусы `draft/mock_tested/experimental/verified`; движок допускает verified или явно разрешённый experimental. Ни один Hunter не зарегистрирован/не загружен в TOC. Новые статусы нельзя объявить реализованными до Lua-миграции.
 
 
 

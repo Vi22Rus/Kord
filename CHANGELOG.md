@@ -1,3 +1,9 @@
+## KR-20261121-081 — актуальная матрица проверки контрактной миграции
+- Дата: 2026-11-21 UTC. Profile Registry, cleanup audit и Test Matrix теперь различают SOURCE IMPLEMENTED v1, непроверенные Lua 5.1 сценарии и отсутствие WoW Forever API PASS. Активный набор: 17 Lua scripts.
+- Зафиксированы PC-009…013: experimental opt-in в Engine/UI, отзыв разрешения, недекларированные ауры, трёхзначное S:any и отсутствие глубокого копирования при Evaluate.
+- Незавершённые провайдеры GameState.ReadSignal / AbilityEligibility.Fact, AUTO-ST/AoE и генератор CFG UI не представлены как DONE. Оригинал Profile Contract v1 без изменений.
+- Изменена только документация, local full/CI/client NOT RUN.
+
 ## KR-20261121-080 — согласование PROJECT_CONTEXT, BUILD_VARIANTS и Creation Guide
 - Дата UTC 2026-11-21. Исправлены фактически устаревшие инструкции о «сначала полный Lua-прогон, потом писать контракт», «текущий Engine = 2.8» и «v1 SPEC ONLY» в PROJECT_CONTEXT, BUILD_VARIANTS, гайде ротаций и rotation README.
 - Точная формулировка: v1 SOURCE IMPLEMENTED, актуально 17 Lua suites, ни один новый контракт не получил Lua 5.1 PASS и игровой PASS. Полный локальный прогон только после завершения миграции/ревизии тестов; GitHub Actions только вручную на общем QA.
