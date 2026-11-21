@@ -3192,6 +3192,22 @@ translations["esES"] = {
     ["DIAG_DEVTOOLS_NOTE"] = "La supervisión avanzada, las pruebas de API, el rastreo de eventos y la exportación de informes están en el addon independiente Kord Rotation DevTools.",
 }
 
+-- Experimental recommendations must be explicitly enabled; no auto-casting.
+local experimentalLabels = {
+ enUS={"Enable experimental rotation recommendations","Unverified Hunter BM pilot. Requires manual single-target mode and enabled rotation. Suggestions only, never casts."},
+ ruRU={"Включить экспериментальные подсказки ротации","Непроверенный пилот Hunter BM. Требуется вручную выбрать одну цель и включить ротацию. Только подсказки, без автокаста."},
+ frFR={"Activer les recommandations expérimentales","Prototype Chasseur BM non vérifié. Activez le mode cible unique et la rotation. Suggestions uniquement, aucun lancement automatique."},
+ deDE={"Experimentelle Rotationsempfehlungen aktivieren","Ungeprüfter Tierherrschaft-Jäger-Test. Einzelzielmodus und Rotation manuell aktivieren. Nur Hinweise, kein automatisches Wirken."},
+ ptBR={"Ativar sugestões experimentais de rotação","Protótipo não verificado de Caçador Domínio das Feras. Ative alvo único e rotação. Apenas sugestões, sem lançamento automático."},
+ esES={"Activar recomendaciones experimentales","Prototipo no verificado de Cazador Bestias. Activa objetivo único y rotación manualmente. Solo sugerencias; no lanza hechizos."}
+}
+for locale,strings in pairs(experimentalLabels) do
+ if translations[locale] then
+  translations[locale].ROT_EXPERIMENTAL_OPTIN=strings[1]
+  translations[locale].TIP_ROT_EXPERIMENTAL_OPTIN=strings[2]
+ end
+end
+
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.
 -- Do not silently overwrite client locale: it is determined via GetLocale().
 local locale = type(GetLocale) == "function" and GetLocale() or "enUS"
