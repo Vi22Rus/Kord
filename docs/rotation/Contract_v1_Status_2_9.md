@@ -55,7 +55,7 @@
 
 - `AbilityEligibility:Fact(id, kind, options)` добавлен только для `cooldownActive` (читаемое `C_Spell.GetSpellCooldown(...).isActive`) и `inRange` (проверка текущей цели через `C_Spell.IsSpellInRange`, либо валидный legacy 0/1). Возвращает `{status="READY",value=<boolean>}` только при доступном обычном boolean; ошибка, nil, secret и неподдерживаемый источник = `UNKNOWN`.
 - `isOnGCD` не используется для вывода активности кулдауна. Положительная дальность / отрицательный факт кулдауна не означают итоговую пригодность способности: `Evaluate` остаётся единственным источником финального допуска.
-- `known` и `chargesAtLeast` пока отвечают `UNKNOWN`: требуется отдельная доказательная проверка spellbook, а у `chargesAtLeast` нет порога в текущем интерфейсе `spellFact(id,kind)`.
+- **Исторический статус до KR-20261121-114:** оба факта оставались `UNKNOWN`. `known` теперь частично реализован (см. ниже); `chargesAtLeast` по-прежнему без порога.
 - В `tests/stage_02_07_eligibility.lua` добавлены сценарии true/false/UNKNOWN, secret Spell ID, защищённого поля cooldown и запрета угадывать `isActive` по `isOnGCD`. `GameState.ReadSignal` остаётся отсутствующим.
 - **Статус:** SOURCE IMPLEMENTED (partial), MOCKS UPDATED, LUA 5.1 NOT RUN, CLIENT NOT RUN. Никакие API не объявлены подтверждёнными в реальном WoW клиенте.
 
@@ -82,6 +82,14 @@
 - В mock-тест `stage_02_03_game_state.lua` добавлены проверки защищённой AuraData-таблицы, исключения в lookup, защищённого GUID после успешного чтения, а также присутствующего/отсутствующего/неизвестного игрока и отсутствия лишних API-вызовов.
 - Вывод по v14 #12/#13 прежний: `nil` от прямого поиска ауры не доказывает её отсутствия. `READY(false)` **не реализован**, `UNKNOWN` сохраняется.
 - Граница приёмки: изменения проверены по исходникам в GitHub; **17 Lua mock suites NOT RUN / Lua 5.1 NOT RUN / CLIENT NOT RUN / CI NOT RUN**.
+
+## Факт изученности known и открытый контракт chargesAtLeast (KR-20261121-114…117)
+
+- `AbilityEligibility:Fact(id,"known")` переиспользует существующий `spellKnown(id,catalogue)` из финального Eligibility: подтверждённое наличие в SpellCatalogue или положительный ответ `C_SpellBook.IsSpellKnown` → `READY(true)`; **только явное** `BLOCKED/not_learned` от SpellBook API → `READY(false)`.
+- Отсутствие записи в каталоге, недоступный SpellBook API, исключение или ошибочная структура каталога → `UNKNOWN`. Запрос не выполняет `Evaluate` и не присваивает финальный статус способности. Непроверенный высший ранг заклинания (#20) не выводится из этого факта.
+- В `tests/stage_02_07_eligibility.lua` добавлены mock-сценарии true/false/unknown и ошибок каталога.
+- `chargesAtLeast` остаётся `UNKNOWN/fact_provider_unimplemented`: интерфейс `S:spellFact(id,kind)` не содержит порога `N`. Реализацию нельзя начинать с молчаливого `N=1`; потребуется явное согласованное расширение контракта и защита по v14 #26.
+- **SOURCE IMPLEMENTED (known); LUA 5.1/17 SUITES NOT RUN; WoW CLIENT NOT RUN; CI NOT RUN.**
 
 ## Блокирующие оставшиеся задачи ДО Hunter BM
 
