@@ -1,3 +1,11 @@
+## KR-20261121-174 — DevTools экспорт событий и причин теперь информативен
+- По клиентскому отчёту: экспорт из сессии с выбором цели и боем показывал только `EVENT READY manual_sample`, `ENGINE UNKNOWN manual_sample`, `PROFILE UNKNOWN manual_sample`. Это недостаточная диагностика.
+- `KordRotationDevTools/Trace.lua`: события записываются с точными **разрешёнными** именами причин (`player_target_changed`, `spell_update_cooldown`, `update_bindings`, `actionbar_slot_changed` и др.). Добавлены события начала, успешного и неудачного завершения **только собственных** кастов игрока; имена, GUID и ID заклинаний в лог не попадают.
+- Переход `ENGINE` теперь включает `engineReason` от CoreObservation (например `action_slot_unconfirmed`), вместо неинформативного `manual_sample`. Изменение причины при том же статусе создаёт новую запись.
+- Новый тип `TARGET` отражает `target_present`, `target_absent`, `target_unverified` по безопасному pull-only мосту `CoreObservation.Target`. Не сохраняются сырые игровые объекты.
+- `Recorder.lua` расширен **строгими whitelist-значениями**; ограничения размера/времени и ручное включение сохранены. Добавлены mock-тесты. Основной `KordRotation` и его пользовательский интерфейс **не изменялись**.
+- **LUA 5.1 / GAME CLIENT NOT RUN**; реальные события WoW Forever требуют проверки пользовательской установкой.
+
 ## KR-20261121-169 — Hunter BM: причина UNKNOWN/action_slot_unconfirmed
 - По скриншоту реального клиента: `Target before evaluate: live=true`, `Target evaluated: exists=true`, `Rotation: UNKNOWN / action_slot_unconfirmed`. Чтение цели подтверждено; следующий отказ — на этапе проверки точного ID способности на видимой панели.
 - Обнаружена ошибка в экспериментальном пилоте: `Spells.ArcaneShot=3044` означает только **ранг 1**, хотя у Arcane Shot на WoW Forever восемь разных Spell ID. Уровень 30 допускает ранг 4, ID **14283** (источник: 60.tools/spellbook/hunter, Forever build 1.60.1.70888).
