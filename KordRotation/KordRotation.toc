@@ -16,6 +16,7 @@ Core\SpecDetector.lua
 Core\RotationSettings.lua
 Core\GameAPI.lua
 Core\EventBus.lua
+Core\AuraEvidence.lua
 Core\SpellCatalogue.lua
 Core\GameState.lua
 Core\ActionBarScanner.lua
