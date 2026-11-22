@@ -1,3 +1,9 @@
+## KR-20261122 — DevTools full-journal multi-page export after 32 KiB truncation
+
+- User's latest actual Forever trace has `truncated=1`, `dropped=0`, `evicted_parts=0`: the first 32 KiB text page ends amid method probes, so the combat/target-change portion cannot be analyzed from the submitted text. First observed actual GameAPI failures: `UnitHealth` and `UnitPower` `UNKNOWN/protected_value`. Profile has 35 BM rules, 29 confirmed visible spell buttons; scanner now gives distinct `button_action_not_spell`, `button_action_unconfirmed`, `button_spell_id_unconfirmed`, `button_not_visible` reasons.
+- Replaced fixed first-32 KiB `Recorder:Export()` truncation with `Export(page)`, complete chronological records on bounded pages, `page=N/M` header/footer, no gap or duplicate within retained SavedVariables segments. Existing Export UI button cycles pages on successive clicks and wraps back to page 1. The `truncated=1` footer is retained for backward compatibility and now means **more than one page**, not that later pages are unavailable. `dropped` and `evicted_parts` continue to signal independent data loss.
+- Added pagination regression in `tests/devtools_recorder.lua` (90 records, every sequence exactly once across multiple pages; bounded page size). **MOCK/CLIENT NOT RUN on latest commit.** This change affects only DevTools export, not game API semantics or BM eligibility.
+
 ## KR-20261122 — Runtime API trace static coverage reconciliation
 
 - Static connector-backed cross-check of `V14Registry.lua` vs `GameAPI.lua`: **101 matrix rows**, **79 rows naming a direct method**, **29 distinct named methods**, **0 mapped methods absent from the GameAPI allowlist**. The remaining **22** are composite rows without a single safe method-probe. This validates source mapping only, not live execution in WoW Forever.
