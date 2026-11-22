@@ -76,6 +76,7 @@ local scannerFailures={
 for code in pairs(scannerFailures) do reasons[code]=true end
 local eligibilityStages={"cast","usability","charges","cooldown","gcd","range"}
 reasons.arcane_rank_4_bar_failure=true
+reasons.not_evaluated=true
 for _,name in ipairs(eligibilityStages) do
     reasons["arcane_check_"..name]=true
 end
