@@ -55,6 +55,45 @@ local function eq(actual,expected,message)
     end
 end
 
+-- Opt-in diagnostics observe every real adapter call; method presence
+-- probes stay distinct and neither game arguments nor values are saved.
+eq(KR.GameAPI:BeginDiagnosticTrace(),true,"trace explicitly enabled")
+eq(KR.GameAPI:Read("UnitExists","boolean","target").value,false,
+ "trace: normal API read")
+eq(KR.GameAPI:Read("UnitExists","boolean","target").value,false,
+ "trace: repeated API read")
+eq(KR.GameAPI:Read("UnitExists","string","target").status,"UNKNOWN",
+ "trace: rejected return type")
+eq(KR.GameAPI:Probe("UnitExists").status,"READY",
+ "trace: presence-only probe")
+eq(KR.GameAPI:ReadField({x=5},"x","number").value,5,
+ "trace: field read")
+KR.GameAPI:ObserveDiagnostic("GameAPI.ActionBarScanner.findspell",
+ "UNKNOWN","visible_spell_rank_mismatch")
+local events=KR.GameAPI:DrainDiagnosticTrace()
+local observed={}
+for _,event in ipairs(events.entries) do
+ observed[event.method.."/"..event.status.."/"..event.reason]=event.count
+ eq(event.method:find("Creature",1,true),nil,"no raw target")
+end
+eq(observed["UnitExists/READY/none"],2,"actual method call count")
+eq(observed["UnitExists/UNKNOWN/unexpected_type"],1,
+ "failure reason retained")
+eq(observed["GameAPI.Probe.UnitExists/READY/none"],1,
+ "presence probe never merges with real read")
+eq(observed["GameAPI.ReadField/READY/none"],1,
+ "field read recorded")
+eq(observed["GameAPI.ActionBarScanner.findspell/UNKNOWN/visible_spell_rank_mismatch"],
+ 1,"button scanner internal checkpoint")
+eq(#KR.GameAPI:DrainDiagnosticTrace().entries,0,
+ "drain clears events and index")
+KR.GameAPI:Read("UnitExists","boolean","target")
+eq(#KR.GameAPI:DrainDiagnosticTrace().entries,1,
+ "fresh reads remain observable after drain")
+eq(KR.GameAPI:EndDiagnosticTrace(),true,"trace explicitly disabled")
+KR.GameAPI:Read("UnitExists","boolean","target")
+eq(#KR.GameAPI:DrainDiagnosticTrace().entries,0,
+ "production does not collect inactive trace")
 eq(KR.GameAPI:Read("UnitExists","boolean","target").value,false,"false must survive")
 eq(KR.GameAPI:Read("UnitExists","string","target").status,"UNKNOWN","type mismatch")
 eq(KR.GameAPI:Read("CastSpellByID","boolean",1).status,"UNAVAILABLE","no cast APIs")
