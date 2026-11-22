@@ -20,8 +20,8 @@ CreateFrame=function()
  function f:SetScript(key,fn) self[key]=fn end
  return f
 end
-assert(loadfile("KordRotation/Core/AuraCooldownViewer.lua"))
- ("KordRotation",KR)
+local loadModule1=assert(loadfile("KordRotation/Core/AuraCooldownViewer.lua"))
+loadModule1("KordRotation",KR)
 local V=KR.AuraCooldownViewer
 assert(V and V.frame,"event-driven viewer initialized")
 assert(events.COOLDOWN_VIEWER_DATA_LOADED,"refresh event registered")
