@@ -587,6 +587,21 @@ local function resolveSpells(entries)
  end
  return spells
 end
+local function barSignature()
+ local scanner=KR.ActionBarScanner
+ if not scanner or type(scanner.GetSnapshot)~="function" then return nil end
+ local ok,snapshot=pcall(scanner.GetSnapshot,scanner)
+ if not ok or type(snapshot)~="table" or snapshot.status~="READY"
+     or type(snapshot.entries)~="table" then return nil end
+ local ids={}
+ for _,item in ipairs(snapshot.entries) do
+  if type(item)=="table" and type(item.spellID)=="number" then
+   ids[#ids+1]=tostring(item.spellID)
+  end
+ end
+ table.sort(ids)
+ return table.concat(ids,",")
+end
 function M:Register()
  if not KR.RotationProfiles or not KR.RotationProfiles.Replace then
   return false,"registry_unavailable"
@@ -613,6 +628,16 @@ function M:Register()
  if not ok then return false,why end
  local success,reason=self:Register60()
  if not success then return false,reason end
+ -- Re-evaluate rank only when the visible bar spell-ID set changes.
+ self.barSignature=barSignature()
+ if not self.barSubscribed and KR.EventBus
+     and type(KR.EventBus.Subscribe)=="function" then
+  self.barSubscribed=KR.EventBus:Subscribe("actionbar",
+      "BMLevelingRankSelection",function()
+   local signature=barSignature()
+   if signature and signature~=M.barSignature then M:Register() end
+  end)==true
+ end
  return true,"HUNTER_BM_LEVELING_PVE"
 end
 function M:Register60()
