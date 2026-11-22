@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-04:** **См. IT-04: IT-04 selects a candidate and does not grant READY; only canonical AbilityEligibility can grant final READY.**
+
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 must extend the sole AbilityEligibility final READY with item-specific policy; spell usability and spell range do not prove item usability.**
 
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 provides item cooldown and shared-group observations to canonical AbilityEligibility; only the final eligibility gate may issue READY.**
@@ -4041,6 +4043,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация IT-04:** **См. IT-04: IT-04 best healing potion selection is a separate item choice input to healing priority, not proof of need or safe usage.**
+
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 bandage/potion target and combat restrictions must be checked before group care recommendations.**
 
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 potion/healthstone/bandage cooldown is separate from group healing priority and target safety; count and cooldown do not establish a healing action.**
@@ -4743,6 +4747,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-04:** **См. IT-04: IT-04 uses the canonical bag-only InventoryObservation and ItemFamilyCatalog; no second family scanner, and an unknown higher-tier count prevents a proven best-item claim.**
+
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 uses IT-01 confirmed bag-only count and item identity; item possession never proves item usability.**
 
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 reuses IT-01 item IDs, bag scope, family catalog and revisions; count>0 is not cooldown READY, and do not create another bag scanner.**
@@ -4799,6 +4805,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Архитектурная актуализация IT-04:** **См. IT-04: IT-04 consumes per-item and shared potion cooldown; a highest-tier owned potion is not necessarily the highest-tier currently usable potion.**
 
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 uses IT-02 individual and shared cooldown; zero cooldown never proves combat/target/level/zone eligibility.**
 
@@ -4858,6 +4866,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-04:** **См. IT-04: IT-04 delegates level, zone, combat, target and item usability gates to IT-03; highest item level is not required player level.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
 
 #### Требование
@@ -4909,5 +4919,61 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩЕГО КОНТЕКСТА — ДОРАБОТАТЬ (P0).** Kord умеет читать player level/combat и часть target facts, но не имеет подтверждённой item usability, item range, zone restrictions, item required level и item-specific final eligibility.
 
 **Архитектурные ссылки:** IT-01, IT-02, SP-14, GR-05, EN-04, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
+
+#### Требование
+
+По `familyID=HEALTH_POTION` выбирать **наивысший подтверждённый применимый tier** из предметов, реально имеющихся в сумках, а не самый высокий itemID, itemLevel или самое большое лечение без явного выбора иной стратегии. `ItemFamilySelectionObservation(familyID,selectionPolicy,context)` возвращает `selectedItemID`, `selectedTier`, `eligibleCandidates`, `blockedCandidates`, `unknownCandidates`, `selectionStatus=SELECTED/NONE_AVAILABLE/UNKNOWN`, `selectionConfidence`, `reason/source/bagRevision/catalogRevision/eligibilityRevision`. `HIGHEST_USABLE_TIER` означает максимальный **catalog rank** среди `count>0` (IT-01), с подтверждёнными IT-03 `requiredPlayerLevel<=playerLevel`, combat/zone/target/usability и IT-02 item/shared cooldown. Если более высокий кандидат неизвестен (secret count, pending metadata, ambiguous tier, unknown cooldown/zone), **нельзя утверждать, что выбранный низший — лучший**: вернуть UNKNOWN с `provisionalCandidate` для диагностики, не READY. `NONE_AVAILABLE` только если все члены семейства проверены и ни один не применим. Уровень предмета (`itemLevel`) и минимальный уровень персонажа (`requiredLevel`) — разные значения. При одинаковом tier применять детерминированный validated `tieBreakPolicy` (например, доступность, ожидаемый эффект при отдельной политике, затем стабильный itemID); не подменять задачу выбором максимального лечения. Семейство `HEALTH_POTION` не смешивать с healthstones, бинтами, едой и комбинированными эликсирами без явной классификации.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: нет подтверждённого `C_Item.GetItemCount`, `C_Item.IsUsableItem`, `C_Item.GetItemInfo`, `C_Item.GetItemCooldown` для item ranking/eligibility; `UnitLevel` есть.
+- `KordRotation/Core/GameState.lua:126–127,224–243`: player level/combat и target snapshot имеются, но нет family candidate evaluation или `selectedItemID`.
+- `KordRotation/Core/AbilityEligibility.lua:175–184,187–238`: spell-specific usability/target checks, не item-level selection или item READY.
+- `KordRotation/Core/RotationConditions.lua:63–74,159–171`: lazy Needs есть для существующих spell facts, `items.bestUsable(family)` нет.
+- `KordRotation/Core/EventBus.lua:20–32`: combat/target/resource события есть, но нет bag/item metadata/zone/item cooldown revisions.
+- **IT-01, IT-02, IT-03** уже определяют общие inventory, cooldown и eligibility contracts. IT-04 — **только selector поверх них**, без нового bag scanner или альтернативного item eligibility.
+
+#### Сравнение семи референсов (локальные ZIP, проверенные Lua и строки)
+
+1. **Sonah:** `Sonah/Core/Organisms/Engine.lua:527–534` задаёт упорядоченный **Major→Minor** список health potions `{13446,3928,1710,929,858,118}`, `:570–573` генерирует рекомендации по каждому ID при low HP и наличии; `Sonah/Core/Atoms/Items.lua:84–94,112–117` предоставляет count/usable. **Перенять explicit tier ordering**, но priority order не заменяет level/zone/cooldown eligibility; список не охватывает все Forever варианты.
+2. **JustAC:** `JustAC/SpellDB.lua:87–95,141–170` регистрирует ranked healing items, лениво пересчитывает best по bags и оставляет dirty при неполных tooltip data; `:99–139` оценивает величину лечения из item tooltip, включая процентные эффекты; `JustAC/Data/Forever/Consumables.lua:554–605` перечисляет кастомные Forever зелья, healthstones и другие healing items. **Перенять широкий Forever каталог, revision cache и отказ от окончательного рейтинга при неполных данных**; `GetBestHealingItem` выбирает максимальное лечение, **не** максимальный допустимый tier, а `(GetItemCount or 0)` небезопасно при secret. Разделить `HEALTH_POTION` и `ALL_HEALING_ITEMS`.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:7010–7033` даёт count по item и bags refresh; `ForeverAuras/GenericTrigger.lua:3715–3730` даёт item cooldown; `ForeverAuras/GenericTrigger.lua:5411` item-specific range; `ForeverAuras/SpellNameData.lua:1679,1775,2337,3884` показывает Forever variants healing potion spells. В проверенных местах не подтверждён готовый **best usable tier selector**. Перенять отдельные validated inputs, не ранжировать по spellID.
+4. **MaxDps:** `MaxDps/Helper.lua:2768–2780` использует `C_Item.IsUsableItem` для on-use item, `MaxDps/Helper.lua:1871–1885` читает cooldown. В проверенных Lua нет подтверждённого универсального ranked family selector с уровнем игрока; проверка on-use trinket не эквивалентна выбору зелья.
+5. **ForeverRotation:** в проверенных Lua не найден универсальный item count/best healing potion selector. Приоритеты расходников не доказывают ранжирование по применимому tier.
+6. **RotationGuide:** в проверенных Lua не найден универсальный item count/best healing potion selector. Статические spell/rotation lists не доказывают item selection.
+7. **RotationMaster:** `RotationMaster/init.lua:63–80,141–142` содержит расширяемое семейство healing potions; `RotationMaster/Core/item_sets.lua:120–165,168–181` выбирает **первый имеющийся** item из упорядоченного списка на одном bag snapshot и прерывает выбор при unknown; `RotationMaster/Core/item_conditions.lua:117–149` читает counts и fail-closed unknown; `RotationMaster/Platform/items.lua:484–505,550–558` предоставляет usable/range. **Основной референс для generic ordered family selector + fail-closed**, но first owned ≠ highest **usable**: необходимо добавить IT-02/IT-03 gates и validated tier order.
+
+#### Выбранный путь Kord
+
+**Один `ItemFamilySelectionObservation` поверх IT-01 `ItemFamilyCatalog`/`InventoryObservation`, IT-02 `ItemCooldownObservation`/`SharedItemCooldownObservation` и IT-03 `ItemUseEligibilityObservation`.** Добавить в **тот же** `ItemFamilyCatalog` для каждого itemID `familyID`, `tierOrder`, `requiredPlayerLevel` (с source и проверкой client metadata), `clientEdition`, `variant`, `tieBreakGroup`, `classificationConfidence`. Нет нового универсального файла или второго каталога. `tierOrder` — проверенный rank/grade в семье, **не** числовой itemID, itemLevel или размер tooltip heal. Forever custom variants `241650,247242,247241,247240,247239,4596,282011,223913,223914,287977,288896,287967,287966,268881–268883` проверять отдельно по реальной семантике, требованиям уровня, эффектам и принадлежности к `HEALTH_POTION`; не переносить порядок из смешанного `RegisterHealingItems` JustAC как абсолютный. `ALL_HEALING_ITEMS` — отдельная семья/политика для heal amount, не заменяющая `HEALTH_POTION`.
+
+Алгоритм: получить **один** revision-consistent bag snapshot IT-01; взять unique itemIDs `HEALTH_POTION` и отсортировать по подтверждённому `tierOrder` по убыванию; для каждого кандидата лениво проверить `count`, `requiredLevel`, `playerLevel`, `C_Item.IsUsableItem`, combat, zone, target, IT-02 individual/shared cooldown. `BLOCKED` исключить с reason; `READY` кандидаты рассматриваются, но **итоговый READY только AbilityEligibility**. Если `UNKNOWN` у любого потенциально **более высокого или равного по tier** кандидата, не утверждать оптимальность: `selectionStatus=UNKNOWN`, можно сохранить provisional lower-tier ID **только для диагностики**, не для final recommendation. При проверенном `BLOCKED` высоком tier разрешён lower-tier fallback. Если все известны и ни один не проходит — `NONE_AVAILABLE`; если неизвестен любой существенный компонент — UNKNOWN. Если cooldown общий и активен, все соответствующие potions blocked; не предлагать младшее зелье как обход. `tieBreakPolicy` стабильный и документированный, при одинаковом tier с неодинаковым эффектом возможна отдельная стратегия `MAX_EXPECTED_HEAL` **только** по явному запросу профиля.
+
+Не делать full tooltip parsing на каждом evaluation; async item metadata загружать ограниченно вне combat, с `GET_ITEM_INFO_RECEIVED`/`ITEM_DATA_LOAD_RESULT` revision, с ограничением retries. `GetItemInfo` requiredLevel проверять по фактической позиции/типу на Forever; не трактовать missing metadata как level=0. Item selection memo key: `familyID+policy+playerLevel+bagRevision+itemCooldownRevision+sharedCooldownRevision+combatRevision+targetRevision+worldRevision+catalogRevision`; event-driven invalidation, lazy `Needs.items.selection`, no protected item use. Различать selector `selectedItemID` и финальную eligibility. DevTools отдельно пишет кандидатов и причины.
+
+#### Требуемые изменения
+
+1. Ввести `ItemFamilySelectionObservation` и стратегию `HIGHEST_USABLE_TIER` с SELECTED/NONE_AVAILABLE/UNKNOWN, confidence/reason/revision.
+2. Расширить **существующий IT-01** `ItemFamilyCatalog` validated tier/requiredLevel/Forever variant/classification; не создавать второй consumables catalog.
+3. Проверить на Forever классические и кастомные health potions, отделить `HEALTH_POTION` от `ALL_HEALING_ITEMS`/healthstones/bandages.
+4. Переиспользовать IT-01 bag count и UNKNOWN semantics, dedup itemIDs, один snapshot и bounded lazy candidate evaluation.
+5. Переиспользовать IT-03 item required level, usability, combat, target, zone; high-tier blocked по уровню -> lower-tier fallback, high-tier unknown -> UNKNOWN.
+6. Переиспользовать IT-02 per-item/shared potion cooldown; group lockout запрещает fallback на lower-tier potion.
+7. Ввести явный `tieBreakPolicy` для равного tier; `MAX_EXPECTED_HEAL` не включать по умолчанию.
+8. RotationConditions `items.bestUsable(familyID,policy)` и lazy `Needs.items.selection`, AbilityEligibility единственный final READY, EventBus revisions для level/bag/item data/cooldown/combat/target/zone.
+9. DevTools-only диагностика: `item_select_family_unknown`, `item_select_tier_unknown`, `item_select_higher_candidate_unknown`, `item_select_level_blocked`, `item_select_cooldown_blocked`, `item_select_shared_cd_blocked`, `item_select_zone_blocked`, `item_select_metadata_pending`, `item_select_lower_tier_fallback`, `item_select_best_confirmed`, `item_select_none_confirmed`.
+10. Тесты: one potion, multiple tiers, only high-level potion while underleveled, high-tier unusable -> lower fallback, high-tier unknown -> UNKNOWN, high-tier absent confirmed, equal tier variants, custom Forever IDs, overlapping healing families, healthstone exclusion, missing tooltip metadata, requiredLevel vs itemLevel, individual/shared potion cooldown, in/out combat, zone-limited variant, secret bag count, player level-up, bag mutation, async item info, deterministic ties, no false best/READY/protected item use.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет подтверждённого item family selector, validated tier catalog, item count/cooldown/usable eligibility. Частичный player level snapshot не решает выбор максимального применимого зелья.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, SP-14, GR-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
