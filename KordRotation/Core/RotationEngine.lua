@@ -111,7 +111,7 @@ local function levelOf(snapshot)
      or not validID(r.value) or r.value>100 then return nil end
  return r.value
 end
-local function run(channel)
+local function run(channel,sharedSnapshot)
  channel=channel=="defensive" and "defensive" or "main"
  if not KR.RotationProfiles or type(KR.RotationProfiles.ResolveForEngine)~="function"
     or not KR.RotationSettings or not KR.AbilityEligibility
@@ -131,8 +131,12 @@ local function run(channel)
  if mode~="single" and mode~="aoe" then return unknown("target_mode_invalid") end
  if type(KR.GameState.GetSnapshot)~="function" then
   return unknown("game_state_missing") end
- local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState,true)
- if not ok or type(snapshot)~="table" or not safe(snapshot)
+ local snapshot=sharedSnapshot
+ if snapshot==nil then
+  local ok,read=pcall(KR.GameState.GetSnapshot,KR.GameState,true)
+  if ok then snapshot=read end
+ end
+ if type(snapshot)~="table" or not safe(snapshot)
    or type(snapshot.player)~="table" or type(snapshot.target)~="table" then
   return unknown("game_state_unavailable") end
  local level=levelOf(snapshot)
@@ -243,5 +247,21 @@ function E:EvaluateDefensive()
  local ok,result=pcall(run,"defensive")
  if not ok or type(result)~="table" then return unknown("engine_exception") end
  return result
+end
+-- Both channels observe exactly the same fresh read-only game snapshot.
+-- Evaluations remain independent: an unknown DPS fact must not block aura upkeep.
+function E:EvaluateBoth()
+ if not KR.GameState or type(KR.GameState.GetSnapshot)~="function" then
+  return unknown("game_state_missing"),unknown("game_state_missing")
+ end
+ local ok,snapshot=pcall(KR.GameState.GetSnapshot,KR.GameState,true)
+ if not ok or type(snapshot)~="table" then
+  return unknown("game_state_unavailable"),unknown("game_state_unavailable")
+ end
+ local mainOK,main=pcall(run,"main",snapshot)
+ local defOK,def=pcall(run,"defensive",snapshot)
+ if not mainOK or type(main)~="table" then main=unknown("engine_exception") end
+ if not defOK or type(def)~="table" then def=unknown("engine_exception") end
+ return main,def
 end
 -- UI/EventBus own bounded updates; this module installs no OnUpdate loop.
