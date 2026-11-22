@@ -310,6 +310,23 @@ function S:ReadSignal(field,spellID,snapshot)
             end
         end
         return unknown("melee_range_unverified")
+    elseif field=="player.travelAspect" then
+        -- Cheetah and Pack are the movement aspects. Use the existing
+        -- protected-aware aura provider; only two confirmed absences
+        -- establish false. A failed scan is UNKNOWN, never false.
+        local cheetah=self:ReadSignal("player.buff",5118,snapshot)
+        if cheetah.status=="READY" and cheetah.value==true then
+            return {status="READY",value=true,source="TravelAspectAuras"}
+        end
+        local pack=self:ReadSignal("player.buff",13159,snapshot)
+        if pack.status=="READY" and pack.value==true then
+            return {status="READY",value=true,source="TravelAspectAuras"}
+        end
+        if cheetah.status=="READY" and cheetah.value==false
+            and pack.status=="READY" and pack.value==false then
+            return {status="READY",value=false,source="TravelAspectAuras"}
+        end
+        return unknown("travel_aspect_aura_unverified")
     elseif field=="autoShot.active" then
         local r=self:ReadAutoShot(75)
         if r and r.active and r.active.status=="READY"
