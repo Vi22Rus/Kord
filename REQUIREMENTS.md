@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 must extend the sole AbilityEligibility final READY with item-specific policy; spell usability and spell range do not prove item usability.**
+
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 provides item cooldown and shared-group observations to canonical AbilityEligibility; only the final eligibility gate may issue READY.**
 
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 provides verified inventory counts only; item READY/use policy must be handled by the canonical eligibility path and never by item count alone.**
@@ -3309,6 +3311,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 item targeting and area effects must respect EN-04 breakable CC safety; target validity alone is insufficient.**
+
 **Архитектурная актуализация SW-04:** **См. SW-04: SW-04 queued attack requires EN-04 breakable CC safety and target validation; a queued attack may still land after target changes.**
 
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 must retain EN-04 breakable CC and target safety even if an action fits the ranged shot window.**
@@ -4037,6 +4041,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 bandage/potion target and combat restrictions must be checked before group care recommendations.**
+
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 potion/healthstone/bandage cooldown is separate from group healing priority and target safety; count and cooldown do not establish a healing action.**
 
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 bandage/potion availability is an input to healing policy; count>0 alone does not make a healing action safe or usable.**
@@ -4390,6 +4396,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 item use restrictions are separate from pet-care timing and do not justify pet command execution.**
+
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 item cooldown is not pet-care cast/aura timing; reuse common monotonic clock and typed unknown conventions only.**
 
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory count is not item cooldown, spell cast timing, or a proof that a consumable effect is active.**
@@ -4735,6 +4743,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 uses IT-01 confirmed bag-only count and item identity; item possession never proves item usability.**
+
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 reuses IT-01 item IDs, bag scope, family catalog and revisions; count>0 is not cooldown READY, and do not create another bag scanner.**
 
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
@@ -4790,6 +4800,8 @@
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
+**Архитектурная актуализация IT-03:** **См. IT-03: IT-03 uses IT-02 individual and shared cooldown; zero cooldown never proves combat/target/level/zone eligibility.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
 
 #### Требование
@@ -4841,5 +4853,61 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет item cooldown API allowlist, item cooldown observation/revisions и достоверной модели общего cooldown зелий. Существующий spell cooldown не заменяет item cooldown.
 
 **Архитектурные ссылки:** IT-01, SP-14, GR-05, PE-05, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
+
+#### Требование
+
+Для конкретного `itemID` и предполагаемого контекста применения (`playerGUID,targetGUID,zoneID,instanceType,combatState`) определить возможность **рекомендовать** использование предмета, учитывая `usable`, `combatAllowed`, `targetPolicy`, `targetValid`, `targetRange`, `requiredLevel`, `playerLevel`, `zoneRequirement`, `zoneMatch`, `restrictionSource`, `reason/status/revision`. Различать `ALLOW/BLOCK/UNKNOWN/NOT_APPLICABLE` по **каждому** независимому ограничению; итоговый `READY` — только через `AbilityEligibility`, после IT-01 количества, IT-02 cooldown и всех применимых gates. Наличие предмета, `C_Item.IsUsableItem=true` и `C_Item.IsItemInRange=true` **не доказывают**, что предмет разрешён в бою, в этой зоне, для данного уровня и цели. Если API не раскрывает причину неиспользуемости, возвращать `BLOCKED(reason=item_unusable_unspecified)`, а не придумывать «нужен уровень». Неизвестные client rules и секреты — `UNKNOWN`, не false-ready. Это **read-only рекомендация**, без `UseItemByName`, `C_Container.UseContainerItem` или других protected calls.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: `UnitLevel`, `UnitAffectingCombat`, `InCombatLockdown`, `UnitCanAttack/UnitCanAssist` и spell-specific `C_Spell.IsSpellUsable/IsSpellInRange` разрешены; **нет** `C_Item.IsUsableItem`, `C_Item.IsItemInRange`, `C_Item.GetItemInfo/GetItemInfoInstant`, `GetInstanceInfo`, `GetZoneText`, `C_Map.GetBestMapForUnit` как подтверждённого item restriction adapter.
+- `KordRotation/Core/GameState.lua:126–127,131–148,224–243`: player level/combat, target relations и combat snapshot частично имеются; нет независимого `ItemUseContextObservation` с zone/instance и item target semantics.
+- `KordRotation/Core/AbilityEligibility.lua:175–184,187–238`: проверяются **заклинания** (`IsSpellUsable`, `IsSpellInRange`), переносить эти результаты на itemID нельзя; отдельной item branch с level/zone/combat/target restrictions не подтверждено.
+- `KordRotation/Core/RotationConditions.lua:63–74,159–171`: lazy `Needs` и spell candidate eligibility есть, `items.usable(itemID,context)` отсутствует.
+- `KordRotation/Core/EventBus.lua:20–32`: combat/target events есть, но нет item metadata/zone/instance/inventory usability revision.
+- **IT-01/IT-02** уже определяют count, family и item/shared cooldown; IT-03 **не дублирует** их providers.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Items.lua:112–117` читает `C_Item.IsUsableItem` через `Secret.CallBool`; `:53–56` получает item use-spell; `Sonah/Core/Atoms/Units.lua:1245` secret-safe `IsInInstance`. Перенять safe usable observation и разделение item/use-spell, но `IsUsableItem` не объясняет независимо combat/zone/level/target.
+2. **JustAC:** `JustAC/SpellDB.lua:738` требует `GetItemCount>0` и `C_Item.IsUsableItem`, `JustAC/BlizzardAPI/StateHelpers.lua:335–366` читает item spell/cooldown; `:811` `IsInInstance`; `JustAC/DebugCommands.lua:4044–4048` проверяет `GetInstanceInfo`/instanceID. Перенять комбинацию inventory+usable и instance probes, но `or 0`/непроверенный combat secret не использовать как доказательство.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:5411` читает `C_Item.IsItemInRange(itemID,'target')`; `ForeverAuras/ForeverAuras.lua:1878,1915` использует `GetInstanceInfo`/instanceID; `ForeverAuras/GenericTrigger.lua:5789,5823` — item metadata; `ForeverAuras/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:96–97` оборачивает `IsItemInRange`. Перенять item-specific range и typed instance identity, не превращать `nil` range в true.
+4. **MaxDps:** `MaxDps/Helper.lua:2776` использует `C_Item.IsUsableItem(itemID)`, `:2981` `GetInstanceInfo`, `:55` item range API; `MaxDps/Buttons.lua:304` `GetItemSpell`. Перенять общую доступность item API, но проверенные места не подтверждают полный level/zone/combat restriction evaluator.
+5. **ForeverRotation:** в проверенных Lua нет подтверждённого общего `IsUsableItem`, `IsItemInRange`, zone/level item eligibility provider. Не считать отсутствие API доказательством готовности расходников.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого общего `IsUsableItem`, `IsItemInRange`, zone/level item eligibility provider. Ротационный список предметов не является runtime проверкой.
+7. **RotationMaster:** `RotationMaster/Platform/items.lua:484–505` нормализует `C_Item.IsUsableItem`/legacy и `nil,reason`; `:550–558` item-specific `IsItemInRange`; `RotationMaster/Core/item_conditions.lua:204–301` разделяет ITEM/ITEM_RANGE/ITEM_COOLDOWN; `RotationMaster/Platform/world_state.lua:234–252` читает `GetInstanceInfo` с protected call; `RotationMaster/Conditions/spatial.lua:894` выбирает zone/subzone; `RotationMaster/Core/condition_support.lua:551,559,716` capability contracts для instance/item range/zone. **Основной референс** для раздельных tri-state item, range и world-state providers; полноценный единый item-specific restriction catalog по этим местам не доказан.
+
+#### Выбранный путь Kord
+
+**Один `ItemUseEligibilityObservation` поверх IT-01 `InventoryObservation`, IT-02 `ItemCooldownObservation`/`SharedItemCooldownObservation`, общего `Player/TargetObservation`, `WorldContextObservation` и `ItemRestrictionCatalog`; финальный READY исключительно в `AbilityEligibility`.** Логические adapters, не обязательные новые Lua-файлы. `ItemUsabilityAdapter` через `C_Item.IsUsableItem` (legacy только после probe), `ItemTargetAdapter` через `C_Item.IsItemInRange` с подтверждённым target kind/self/no-target и отдельно отношением friendly/enemy, life state, LOS/range unknown. `ItemMetadataAdapter` через `C_Item.GetItemInfo`/cached item data и `GetItemInfoInstant` (проверять позиции tuple на Forever; **item level ≠ required player level**), `WorldContextObservation` — `GetInstanceInfo`, `IsInInstance`, stable zone/map ID при подтверждённом API, не локализованное имя как единственный ключ. `ItemRestrictionCatalog` версионирует Forever-specific `combatAllowed`, `minLevel`, `allowedZoneIDs`, `instanceTypes`, `targetKind`, `requiresOutOfCombat`, `requiresSpecificArea` и источник подтверждения; **не изобретать ограничения**, если они неизвестны. `IsUsableItem` является итоговым наблюдаемым клиентским gate, но не предоставляет причины и может меняться с combat/target; явные catalog rules дополняют, а не отменяют клиентский false. `InCombatLockdown` не равен `UnitAffectingCombat` и не доказывает, что предмет запрещён в бою.
+
+`requiredLevel` должен браться из подтверждённого item metadata/policy, а не из `effective item level`; при недоступных item data `UNKNOWN`, bounded refresh при `GET_ITEM_INFO_RECEIVED` или подтверждённом `ITEM_DATA_LOAD_RESULT`. Zone check только при валидированных IDs и соответствующем каталоге; instance type и zone/map — разные измерения. Если `itemID` имеет no-target policy, отсутствие target не блокирует; если нужен target, `nil/secret` range/target -> UNKNOWN. Нельзя автоматически применять enemy spell range к предмету. Combat restrictions различают `cannotUseInCombat`, `oncePerCombat`, `potionSharedCooldown` и GCD: последние принадлежат IT-02 или отдельной combat-use policy, не объявляются одинаковыми. `ItemUseEligibilityObservation` содержит независимые результаты `inventory/cooldown/sharedCooldown/usable/combat/target/level/zone` с `BLOCKED` при доказанном нарушении, `UNKNOWN` при существенной неопределённости и `READY` только при всех подтверждённых gates. Профили не могут обойти UNKNOWN через `ignoreReady`.
+
+Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; EventBus revisions по `PLAYER_REGEN_*`, `PLAYER_TARGET_CHANGED`, `PLAYER_LEVEL_UP`, `ZONE_CHANGED`, `ZONE_CHANGED_NEW_AREA`, `PLAYER_ENTERING_WORLD`, `GET_ITEM_INFO_RECEIVED`, подтверждённым item data/bag/cooldown events; нет постоянного сканирования зоны или сумок. Никаких protected item-use calls.
+
+#### Требуемые изменения
+
+1. Ввести `ItemUseEligibilityObservation` с независимыми combat/target/level/zone/usable gates, reason/source/revision и fail-closed UNKNOWN.
+2. Валидировать на Forever `C_Item.IsUsableItem`/legacy, secret/nil/false и itemID vs item use-spell; добавить GameAPI read-only allowlist.
+3. Реализовать item-specific target policy: SELF/FRIENDLY/ENEMY/NONE/AREA/UNKNOWN, range `C_Item.IsItemInRange`, relation, dead/LOS, missing target; не использовать spell range как item range.
+4. Ввести `ItemMetadataAdapter` с item required level (не item level), pending cache и validated Forever tuple; unknown metadata не превращать в level=0.
+5. Ввести общий `WorldContextObservation` (instance/zone/map stable IDs) с typed secret-safe probes; использовать один provider для других требований зоны.
+6. Ввести версионированный `ItemRestrictionCatalog` Forever-specific с подтверждёнными combat/level/zone/instance/target правилами; отсутствие правила не считать разрешением.
+7. Переиспользовать IT-01 bag count и IT-02 item/shared cooldown; различать in-combat, lockdown, once-per-combat, shared potion lockout, GCD и target usability.
+8. EventBus revisions combat/target/level/zone/item metadata/bag/cooldown; RotationConditions lazy `items.usable(itemID,context)` и Needs; AbilityEligibility единственный final READY.
+9. DevTools-only диагностика: `item_usable_api_missing`, `item_usable_secret`, `item_unusable_unspecified`, `item_combat_rule_unknown`, `item_combat_blocked`, `item_target_policy_unknown`, `item_target_range_unknown`, `item_level_metadata_pending`, `item_level_too_low`, `item_zone_unknown`, `item_zone_blocked`, `item_instance_rule_unknown`, `item_eligibility_blocked`, `item_eligibility_unknown`.
+10. Тесты: usable true/false/secret, potion in/out combat, combat lockdown mismatch, bandage in combat, healthstone, food/drink out of combat, self/friendly/enemy/no target, dead/invalid/out-of-range target, unknown range, level below/equal/above requirement, item level vs required level, uncached item metadata, zone transitions/instance map ID, locale independent zone, zone-limited item, missing rule, item present but cooldown active, shared potion cooldown, count unknown, delayed events, no false READY/protected item use.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩЕГО КОНТЕКСТА — ДОРАБОТАТЬ (P0).** Kord умеет читать player level/combat и часть target facts, но не имеет подтверждённой item usability, item range, zone restrictions, item required level и item-specific final eligibility.
+
+**Архитектурные ссылки:** IT-01, IT-02, SP-14, GR-05, EN-04, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
