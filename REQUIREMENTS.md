@@ -1764,3 +1764,53 @@
 6. Диагностика `safe_window_unverified`, `latency_estimate_only`, `channel_tick_loss_unknown`, `cast_time_unknown`; тесты на разных задержках, pushback, конце каста, потерянных channel ticks, касте на ходу, мгновенных способностях и тайных значениях.
 
 **Изменения кода:** не выполнялись; внесён аудит CA-05.
+
+
+## 4. Ауры (баффы и дебаффы)
+
+### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
+
+**Приоритет: P0.**
+
+#### Требование
+
+Единый общеклассовый `AuraPresenceObservation(unit,spellID,filter)` для `player`, `target`, `pet`, `focus`, `party1..4`, `raid1..40` (последние — при подтверждённой поддержке и необходимости): `present=true/false`, `status=READY/UNKNOWN/ERROR`, `reason/source`, `unitGUID`, `observedAt`. `HELPFUL/HARMFUL` и `PLAYER` caster filter — независимые ограничения: аура с тем же ID, наложенная другим игроком, не равна «моя аура». `false` разрешено **только после доказательного полного отрицательного наблюдения**, особенно в secret combat. Отсутствие юнита — отдельно от отсутствия ауры на существующем юните. Стабильный GUID до/после чтения обязателен для меняющихся unit tokens.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 443–761: `ReadSignal("player.buff",spellID)` и `ReadSignal("target.debuff",spellID)` уже используют `C_UnitAuras.GetPlayerAuraBySpellID`, `GetUnitAuraBySpellID`, `GetAuraDataBySpellName`, secret-aware fallback и проверку GUID цели. **Это реальная частичная реализация, не начинать заново.**
+- `GameState.lua`, строки 450–452: unit/filter жёстко ограничены `player/HELPFUL` и `target/HARMFUL`; отсутствуют `pet`, `focus`, `partyN`, `raidN`, а также player debuff, target buff и произвольный filter.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 44–50: нужные C_UnitAuras APIs в allowlist; строки 248–261: unit-валидация ряда общих API разрешает только `player/target/pet`, поэтому расширение unit tokens должно быть точечным, типизированным, без снятия защиты от произвольных строк.
+- [`KordRotation/Core/AuraEvidence.lua`](KordRotation/Core/AuraEvidence.lua), строки 38–83: хранит **положительное** evidence только для player и отдельных aura families; история не доказывает отрицание и не должна использоваться для других юнитов.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 66–67: `Needs.auras` проверяет только `player.buff`/`target.debuff`; нет универсального `unit.aura` с разрешённым unit/filter.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строка 23: `UNIT_AURA` уже инвалидирует aura channel, но требуется unitGUID-scoped обновление при focus/party/raid/target/pet изменениях.
+
+#### Сравнение семи референсов (проверены локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Auras.lua:222–234` использует `GetPlayerAuraBySpellID` и `GetAuraDataBySpellName`; `Core/Atoms/Secret.lua:235–240` прямо предупреждает, что nil из spell-ID API при secret aura **не доказывает отсутствия**. Сильный образец secret-safe отрицания.
+2. **JustAC** — `MaintenanceTracker.lua:146+` и `DefensiveEngine.lua:757+` используют spell-ID lookup; `RedundancyFilter.lua:137+` отдельно обсуждает секретность аур. Полного универсального multi-unit presence API в просмотренных местах не подтверждено.
+3. **ForeverAuras** — `AuraEnvironment.lua:38+` и `BuffTrigger2.lua` используют UnitAura и generic aura scanning, `CooldownViewerCatalog.lua:130,162` учитывает `ShouldAurasBeSecret`; богатый образец unit/filter и aura-trigger модели, но не копировать unsafe enumeration при secret.
+4. **MaxDps** — классовые модули массово используют `C_UnitAuras.GetAuraDataBySpellName(unit,name,filter)`; прямой name lookup нельзя объявлять точным spellID match без проверки возвращённого `spellId`.
+5. **ForeverRotation** — `Engine.lua:152–159` использует `GetAuraDataBySpellName("target",name,"HARMFUL" / "HARMFUL|PLAYER")` с pcall; различает чужую/свою ауру, но при недоступности в бою возвращает nil. Не переносить nil как доказательное false.
+6. **RotationGuide** — `Core/State.lua:180+` использует защищённый `GetAuraDataBySpellName(unit,name,filter)`; нет подтверждения полной multi-unit spellID-модели с достоверным отрицанием.
+7. **RotationMaster** — `Libs/LibClassicDurations/core.lua:824+` и `Libs/ThreatClassic-1.0/ThreatClassModuleCore.lua:844+` используют UnitAura/аура-сканы; `Core/aura_conditions.lua` содержит общие aura conditions. При переносе проверять secret safety и не считать legacy scan достаточным доказательством отсутствия.
+
+#### Сравнение и рекомендация
+
+**Основа — существующий Kord + Sonah + ForeverAuras, с unit/filter дисциплиной ForeverRotation.** Kord уже обладает защищённым spellID lookup и GUID guard для target; расширить **один общий провайдер**, а не писать `PetAuraObservation`, `FocusAuraObservation`, `PartyAuraObservation` и классовые копии. Sonah — secret/negative semantics; ForeverAuras — универсальная модель unit/filter; ForeverRotation — distinction `HARMFUL|PLAYER`. `AuraPresenceObservation` — логический контракт, не обязательный отдельный файл.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Player helpful и target harmful по spellID уже есть, но нет полного набора юнитов/фильтров и достоверного отрицания для всех сочетаний.
+
+#### Требуемые изменения
+
+1. Расширить существующий `GameState`/aura provider до `ObserveAura(unitToken,spellID,filter,sourceFilter)` с строгим allowlist `player,target,pet,focus,party1..4,raid1..40` только где поддержано Forever. `focus` может отсутствовать в клиенте: проверять API и возвращать `UNKNOWN/unsupported`, не выдумывать unit.
+2. Отдельно подтверждать `UnitExists` и `UnitGUID`; для меняющихся юнитов GUID до/после lookup; при смене/secret GUID — UNKNOWN. Кэш ключевать `unitGUID+spellID+filter+casterFilter` и инвалидировать по ревизиям.
+3. Положительное `READY(true)` только при проверенном `aura.spellId==spellID`, корректном helpful/harmful и caster; для negative `READY(false)` требуется доказанное полное наблюдение и не-secret режим. Никаких nil→false в скрытом бою.
+4. Сохранять source `C_UnitAuras.GetUnitAuraBySpellID`/`GetPlayerAuraBySpellID`/name lookup и `AuraCooldownViewer`/positive evidence; последним не разрешать подтверждать отсутствие без доказательной инвалидации.
+5. `Needs.auras` расширить типизированными `unit/filter/caster` с lazy evaluation, без полного сканирования группы каждый тик; привязать к `RotationConditions` и `AbilityEligibility` как единственному READY арбитру.
+6. Инвалидация `UNIT_AURA`, `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`, `UNIT_PET`, `GROUP_ROSTER_UPDATE`, `PLAYER_ENTERING_WORLD` и соответствующих клиенту событий; не переиспользовать отрицательный кэш после смены unitGUID.
+7. Тесты на player buff/debuff, target buff/debuff, pet, focus (если есть), party/raid, own-vs-any caster, разные ранги и spellID, пустой unit, unit сменился в середине чтения, secret-positive, secret-negative, no API, обновление/исчезновение ауры, повторные ID и производительность в рейде.
+
+**Изменения кода:** не выполнялись; внесён аудит AU-01.
