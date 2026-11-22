@@ -1353,8 +1353,29 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
         result.reason="item_cd_revision_changed"
         return result
     end
+    -- A source-only spell event is useful only if its candidate item is
+    -- independently observed on cooldown in this exact revision snapshot.
+    -- Correlation is a diagnostic ESTIMATE, never group lockout evidence.
+    local useOK,use=pcall(self.ReadObservedItemUse,self,groupID)
+    local observedID,observedAt=nil,nil
+    if useOK and type(use)=="table" then
+        local validUse,accepted=pcall(function()
+            return api:IsSafeValue(use)
+                and use.status=="UNKNOWN"
+                and use.reason=="item_cd_use_attribution_estimated"
+                and use.confidence=="ESTIMATED"
+                and inventorySafeID(use.candidateItemID,"item")
+                and api:IsSafeValue(use.observedAt)
+                and finite(use.observedAt,0)
+                and use.familyRevision==before[3]
+        end)
+        if validUse and accepted then
+            observedID,observedAt=use.candidateItemID,use.observedAt
+        end
+    end
     local active,inactive,unknown,coincident=0,0,0,0
     local maxRemaining=0
+    local matchedUse=false
     local starts={}
     for _,id in ipairs(ids) do
         local readOK,record=pcall(self.ReadItemCooldownObservation,self,id)
@@ -1391,6 +1412,12 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 local key=tostring(start)..":"..tostring(duration)
                 starts[key]=(starts[key] or 0)+1
                 if starts[key]>coincident then coincident=starts[key] end
+                -- At most a two-second window avoids arbitrary historical
+                -- correlations. Matching a use-spell still is not a group rule.
+                if id==observedID and observedAt
+                    and math.abs(start-observedAt)<=2 then
+                    matchedUse=true
+                end
             end
         else
             inactive=inactive+1
@@ -1411,6 +1438,11 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     result.itemCooldownRevision=before[1]
     result.inventoryRevision=before[2]
     result.familyRevision=before[3]
+    result.useCorrelation=matchedUse and "ESTIMATED" or "UNKNOWN"
+    result.useCorrelationReason=matchedUse
+        and "item_cd_use_member_time_match"
+        or "item_cd_use_attribution_unknown"
+    -- Do not return itemID, groupRemaining or CONFIRMED_READY here.
     return result
 end
 

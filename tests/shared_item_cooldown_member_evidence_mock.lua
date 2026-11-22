@@ -9,8 +9,30 @@ KR.EventBus=bus
 assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
 local S=KR.GameState
 local original=S.ReadItemCooldownObservation
+local originalUse=S.ReadObservedItemUse
 local calls=0
 local mode="partial"
+function S:ReadObservedItemUse(groupID)
+    if groupID~="POTION_SHARED" then
+        return {status="UNKNOWN",reason="item_cd_use_attribution_unknown"}
+    end
+    if mode=="wrong_time" then
+        return {status="UNKNOWN",reason="item_cd_use_attribution_estimated",
+            confidence="ESTIMATED",candidateItemID=118,observedAt=80,
+            familyRevision=KR.ItemFamilyCatalog:GetRevision()}
+    elseif mode=="wrong_id" then
+        return {status="UNKNOWN",reason="item_cd_use_attribution_estimated",
+            confidence="ESTIMATED",candidateItemID=929,observedAt=90,
+            familyRevision=KR.ItemFamilyCatalog:GetRevision()}
+    elseif mode=="secret_use" then
+        return {status="UNKNOWN",reason="item_cd_use_attribution_estimated",
+            confidence="ESTIMATED",candidateItemID="SECRET",observedAt=90,
+            familyRevision=KR.ItemFamilyCatalog:GetRevision()}
+    end
+    return {status="UNKNOWN",reason="item_cd_use_attribution_estimated",
+        confidence="ESTIMATED",candidateItemID=118,observedAt=90,
+        familyRevision=KR.ItemFamilyCatalog:GetRevision()}
+end
 function S:ReadItemCooldownObservation(id)
     calls=calls+1
     if mode=="race" and calls==2 then bus.cooldown=bus.cooldown+1 end
@@ -43,12 +65,24 @@ assert(result.itemCooldownRevision==5 and result.inventoryRevision==7)
 assert(result.familyRevision==KR.ItemFamilyCatalog:GetRevision())
 assert(result.remaining==nil and result.active==nil)
 assert(result.evidenceItemIDs==nil)
+assert(result.useCorrelation=="ESTIMATED")
+assert(result.useCorrelationReason=="item_cd_use_member_time_match")
+mode="wrong_time"
+local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(wrongTime.useCorrelation=="UNKNOWN")
+mode="wrong_id"
+local wrongID=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(wrongID.useCorrelation=="UNKNOWN")
+mode="secret_use"
+local secretUse=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(secretUse.useCorrelation=="UNKNOWN")
 mode="all_zero"
 calls=0
 local zero=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(zero.candidateCount==19 and zero.knownInactiveCount==19)
 assert(zero.knownActiveCount==0 and zero.candidateMaxRemaining==nil)
 assert(zero.status=="UNKNOWN" and zero.groupStatus=="UNKNOWN" and zero.remaining==nil)
+assert(zero.useCorrelation=="UNKNOWN")
 mode="secret"
 calls=0
 local protected=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
@@ -77,4 +111,5 @@ local duplicate=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(duplicate.reason=="item_cd_group_members_unverified")
 KR.SharedCooldownGroupCatalog=originalCatalog
 S.ReadItemCooldownObservation=original
+S.ReadObservedItemUse=originalUse
 print("shared_item_cooldown_member_evidence_mock PASS")

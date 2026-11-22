@@ -1,3 +1,13 @@
+## KR-20261122-106 — IT-02/2.6: correlate observed item-use to same-item cooldown without group-ready inference
+- Дата: 2026-11-22 UTC (точный timestamp из Git); SHA: `git log --grep KR-20261122-106`. Этап 2, IT-02 P0, шаг 2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: KR-20261122-104 давал счётчики индивидуальных cooldown, KR-20261122-105 давал только source-only ESTIMATED event attribution. Не хватало связи между двумя наблюдениями для одного itemID. Это исходниковый пробел, не подтверждённый баг клиента.
+- `KordRotation/Core/GameState.lua`: `ReadSharedItemCooldownMemberEvidence` валидирует event evidence `ReadObservedItemUse` (itemID/observedAt/familyRevision), отдельно проверяет item-specific tuple start/duration/active и только при same itemID, |start-observedAt|≤2s и неизменных ревизиях добавляет `useCorrelation="ESTIMATED"` с `useCorrelationReason="item_cd_use_member_time_match"`. Без совпадения — `useCorrelation="UNKNOWN"`. Не добавляет group READY, time estimate, ложной определённости, фонового scanner или protected API.
+- `tests/shared_item_cooldown_member_evidence_mock.lua`: 29 assertions включая positive, wrong_time/wrong_id/secret_use/all_zero и старые ревизионные сценарии. Исходные IT-02 референсы Sonah/JustAC/ForeverAuras/RotationMaster; API добавлять не требовалось.
+- Проверки: PASS — уникальные source-якоря и документированная Git-транзакция; NOT RUN — исполнение Lua 5.1 mock/full regression (Lua 5.1 отсутствует), GitHub Actions (по проекту вручную), WoW Forever (недоступен). Пользовательский QA не проведён.
+- Выдано тестировщику: для итогового IT-02 QA — совпадение itemID и timestamps, неверное время/предмет, секретные значения, mid-read revisions и запрет group ready по любым частичным данным. Промежуточная установка не нужна.
+- Документы: `REQUIREMENTS.md`, поэтапный план и `CHANGELOG.md` синхронизированы в том же коммите через GitHub blob API; исходные требования и история сохранены. Осталось подтвердить на Forever shared group semantics и member propagation, довести полноценные confidence/remaining/ready и запустить Lua 5.1 regression.
+- Связи: KR-20261122-104/105; IT-01, IT-02/2.5–2.10, IT-03, IT-04.
+
 ## KR-20261122-105 — IT-02/2.6: source-backed use-spell attribution with fail-closed event evidence
 - Дата/время: 2026-11-22 UTC, точное время — Git commit; Git SHA `git log --grep KR-20261122-105`.
 - Этап/ID: 2.6 IT-02 P0, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
