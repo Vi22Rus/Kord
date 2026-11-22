@@ -74,7 +74,7 @@ function KR.SpellIcon:Create(parent)
         self.unavailableShade:SetShown(flags.showUnavailable and data.unavailable == true)
         self.gcdShade:SetShown(flags.showGCD and data.gcdActive == true)
         if data.texture then self.image:SetTexture(data.texture)
-        else self.image:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark") end
+        else self.image:SetTexture(nil) end
     end
 
     function slot:ApplyAppearance(style, showNumbers, opacity, flags)
@@ -130,7 +130,8 @@ function KR.SpellIcon:Create(parent)
         self.isPrimary=isPrimary
         self.index:SetText(tostring(number))
         self:ClearDisplayData()
-
+        -- Preview only: a question mark signals a synthetic test slot.
+        self.image:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     end
     return slot
 end
