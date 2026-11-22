@@ -1433,6 +1433,12 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 and use.status=="UNKNOWN"
                 and use.reason=="item_cd_use_attribution_estimated"
                 and use.confidence=="ESTIMATED"
+                -- Only the observed PLAYER use-spell event is accepted as
+                -- provenance; a forged/source-less estimate is not evidence.
+                and api:IsSafeValue(use.groupStatus)
+                and use.groupStatus=="UNKNOWN"
+                and api:IsSafeValue(use.source)
+                and use.source=="UNIT_SPELLCAST_SUCCEEDED"
                 and inventorySafeID(use.candidateItemID,"item")
                 and api:IsSafeValue(use.observedAt)
                 and finite(use.observedAt,0)

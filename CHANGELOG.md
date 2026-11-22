@@ -1,3 +1,13 @@
+## KR-20261122-116 — IT-02/2.6: require observed player spell provenance for shared cooldown correlation
+- Дата/время: 2026-11-22 UTC (точное время — Git commit); SHA по `git log --grep KR-20261122-116`.
+- Этап/ID: 2/2.6, IT-02 P0, fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст/причина: bounded member evidence принимал специально сформированный use-record без подтверждения `source`/groupStatus, поэтому тестовый или ошибочный provider мог породить ESTIMATED group evidence на совпавших таймерах. Это source-code риск, не подтверждённый баг Forever.
+- Решение: `KordRotation/Core/GameState.lua` в `ReadSharedItemCooldownMemberEvidence` применяет `GameAPI:IsSafeValue` к `use.source`/`use.groupStatus` и принимает только исходное `UNIT_SPELLCAST_SUCCEEDED` игрока и UNKNOWN group status; иначе useCorrelation/propgation остаются UNKNOWN. `tests/shared_item_cooldown_member_evidence_mock.lua` добавляет valid-source fixtures и forged source negative case. Новых WoW API нет; функциональная group inference и group READY намеренно не объявлены.
+- Референсы: `JustAC/BlizzardAPI/StateHelpers.lua:NoteDefensiveItemUse`, `C_Item.GetItemSpell`, `UNIT_SPELLCAST_SUCCEEDED`; `RotationMaster/Platform/items.lua:GetItemCooldown`. Метод event уже применён в Kord, повторных сканеров нет. Подход JustAC fail-open не перенесён.
+- Проверки: PASS exact source anchors, сохранение остального текста файлов, публикация Git-tree. NOT RUN Lua 5.1/mock/full regression (Lua runtime отсутствует), manual GitHub Actions (перед общим QA), WoW Forever (клиент недоступен).
+- Для тестировщика: добавить итоговые сценарии genuine player cast vs unknown/forged source при совпадающих cooldown tuples; промежуточная установка не требуется.
+- Факт: укреплён атрибуционный контракт; групповой ACTIVE/READY/remaining остаётся UNKNOWN при непроверенной Forever семантике. Документы REQUIREMENTS/план обновлены тем же коммитом. Связи IT-01/IT-02/IT-03, KR-20261122-105/115.
+
 ## KR-20261122-115 — IT-02/2.6: fail-closed confidence evidence consistency
 - Дата/время: 2026-11-22 UTC (точное время по Git commit); SHA по `git log --grep KR-20261122-115`.
 - Этап/ID: 2/2.6, IT-02 P0; fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

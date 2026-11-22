@@ -31,7 +31,9 @@ function S:ReadObservedItemUse(groupID)
             familyRevision=KR.ItemFamilyCatalog:GetRevision()}
     end
     return {status="UNKNOWN",reason="item_cd_use_attribution_estimated",
-        confidence="ESTIMATED",candidateItemID=118,observedAt=90,
+        confidence="ESTIMATED",groupStatus="UNKNOWN",
+        source=mode=="spoofed_source" and "SYNTHETIC" or "UNIT_SPELLCAST_SUCCEEDED",
+        candidateItemID=118,observedAt=90,
         familyRevision=KR.ItemFamilyCatalog:GetRevision()}
 end
 function S:ReadItemCooldownObservation(id)
@@ -118,6 +120,10 @@ assert(publicMixed.groupLockoutConfidence=="UNKNOWN")
 assert(publicMixed.useCorrelation=="ESTIMATED")
 assert(publicMixed.propagationEvidence=="MIXED_CANDIDATES")
 assert(publicMixed.groupReadyConfidence=="UNKNOWN")
+mode="spoofed_source"
+local forged=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(forged.useCorrelation=="UNKNOWN" and forged.propagationEvidence=="UNKNOWN")
+assert(forged.groupLockoutConfidence=="UNKNOWN" and forged.groupReadyConfidence=="UNKNOWN")
 mode="wrong_time"
 local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongTime.useCorrelation=="UNKNOWN")
