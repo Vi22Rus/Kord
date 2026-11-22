@@ -315,6 +315,9 @@
 
 ## PL-02 — Класс, специализация, уровень, раса, фракция
 
+
+**Архитектурная актуализация TG-03:** **См. TG-03: уровень игрока повторно используется из общего player identity snapshot; разницу уровней считать только из двух подтверждённых значений.**
+
 **Приоритет: P0.**
 
 ### Требование
@@ -1527,6 +1530,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-03:** **См. TG-03: требования к типу/уровню цели должны читать единый TargetObservation, а не отдельные class-specific boss/elite checks.**
+
+
 **Архитектурная актуализация TG-02:** **См. TG-02: execute/health threshold для атак использует общий UnitHealthObservation и подтверждённые percent/curve predicates, без отдельного класса health reader.**
 
 
@@ -2287,6 +2293,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-03:** **См. TG-03: уровень и классификация используют тот же targetGUID и существующий GameState unitSnapshot; не создавать отдельный target scanner.**
+
+
 **Архитектурная актуализация TG-02:** **См. TG-02: health snapshot цели привязан к тому же targetGUID/existence, не переносится на другую цель; alive/dead не выводить из недоступного числового здоровья.**
 
 **Раздел: 5. Цель. Приоритет: P0.**
@@ -2385,3 +2394,52 @@
 **Архитектурные ссылки:** PL-03 — общий health provider; TG-01 — идентичность/жизнь цели; SP-14 — execute/health requirements. Обратные сноски добавлены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-02 и обратные ссылки.
+
+
+### TG-03 — Уровень относительно игрока, классификация (обычная, элита, босс, редкая)
+
+**Раздел: 5. Цель. Приоритет: P1.**
+
+#### Требование
+
+Общий `TargetObservation` содержит независимые `playerLevel`, `targetLevel`, `relativeLevel`, `classificationRaw`, `classificationNormalized`, `isElite`, `isRare`, `isBoss` со статусом `READY/UNKNOWN` для каждого факта. `relativeLevel=targetLevel-playerLevel` только при двух достоверных положительных уровнях. `UnitLevel(target)==-1` (череп) — особый сигнал уровня/босса, не арифметическое число; `worldboss` — классификация, не обязательно единственный вид boss encounters. Не выводить boss/elite из здоровья, имени, портрета или непроверенной эвристики. `rareelite` сохранять как составной признак.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155: `unitSnapshot("player")` читает `UnitLevel("player")` (строка 126); `unitSnapshot("target")` читает `UnitClassification("target")` (строки 136–146) с allowlist `normal/elite/rare/rareelite/worldboss/trivial/minus`. Но `UnitLevel("target")` и `relativeLevel` не читаются; нет общего `isBoss/isElite/isRare` с независимыми статусами.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9–16: `UnitLevel` и `UnitClassification` разрешены и защищены от secret; дополнительный reader не нужен.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua): смена цели уже инвалидирует target channel, но отдельная проверка свежести уровня/классификации при GUID switch и возможных событиях обновления не подтверждена.
+- TG-01 — общий target identity, PL-02 — общий player level. Не создавать вторые источники.
+
+#### Семь референсов (проверенные локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Units.lua:147` читает `UnitClassification` через `Secret.Call/Plain`; пример secret-safe classification, в проверенном месте не подтверждён общий relative-level reader.
+2. **JustAC** — `SpellQueue.lua:1077–1081` защищённо читает классификацию, `BlizzardAPI/StateHelpers.lua:1564–1577` учитывает `worldboss` и `UnitIsBossMob`; пример раздельной проверки boss, но надо подтвердить доступность UnitIsBossMob на Forever.
+3. **ForeverAuras** — `Prototypes.lua:2673,2823,3212` поддерживает `UnitClassification(unit)`, `UnitLevel(unit)`, `UnitLevel("player")` как отдельные наблюдения; подходящая универсальная модель, но UI trigger не подтверждает secret-safe число.
+4. **MaxDps** — `MaxDps/Core.lua:250` и классовые модули используют `UnitLevel("player")`; универсальный relative level/classification reader в проверенных местах не подтверждён.
+5. **ForeverRotation** — `Engine.lua:405–406,1158` защищённо читает `UnitClassification("target")` и применяет к приоритетам; не приравнивать эвристику boss к подтверждённому API.
+6. **RotationGuide** — `Core/State.lua:308–309` считает elite по classification, а `UnitLevel("target")==-1` — признаком босса; skull level сам по себе не должен становиться фиктивной числовой разницей уровней.
+7. **RotationMaster** — `Core/condition_support.lua:660–665` поддерживает общие `CLASSIFICATION/BOSS/ELITE` на базе `UnitClassification`; сильный образец общих условий, не class-specific.
+
+#### Рекомендация
+
+**Основа — существующий Kord GameState + ForeverAuras (отдельные level/classification facts) + RotationMaster (общие boss/elite conditions) + Sonah (secret-safe).** Расширить `unitSnapshot("target")` `level` и производными полями, повторно используя player.level и targetGUID из TG-01. Для boss: `worldboss` достоверно подтверждает одну категорию, `UnitIsBossMob` только если поддержан/проверен на Forever, skull level отдельно. `isBoss=false` допустим только при полном достаточном наборе проверок, иначе UNKNOWN. Не добавлять классовые `BossDetector`.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Классификация и уровень игрока есть, уровень цели/разница и нормализованные boss-флаги отсутствуют.
+
+#### Требуемые изменения
+
+1. Добавить защищённое `UnitLevel("target")` в существующий `unitSnapshot`, без нового API bypass; при secret/invalid вернуть UNKNOWN.
+2. `relativeLevel` считать только из двух READY положительных уровней; `-1` и другие sentinel значения выделять отдельно как `levelIsSkull`, не выполнять арифметику.
+3. Нормализовать `normal/elite/rare/rareelite/worldboss/trivial/minus` с сохранением raw и независимых `isElite/isRare/isBoss`. `rareelite` → одновременно rare и elite, `worldboss` → boss; остальные категории не автоматически «не босс», если у клиента есть иные boss flags.
+4. Проверить `UnitIsBossMob` на Forever и secret-safe чтение; при недоступности не выдавать неподтверждённый false для всех boss encounters.
+5. Привязать playerLevel/targetLevel/classification к одному стабильному targetGUID; после смены цели не переиспользовать старую разницу/классификацию.
+6. `RotationConditions` и `AbilityEligibility` должны брать требования по уровню/элитности из общего TargetObservation; class-specific правила только декларативные.
+7. Инвалидация `PLAYER_TARGET_CHANGED`, relevant unit changes и heartbeat fallback с проверкой поддержки; не считать cached target classification актуальной для другого GUID.
+8. Диагностика `target_level_unknown`, `target_level_skull`, `target_classification_unknown`, `boss_status_unverified`; тесты lower/equal/higher, -1 skull, normal/elite/rare/rareelite/worldboss/trivial/minus, secret, target swap, boss without worldboss, no target.
+
+**Архитектурные ссылки:** TG-01 — target identity; PL-02 — player level; SP-14 — target restrictions. Обратные сноски добавлены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-03.
