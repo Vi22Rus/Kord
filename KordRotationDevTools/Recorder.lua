@@ -307,8 +307,14 @@ function D:Record(kind,status,reason,matrix,elapsed,detail,method,count)
     local cleanMethod
     local cleanCount
     if kind=="METHOD" then
-        if self:Safe(method) and type(method)=="string"
-            and self.apiTraceAllowed and self.apiTraceAllowed[method] then
+        local known=self:Safe(method) and type(method)=="string"
+            and self.apiTraceAllowed and self.apiTraceAllowed[method]
+        -- Only a bounded ASCII field key is accepted from the protected
+        -- GameAPI.ReadField path; never a field value or arbitrary input.
+        local fieldName=self:Safe(method) and type(method)=="string"
+            and #method<=80 and
+            method:match("^GameAPI%.ReadField%.[A-Za-z_][A-Za-z0-9_]*$")
+        if known or fieldName then
             cleanMethod=method
         else
             cleanMethod="GameAPI.unsupported"
