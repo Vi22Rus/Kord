@@ -100,7 +100,7 @@ local bmSignalNames={
  "intimidation.profitable","aoe.safe","volley.profitable",
  "multi.profitable","enemy.count","hawk.count",
  "hawk.oldestRemaining","aimed.profitable","sting.profitable",
- "spell.range"
+ "spell.range","fact.known","fact.inRange","fact.cooldownActive"
 }
 local bmCheckStages={"cast","usability","charges","cooldown","gcd","range"}
 for i=1,64 do
