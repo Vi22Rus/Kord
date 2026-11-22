@@ -176,6 +176,7 @@ local BM_SIGNALS={
  ["target.dead"]=true,["target.attackable"]=true,
  ["target.isPlayer"]=true,["target.threat"]=true,
  ["target.classification"]=true,["target.melee"]=true,
+ ["pull.remaining"]=true,
  ["target.targetsPlayer"]=true,["target.approaching"]=true,
  ["target.slowed"]=true,["target.wingClip"]=true,
  ["target.willSurviveBurst"]=true,["target.dyingSoon"]=true,
