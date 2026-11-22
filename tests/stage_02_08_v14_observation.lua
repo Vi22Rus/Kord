@@ -106,6 +106,10 @@ eq(hunter.firstReason,"condition_false","first high rank level-gated")
 eq(hunter.arcaneR4Status,"UNKNOWN","rank-4 rule inspected separately")
 eq(hunter.arcaneR4Reason,"action_slot_unconfirmed",
  "actual rank-4 refusal exposed")
+eq(hunter.decisivePriority,5,"decisive engine priority is exact")
+eq(hunter.decisiveStatus,"UNKNOWN","decisive status observed")
+eq(hunter.decisiveReason,"action_slot_unconfirmed",
+ "decisive reason observed")
 eq(reads,1,"engine reevaluates only for explicit diagnosis")
 -- Scanner coverage is inspected only on manual DevTools request.
 KR.characterState={classToken="HUNTER",index=1}
