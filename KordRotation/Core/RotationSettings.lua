@@ -91,6 +91,10 @@ end
 -- Account-wide general preference: one toggle across all class/spec profiles.
 -- The choice does not suppress buffs; it only selects the display channel.
 function KR.RotationSettings:GetFlag(key)
+    if key=="defensiveInCombatMain" then
+        if not KR.db then return true end
+        return KR.db.defensiveInCombatMain~=false
+    end
     if key=="buffsInCombatMain" then
         if not KR.db then return true end
         return KR.db.buffsInCombatMain~=false
@@ -101,6 +105,14 @@ function KR.RotationSettings:GetFlag(key)
 end
 
 function KR.RotationSettings:SetFlag(key, value)
+    if key=="defensiveInCombatMain" then
+        if not KR.db or type(value)~="boolean" then return false end
+        KR.db.defensiveInCombatMain=value
+        if KR.RotationDisplay and KR.RotationDisplay.Refresh then
+            KR.RotationDisplay:Refresh(true)
+        end
+        return true
+    end
     if key=="buffsInCombatMain" then
         if not KR.db or type(value)~="boolean" then return false end
         KR.db.buffsInCombatMain=value
