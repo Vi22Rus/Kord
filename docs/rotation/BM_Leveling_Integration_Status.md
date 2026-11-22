@@ -122,3 +122,23 @@ DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVaria
 - New mock `tests/hunter_bm_aspect_switch.lua` and stage state evidence checks; new mock is included in manual Lua 5.1 CI workflow.
 
 **State:** SOURCE IMPLEMENTED / MOCK NOT RUN / FOREVER CLIENT NOT RETESTED. No claim of confirmed in-game rendering; client-side eligibility still requires a verified actionbar spell/rank, usability, cooldown, etc.
+
+## 2026-11-22 — Rotation Master aura provider transplant (Kord canonical engine retained)
+
+**Decision:** Retain Kord engine, two-ad​don packaging, profile contracts, UI, and strict readiness gate. Port *only* the reference implementation for a broken signal, never wholesale swap the engine.
+
+**Verified upstream source:** Rotation Master (Preston A. Elder / PreZ) `Platform/auras.lua`, `Core/aura_conditions.lua` and especially `Platform/cooldown_viewer.lua`:
+- Restricted player auras: targeted `GetPlayerAuraBySpellID`, name fallback, cautious list walk, and 'last readable' state.
+- Blizzard Cooldown Manager: `BuffIconCooldownViewer` / `BuffBarCooldownViewer` item frames map `cooldownID` to `spellID`, `overrideSpellID`, `linkedSpellIDs` through `C_CooldownViewer.GetCooldownViewerCooldownInfo`. Presence is derived *without reading protected aura contents*: `auraInstanceID` is secret when present, nil when absent. Tracked frame state is refreshed out of combat and via hooks/events.
+- Optional remembered duration is based on previously **actually read** expiration/duration; no arbitrary positive uptime should be fabricated.
+
+**Changed in Kord:**
+- New read-only `Core/AuraCooldownViewer.lua` follows the source provider pattern; loaded into the canonical TOC and included automatically in both versions. It does not require Rotation Master to be installed and never changes Blizzard frames.
+- `GameState:ReadSignal("player.buff" / "target.debuff")` now uses a verified Cooldown Viewer presence as fallback after direct SpellID and name lookups, before hidden-mode UNKNOWN. Positive direct reads are remembered as verified; a clean, nonsecret by-name absence is also remembered. When restricted mode hides aura APIs, **only a previously confirmed absence** is reused to satisfy Kord's stricter v14 contract, rather than RM's implicit initial-negative assumption.
+- `PLAYER_ENTERING_WORLD` clears prior observations; target swaps clear the cached target presence, and no protected index walk occurs in hidden aura mode.
+- Regression scenarios added in `tests/aura_cooldown_viewer_reference.lua` and `tests/stage_02_03_game_state.lua` and CI test list updated.
+- Credited Rotation Master / PreZ in all six About translations; copied upstream license notice into `THIRD_PARTY_NOTICES.md`.
+
+**To test in WoW Forever:** Add Aspect of the Hawk to Blizzard's Cooldown Manager *buff display* if it is not already tracked, then enter combat with the Kord indicator. If that Blizzard item exists, its plain presence flag can supply the aspect state even when `GetPlayerAuraBySpellID` returns no data. Other untracked auras remain UNKNOWN (safe). A negative aural condition cannot be proven by an absent viewer item.
+
+**Status:** source implementation landed in GitHub; mock cases written but **Lua 5.1 and live WoW Forever tests have not been run**. Not a guaranteed fix for a player whose Cooldown Manager doesn't track the aura. Do not claim completion of full 101-row matrix.
