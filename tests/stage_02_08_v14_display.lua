@@ -130,7 +130,7 @@ eq(type(onUpdate),"function","bounded polling installed")
 active=false
 onUpdate(D.visibilityFrame,0.41)
 eq(D.productionReady,false,"disable clears icon through polling")
-eq(D.frame.visible,false,"disable hides panel")
+eq(D.frame.visible,true,"disabling the profile clears icons but preserves configured panel shell")
 active=true
 engineResult=ready()
 D:Refresh(true)
