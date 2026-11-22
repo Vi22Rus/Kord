@@ -103,8 +103,8 @@ local function mana(S,cfg)
  local floor={max=0,fast=15,balanced=30,economy=50}
  local pct=signal(S,"resources.percent")
  local min=floor[cfg.mana] or 30
- return type(pct)=="number" and pct>=min or
-  (type(pct)=="number" and false or nil)
+ if type(pct)~="number" then return nil end
+ return pct>=min
 end
 local function enabledFeature(cfg,key)
  return cfg[key]~=false
