@@ -1560,6 +1560,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация EN-05:** **См. EN-05: profile-configured AoE mode/threshold is recommendation policy, not a replacement for final spell eligibility.**
+
+
 **Архитектурная актуализация EN-04:** **См. EN-04: AoE CC-preservation is a recommendation-policy gate, distinct from physical spell eligibility.**
 
 
@@ -2999,6 +3002,9 @@
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
 
+**Архитектурная актуализация EN-05:** **См. EN-05: auto AoE threshold consumes the same proven enemy count/coverage; do not add an independent counter or treat lower bound as exact.**
+
+
 **Архитектурная актуализация EN-04:** **См. EN-04: reuse one observed enemy index for controlled enemies; visible plates do not guarantee complete AoE coverage.**
 
 
@@ -3058,6 +3064,9 @@
 ### EN-02 — Число врагов, находящихся в бою с группой
 
 
+**Архитектурная актуализация EN-05:** **См. EN-05: engaged-with-group count is a separately selectable evidence filter for AoE policy, not automatically interchangeable with nearby count.**
+
+
 **Архитектурная актуализация EN-03:** **См. EN-03: group-engaged count consumes the same deduplicated GUID index; multiple engagement evidence records for one enemy contribute once.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
@@ -3113,6 +3122,9 @@
 
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+
+**Архитектурная актуализация EN-05:** **См. EN-05: threshold count must use deduplicated canonical GUID identity before comparison.**
 
 
 **Архитектурная актуализация EN-04:** **См. EN-04: deduplicate controlled target aliases by canonical GUID before computing AoE collision risk.**
@@ -3172,6 +3184,9 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+
+**Архитектурная актуализация EN-05:** **См. EN-05: threshold satisfaction does not override breakable-CC AoE safety; separate count and AoE-control gates.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
 #### Требование
@@ -3221,5 +3236,60 @@
 **НЕ РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Есть название `aoe.safe` и чтение отдельного дебаффа, но нет достоверного AoE CC-preservation provider.
 
 **Архитектурные ссылки:** TG-07, EN-01, EN-03, TG-09, AU-06, SP-14. Обратные ссылки добавлены в старые задачи.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-05 — Минимальное число целей для включения AoE — настройка
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Требование
+
+Конфигурируемый целочисленный порог `aoeMinTargets` (например, 3) для **автоматического** выбора AoE. Порог сравнивается с **доказанным, дедуплицированным и подходящим по контексту** числом врагов. Сохранять отдельные режимы `single`, `aoe`, `auto`; ручной выбор не подменять авто-логикой. Порог не отменяет CC-safety EN-04, spell eligibility или условия конкретной способности. `UNKNOWN` количества целей не превращать в 0 или в уверенный single.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationSettings.lua:13,22,42,135–144`: `targetMode` с `auto/single/aoe`, getter/setter и сохранением в профиле. `aoeMinTargets` в проверенных настройках нет.
+- `KordRotation/UI/Pages/RotationAbilities.lua:67–68,86–87`: UI для выбора `single`/`aoe` через `GetTargetMode`/`SetTargetMode`; отдельного числового поля порога нет.
+- `KordRotation/Core/RotationEngine.lua:128–131`: `auto` возвращает `UNKNOWN(auto_target_count_unverified)`; нет сравнения с N.
+- `KordRotation/Core/RotationConditions.lua:73,218–230`: `enemy.count` заявлен при `needs.enemyCount`, числовые `ge/le` уже есть как общие операции, но это не реализация порога автоматического AoE.
+- EN-01/02/03/04 — канонические контракты количества/идентичности/контроля; новый сканер врагов не нужен.
+
+#### Семь референсов — архитектурное сопоставление
+
+1. **Sonah:** механизм nearby enemies полезен как поставщик количества, но не доказывает готовую общую настройку AoE threshold.
+2. **JustAC:** правила переключения/настроек AoE в проверенных ранее местах не подтверждают универсальный configurable minimum.
+3. **ForeverAuras:** unit/nameplate observations могут поддерживать источники, но настройка порога относится к движку ротаций, не к аурному сканеру.
+4. **MaxDps:** rotation AoE logic применима как потребитель enemy count; retail thresholds без валидации не переносить.
+5. **ForeverRotation:** `Engine.lua:275–295` подсчитывает боевые nameplates; пригодно для порогового решения только после доказательной проверки count.
+6. **RotationGuide:** `Core/State.lua:279–294` `S.Targets()` с минимумом 1 нельзя принимать за точное количество для порога.
+7. **RotationMaster:** общий condition/config подход полезен как пример разделения профиля и данных; конкретный universal AoE min threshold в этом проходе отдельно не подтверждён.
+
+**Граница проверки:** здесь использованы ранее подтверждённые механизмы ZIP; отдельный полный поиск настройки минимального числа целей по всем семи референсам в этом проходе не выполнен. Не приписывать им неподтверждённые готовые реализации.
+
+#### Каноническая архитектура
+
+Добавить в общий `RotationSettings` параметр `aoeMinTargets` (целое число, диапазон и значение по умолчанию определяются контрактом UI/профиля; не выдавать произвольный default за существующий). `AoEPolicyObservation` читает `targetMode`, `aoeMinTargets`, подтверждённое `EnemyProximityObservation` EN-01, канонический GUID index EN-03 и `AoEControlSafetyObservation` EN-04. Для `auto`: `count >= N` и подтверждённая применимость → `AoE`; `count < N` только при достаточном coverage → `single`; при неполном покрытии/неизвестном числе → `UNKNOWN` или явно задокументированный консервативный fallback, который **не** выдаёт неизвестность за точный счётчик. Если confirmed lower bound уже >= N, порог математически подтверждён даже при неполном охвате; если lower bound < N, но possible upper bound >= N — UNKNOWN. При угрозе разрушить CC `UNSAFE` не разрешать AoE, независимо от N.
+
+Разделять пороги для общего nearby enemy count и, если профиль явно требует, для engaged-with-group EN-02; не подменять один другим. Единый профильный параметр по умолчанию не означает глобальную конфигурацию для всех классов; class-specific default — данные профиля. Не создавать отдельный классовый AoE switcher.
+
+#### Требуемые изменения
+
+1. Добавить `aoeMinTargets` в схему/валидацию `RotationSettings`, миграцию старых настроек и UI с локализацией/подсказками на шести языках.
+2. Сохранить `auto/single/aoe` как независимый ручной выбор; порог применяется только к auto.
+3. Использовать один deduplicated GUID count EN-01/EN-03, не nameplate raw count.
+4. Ввести `AoEPolicyObservation` с `READY(aoe/single)` либо `UNKNOWN(reason)`; не подменять неизвестный count нулём.
+5. Поддержать доказательные нижнюю/верхнюю границы и частичный охват; подтверждённое `lowerBound>=N` достаточно для самого порога, но не для CC-safety.
+6. Применять EN-04 `aoe.safe` отдельно от количества, затем окончательный `AbilityEligibility`.
+7. Ленивые `Needs.enemyCount/aoeSafety`, ревизии EventBus и минимизация пересчётов.
+8. Диагностика `aoe_threshold_invalid`, `aoe_count_unknown`, `aoe_threshold_met`, `aoe_threshold_not_met`, `aoe_cc_unsafe`, `aoe_mode_manual_override`.
+9. Тесты N=1/2/3/много, N-1/N/N+1, duplicate GUID, partial coverage, lower/upper bound, UNKNOWN count, CC present/secret, manual single/aoe, profile switch, old settings migration, UI six-language tooltips.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Режимы `auto/single/aoe` и UI уже есть, но порог N и достоверный auto-switch отсутствуют.
+
+**Архитектурные ссылки:** EN-01, EN-02, EN-03, EN-04, SP-14. Обратные ссылки внесены в старые задачи.
 
 **Изменения Lua:** отсутствуют. Только документация.
