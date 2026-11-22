@@ -46,6 +46,7 @@ local function module(path)
 end
 module("Core/GameAPI.lua")
 module("Core/EventBus.lua")
+module("Core/AuraEvidence.lua")
 module("Core/GameState.lua")
 
 local function eq(actual,expected,message)
@@ -100,7 +101,7 @@ eq(KR.GameAPI:Read("CastSpellByID","boolean",1).status,"UNAVAILABLE","no cast AP
 eq(KR.EventBus:Initialize(),true)
 eq(KR.GameState:Initialize(),true)
 eq(KR.GameState:Initialize(),true,"idempotent subscription")
-eq(frameCount,1,"one event frame")
+eq(frameCount,2,"event bus and positive cast evidence frames")
 local first=KR.GameState:GetSnapshot()
 eq(first.status,"READY")
 eq(first.player.class.value[2],"WARRIOR")
@@ -201,6 +202,17 @@ eq(verifiedAbsent.value,false,"missing debuff explicitly false")
 local absentBuff=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
 eq(absentBuff.status,"READY","fully enumerated missing buff proven")
 eq(absentBuff.value,false,"missing buff explicitly false")
+-- Sonah own-cast tracking is bounded and positive-only; an unseen aura
+-- remains UNKNOWN when auras are secret. No protected scan is required.
+eq(KR.AuraEvidence:Read(13165),nil,"no invented initial aspect")
+KR.AuraEvidence:ObserveCast("player",13165)
+eq(KR.AuraEvidence:Read(13165).value,true,"confirmed player aspect cast")
+eq(KR.AuraEvidence:Read(13163),nil,"other aspect not inferred absent")
+KR.AuraEvidence:ObserveCast("player",13163)
+eq(KR.AuraEvidence:Read(13165),nil,"switch invalidates old aspect")
+eq(KR.AuraEvidence:Read(13163).value,true,"new aspect cast tracked")
+KR.AuraEvidence:Reset()
+eq(KR.AuraEvidence:Read(13163),nil,"world/death reset removes evidence")
 -- Sonah/ForeverAuras reference: when the client hides auras, do NOT
 -- attempt forbidden batch/index enumeration after a direct-ID miss.
 local deniedReads=0
