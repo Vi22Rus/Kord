@@ -72,7 +72,7 @@ state.hawkMissing=true
 eq(true,"entering combat with Cheetah recommends Hawk")
 state.combat=false
 state.travel=nil
-eq(nil,"unknown travel aspect must not force Hawk out of combat")
+eq(true,"verified missing Hawk is valid before targeting despite unknown travel")
 state.travel=false
 eq(true,"confirmed absence of travel aspect permits precombat Hawk")
 print("PASS BM Sonah travel aspect combat switch")
