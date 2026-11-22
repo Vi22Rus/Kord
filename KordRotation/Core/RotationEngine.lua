@@ -144,6 +144,7 @@ local function run()
  for i,rule in ipairs(profile.Rules) do
   local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
   local status,reason
+  local ruleChecks,ruleBarReason
   if rule.type~="SPELL" then
    status,reason="BLOCKED","unsupported_action"
   elseif rule.mode~=nil and rule.mode~="any" and rule.mode~=mode then
@@ -174,6 +175,15 @@ local function run()
        chargesRequired=rule.chargesRequired}
      local result=KR.RotationConditions:Check(S,spellID,policy)
      status,reason=result.status,result.reason
+     -- Safe core-only metadata, never included in the public recommendation.
+     -- Keep the diagnostic only for the rule that was actually evaluated.
+     if type(result.checks)=="table" and safe(result.checks)
+         and #result.checks<=6 then
+      ruleChecks=result.checks
+     end
+     if type(result.barReason)=="string" and safe(result.barReason) then
+      ruleBarReason=result.barReason
+     end
      if status~="READY" and status~="BLOCKED" and status~="UNKNOWN" then
       status,reason="UNKNOWN","eligibility_status_invalid"
      end
@@ -181,6 +191,8 @@ local function run()
    end
   end
   local diag={priority=i,status=status,reason=reason}
+  if ruleChecks then diag.checks=ruleChecks end
+  if ruleBarReason then diag.barReason=ruleBarReason end
   diagnostics[#diagnostics+1]=diag
   if status=="UNKNOWN" then
    if reason=="condition_unknown" and rule.onUnknown=="skip" then
