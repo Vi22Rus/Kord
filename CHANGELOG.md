@@ -1,3 +1,14 @@
+## KR-20261122-043 — IT-01/1.2: source-backed item count API в Lua
+- Дата: 2026-11-22 UTC (точный момент в Git); commit SHA по `git log --grep KR-20261122-043`. Этап 1 / шаг 1.2, InventoryObservation, IT-01 (P0). Тип feature/test.
+- Причина: KR-20261122-041 подготовил только протокол; утверждённый выбранный путь позволяет разрабатывать source-supported C_Item без запущенного игрового клиента (KR-20261122-042).
+- Ожидаемое: единый read-only счётчик exact itemID BAGS_ONLY, UNKNOWN на nil/secret/errors. Фактическое до изменения: GameAPI не разрешал C_Item, GameState возвращал безусловный UNKNOWN.
+- Исправлено: `KordRotation/Core/GameAPI.lua` allowlist + `C_Item.GetItemCount`; `KordRotation/Core/GameState.lua` `ReadInventoryItemObservation(itemID)` вызывает false/false и выдаёт count только после безопасного scalar-read с проверкой integer >=0. Legacy не вызывается, item-use не добавлен.
+- `tests/inventory_observation_contract.lua`: mock успеха и нуля, nil, исключений, неверных значений, отсутствия C_Item и secret. REQUIREMENTS.md и поэтапный план синхронизированы, предыдущие записи сохранены.
+- Источники: RotationMaster/Sonah/JustAC/ForeverAuras/MaxDps по первоначальному аудиту IT-01, v14 №54; первичные архивы в этом прогоне не перепроверены. Реальные аргументы/поведение Forever подлежат игровому QA.
+- Проверки: PASS статическая проверка присутствия API, fail-closed веток, сохранения overview/family, исходного текста требований. NOT RUN Lua 5.1/mock suite, CI по ручному правилу, WoW Forever. FAIL не установлен.
+- Для тестировщика: на итоговом IT-01 QA проверить состав сумок, bank-only/equipped-only, false/false, секреты и 0; отдельная установка после одного подшага не требуется. Сохранён `docs/rotation/IT01_ITEM_COUNT_CLIENT_PROBE.md`.
+- Итог: SOURCE IMPLEMENTED / AWAITING IN-GAME QA. Следующий подшаг 1.3 C_Container; связи KR-20261122-040/041/042, IT-02–IT-14, AC-02.
+
 ## KR-20261122-042 — разрешить реализацию утверждённых Lua-адаптеров до игрового QA
 - Дата: 2026-11-22, UTC по Git commit; шаг: правило исполнения IT-01/1.2 и дальнейших утверждённых шагов; тип: docs.
 - Git SHA: `git log --grep KR-20261122-042` (SHA этого коммита вычисляется после записи).

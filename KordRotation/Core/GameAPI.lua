@@ -54,6 +54,8 @@ local allowed = {
     ["C_SpellBook.FindSpellBookSlotForSpell"]=true,
     ["C_Spell.GetSpellPowerCost"]=true,
     ["C_NamePlate.GetNamePlates"]=true,
+    -- IT-01/1.2: shared read-only exact item count (no item use).
+    ["C_Item.GetItemCount"]=true,
 }
 local validTypes = {boolean=true, number=true, string=true, table=true}
 

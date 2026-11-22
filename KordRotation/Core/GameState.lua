@@ -798,14 +798,37 @@ function S:ReadInventoryObservation()
     return result
 end
 
+-- IT-01/1.2: source-supported C_Item reader; in-game Forever QA pending.
+-- The API read is protected by GameAPI:Read (pcall/secret/nil/type).
+-- This is a bag-count observation, NOT item usability or an action.
 function S:ReadInventoryItemObservation(itemID)
     local result=inventoryObservation("inventory_reader_unverified")
     result.source="GameState.InventoryItemObservation"
-    if inventorySafeID(itemID,"item") then
-        result.itemID=itemID
-    else
+    if not inventorySafeID(itemID,"item") then
         result.reason="item_id_unverified"
+        return result
     end
+    result.itemID=itemID
+    local count=read("C_Item.GetItemCount","number",itemID,false,false)
+    if not count or count.status~="READY" then
+        result.reason=count and count.reason or "inventory_reader_unavailable"
+        if count and count.reason=="protected_value" then
+            result.reason="item_count_secret"
+        end
+        if count then result.observedAt=count.observedAt end
+        return result
+    end
+    local value=count.value
+    if not finite(value,0) or value~=math.floor(value) then
+        result.reason="item_count_invalid"
+        return result
+    end
+    result.count=value
+    result.status="READY"
+    result.reason=nil
+    result.apiSource=count.source
+    result.observedAt=count.observedAt
+    -- false/false BAGS_ONLY semantics are source-supported, client NOT RUN.
     return result
 end
 
