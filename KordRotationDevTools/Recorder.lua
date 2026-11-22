@@ -1,7 +1,7 @@
 -- Kord Rotation DevTools (c) 2026 Vi22Rus; see root LICENSE.
 -- Explicit opt-in, bounded memory, no unknown input serialization.
 local _,D=...
-local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true}
+local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true,RULE=true,SIGNAL=true,STAGE=true}
 local statuses={READY=true,BLOCKED=true,UNKNOWN=true,UNAVAILABLE=true,ERROR=true}
 local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     cooldown_unavailable=true,spellbook_unavailable=true,api_missing=true,
@@ -80,6 +80,56 @@ reasons.not_evaluated=true
 for _,name in ipairs(eligibilityStages) do
     reasons["arcane_check_"..name]=true
 end
+-- All spell/rule names remain private. Encode only the validated
+-- rule number, fixed field name and check stage; never serialize SpellIDs.
+local bmSignalNames={
+ "player.level","player.moving","player.combat",
+ "player.health.percent","player.mounted","player.hasAggro",
+ "player.travelAspect","target.exists","target.dead",
+ "target.attackable","target.isPlayer","target.threat",
+ "target.classification","target.melee","target.targetsPlayer",
+ "target.approaching","target.slowed","target.wingClip",
+ "target.willSurviveBurst","target.dyingSoon","target.stingRemaining",
+ "target.ttd","target.debuff","player.buff","pet.exists",
+ "pet.dead","pet.health.percent","pet.attackingTarget",
+ "pet.mendActive","context.inGroup","context.inRaid",
+ "context.inInstance","context.instanceType",
+ "resources.percent","trap.profitable","need.distance",
+ "mongoose.usable","autoShot.active","autoShot.swing",
+ "intimidation.profitable","aoe.safe","volley.profitable",
+ "multi.profitable","enemy.count","hawk.count",
+ "hawk.oldestRemaining","aimed.profitable","sting.profitable",
+ "spell.range"
+}
+local bmCheckStages={"cast","usability","charges","cooldown","gcd","range"}
+for i=1,64 do
+ reasons["bm_rule_"..i]=true
+ for _,name in ipairs(bmSignalNames) do
+  local fixed=name:lower():gsub("[^a-z0-9]","_")
+  reasons["bm_signal_"..i.."_"..fixed]=true
+ end
+ for _,name in ipairs(bmCheckStages) do
+  reasons["bm_stage_"..i.."_"..name]=true
+ end
+end
+reasons.bm_profile_bm_leveling=true
+reasons.bm_profile_bm_pilot=true
+reasons.bm_profile_bm_60=true
+reasons.bm_profile_unavailable=true
+for _,why in ipairs({
+ "signal_provider_unimplemented","signal_api_unavailable",
+ "signal_field_unverified","signal_provider_error",
+ "signal_unverified","direct_field_unverified",
+ "aura_player_unverified","aura_target_unverified",
+ "aura_target_changed","aura_spell_id_unverified",
+ "aura_scan_unavailable","aura_scan_unverified",
+ "aura_scan_limit","aura_lookup_unverified",
+ "aura_identity_unverified","melee_range_unverified",
+ "auto_shot_state_unknown","target_target_unverified",
+ "spell_not_declared","eligibility_policy_unverified",
+ "eligibility_missing","eligibility_unverified",
+ "context_unavailable",
+}) do reasons[why]=true end
 -- Only bounded scalar diagnostics can be exported. No user strings,
 -- frame objects, spell IDs, slot IDs or names are accepted.
 local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
