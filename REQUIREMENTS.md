@@ -3365,6 +3365,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 Fear, Howl of Terror, Banish, Seduction must honor universal breakable CC and AoE safety.
+
 **Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
 
 
@@ -3502,6 +3504,8 @@
 **Ретроактивное уточнение EN-A7:** EN-A7 использует общий порог AoE из EN-05; ручной режим не отменяет safety-порог конкретного действия. Исторический аудит сохранён.
 
 ### EN-06 — Здоровье и TTD по каждому врагу в списке (для выбора мультидота)
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 multi-DoT coverage uses shared target GUID/health/TTD registry; stale/estimated TTD is not a fact.
 
 **Архитектурная актуализация EN-08:** **См. EN-08: per-enemy health/TTD samples reuse EN-08 shared GUID registry and bounded sampling schedule; no separate nameplate enumeration or unbounded history polling.**
 
@@ -4236,6 +4240,8 @@
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 DemonPetObservation extends canonical pet GUID/life/actionable observation; summon completion never inferred from cast success alone.
+
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 distinguishes the single controlled pet from totems and guardians, reusing owner identity but never inventing a pet unit token for summons.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 uses PE-01 confirmed petGUID, life and active status; disappearance alone is not proof of completed Dismiss Pet or death.**
@@ -4414,6 +4420,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 pet Spell Lock/Seduction/Devour Magic depend on this shared pet spell/command capability, not second engine.
+
 **Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
 
 
@@ -4548,6 +4556,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### PE-06 — Тотемы и стражи: какие стоят, оставшееся время, в радиусе ли
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 Ritual of Summoning portal is summoned entity/ritual evidence, not the controlled pet unit.
 
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P2.**
 
@@ -4830,6 +4840,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: Warlock Soul Shard 6265 and creation reagents reuse canonical inventory count and item family, never a second bag scanner.
 
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
 
@@ -5131,6 +5143,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Ретроактивное уточнение CL-07:** CL-07: Conjure Food/Water и Mana Gem требуют общего ItemInventoryProvider с selection по rank/level/quantity, но не приравниваются к health potion family.
 
 ### IT-05 — Камни здоровья и камни души чернокнижника: наличие, кулдаун, необходимость создания
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 delegates all Healthstone/Soulstone CREATE/USE/APPLY to IT-05 StoneLifecyclePolicy; do not add class-specific duplicate.
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 resource consumables and warlock stone creation are separate policies, sharing only IT-01–IT-04 and common class/resource context.**
 
@@ -6128,6 +6142,8 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 
 ### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 demon pet commands remain PET_COMMAND recommendations only, with PE-04 eligibility.
 
 **Архитектурная актуализация EN-A1:** типы AC-01–AC-07 и новые Needs/Rules разрешены только в согласованной версии контракта профиля; реестр должен отвергать несовместимый `contractVersion`, а не молча принимать новый тип (см. EN-A1). Существующий `RotationProfiles` — канонический реестр, без параллельного registry.
 
@@ -8491,6 +8507,8 @@ DevTools должен записывать **все достоверно сфо�
 
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 Warlock spellID/rank, shard item/count, Curse+Bane exclusion and ritual must be validated on WoW Forever; source evidence is not client pass.
+
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
 
 #### Требование
@@ -8712,6 +8730,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 сценарные fixtures проходят QA-06 purity gate для реальных profile source; отсутствие прямого API не доказывает правильности выбранного действия, поэтому QA-07 остаётся отдельным обязательным поведенческим gate.
 
 ### QA-07 — Сценарные таблицы «состояние → ожидаемое действие» для каждого профиля
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 adds a Warlock per-profile scenario manifest covering shards/pet/Curse+Bane/DoT/Life Tap/stones/Fear/ritual, NOT RUN.
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
 
@@ -9029,6 +9049,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 ### CL-03 — Охотник: аспекты, ловушки, питомец, боеприпасы, автострельба, мёртвая зона, метка и имитация смерти
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: Warlock demon uses shared PE-01–PE-05 pet observations; Hunter-specific happiness/feeding never applies.
+
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это **требования к данным и действиям**, а не приоритеты BM/MM/SV ротаций. Для Leveling/60/PVE/PVP — только отдельные утверждённые профили. Никакого автоматического выполнения действий: аддон рекомендует и диагностирует.
 
 #### Полный контракт механик
@@ -9142,6 +9164,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 ### CL-04 — Разбойник: очки комбо, финишеры, скрытность, яды, энергия и такты, прерывания, уход и срыв каста
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: Warlock Soul Shards (item reagent) are distinct from Rogue combo points and energy ticks; reuse typed resources, not resource identity.
+
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к данным, условиям и действиям, **не готовые приоритеты** Assassination/Combat/Subtlety, Leveling/60/PVE/PVP. Ротации — отдельные утверждённые профили; новых Rogue профилей в реестре нет.
 
 #### Конкретные механики, способности и условия
@@ -9246,6 +9270,8 @@ CL-01 описывает **данные, условия и действия**, �
 **Ретроактивное уточнение CL-06:** CL-06: Shaman weapon imbues и Rogue poisons используют один WeaponEnchantProvider, раздельные MH/OH slots, duration/charges и UNKNOWN.
 
 ### CL-05 — Жрец: Shadowform, щит и Weakened Soul, DoT/мана, палочка, групповое лечение, диспел, воскрешение, баффы группы
+
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: Warlock caster-owned DoT and Fear reuse universal Aura/CrowdControl providers; Curse and Bane are separate owner-target exclusive families.
 
 **Раздел 18. Специфика классов (девять классов). Приоритет P0.** Это требования к выразимости **данных и действий**, а не приоритеты Holy/Discipline/Shadow, Leveling/60, PvE/PvP. Ни один Priest-профиль не должен считаться существующим или протестированным, пока он не создан, зарегистрирован и проверен.
 
@@ -9464,6 +9490,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 ### CL-07 — Маг: мана и порог, брони и интеллект, Polymorph/контроль, «превосходство», заморозка, «зачарование», создание еды и восстановление маны
 
+**Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: Warlock Life Tap reuses shared mana/health observation and channel mechanics; health-cost safety is distinct from Mage mana regeneration.
+
 **Раздел 18. Специфика классов (девять классов). Приоритет P0.** Требование описывает способность движка выразить данные и действия Mage Arcane/Fire/Frost, Leveling/60/PVE/PVP, **не готовую ротацию**. Нет зарегистрированных Mage профилей; нельзя утверждать, что ротация реализована.
 
 #### Конкретные заклинания, игровые факты и условия
@@ -9570,3 +9598,115 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / MAGE-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Есть ресурсы, target, aura, spell Eligibility; нет доказанного CC safety, frozen/root semantics, group buff recipient, conjure inventory и mana gem gates. «Превосходство» и «зачарование» остаются неразрешёнными терминами. Mage профилей нет. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** CL-02, CL-03, CL-05, CL-06, IT-04, IT-06, EN-04, QA-07, QA-04, EN-A1.
+
+
+### CL-08 — Чернокнижник: осколки душ, питомец (призыв, смена), проклятия, DoT, жизненный отвод, камни здоровья, страх, портал
+
+**Раздел 18. Специфика классов (девять классов). Приоритет P0.** Контракт способности движка рекомендовать Warlock Affliction/Demonology/Destruction в Leveling/60 и PVE/PVP; **это не готовая ротация**. Профилей Warlock в подтверждённом v1 реестре нет. Автоматический каст, использование предметов, pet actions и портал запрещены.
+
+#### Требование
+
+Канонический набор read-only наблюдений: `SoulShardObservation` (playerGUID, itemID, currentCount, reservedCount, availableCount, bagRevision); `DemonPetObservation` (ownerGUID, petGUID, speciesFamily, exists, dead, active, actionable, summonPending); `WarlockCurseFamilyObservation` (targetGUID, casterGUID, separate BANE and CURSE families, owned aura, rank, remaining, replacement policy); `DotCoverageObservation` (targetGUID, casterGUID, family, stacks, remaining, refreshWindow); `LifeTapSafetyObservation` (healthCost, manaGain, currentHP, currentMana, reserve, risk); `WarlockStoneObservation` (IT-05 lifecycle); `FearControlObservation` (target, breakable CC, remaining, immunity); `SummoningRitualObservation` (spell, reagents, party participants, location, portal state). Для каждого существенного поля обязательны тип, `status=READY|BLOCKED|UNKNOWN|NOT_APPLICABLE`, `reason`, `source`, `observedAt`, `revision` и, где необходимо, caster/target GUID. `READY` отдельного наблюдения **не** даёт права рекомендовать действие без `AbilityEligibility.READY`.
+
+| Область | Конкретные способности / ID, проверяемые по Forever-референсам | Обязательные проверки |
+|---|---|---|
+| Осколки душ | `Soul Shard` itemID `6265`, `Drain Soul` spellID `1120`, `Shadowburn` `17877`, `Soul Fire` `6353` (полные ранги/стоимости — QA-04) | Количество в сумках по IT-01, расходы и резерв, pending creation/bag arrival, higher-priority shard demands, minimum amount для spell. **Не приравнивать shard к UnitPower без проверки клиента**. Не считать Drain Soul гарантированным созданием предмета до подтверждения bag delta |
+| Демон и переключение | `Summon Imp` `688`, `Voidwalker` `697`, `Succubus` `712`, `Incubus` `713`, `Felhunter` `691` (семейства/доступность проверять); `Fel Domination` `18708`, `Demonic Sacrifice` `18788` | PE-01–PE-05: вид и GUID питомца, exists/dead/missing/unknown, active, cast pending, cooldown, spellbook, shard/mana cost, замена только по политике; `UNIT_PET` инвалидирует старую видовую и pet-spell информацию. `Spell Lock` `19244`/`19647`, `Seduction` `6358`, `Devour Magic` `19505` — pet action gate и цель по PE-04/AC-03; pet not actionable → без READY |
+| Проклятия | **Две независимые Forever группы:** `BANE` — `Bane of Agony` `980`, `Bane of Doom` `603`, `Bane of Havoc` `1225228`; `CURSE` — `Curse of the Elements` `440892`, `Weakness` `702`, `Recklessness` `704`, `Tongues` `1714`, `Exhaustion` `18223` | **По одному Bane и Curse от данного caster на target** — dual-slot модель, не единый общий curse slot; одновременный Bane+Curse не считать конфликтом. Own vs other caster, aura identity/rank/remaining, replacement и UNKNOWN ownership; family IDs и применимость подтвердить QA-04. `Amplify Curse` `18288` — отдельная способность, не третий слот |
+| DoT и мультидот | `Corruption` `172`, `Immolate` `348`, `Siphon Life` `18265`, `Wrack` `1316697`, `Drain Life` `689`, `Drain Soul` `1120` | Персональный caster/target GUID, rank, uptime/remaining, separate DoT family и non-clipping channels, EN-06 multi-GUID target registry/TTD. Не refresh при достаточном remaining, не считать чужую ауру своей, не превращать оценочный TTD в доказанный |
+| Жизненный отвод | `Life Tap` `1454` (ранги `1455`, `1456`, `11687–11689` — проверить); `Health Funnel` `755` отдельно | Проверенные по рангу HP cost, mana gain, player HP/mana, safety reserve, in/out combat, incoming danger только при подтверждённом наблюдении, spell cooldown/GCD; неизвестное HP/стоимость → UNKNOWN→STOP, низкая мана сама по себе не означает безопасный Life Tap. Health Funnel = channel с отдельной стоимостью/питомцем |
+| Камни | `Create Healthstone` `6201/6202/5699/11729/11730`, `Create Soulstone` `693/20752/20755/20756/20757`; Healthstone family `5512/5511/5509/5510/9421` и варианты | **Только IT-05**: `CREATE/USE/APPLY/WAIT/NONE/UNKNOWN`, player class, highest learned rank, item count/use cooldown, reagent reserve, cast pending и applied Soulstone aura на конкретной friendly цели отдельно. `Create` spell и item use — разные actions/eligibility |
+| Страх и контроль | `Fear` `5782/6213/6215`, `Howl of Terror` `5484/17928`, `Banish` `710/18647`, `Death Coil` `6789`, pet `Seduction` `6358` | Cast/range/target, immunity/DR если известно, breakable CC, remaining, crowd pull risk, Howl AoE EN-04, friendly/hostile status; fear/banish/seduction не одно и то же. UNKNOWN effect → не рекомендовать опасный удар/АОЕ |
+| Портал призыва | `Ritual of Summoning` spellID `698`; **не путать** с `Ritual of Doom` `18540` | Проверить доступность ритуала, reagents, zone/instance/combat, группу и необходимые взаимодействия участников, цель, cast/channel и состояние ritual/portal entity. Нельзя объявлять portal present по успешному касту или инициировать protected взаимодействие. При недоказанных participant/portal facts → UNKNOWN |
+
+**IDs и ограничения** — найденные в адресно проверенных Forever-oriented Lua референсах, **не WoW Forever CLIENT PASS**. Если spell family/rank/itemID/cost не подтверждены на используемом build, gate UNKNOWN. `UnitPower`/secret/nil не использовать как алиас «осколков в сумке». Для Warlock нет автоматически доказанных итоговых приоритетов.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: есть `UnitClass`, `UnitGUID`, `UnitPowerType/UnitPower/UnitPowerMax`, spellbook/cooldown/aura API; подтверждённых `GetItemCount`/bag provenance, pet spellbook и ritual participant adapters нет.
+- `KordRotation/Core/GameState.lua:80–102,108–148,184–197,224–243`: общий typed power, player/target/pet snapshot, pet target и combat имеются. Нет typed `SoulShardObservation`, demon species, owner-specific Curse/Bane slots, Life Tap rank cost и portal state.
+- `KordRotation/Core/RotationConditions.lua:10–18,51–74`: есть lazy basic facts для pet/resources/buff/debuff/spell; `warlock.shards`, `warlock.petFamily`, `warlock.curseSlots`, `warlock.lifeTapSafe`, `warlock.ritual` не подтверждены.
+- `KordRotation/Core/RotationProfiles.lua:44,117–180`: разрешённые Needs `auras/ranges/enemyCount/ttd/swing`, v1 registry, action category. Warlock-specific Needs/Rulеs и зарегистрированных Warlock профилей нет; расширение Needs только по версионированному EN-A1.
+- `KordRotation/Core/AbilityEligibility.lua:72–140,175–184`: spell cooldown/GCD/usability, но отсутствует end-to-end gate для shard budget, Life Tap HP risk, pet type, ritual/participant eligibility, и готовый IT-05 item lifecycle.
+- `KordRotation/Core/EventBus.lua:20–46`: `UNIT_PET`, `PET_BAR_UPDATE`, `UNIT_AURA`, `UNIT_POWER_*`, `UNIT_SPELLCAST_*`, combat/target/cooldowns; bag/stone arrival, caster-owned multi-target aura, portal revisions не подтверждены.
+- `docs/rotation/Canonical_API_Matrix.md` v14 (101 методов, SOURCE baseline, `CLIENT PASS 0/101`) — первичный API контракт; `Profile_Registry.md` не доказывает подключённые Warlock v1 профили.
+
+#### Сравнение семи референсов (адресно проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Classes/Warlock.lua:106` хранит ранги Create Healthstone; `:245–255` — `Soul Shard 6265` и его резерв, `:485–494` — семейство камней/общий кулдаун, `:517–534` — использование/создание с anti-repeat. Полезен shard budget и разделение create-vs-use, но фиксированные проценты/секунды и отсутствие полноценной Soulstone policy нельзя выдавать за универсальную норму; `UNKNOWN` count не превращать в 0.
+2. **JustAC:** `JustAC/Data/Forever/Rotations.lua:514–550` показывает Life Tap, отдельные Curse/Bane, Corruption, Immolate, Siphon Life и варианты single/AoE; `JustAC/BlizzardAPI/StateHelpers.lua:327` применяет `GetItemCount` с `or 0`. Полезны Forever class families, но fail-open default 0 и SimC-логика не доказывают готовые реагенты/каст.
+3. **ForeverAuras:** `ForeverAuras/SecretAuraRanks.lua:420–488` содержит Warlock rank families, `:430–431` Create Healthstone/Soulstone, `:464–465` `Ritual of Doom 18540` против `Ritual of Summoning 698`, `:480–484` summon demons; `ForeverAuras/GenericTrigger.lua:4988–5005` отмечает задержки item updates. Перенять catalogs/secret-safe evidence и bounded inventory refresh; rank list не доказывает runtime effect.
+4. **MaxDps:** `MaxDps_Warlock/Specialization/Forever/Affliction.lua:10–29` использует condition/auras для Life Tap, Curse, Bane, Corruption, Siphon Life, Immolate; Forever Demonology/Destruction profiles также требуют сверки. Перенять разделение cooldown и aura checks, но Retail / cast glow не являются Forever readiness и нет полного shard/portal eligibility.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Warlock.lua:1–10,22–34` документирует «one Bane + one Curse», самостоятельные DoT и Life Tap; `ForeverRotation/Rotations/Signals.lua:40–41` использует низкую ману как signal. **Взять две раздельные exclusive families**, не переносить фиксированные 40%, `anyCaster` или незадокументированную цену HP.
+6. **RotationGuide:** `RotationGuide/Data/Warlock.lua:5–19` разделяет `BANES={980,603,1225228}` и `CURSES={440892,702,704,1714,18223}`, `:25–41` перечисляет summon кандидатов `697/688/712/713` при отсутствии pet. Полезен independent family catalog, но `noPet` при secret не должен означать подтверждённое отсутствие, а static durations — live aura remaining.
+7. **RotationMaster:** `RotationMaster/Platform/pet.lua:19–38` возвращает pet observation, `RotationMaster/Conditions/petspell.lua:43–121` проверяет pet spell readiness, `RotationMaster/Conditions/debuffs.lua:54–71` содержит owner-only debuff check, `RotationMaster/Platform/items.lua:337–344` — count. Использовать общие pet/aura/item patterns с typed reasons, но не копировать отдельный движок и не утверждать полного Warlock ritual engine.
+
+**Доказательная граница:** это адресное сопоставление конкретных Lua/строк в семи ZIP и ранее зафиксированных их аудитах; не полное построчное чтение всех Lua архивов. API/способности должны пройти QA-04 на WoW Forever.
+
+#### Выбранный путь Kord
+
+**Один Warlock policy layer на общей инфраструктуре, а не самостоятельный модуль-ротационный движок.** Для shards использовать IT-01 inventory/item family и IT-05 reagent budget; логический `SoulShardObservation` не создает второй bag scanner. `DemonPetObservation` расширяет PE-01–PE-05 единого `PetObservation` по owner/pet GUID, идентичность демона и pet spell availability; pet actions только AC-03, guardians и ритуал PE-06. `CurseFamilyProvider` — **конфигурация общего `AuraStateProvider`**: на пару (`targetGUID`, `casterGUID`) два независимых exclusive slots `BANE` и `CURSE`, а остальные DoT остаются отдельными `DotCoverageObservation`; это расширение общих CL-05/EN-04/EN-06, без второго per-class aura scanner. `LifeTapSafetyPolicy` использует CL-05/CL-07 `ResourceStateProvider` и health evidence, стоимость **конкретного ранга**; `StoneLifecyclePolicy` существует строго по IT-05. `FearControlObservation` использует общие `CrowdControlStateProvider`/EN-04; `SummoningRitualObservation` — world/group constraints и PE-06, но не выводит portal present из завершения cast.
+
+Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/resources/cast/group/world` с доказанными событиями; непрочитанное/secret `UNKNOWN`, обязательное `UNKNOWN→STOP` по AC-07, разрешённый `skip` только если профиль доказал безопасность. Конечный `READY` выдаёт **только `AbilityEligibility`**. `SPELL`, `ITEM`, `PET_COMMAND`, `WAIT`, `STOP` строго по существующему versioned Profile_Contract EN-A1/AC-01–AC-07; не вызывать protected действия. Новые имена — **логические контракты**, отдельные Lua-файлы не обязательны без доказанной необходимости.
+
+#### Требуемые изменения
+
+1. На WoW Forever подтвердить все Warlock spellID/ranks, items, costs, Curse/Bane exclusive behavior, pet species и ritual; внести только доказанные сведения в `Ability_Catalogue.md`, `Research_Evidence.md` и QA-04, неизвестное — UNKNOWN.
+2. Реализовать `SoulShardObservation` поверх IT-01/IT-05: validated `C_Item.GetItemCount`/legacy, bag revisions, reserved/current/available, pending creation arrival; не использовать `or 0` при secret и не считать каст фактом получения shard.
+3. PE-01–PE-05: demon species/owner GUID, health/exists/dead/actionability, pending summon, смена демона, Fel Domination/Demonic Sacrifice; invalidation при `UNIT_PET`, event correlation с ограниченным TTL, без ложного present.
+4. Pet Spell Lock/Seduction/Devour Magic: PE-04/AC-03, petbook/actionbar/cooldown/target, immunity и secret; проверка availability именно для current species; no protected pet execution.
+5. `AuraStateProvider`: `BANE` и `CURSE` отдельно по target/caster GUID, overwriting и собственный aura owner, rank/remaining; обычные Corruption/Immolate/Siphon Life/Wrack отдельно, safe refresh, TTL/revisions.
+6. EN-06 per-GUID мультидот и TTD (estimated) и сохранение EN-04 CC safety; безопасный channel check для Drain Soul/Drain Life/Health Funnel, не клиппить без доказанной policy.
+7. Life Tap: HP cost и mana gain по рангу, health reserve, combat policy, source provenance; при secret/unknown здоровье STOP, не подставлять фиксированные 40% из референса.
+8. IT-05/IT-01–04/AC-02: полный healthstone/soulstone create/use/apply lifecycle, rank, reagent budget, shared CD и delayed item arrival, без копий providers.
+9. Fear/Howl/Banish/Death Coil/Seduction по общему CC provider, AoE/control safety EN-04, иммунитет/DR только если подтверждён.
+10. Ritual of Summoning: проверить party/participant/reagent/zone/combat/channel/portal lifecycle; отличить Ritual of Doom, без protected interaction, при непроверяемом portal state вернуть UNKNOWN.
+11. Versioned Needs, `GameAPI` allowlist, `EventBus` и `AbilityEligibility` обновлять после API validation, с DevTools-only `reason/source/revision`, без нового движка; профили строго по `Kord_Warlock_<Spec>_<Leveling|60>_<PVE|PVP>.lua` после согласования Spec abbreviations.
+12. QA-07 fixtures, QA-06 purity, Lua 5.1 mocks, регрессия IT-05, CL-03 pet, CL-05 Dot, CL-07 mana, EN-04; клиентские проверки отдельно, GitHub Actions только ручной финальный прогон.
+
+**DevTools-only причины:** `warlock_shard_count_unknown`, `warlock_shard_insufficient`, `warlock_shard_reserved`, `warlock_shard_arrival_pending`, `warlock_pet_species_unknown`, `warlock_pet_dead`, `warlock_pet_not_actionable`, `warlock_pet_summon_pending`, `warlock_pet_spell_unknown`, `warlock_bane_slot_active`, `warlock_curse_slot_active`, `warlock_aura_owner_unknown`, `warlock_dot_remaining_unknown`, `warlock_dot_target_stale`, `warlock_lifetap_cost_unknown`, `warlock_lifetap_health_unsafe`, `warlock_healthstone_unknown`, `warlock_fear_break_risk`, `warlock_fear_immunity_unknown`, `warlock_ritual_participant_unknown`, `warlock_ritual_reagent_unknown`, `warlock_portal_state_unknown`, `warlock_revision_stale`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Вход | Ожидаемый ответ |
+|---|---|---|
+| `WL-SHARD-01` | count 0, spell requires shard | BLOCKED |
+| `WL-SHARD-02` | shard count secret | UNKNOWN→STOP |
+| `WL-SHARD-03` | count 1, reserved 1 | не тратить на низший приоритет |
+| `WL-SHARD-04` | Drain Soul success, bag unchanged | shard generation не подтверждена |
+| `WL-PET-01` | pet absent, dead unknown | не выдавать revive/summon READY без policy |
+| `WL-PET-02` | живой Imp, требуется Felhunter | проверять switch policy, reagent, cast |
+| `WL-PET-03` | `UNIT_PET` меняет GUID | invalidate species/spells |
+| `WL-PET-04` | нет Felhunter, Spell Lock requested | BLOCKED/UNKNOWN |
+| `WL-PET-05` | pet species secret | UNKNOWN→STOP |
+| `WL-CURSE-01` | собственный Bane активен, Curse нет | Curse eligible отдельно |
+| `WL-CURSE-02` | Curse уже есть, другой Curse requested | замена по explicit policy |
+| `WL-CURSE-03` | aura чужого warlock | не считать собственной |
+| `WL-CURSE-04` | owner secret | UNKNOWN→STOP |
+| `WL-DOT-01` | Corruption remaining достаточен | no refresh |
+| `WL-DOT-02` | remaining ниже окна | refresh при Eligibility |
+| `WL-DOT-03` | target GUID changed | не переносить cached aura |
+| `WL-DOT-04` | multi-target TTD UNKNOWN | no guessed TTD gate |
+| `WL-CHANNEL-01` | Drain Soul channel ongoing | no unapproved clip |
+| `WL-TAP-01` | mana low, HP reserve verified safe | Life Tap только если eligible |
+| `WL-TAP-02` | HP secret | STOP |
+| `WL-TAP-03` | rank healthCost unknown | STOP |
+| `WL-TAP-04` | Health Funnel channeled | не считать Life Tap free |
+| `WL-STONE-01` | Healthstone owned and usable, HP below threshold | ITEM via IT-05 |
+| `WL-STONE-02` | stone absent, shard enough, create known | SPELL create via IT-05 |
+| `WL-STONE-03` | Soulstone owned, aura absent, friendly eligible | APPLY via IT-05 |
+| `WL-STONE-04` | create cast success, bag data pending | WAIT only when pending confirmed |
+| `WL-FEAR-01` | target breakable fear, AoE queued | block unsafe AoE |
+| `WL-FEAR-02` | fear immunity unknown | STOP for fear-dependent rule |
+| `WL-RITUAL-01` | ritual reagent missing | BLOCKED |
+| `WL-RITUAL-02` | participants unobservable | UNKNOWN→STOP |
+| `WL-RITUAL-03` | cast succeeded, portal entity unknown | no portal-present assertion |
+| `WL-REVISION-01` | pet/target/aura/bag changed | invalidate affected cached providers |
+
+Таблица — **спецификация**, не исполняемый suite; для реального профиля требуются approved spellID/rank, priority, channel, source SHA, expected reason, read counts, fixture и игровые доказательства.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / WARLOCK-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Есть общие resources, target, pet, aura, spell Eligibility; shard budget, demon family, dual Curse/Bane, safe Life Tap, stone/ritual lifecycle и Fear safety end-to-end не подтверждены. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Архитектурные и ретроактивные ссылки:** IT-01, IT-05, IT-03, PE-01–PE-06, CL-03, CL-04, CL-05, CL-07, EN-04, EN-06, AC-02, AC-03, AC-07, QA-04, QA-07, EN-A1. В этом коммите обратные ссылки внесены в CL-03/04/05/07, IT-01/05, PE-01/04/06, EN-04/06, AC-03, QA-04/07. Остальные механизмы остаются прежними без дублирования.

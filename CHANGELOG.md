@@ -1,3 +1,13 @@
+## KR-20261122-024 — аудит CL-08: Warlock shards, demons, Bane/Curse, DoT, Life Tap, stones, Fear, Ritual of Summoning
+- Дата: 2026-11-22, Europe/Stockholm; commit identification: `KR-20261122-024` in git log. Этап: требования / документация, не Lua релиз.
+- Контекст и ожидаемое: описать проверяемый P0 контракт чернокнижника и связать с универсальными providers; ранее общего Warlock end-to-end контракта не было. В реальном клиенте пользовательскую ошибку не воспроизводили, BUG не заявлен.
+- Причина пробела: current `GameState`/`RotationConditions`/`AbilityEligibility` не покрывают reagent reserve, demon family, Bane-vs-Curse, Life Tap HP safety, stone/ritual/CC; источник изменения — аудит требований, не runtime failure.
+- Изменения: `REQUIREMENTS.md` новый CL-08 с требованием, Kord audit, семью проверенными референсами, canonical policy, 12 работами, diagnostics, 32 сценариями QA-07, UNKNOWN safety, вердиктом. Ретроактивно дополнены CL-03/04/05/07, IT-01/05, PE-01/04/06, EN-04/06, AC-03, QA-04/07. `CHANGELOG.md` эта запись. Lua/TOC/ZIP не менялись.
+- Обоснование: Soul Shards остаются item reagents; петы используют PE-01–05; BANE и CURSE по одному отдельному owner-target slot; камни полностью делегированы IT-05; право READY исключительно AbilityEligibility; никакого второго движка.
+- Проверки: SOURCE/DOC read + reference consistency PASS на рассмотренных фрагментах, полный построчный аудит ZIP NOT RUN; Lua 5.1 NOT RUN; CI NOT RUN; WoW Forever NOT RUN; CLIENT PASS=0/101. Проверка записанной ветки по итоговому SHA после публикации обязательна.
+- Выдача тестировщику: документация CL-08 и сценарный список QA-07; не устанавливать аддон ради этого изменения. Будущая клиентская приемка отдельно.
+- Результат: CL-08 SPECIFIED, не IMPLEMENTED; открытые вопросы — Forever build SpellID/cost/ranks, shard bag API, pet species, Bane/Curse owner behavior, ritual portal observation. Следующий шаг: CL-09.
+
 ## KR-20261122-023 — аудит CL-07: Mage mana, armor/intellect, Polymorph, freeze, conjure and mana restore
 - Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-023`.
 - Тип: docs / CL-07 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
