@@ -47,6 +47,7 @@ end
 module("Core/GameAPI.lua")
 module("Core/EventBus.lua")
 module("Core/AuraEvidence.lua")
+module("Core/AuraCooldownViewer.lua")
 module("Core/GameState.lua")
 
 local function eq(actual,expected,message)
@@ -101,7 +102,7 @@ eq(KR.GameAPI:Read("CastSpellByID","boolean",1).status,"UNAVAILABLE","no cast AP
 eq(KR.EventBus:Initialize(),true)
 eq(KR.GameState:Initialize(),true)
 eq(KR.GameState:Initialize(),true,"idempotent subscription")
-eq(frameCount,2,"event bus and positive cast evidence frames")
+eq(frameCount,3,"event bus, positive cast evidence and viewer frames")
 local first=KR.GameState:GetSnapshot()
 eq(first.status,"READY")
 eq(first.player.class.value[2],"WARRIOR")
@@ -254,6 +255,23 @@ eq(namedPresent.status,"READY","by-name verified buff exists")
 eq(namedPresent.value,true,"by-name verified spell identity")
 C_UnitAuras.GetAuraDataBySpellName=nil
 C_Spell.GetSpellInfo=nil
+-- Rotation Master Cooldown Viewer fallbacks: tracked presence remains
+-- usable in hidden aura mode, and last confirmed *visible* absence may
+-- be retained. An unobserved hidden aura must never be invented absent.
+local rmViewer=KR.AuraCooldownViewer
+rmViewer:Observe(65431,false)
+eq(rmViewer:GetObserved(65431),false,
+ "independently observed absence remembered")
+eq(rmViewer:GetObserved(65432),nil,
+ "hidden aura with no history is unverified")
+C_Secrets={ShouldAurasBeSecret=function() return true end}
+local rmAbsent=KR.GameState:ReadSignal("player.buff",65431,playerPresent)
+eq(rmAbsent.status,"READY","hidden last confirmed absence available")
+eq(rmAbsent.value,false,"hidden absence retained")
+local rmUnknown=KR.GameState:ReadSignal("player.buff",65432,playerPresent)
+eq(rmUnknown.status,"UNKNOWN","unobserved hidden buff remains unknown")
+rmViewer:Observe(65431,true)
+eq(rmViewer:GetObserved(65431),true,"new verified presence overrides old absence")
 -- Sonah/ForeverAuras reference: when the client hides auras, do NOT
 -- attempt forbidden batch/index enumeration after a direct-ID miss.
 local deniedReads=0
