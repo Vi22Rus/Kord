@@ -190,6 +190,65 @@ function D:ObserveDetails(diagnosis,force,summary)
                 check and check.reason or "not_evaluated")
         end
     end
+    -- Full-profile audit: evaluate every registered rule independently
+    -- and journal the signal / eligibility cause. Each key is stable and
+    -- only written when its result changes; no raw player or spell data.
+    local audit=fetch("Audit")
+    if audit and D:Safe(audit) then
+        local module=tostring(audit.module or "unavailable")
+        local modules={bm_leveling=true,bm_pilot=true,bm_60=true,
+            unavailable=true}
+        if modules[module] then
+            add("PROFILE",audit.status,"bm_profile_"..module,
+                audit.ruleCount)
+        end
+        local stages={"cast","usability","charges","cooldown","gcd","range"}
+        if type(audit.rules)=="table" and D:Safe(audit.rules)
+            and #audit.rules<=64 then
+            for index,rule in ipairs(audit.rules) do
+                if type(rule)=="table" and D:Safe(rule)
+                    and rule.priority==index then
+                    add("RULE",rule.status,"bm_rule_"..index,rule.reason)
+                    local inputs=rule.signals
+                    if type(inputs)=="table" and D:Safe(inputs)
+                        and #inputs<=24 then
+                        for _,signal in ipairs(inputs) do
+                            if type(signal)=="table" and D:Safe(signal)
+                                and D:Safe(signal.name)
+                                and type(signal.name)=="string" then
+                                local slug=signal.name:lower():gsub(
+                                    "[^a-z0-9]","_")
+                                add("SIGNAL",signal.status,
+                                    "bm_signal_"..index.."_"..slug,
+                                    signal.reason)
+                            end
+                        end
+                    end
+                    local known={}
+                    if type(rule.checks)=="table" and D:Safe(rule.checks)
+                        and #rule.checks<=6 then
+                        for _,check in ipairs(rule.checks) do
+                            if type(check)=="table" and D:Safe(check)
+                                and D:Safe(check.name) then
+                                for _,name in ipairs(stages) do
+                                    if check.name==name then
+                                        known[name]={status=check.status,
+                                            reason=check.reason}
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    for _,name in ipairs(stages) do
+                        local check=known[name]
+                        add("STAGE",check and check.status or "UNAVAILABLE",
+                            "bm_stage_"..index.."_"..name,
+                            check and check.reason or "not_evaluated")
+                    end
+                end
+            end
+        end
+    end
     local core=summary or self:ReadCore()
     if core then
         add("CHECK",core.profileStatus,"profile_ui")
