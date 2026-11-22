@@ -764,6 +764,58 @@ function S:ReadSignal(field,spellID,snapshot)
     return {status="READY",value=true,source="GameState.ReadSignal"}
 end
 
+-- PLAN IT-01 / 1.1: one fail-closed inventory observation contract.
+-- Counts and bag coverage are intentionally unavailable until the Forever
+-- reader and item-family catalogue are validated in later IT-01 steps.
+-- All three observations share this source; there is no bag scanner here.
+local function inventoryUnknown(source, reason)
+    return {status="UNKNOWN", source=source, reason=reason, revision=nil}
+end
+
+function S:ReadInventoryObservation()
+    local result=inventoryUnknown("GameState.InventoryObservation",
+        "inventory_reader_unverified")
+    result.scope="BAGS_ONLY"
+    result.items={}
+    result.families={}
+    return result
+end
+
+function S:ReadInventoryItemObservation(itemID)
+    local result=inventoryUnknown("GameState.InventoryItemObservation",
+        "inventory_reader_unverified")
+    local api=KR.GameAPI
+    local ok,safe=false,false
+    if api and type(api.IsSafeValue)=="function" then
+        ok,safe=pcall(api.IsSafeValue,api,itemID)
+    end
+    if ok and safe==true and type(itemID)=="number"
+        and itemID==math.floor(itemID) and itemID>0
+        and itemID<=99999999 then
+        result.itemID=itemID
+    else
+        result.reason="item_id_unverified"
+    end
+    return result
+end
+
+function S:ReadInventoryFamilyObservation(familyID)
+    local result=inventoryUnknown("GameState.InventoryFamilyObservation",
+        "item_family_catalog_unverified")
+    local api=KR.GameAPI
+    local ok,safe=false,false
+    if api and type(api.IsSafeValue)=="function" then
+        ok,safe=pcall(api.IsSafeValue,api,familyID)
+    end
+    if ok and safe==true and type(familyID)=="string"
+        and #familyID>0 and #familyID<=64 then
+        result.familyID=familyID
+    else
+        result.reason="item_family_id_unverified"
+    end
+    return result
+end
+
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
 function S:ReadAutoShot(spellID)
     if not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"

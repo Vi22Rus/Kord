@@ -1,3 +1,46 @@
+## KR-20261122-038 — IT-01 / шаг 1.1: fail-closed InventoryObservation
+- Дата/время: 2026-11-22T13:47:03Z (UTC)
+- Коммит: определяется по git log --grep KR-20261122-038
+- Этап / версия: PLAN этап 1, IT-01, шаг 1.1; общий контракт InventoryObservation; P0
+- Тип: feature
+- Задача/отчёт: первоисточник REQUIREMENTS.md IT-01; PLAN/ITEMS/IT.md; PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md.
+- Изменённые файлы: KordRotation/Core/GameState.lua; tests/inventory_observation_contract.lua; CHANGELOG.md.
+
+### Контекст и воспроизведение
+- Ожидалось: один общий BAGS_ONLY InventoryObservation, InventoryItemObservation и InventoryFamilyObservation со status/source/reason/revision; никакого второго bag scanner.
+- Фактически до изменения: GameState не экспонировал ни одной из этих структур; игровой доступ к сумкам не валидирован.
+- Среда: статический аудит исходников репозитория; WoW Forever не запускался.
+
+### Анализ причины
+- Подтверждено по исходникам: модуль GameState не имел общего контракта инвентаря; GetItemCount не входил в GameAPI allowlist.
+- Причина отсутствия игрового count: реализация этапа IT-01 ранее не выполнялась; API semantics и bag coverage ещё не проверены.
+
+### Что изменено и почему
+- GameState.lua: добавлены ReadInventoryObservation, ReadInventoryItemObservation, ReadInventoryFamilyObservation как три представления одного логического источника, возвращающие UNKNOWN и явную причину до появления проверенного считывателя.
+- InventoryObservation имеет scope BAGS_ONLY и пустые коллекции наблюдений, которые НЕ означают нулевой count; revision=nil до появления достоверного механизма ревизий.
+- Входные идентификаторы проходят защитную валидацию; никакие неподтверждённые item counts, READY, bag scans или API-вызовы не добавлены.
+- tests/inventory_observation_contract.lua: сценарии UNKNOWN/no count/scope/ID, подготовленные к локальному выполнению.
+- Риски: это только слой начальных контрактов, не рабочий счётчик предметов; дальнейшее наполнение — шаги 1.2–1.10. Прямые Sonah.zip и MaxDps.zip недоступны; ссылки из API_REFERENCE_MATRIX.md изучены, первичные архивы НЕ проверены.
+
+### Проверки
+- PASS: статическая сверка подготовленных исходников по тексту: структуры, UNKNOWN, BAGS_ONLY, отсутствие вызовов игровых item API в новом блоке.
+- NOT RUN: Lua 5.1 и mock-тесты — интерпретатор недоступен в среде разработки.
+- NOT RUN: CI/GitHub Actions — ручной запуск только перед общим QA.
+- NOT RUN: клиент WoW Forever; CLIENT PASS по IT-01 не заявляется.
+- NOT RUN: обязательное сравнение с архивами Sonah.zip / MaxDps.zip — первичные архивы недоступны.
+
+### Выдано тестировщику
+- Коммит: см. git log --grep KR-20261122-038.
+- Подготовлен mock-тест tests/inventory_observation_contract.lua; проверка в игре откладывается до завершения этапа IT-01.
+- Никаких предметов не используется; никаких изменений рекомендаций или интерфейса нет.
+
+### Фактический результат и следующие действия
+- Получено: исходный fail-closed контракт шага 1.1, без ложного count=0 и без второго bag scanner.
+- Не проверено: выполнение Lua, игровое API, корректность подсчёта, event invalidation, контракты семейства.
+- Статус: SOURCE IMPLEMENTED / TEST NOT RUN, не DONE.
+- Следующий шаг: IT-01 / 1.2 — доказать bags-only semantics C_Item.GetItemCount на WoW Forever; не объявлять верификацию без клиента/референсов.
+- Связи: SP-14, PE-04, PE-05, GR-05, SW-04; KR-20261122-037.
+
 ## KR-20261122-037 — поэтапный план реализации доработки движка Kord
 - Дата/время: 2026-11-22T13:40:19.452Z (UTC)
 - Коммит: определяется по git log --grep KR-20261122-037
