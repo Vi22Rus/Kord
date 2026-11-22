@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 recommendations (use/create/apply) must pass sole AbilityEligibility READY; class gating and UNKNOWN never bypass it.**
+
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 selects a candidate and does not grant READY; only canonical AbilityEligibility can grant final READY.**
 
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 must extend the sole AbilityEligibility final READY with item-specific policy; spell usability and spell range do not prove item usability.**
@@ -4043,6 +4045,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 soulstone use on friendly/dead targets depends on group-care targeting and resurrection policy; creation is not application.**
+
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 best healing potion selection is a separate item choice input to healing priority, not proof of need or safe usage.**
 
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 bandage/potion target and combat restrictions must be checked before group care recommendations.**
@@ -4400,6 +4404,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 creation cast state and postcast item arrival reuse common timing/identity conventions, not pet-care timers.**
+
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 item use restrictions are separate from pet-care timing and do not justify pet command execution.**
 
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 item cooldown is not pet-care cast/aura timing; reuse common monotonic clock and typed unknown conventions only.**
@@ -4747,6 +4753,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 reuses IT-01 bag-only counts and healthstone/soulstone/shard family catalog; no duplicate bag scanner.**
+
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 uses the canonical bag-only InventoryObservation and ItemFamilyCatalog; no second family scanner, and an unknown higher-tier count prevents a proven best-item claim.**
 
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 uses IT-01 confirmed bag-only count and item identity; item possession never proves item usability.**
@@ -4805,6 +4813,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 reuses item cooldown/shared healthstone group observation; creation spell cooldown is a distinct spell gate.**
 
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 consumes per-item and shared potion cooldown; a highest-tier owned potion is not necessarily the highest-tier currently usable potion.**
 
@@ -4866,6 +4876,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 use eligibility for stones and creation spell eligibility must remain separate; no item READY inferred from create spell READY.**
+
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 delegates level, zone, combat, target and item usability gates to IT-03; highest item level is not required player level.**
 
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
@@ -4924,6 +4936,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
 
+**Архитектурная актуализация IT-05:** **См. IT-05: IT-05 uses IT-04 ranked family selector for best owned stone and highest learned creation rank; do not create second tier selector.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
 
 #### Требование
@@ -4975,5 +4989,58 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет подтверждённого item family selector, validated tier catalog, item count/cooldown/usable eligibility. Частичный player level snapshot не решает выбор максимального применимого зелья.
 
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, SP-14, GR-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-05 — Камни здоровья и камни души чернокнижника: наличие, кулдаун, необходимость создания
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
+
+#### Требование
+
+Для **любого класса** определять наличие и применимость имеющихся `HEALTHSTONE`/`SOULSTONE` по IT-01–IT-04, включая ранги/Forever variants, cooldown и shared group. **Только если `UnitClass('player')` достоверно `WARLOCK`**, дополнительно оценивать `CREATE_HEALTHSTONE` и `CREATE_SOULSTONE` по максимальному **изученному** подходящему рангу: нужно ли создавать, достаточно ли реагентов (classic `Soul Shard` itemID 6265, либо подтверждённый Forever-specific resource), доступна ли сама способность, не выполняется ли уже создание и нет ли подтверждённого готового камня. Создание камня души, **использование предмета Soulstone на цели** и наличие эффекта Soulstone на цели — три независимых состояния; наличие Soulstone не доказывает наложенный эффект. Камень здоровья может быть у не-чернокнижника (передан/из soulwell); для него рекомендация использования допустима, **создание недопустимо**. `WarlockStoneObservation(kind,playerGUID,targetGUID)` содержит `ownedCount`, `bestOwnedItemID`, `itemCooldown`, `sharedCooldown`, `createSpellID`, `createSpellKnown`, `createSpellCooldown`, `reagentCount`, `resourceRequirement`, `creationInProgress`, `appliedSoulstoneAura`, `decision=USE/CREATE/APPLY/WAIT/NONE/UNKNOWN/NOT_APPLICABLE`, `source/reason/revisions`. Если item count, rank, reagents, class, cast, cooldown или soulstone application неизвестны — `UNKNOWN` в соответствующем gate, не `CREATE` по умолчанию. Отдельная политика предотвращает создание младшего камня при наличии старшего и повторное создание во время задержки появления предмета.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9,21–25,33–43`: `UnitClass`, spellbook и spell cooldown доступны; item count/cooldown/usable и Soul Shard count отсутствуют в подтверждённом allowlist.
+- `KordRotation/Core/GameState.lua:124–127,184–196,224–243`: class identity, player combat/cast и pet snapshot имеются, но нет `WarlockStoneObservation`, create/owned/applied differentiation.
+- `KordRotation/Core/AbilityEligibility.lua:54–55,75–97,175–184`: spellbook, cooldown и spell usability gates есть, но item use/create spell reconciliation и reagent reserve не подтверждены.
+- `KordRotation/Core/EventBus.lua:21–32`: spellcast/combat/resource revisions есть, bag/item cooldown/stone arrival и aura application correlation не подтверждены.
+- **IT-01–IT-04** уже задают inventory, item cooldown, item usability и best-family selector; не реализовывать их заново для Warlock.
+
+#### Сравнение семи референсов (локальные ZIP, проверенные Lua)
+
+1. **Sonah:** `Sonah/Classes/Warlock.lua:106` ранги Create Healthstone 6201/6202/5699/11729/11730; `:245–255` Soul Shard 6265 и порог сохранения осколков; `:485–494` пять базовых рангов Healthstone, `:489–490` shared healthstone cooldown, `:517–519` применение при low HP, `:534` создание только без камня, с shard и anti-repeat. **Основной пример create-vs-use**, но `Items.Count ~=0` при UNKNOWN и fixed 120s не переносить как доказательство; в проверенном warlock profile нет симметричной полной Soulstone creation policy.
+2. **JustAC:** `JustAC/Data/Forever/Consumables.lua:554–605` содержит классические и improved healthstone variants (9421/19012/19013, 5510/19010/19011, 5509/19008/19009, 5511/19006/19007, 5512/19004/19005). `JustAC/BlizzardAPI/StateHelpers.lua:305` упоминает healthstone re-suggest, `:2189,2325` использует retail-style SoulShards power: **не переносить это как доказательство**, что Classic Forever 6265 — UnitPower. Перенять расширенный каталог, не приравнивать расходник к ресурсной шкале.
+3. **ForeverAuras:** `ForeverAuras/SecretAuraRanks.lua:430–431` перечисляет ранги Create Healthstone и Create Soulstone `693/20752/20755/20756/20757`; `ForeverAuras/SpellNameData.lua:743–747,759` включает дополнительные Forever variants; `:3577` Soulstone Resurrection effect IDs. `ForeverAuras/GenericTrigger.lua:5005` предупреждает, что обновление healthstone из soulwell может не вызвать `BAG_UPDATE_DELAYED`. Перенять rank family/effect separation и bounded inventory recheck.
+4. **MaxDps:** `MaxDps/SpellData.lua:4887,4994,8934,8960` содержит Soulstone/ CreateHealthstone / CreateSoulstone identifiers; `MaxDps/Cooldowns.lua:690,713,731` использует Healthstone 6262 как spell effect ID, **не** bag item ID. В проверенных местах нет доказанного полного warlock create-if-missing + shard + soulstone applied policy.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Warlock.lua:10,72` использует warlock combat priorities и отмечает Soul Shard для Shadowburn; в проверенном файле нет универсального healthstone/soulstone item creation observer. Не выводить наличие камня из warlock spell priority.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого warlock healthstone/soulstone create-if-missing provider. Не считать отсутствие записи доказательством, что класс не может создавать камни.
+7. **RotationMaster:** `RotationMaster/init.lua:57–90` содержит расширяемое семейство Healthstone; `RotationMaster/Platform/items.lua:337–344,211–255,484–505` даёт count/cooldown/usable, `RotationMaster/Core/item_sets.lua:120–181` ordered family selection. В проверенных местах нет подтверждённого универсального `CreateSoulstone`/reagent decision engine. **Основной универсальный item substrate**, Sonah — class-specific policy.
+
+#### Выбранный путь Kord
+
+**Один логический `WarlockStoneObservation` / `StoneLifecyclePolicy` поверх IT-01 `InventoryObservation`, IT-02 `ItemCooldownObservation`, IT-03 `ItemUseEligibilityObservation`, IT-04 `ItemFamilySelectionObservation`, общего spellbook/cast/aura/AbilityEligibility.** Не создавать второй item scanner, cooldown adapter, rank selector или независимый class engine. `StoneFamilyCatalog` — **расширение того же IT-01 ItemFamilyCatalog**: HEALTHSTONE (classic/improved), SOULSTONE item variants (validated on Forever), SOUL_SHARD reagent (6265, client-gated), create spell family и applied aura spell family (разные ID namespaces). Сначала class check: `WARLOCK` открывает CREATE, остальные классы могут USE уже имеющиеся healthstones; неизвестный class -> UNKNOWN, не CREATE. Выбирать highest learned create rank, но только если его item output соответствует подтверждённому tier; наличие младшего камня при доступном старшем регулируется явной `replaceLowerTier` настройкой, по умолчанию не тратить shard ради замены без доказанной пользы. Учитывать стоимость осколков и резерв на более приоритетные warlock действия; `GetSpellPowerCost` не является доказательством количества classic bag reagent. Soulstone create может иметь spell cooldown, отличающийся от item use cooldown; не объединять их. Проверять текущий cast, `UNIT_SPELLCAST_SUCCEEDED` и последующее изменение сумки; success cast без bag arrival ещё не доказывает наличие предмета, bounded grace не означает CREATED. При отмене/ошибке каста — повторная оценка; suppress duplicate pending. Для Soulstone применение на friendly target/себя и наличие resurrection effect проверять отдельно по aura target; target unknown не превращать в applied=false. Рекомендация использования Soulstone в бою/вне боя зависит от проверенной Forever policy, не от одного общего правила.
+
+`StoneLifecyclePolicy` отдаёт `USE` при подтверждённом need и IT-03 eligibility, `CREATE` только при подтверждённом отсутствии нужного stone, class WARLOCK, изученном create spell, наличии reagent и итоговом AbilityEligibility READY, `APPLY` только для Soulstone при наличии item, valid friendly target и проверенном aura/usage policy, `WAIT` при подтверждённом in-progress creation, `NONE` при доказанной ненужности, иначе `UNKNOWN`. Приоритет между healthstone и soulstone, расход shard, out-of-combat preparation и запрет spam — декларативная class policy. Lazy `Needs.items.stones`, revisions bag/spellbook/cast/item cooldown/auras/target/combat/class, bounded reads и DevTools-only reasons; никаких protected item uses/casts.
+
+#### Требуемые изменения
+
+1. Ввести `WarlockStoneObservation` и `StoneLifecyclePolicy` с USE/CREATE/APPLY/WAIT/NONE/UNKNOWN и provenance.
+2. Расширить IT-01 `ItemFamilyCatalog` healthstone/soulstone/improved/Forever variants и Soul Shard reagent, без второго каталога или bag scan.
+3. Проверить Forever highest learned `Create Healthstone`/`Create Soulstone` ranks, created item outputs и applied Soulstone effect IDs; не смешивать spellID, itemID и auraID.
+4. Реиспользовать IT-01 bag count и IT-04 best owned tier; неизвестное наличие -> UNKNOWN, не CREATE.
+5. Реиспользовать IT-02 item/shared cooldown и **отдельный** spell cooldown создания; не принимать фиксированный 120s как универсальный факт.
+6. Реиспользовать IT-03 item use combat/target/zone/level; отдельно Soulstone friendly-target and applied-aura observation.
+7. Class gate WARLOCK только для CREATE; прочие классы могут использовать имеющийся Healthstone, class unknown fail-closed.
+8. Реагент 6265 или подтверждённый Forever-specific resource, shard reserve, anti-duplicate cast/pending bag arrival, EventBus revisions, lazy Needs и финальный AbilityEligibility READY.
+9. DevTools-only диагностика: `stone_class_unknown`, `stone_create_not_warlock`, `stone_family_count_unknown`, `stone_create_rank_unknown`, `stone_output_mapping_unknown`, `stone_reagent_unknown`, `stone_reagent_insufficient`, `stone_create_in_progress`, `stone_create_success_item_unconfirmed`, `stone_item_cd_unknown`, `stone_shared_cd_unknown`, `stone_soulstone_target_unknown`, `stone_soulstone_aura_unknown`, `stone_create_suppressed_owned`.
+10. Тесты: warlock/non-warlock/unknown class, healthstone 0/1/multiple/improved ranks, soulstone 0/1, shard 0/1/secret, reagent reserve, highest learned rank, wrong spell output mapping, spell cooldown vs item cooldown, soulwell bag event missing, creation in progress/succeeded but bag not arrived/failed, low-tier owned high-tier known, no repeated create, Soulstone target friendly/dead/unknown, applied aura present/absent/secret, item use in/out combat, no false CREATE/READY or protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ SPELL/CLASS API — ДОРАБОТАТЬ (P1).** В Kord есть class/spellbook/cast/cooldown primitives, но нет подтверждённого stone inventory/cooldown/creation lifecycle, reagent check и Soulstone applied-aura policy.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, SP-14, GR-05, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
