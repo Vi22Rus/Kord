@@ -19,5 +19,21 @@ KR.SharedCooldownGroupCatalog={GetGroup=function() error("simulated") end}
 assert(S:ReadSharedItemCooldownObservation("POTION_SHARED").reason=="item_cd_group_catalog_invalid")
 KR.SharedCooldownGroupCatalog={GetGroup=function() return {status="READY",groupID="POTION_SHARED",remaining=0} end}
 assert(S:ReadSharedItemCooldownObservation("POTION_SHARED").status=="UNKNOWN")
+-- A guarded catalogue lookup is not enough: individual result fields
+-- can fault under metatables or carry secret scalar values.
+KR.SharedCooldownGroupCatalog={GetGroup=function()
+    return setmetatable({status="UNKNOWN",groupID="POTION_SHARED"},{
+        __index=function() error("synthetic protected catalogue field") end})
+end}
+local fault=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(fault.status=="UNKNOWN" and fault.reason=="item_cd_group_catalog_invalid")
+assert(fault.remaining==nil and fault.active==nil)
+KR.SharedCooldownGroupCatalog={GetGroup=function()
+    return {status="UNKNOWN",groupID="POTION_SHARED",reason="SECRET",
+        verification="PENDING_FOREVER"}
+end}
+local secret=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(secret.status=="UNKNOWN" and secret.reason=="item_cd_group_catalog_invalid")
+assert(secret.remaining==nil and secret.active==nil)
 KR.SharedCooldownGroupCatalog=old
 print("shared_item_cooldown_observation_mock PASS")

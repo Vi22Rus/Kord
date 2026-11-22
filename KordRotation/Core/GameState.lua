@@ -1212,18 +1212,31 @@ function S:ReadSharedItemCooldownObservation(groupID)
         result.reason="item_cd_group_catalog_invalid"
         return result
     end
-    -- Only allow the explicitly defined candidate group to flow into
-    -- diagnostics. Do not copy secret, mutable or unverified group fields.
-    if group.status~="UNKNOWN" or group.groupID~=groupID then
+    -- A catalogue table may carry protected fields or metatable accessors.
+    -- Both field extraction and scalar safety checks must be guarded.
+    local fieldsOK,status,identity,reason,verification=pcall(function()
+        return group.status,group.groupID,group.reason,group.verification
+    end)
+    if not fieldsOK then
         result.reason="item_cd_group_catalog_invalid"
         return result
     end
-    if group.reason=="item_cd_group_unverified"
-        and group.verification=="PENDING_FOREVER" then
+    local safetyOK,fieldsSafe=pcall(function()
+        return api:IsSafeValue(status) and api:IsSafeValue(identity)
+            and api:IsSafeValue(reason)
+            and (verification==nil or api:IsSafeValue(verification))
+    end)
+    if not safetyOK or not fieldsSafe
+        or status~="UNKNOWN" or identity~=groupID then
+        result.reason="item_cd_group_catalog_invalid"
+        return result
+    end
+    if reason=="item_cd_group_unverified"
+        and verification=="PENDING_FOREVER" then
         result.reason="item_cd_group_partial"
         result.catalogSource="SharedCooldownGroupCatalog"
         result.verification="PENDING_FOREVER"
-    elseif group.reason=="item_cd_group_unknown" then
+    elseif reason=="item_cd_group_unknown" then
         result.reason="item_cd_group_unknown"
     else
         result.reason="item_cd_group_catalog_invalid"

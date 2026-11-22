@@ -1,3 +1,15 @@
+## KR-20261122-101 — IT-02/2.6: guard untrusted shared cooldown catalogue fields
+- Дата/время: 2026-11-22 (Git commit records exact timestamp); SHA: `git log --grep KR-20261122-101`.
+- ID: IT-02 P0, этап 2, шаг 2.6; fix/test; PARTIALLY IMPLEMENTED; CLIENT NOT RUN.
+- Контекст: `ReadSharedItemCooldownObservation` охранял вызов `GetGroup`, но читал `group.reason` и `group.verification` за пределами pcall. Метатаблица или секретные поля каталога могли прервать общий reader; это риск по исходному коду, а не воспроизведённый баг WoW Forever.
+- Код: `KordRotation/Core/GameState.lua`, `S:ReadSharedItemCooldownObservation` — атомарное защищённое чтение полей status/groupID/reason/verification и проверка scalar safety перед сравнением. При ошибке возвращает `UNKNOWN/item_cd_group_catalog_invalid`. Не вводит runtime group inference, нового API или ложных `CONFIRMED_READY`.
+- Тест: `tests/shared_item_cooldown_observation_mock.lua` — метатаблица с выбрасывающим исключение `__index` и синтетический secret reason; оба случая обязаны остаться UNKNOWN без значений remaining/active.
+- Источники: существующие `GameState`, `SharedCooldownGroupCatalog`, `GameAPI.IsSafeValue` и IT-02/2.6; новые игровые API не используются. Требования к observed item-use, подтверждённым member state, `ESTIMATED/CONFIRMED` остаются невыполненными.
+- Проверки: PASS — source patch anchors, тестовые инварианты, Git commit publication; NOT RUN — Lua 5.1/mock execution, полная регрессия, GitHub Actions (manual only) и WoW Forever (клиент недоступен).
+- Выдано тестировщику: общий QA IT-02 должен включить protected group-result access и secret scalar fields; промежуточная установка не требуется.
+- Документация: CHANGELOG обновлён. Крупные `REQUIREMENTS.md` и поэтапный план возвращаются коннектором пустыми и не перезаписывались; требуется безопасная синхронизация без потери исходного текста.
+- Связи: IT-02/2.5–2.10, KR-20261122-090/091/100. Статус IT-02 PARTIALLY IMPLEMENTED.
+
 ## KR-20261122-100 — IT-02/2.3: fail-closed structured cooldown and clock adapter errors
 - Дата/время: 2026-11-22 (UTC; точная дата Git commit); коммит: `git log --grep KR-20261122-100`.
 - ID/этап: IT-02 P0, этап 2, шаг 2.3; тип fix/test; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
