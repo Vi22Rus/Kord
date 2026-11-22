@@ -99,18 +99,33 @@ KR.RotationEngine.Evaluate=function()
    {status="BLOCKED",reason="condition_false"},
    {status="BLOCKED",reason="condition_false"},
    {status="BLOCKED",reason="condition_false"},
-   {status="UNKNOWN",reason="action_slot_unconfirmed"}}}
+   {status="UNKNOWN",reason="action_slot_unconfirmed",
+    barReason="button_action_info_unconfirmed",checks={
+     {name="cast",status="UNKNOWN",reason="cast_unknown"},
+     {name="usability",status="READY"},
+     {name="charges",status="READY"},
+     {name="cooldown",status="UNKNOWN",reason="cooldown_unavailable"},
+     {name="gcd",status="UNKNOWN",reason="gcd_activity_unknown"},
+     {name="range",status="UNKNOWN",reason="range_unavailable"},
+    }}}}
 end
 local hunter=bridge.Diagnose()
 eq(hunter.firstReason,"condition_false","first high rank level-gated")
 eq(hunter.arcaneR4Status,"UNKNOWN","rank-4 rule inspected separately")
 eq(hunter.arcaneR4Reason,"action_slot_unconfirmed",
  "actual rank-4 refusal exposed")
+eq(hunter.arcaneR4BarReason,"button_action_info_unconfirmed",
+ "scanner stage reason safely bridged")
+eq(#hunter.arcaneR4Checks,6,"all six observed check stages bridged")
+eq(hunter.arcaneR4Checks[1].reason,"cast_unknown","first stage reason")
+eq(hunter.arcaneR4Checks[4].reason,"cooldown_unavailable","cooldown stage reason")
+eq(hunter.arcaneR4Checks[6].reason,"range_unavailable","later UNKNOWN retained")
+eq(hunter.arcaneR4Checks[1].spellID,nil,"no raw Spell ID bridged")
 eq(hunter.decisivePriority,5,"decisive engine priority is exact")
 eq(hunter.decisiveStatus,"UNKNOWN","decisive status observed")
 eq(hunter.decisiveReason,"action_slot_unconfirmed",
  "decisive reason observed")
-eq(reads,1,"engine reevaluates only for explicit diagnosis")
+eq(reads,2,"engine reevaluates only for explicit diagnosis")
 -- Scanner coverage is inspected only on manual DevTools request.
 KR.characterState={classToken="HUNTER",index=1}
 KR.GameState.current.player={level={status="READY",value=30}}
