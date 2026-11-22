@@ -3013,6 +3013,8 @@
 
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
+**Архитектурная актуализация EN-08:** **См. EN-08: radius counting consumes the shared EN-08 budgeted ObservedEnemyIndex snapshot; do not perform an independent GetNamePlates scan per count request.**
+
 
 **Архитектурная актуализация EN-06:** **См. EN-06: multi-enemy health/TTD consumes the same bounded observed enemy registry and visibility coverage; no second nameplate scanner.**
 
@@ -3078,6 +3080,8 @@
 
 ### EN-02 — Число врагов, находящихся в бою с группой
 
+**Архитектурная актуализация EN-08:** **См. EN-08: engaged-with-group counting reuses EN-08 bounded enemy refresh and cached GUID evidence, not a separate periodic nameplate scan.**
+
 
 **Архитектурная актуализация EN-06:** **См. EN-06: optional engaged-with-group filter uses EN-02 evidence on the same enemy GUID, not combat status alone.**
 
@@ -3140,6 +3144,8 @@
 
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+**Архитектурная актуализация EN-08:** **См. EN-08: GUID alias reconciliation is performed within EN-08 shared refresh budget; identity queries must not trigger their own plate enumeration.**
 
 
 **Архитектурная актуализация EN-06:** **См. EN-06: health/TTD histories are keyed by canonical UnitIdentityIndex GUID, never by nameplate token or NPC name; alias changes do not duplicate samples.**
@@ -3205,6 +3211,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Архитектурная актуализация EN-08:** **См. EN-08: AoE CC safety consumes the EN-08 shared bounded enemy snapshot; expired or incomplete coverage yields UNKNOWN, never an emergency unbounded scan.**
+
 
 **Архитектурная актуализация EN-05:** **См. EN-05: threshold satisfaction does not override breakable-CC AoE safety; separate count and AoE-control gates.**
 
@@ -3263,6 +3271,8 @@
 
 ### EN-05 — Минимальное число целей для включения AoE — настройка
 
+**Архитектурная актуализация EN-08:** **См. EN-08: automatic AoE threshold uses the EN-08 budgeted count snapshot; staleness/partial coverage cannot be silently treated as an exact count.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
 #### Требование
@@ -3318,6 +3328,8 @@
 
 ### EN-06 — Здоровье и TTD по каждому врагу в списке (для выбора мультидота)
 
+**Архитектурная актуализация EN-08:** **См. EN-08: per-enemy health/TTD samples reuse EN-08 shared GUID registry and bounded sampling schedule; no separate nameplate enumeration or unbounded history polling.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P2.**
 
 #### Требование
@@ -3368,5 +3380,48 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord умеет читать здоровье отдельных юнитов и имеет сигнальное имя TTD, но не ведёт достоверную per-GUID health/TTD history для всех врагов.
 
 **Архитектурные ссылки:** EN-01, EN-02, EN-03, TG-02, PL-03, TG-06, AU-06. Обратные ссылки добавлены в предыдущие требования.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-08 — Бюджет: чтение nameplates не чаще заданного интервала, без постоянного сканирования
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Требование
+
+Единый общеклассовый бюджетированный механизм обновления наблюдаемых врагов: не перечислять nameplates чаще конфигурируемого минимального интервала `nameplateScanMinIntervalMs` и не выполнять непрерывный обход из `OnUpdate`, на каждом запросе условия или для каждого потребителя. Чтение `C_NamePlate.GetNamePlates` и/или обход unit-token aliases должны проходить через один scheduler/refresh gate для общего `ObservedEnemyIndex` (EN-01/02) и `UnitIdentityIndex` (EN-03). Различать события lifecycle, инвалидирующие snapshot, и фактическое полное перечисление: событие не отменяет бюджет. Удаление/смену alias обрабатывать безопасно и своевременно; stale/partial coverage выдаёт `UNKNOWN`, а не ложный точный ноль. Интервал — нижняя граница между полными перечислениями, не обещание свежести всех API-фактов.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/EventBus.lua:91–120,146`: события coalesce в окне 0.20 s, `Tick` на `OnUpdate` обслуживает heartbeat с периодом 2 s; комментарий прямо запрещает scans from OnUpdate. Это существующий механизм планирования **инвалидаций**, а не готовый бюджет nameplate enumeration.
+- `KordRotation/Core/GameAPI.lua:56`: `C_NamePlate.GetNamePlates` находится в allowlist; это разрешение источника, но не реализация вызова, лимита или кэша.
+- `KordRotation/Core/RotationConditions.lua:72–73`: `enemy.count` объявлен как потребитель `needs.enemyCount`; достоверный общий enemy-index/refresh budget здесь не подтверждён.
+- `KordRotation/Core/RotationEngine.lua:306`: движок не устанавливает собственного `OnUpdate` loop; отсутствие цикла в нём не доказывает соблюдение бюджета другими будущими потребителями.
+- `KordRotation/Core/GameState.lua`: существуют общие наблюдения/кэш отдельных игровых фактов, но единый `ObservedEnemyIndex` с минимальным интервалом полного обхода nameplates и метриками scan cost в проверенных местах отсутствует.
+- `KordRotationDevTools/Performance.lua`: отдельный developer performance-модуль существует, однако готового подтверждённого счётчика перечислений nameplates на единицу времени в проверенном файле нет.
+
+#### Каноническая архитектура
+
+Расширить общий механизм наблюдений/индекс врагов, **не создавать второй scanner**. `EnemyRefreshBudget` — логический контракт scheduler внутри общего observation/index слоя, не обязательный отдельный Lua-файл. Состояние: `lastFullScanAt`, `nextEligibleAt`, `dirtyReasons`, `snapshotRevision`, `observedAt`, `coverage`, `scanCount`, `scanDuration`, `deferredCount`, `status/reason`. Все EN-01…EN-07 и TG/AU/TTD потребители читают общий snapshot лениво по `Needs` и не вызывают `GetNamePlates` напрямую. События `NAME_PLATE_UNIT_ADDED/REMOVED` могут точечно обновлять/инвалидировать alias с проверкой GUID и не должны провоцировать полный обход на каждое событие; debounce/coalescing и minimum full-scan interval обязательны. Heartbeat — bounded fallback для refresh eligibility, не повод безусловно сканировать при каждом тике.
+
+Минимальный интервал конфигурируем, валидируется и ограничивается безопасными min/max; нулевой или отрицательный интервал запрещён. При нагрузке/пакетных событиях сохранять hard rate limit, bounded per-refresh work и TTL; запрос в cooldown возвращает прежний snapshot с age/staleness или `UNKNOWN` по контракту, но не запускает обход. Отдельно учитывать API-secret, unavailable, partial coverage, nameplate recycled, disappearance и возможность неполной видимости. `AbilityEligibility` остаётся единственным источником финального READY; budget никогда не создаёт искусственно подтверждённый count.
+
+#### Требуемые изменения
+
+1. Ввести единый `EnemyRefreshBudget` поверх EN-01/EN-03 индексов, используя EventBus invalidation/coalescing; не плодить class-specific scanner.
+2. Установить один gate для полного перечисления nameplates с `nameplateScanMinIntervalMs`, monotonic timestamp, hard rate limit и bounded work; не вызывать из `OnUpdate` напрямую.
+3. Подписать nameplate lifecycle и GUID changes на инвалидацию/точечные обновления; объединять bursts и корректно сбрасывать recycled alias.
+4. Возвращать единый versioned snapshot с `observedAt/age/coverage/status/reason`; при устаревании или неизвестной полноте не утверждать точный count и безопасность AoE.
+5. Запретить повторный обход по каждому `enemy.count`, EN-02 combat, EN-04 CC, EN-05 threshold, EN-06 TTD и EN-07 interrupt/target consumer.
+6. Вынести бюджетную настройку в общие настройки с валидацией, сохранением, миграцией и шестиязычными подсказками, если настройка доступна пользователю; безопасное значение по умолчанию определить после клиентских замеров, не выдавать предположение за измеренный норматив.
+7. DevTools-only метрики: `nameplate_scan_count`, `nameplate_scan_interval_actual`, `nameplate_scan_duration`, `nameplate_scan_deferred`, `nameplate_snapshot_age`, `nameplate_coverage_unknown`, `nameplate_budget_exceeded`; пользовательский аддон не должен хранить developer-only recorder.
+8. Тесты: no plates, burst add/remove, 1/много plates, запросы нескольких потребителей в один тик, repeated condition evaluation, scan cooldown, interval boundary, delayed refresh, combat target switch, recycled GUID, stale snapshot, secret/unavailable API, heartbeat без dirty listeners, high event rate; доказать отсутствие полного сканирования чаще бюджета.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** EventBus уже ограничивает частоту инвалидаций, но канонический бюджетированный nameplate scanner/registry с общей кэшированной выборкой, лимитом частоты и измеряемыми затратами не подтверждён. Отсутствие реализации EN-01/EN-03 не позволяет объявить EN-08 выполненным.
+
+**Архитектурные ссылки:** EN-01, EN-02, EN-03, EN-04, EN-05, EN-06, TG-01, TG-09, TG-06, AU-06. Обратные ссылки внесены в EN-01…EN-06; они уточняют прежние рекомендации о чтении nameplates без удаления исторического аудита. EN-07 пока отсутствует в REQUIREMENTS.md и потому обратная ссылка в него не добавлялась.
 
 **Изменения Lua:** отсутствуют. Только документация.
