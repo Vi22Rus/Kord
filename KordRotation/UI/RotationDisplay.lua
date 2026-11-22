@@ -62,9 +62,17 @@ function KR.RotationDisplay:Create()
         slots[i] = slot
     end
     self.frame, self.slots = frame, slots
+    -- Independent UIParent sibling: hiding the main panel cannot hide
+    -- Defensive upkeep. Position follows the main panel's anchor.
+    local defenseFrame=CreateFrame("Frame","KordRotationDefensivePanel",UIParent)
+    defenseFrame:SetFrameStrata("MEDIUM")
+    defenseFrame:SetSize(188,52)
+    defenseFrame:SetPoint("TOPLEFT",frame,"BOTTOMLEFT",0,-25)
+    defenseFrame:Hide()
+    self.defenseFrame=defenseFrame
     local defense = {}
     for i=1,3 do
-        local preview=KR.SpellIcon:Create(frame)
+        local preview=KR.SpellIcon:Create(defenseFrame)
         preview:SetTestSlot(i,false)
         preview:Hide()
         defense[i]=preview
@@ -101,7 +109,8 @@ function KR.RotationDisplay:Create()
         if p.testMode then return end
         -- Even with no active profile, a previously displayed real icon
         -- must be cleared when settings/profile disappear.
-        if not p.showPanel then
+        if not p.showPanel and not (KR.IndicatorSettings and
+            KR.IndicatorSettings:Get("defensiveEnabled")==true) then
             if KR.RotationDisplay.productionReady
                 or KR.RotationDisplay.defensiveReady then
                 KR.RotationDisplay:Refresh(true)
@@ -190,15 +199,21 @@ function KR.RotationDisplay:RefreshLayout()
     -- Interrupt/resource placeholders remain test-only.
     local pref=KR.IndicatorSettings
     local testing=p.showPanel and p.testMode
-    local hasDefense=p.showPanel and pref and pref:Get("defensiveEnabled")==true
+    local hasDefense=pref and pref:Get("defensiveEnabled")==true
     local countDefense=hasDefense and pref:Get("defensiveSlots") or 0
     local defenseSize=pref and pref:Get("defensiveSize") or 52
     for i,slot in ipairs(self.defensePreview or {}) do
         slot:ClearAllPoints()
         slot:SetSize(defenseSize,defenseSize)
-        slot:SetPoint("TOPLEFT",self.frame,"BOTTOMLEFT",(i-1)*(defenseSize+5),-25)
+        slot:SetPoint("TOPLEFT",self.defenseFrame,"TOPLEFT",(i-1)*(defenseSize+5),0)
         slot:ApplyAppearance("minimal",false,100,p)
         slot:SetShown(i<=countDefense)
+    end
+    if self.defenseFrame then
+        self.defenseFrame:SetSize(math.max(defenseSize,
+            countDefense*defenseSize+math.max(0,countDefense-1)*5),defenseSize)
+        self.defenseFrame:SetScale((p.scale or 100)/100)
+        self.defenseFrame:SetAlpha((p.alpha or 100)/100)
     end
     local interruptEnabled=p.showPanel and pref and pref:Get("interruptEnabled")==true
     local interruptSize=pref and pref:Get("interruptSize") or 52
@@ -233,6 +248,21 @@ local function safeBoolean(fn, ...)
     local ok,value = pcall(fn, ...)
     if ok and type(value) == "boolean" then return value end
     return nil
+end
+
+function KR.RotationDisplay:ShouldShowDefensive()
+    local pref=KR.IndicatorSettings
+    if not pref or pref:Get("defensiveEnabled")~=true then return false end
+    local p=ensurePosition(KR.db)
+    if p.testMode then return false end
+    if pref:Get("defensiveCombatOnly")==true then
+        if safeBoolean(UnitAffectingCombat,"player")~=true then return false end
+    end
+    if p.hideWhenDead and safeBoolean(UnitIsDeadOrGhost,"player")==true then
+        return false
+    end
+    if p.hideMounted and safeBoolean(IsMounted)==true then return false end
+    return true
 end
 
 function KR.RotationDisplay:ShouldShow()
@@ -348,7 +378,8 @@ function KR.RotationDisplay:Refresh(skipLayout)
         end
     else
         local result,sharedDefensive
-        if p.showPanel and KR.RotationEngine then
+        if (p.showPanel or (KR.IndicatorSettings and
+            KR.IndicatorSettings:Get("defensiveEnabled")==true)) and KR.RotationEngine then
             local engine=KR.RotationEngine
             if type(engine.EvaluateBoth)=="function" then
                 local ok,main,defensive=pcall(engine.EvaluateBoth,engine)
@@ -398,7 +429,7 @@ function KR.RotationDisplay:Refresh(skipLayout)
         -- condition cannot suppress verified aura upkeep. Never route
         -- the same aura to main and defense in a single snapshot.
         local pref=KR.IndicatorSettings
-        local defenseEnabled=p.showPanel and pref
+        local defenseEnabled=pref
             and pref:Get("defensiveEnabled")==true
         local defensiveOnlyCombat=pref
             and pref:Get("defensiveCombatOnly")==true
@@ -438,6 +469,9 @@ function KR.RotationDisplay:Refresh(skipLayout)
     -- not imply that empty shells are actual spell recommendations.
     if self.testMarker then self.testMarker:SetShown(p.testMode) end
     if self:ShouldShow() then self.frame:Show() else self.frame:Hide() end
+    if self.defenseFrame then
+        self.defenseFrame:SetShown(self:ShouldShowDefensive())
+    end
 end
 
 function KR.RotationDisplay:ToggleTest()
