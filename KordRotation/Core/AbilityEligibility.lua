@@ -268,7 +268,14 @@ function A:Evaluate(id,options)
     end
     local bar=KR.ActionBarScanner:FindSpell(id)
     if not bar or bar.status~="READY" then
-        return candidate("UNKNOWN","action_slot_unconfirmed",id)
+        local result=candidate("UNKNOWN","action_slot_unconfirmed",id)
+        -- Fixed scanner failure codes only; no raw frame, slot or spell ID.
+        local reason=bar and bar.reason
+        if type(reason)=="string" and #reason<=64
+            and reason:match("^[a-z][a-z0-9_]*$") and api:IsSafeValue(reason) then
+            result.barReason=reason
+        end
+        return result
     end
     local state=options.stateSnapshot
     if state==nil then state=KR.GameState and KR.GameState:GetSnapshot() end
@@ -301,21 +308,40 @@ function A:Evaluate(id,options)
     end
     local unknown
     local checks={
-        {castStatus,options.cast},
-        {usability,id},
-        {charges,id,options.chargesRequired==true},
-        {cooldown,id},
-        {gcd},
-        {targetAndRange,id,options.target,state},
+        {"cast",castStatus,options.cast},
+        {"usability",usability,id},
+        {"charges",charges,id,options.chargesRequired==true},
+        {"cooldown",cooldown,id},
+        {"gcd",gcd},
+        {"range",targetAndRange,id,options.target,state},
     }
-    -- A definite BLOCKED beats UNKNOWN; UNKNOWN never becomes READY.
-    for _,entry in ipairs(checks) do
-        local status,reason=entry[1](entry[2],entry[3],entry[4])
-        if status=="BLOCKED" then return candidate("BLOCKED",reason,id) end
-        if status~="READY" then unknown=choose(unknown,reason or "unverified") end
+    local checked={}
+    local function checkedResult(st,why)
+        local result=candidate(st,why,id)
+        -- This is a core-only, bounded diagnostic snapshot. No action slots,
+        -- player data, spell IDs or untrusted values enter the check list.
+        result.checks=checked
+        return result
     end
-    if unknown then return candidate("UNKNOWN",unknown,id) end
-    local result=candidate("READY",nil,id)
+    -- Keep canonical laziness: when definitely BLOCKED, remaining checks
+    -- are intentionally NOT queried. For UNKNOWN, continue collecting the
+    -- other check results but never promote UNKNOWN to READY.
+    for _,entry in ipairs(checks) do
+        local st,why=entry[2](entry[3],entry[4],entry[5])
+        if st~="READY" and st~="BLOCKED" and st~="UNKNOWN" then
+            st,why="UNKNOWN","unverified"
+        end
+        if why~=nil and (type(why)~="string" or #why>64
+            or not api:IsSafeValue(why)
+            or not why:match("^[a-z][a-z0-9_]*$")) then
+            why="unverified"
+        end
+        checked[#checked+1]={name=entry[1],status=st,reason=why}
+        if st=="BLOCKED" then return checkedResult("BLOCKED",why) end
+        if st=="UNKNOWN" then unknown=choose(unknown,why or "unverified") end
+    end
+    if unknown then return checkedResult("UNKNOWN",unknown) end
+    local result=checkedResult("READY",nil)
     result.slot=bar.slot
     result.target=options.target
     return result
