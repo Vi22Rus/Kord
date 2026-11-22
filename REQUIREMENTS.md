@@ -6466,6 +6466,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-04:** при `UNCONFIRMED/NOT_RUN/DIFFERENT` API, если критический факт не доказан безопасным альтернативным методом из v14, сохранять UNKNOWN→STOP. `DIFFERENT` требует отдельного исследования/согласования матрицы, а не скрытого runtime fallback.
 
+**Ретроактивное уточнение QA-05:** если legacy продолжал выбор при неизвестном критическом факте, новое `UNKNOWN→STOP` фиксировать как `EXPECTED_DELTA`, а не восстанавливать опасный legacy fallback. UNKNOWN/secret в QA-05 нельзя преобразовывать в READY ради совпадения.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6632,6 +6634,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-03:** обязательные Lua 5.1 mock-тесты first-match-wins, UNKNOWN→STOP, отсутствие вызовов последующих rules и неизменность результата при подключении DevTools. `AuditFull` не служит доказательством lazy runtime.
 
+**Ретроактивное уточнение QA-05:** first-match-wins сравнивать не только по конечному spellID, но и по вызванным приоритетам, количеству чтений, skip/STOP и `NOT_EVALUATED`. Старый eager/unsafe traversal не является нормативным baseline; ожидаемые отличия фиксируются в QA-05.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6692,6 +6696,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-02:** lazy `all/any` сохраняет short-circuit. В журнале QA-02 отражаются фактические checked child predicates и `NOT_EVALUATED` для непрочитанных; не запускать API-проверки заново ради подпричин.
 
 **Ретроактивное уточнение QA-03:** Lua 5.1 mocks для lazy all/any проверяют точное число чтений и отсутствие вызова непройденных child predicates; NOT_EVALUATED не должен провоцировать чтение.
+
+**Ретроактивное уточнение QA-05:** differential fixtures проверяют точные API read counts и lazy short-circuit `all/any` для нового движка. Изменение старого eager порядка на lazy — `EXPECTED_DELTA` только с утверждённым контрактом и отсутствием ложного READY.
 
 ### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
 
@@ -7674,6 +7680,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение QA-03:** инвалидации DA-08 проверяются детерминированным mock event harness Lua 5.1 с счётчиками API reads, revision, cache, target/spec/talents/bindings/actionbar; без in-game PASS.
 
+**Ретроактивное уточнение QA-05:** сравнение переходов после `PLAYER_TARGET_CHANGED`, смены спека/уровня/талантов/привязок/actionbar и EventBus revision должно охватывать одинаковый event trace и отсутствие stale snapshot; несовпадение на непроверенном API маркировать INCONCLUSIVE.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -8274,6 +8282,8 @@ Kord должен корректно реагировать на фактиче�
 
 **Ретроактивное уточнение QA-04:** `ProbeAll` DevTools QA-01 даёт только `PRESENCE_ONLY`, не `CONFIRMED` клиентской совместимости. Для каждого matrixID требуется отдельный проверенный `ApiEvidenceRecord` QA-04 с client build, сценарием, безопасными результатами и явным вердиктом; `CLIENT PASS` увеличивается лишь по подтверждённым реальным игровым тестам.
 
+**Ретроактивное уточнение QA-05:** при дифференциальной проверке QA-05 DevTools включён/выключен на одинаковом sanitized trace и точном SHA; он не должен менять production-решения. Диагностический `AuditFull` не выступает эталоном live-движка и выполняется только изолированно.
+
 ### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8342,6 +8352,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-04:** полный журнал QA-02 связывает API reasons/subreasons с v14 `matrixID`, method, source, revision, client verdict и safe evidence. Отсутствие метода, secret result и несовпадение сигнатуры — разные причины; не превращать presence-only в подтверждение.
 
+**Ретроактивное уточнение QA-05:** дифференциальный отчёт QA-05 сравнивает вычисленные trusted `reason/subreasons` и `NOT_EVALUATED` из единого QA-02 envelope; самостоятельный диагностический обход непрочитанных условий не признаётся эквивалентной трассой и не должен влиять на live evaluation.
+
 ### QA-03 — Mock-тесты движка и профилей, запуск на Lua 5.1
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8404,6 +8416,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-04:** mock-тесты Lua 5.1 QA-03 подтверждают только контракт адаптера и обработку `UNKNOWN/secret`, но не клиентский API verdict. Для каждой v14 строки отдельно требуются client evidence, build и сценарий QA-04; CI не вправе увеличивать CLIENT PASS.
 
+**Ретроактивное уточнение QA-05:** единый Lua 5.1 manifest/harness QA-03 используется и для воспроизводимых QA-05 differential fixtures; сравниваются реальные version-pinned old/new Lua на одном safe deterministic input trace, а не два mock-алгоритма. Изменения классифицируются как MATCH/EXPECTED_DELTA/REGRESSION/INCONCLUSIVE с evidence, а не объявляются автоматическим FAIL при любом отличии.
+
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8465,3 +8479,75 @@ DevTools должен записывать **все достоверно сфо�
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение QA-05:** QA-05 может сравнивать лишь source/mock поведение API adapters; дифференциальный PASS не повышает `CLIENT PASS` ни по одной из 101 строк v14. Неподтверждённые и различающиеся Forever API остаются отдельными `ApiEvidenceRecord` QA-04.
+
+### QA-05 — Дифференциальные тесты старой и новой логики
+
+**Раздел: 17. Диагностика и качество. Приоритет: P1.**
+
+#### Требование
+
+При миграции канонического `RotationEngine`, `RotationProfiles`, `RotationConditions`, `AbilityEligibility`, провайдеров и реальных профилей сравнивать поведение **двух зафиксированных версий** (legacy/reference commit и candidate commit) на **одном и том же безопасном, детерминированном входном следе**. Сравнение призвано одновременно сохранять одобренные ротационные решения и обнаруживать регрессии, но **не объявляет старую реализацию источником истины**: legacy может нарушать утверждённые EN-A2/EN-A3, AC-07, v14 и secret safety. Итоговая норма — действующий `Profile_Contract.md`, `REQUIREMENTS.md`, подтверждённые правила ротации и QA-04, а не «сделать любой ценой как раньше». Не запускать два live engine в WoW и не смешивать их результаты в игровой рекомендации.
+
+**Контракт `DifferentialFixture`:** `schemaVersion`, `fixtureID`, `scenarioID`, `legacyCommit`, `candidateCommit`, `profileID`, `profileVersion`, `contractVersion`, `clientBuild` (если известен), `apiMatrixVersion`, `inputTraceID`, `inputTraceHash`, `eventSequence`, `revisionSequence`, `safeObservations`, `settings`, `expectationSource`, `expectedDeltaIDs`. Входы — только санитизированные и безопасно валидированные значения/статусы, без имён/GUID игрока/цели, userdata, сырого `secret`, protected фреймов, прямого API polling из сравнителя. `nil`/UNKNOWN и отсутствие информации сохраняются как неизвестность; фальшивое `false/0` для «сравнимости» запрещено.
+
+**Контракт `DifferentialOutcome`:** `fixtureID`, `legacyResult`, `candidateResult`, `legacyTrace`, `candidateTrace`, `differencePaths`, `classification=MATCH|EXPECTED_DELTA|REGRESSION|INCONCLUSIVE`, `reason`, `evidenceID`, `approvedContractRef`, `testRuntime`, `runCommit`, `testedAt`. Для каждой стороны нормализуется **семантический** результат: `status=READY|BLOCKED|UNKNOWN`, `actionType`, `spellID/itemID` только для сравнения внутри локального test harness, `profileID`, `priority`, `channel`, `reason/subreasons`, `routedMain/Defensive`, `evaluatedPriorities`, `skippedPriorities`, `providerReadCounts`, `revision`. Публичные отчёты и DevTools экспорт **не содержат** сырой игровой идентичности и secret; локальные тестовые SpellID допускаются лишь как искусственно заданные, либо подтверждённые идентификаторы из версионированного каталога.
+
+**Классификация:** `MATCH` — одинаковые существенные решения и соблюдены новые инварианты; `EXPECTED_DELTA` — отличия объяснены конкретным утверждённым требованием и зарегистрированы по `expectedDeltaID`; `REGRESSION` — новое ошибочное решение, нарушение инварианта или необоснованное расхождение при достаточном evidence; `INCONCLUSIVE` — отсутствует воспроизводимый legacy, соответствующая версия профиля/ранга, доказательство API, безопасный снимок или достаточные данные для установления причины. **Не считать INCONCLUSIVE успехом.** Ни один `EXPECTED_DELTA` не допускается без проверяемой ссылки на норму и явно записанной причины. Особо критичны ложные READY, опасный пропуск UNKNOWN, неверный ранг, невалидная цель/дальность, нарушения lazy и канала defensive.
+
+**Тестирование и приёмка:** обе версии выполняются **офлайн под Lua 5.1**, с одинаковыми fixtures, fake clock, event ordering, revision, API responses, настройками и профилями; загружаются настоящие соответствующие production Lua, а не переписанный интерпретатор правил. Legacy-код изолирован и pinned по Git SHA, не поставляется в `KordRotation-user.zip` или `KordRotation-dev.zip`. В отчёте отдельно `TOTAL/MATCH/EXPECTED_DELTA/REGRESSION/INCONCLUSIVE/NOT_RUN`, точные SHA, список отличающихся paths, причины, число API reads, отсутствующие покрытия и открытые задачи. Quality gate не проходит при `REGRESSION>0`, неутверждённых `EXPECTED_DELTA` или необоснованном `INCONCLUSIVE` для обязательных сценариев. `MOCK PASS` не равен `WoW Forever CLIENT PASS` и не повышает 101-row QA-04 client verdict.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:1–10,93–124`: контракт выдаёт `UNKNOWN/BLOCKED` и одну безопасную рекомендацию, до оценки проверяет профиль, identity, target mode, снимок и уровень; `targetMode="auto"` сейчас возвращает `auto_target_count_unverified` — незавершённая возможность, не предмет автоматического приравнивания к legacy auto.
+- `RotationEngine.lua:125–228`: упорядоченная проверка `profile.Rules`, rule-mode/channel/category filtering, `rule.when(S,cfg)`, `RotationConditions:Check` и остановка на `UNKNOWN` (кроме проверенного exception `condition_unknown`) либо первом `READY`. Результаты содержат `priority`, `reason`, `queue`, `diagnostics`; **нет** version-pinned old/new differential runner или классификатора семантических изменений.
+- `RotationEngine.lua:229–271`: `Evaluate`, `EvaluateDefensive`, `EvaluateBoth` с общим снимком и общим per-evaluation контекстом. Сравнивать нужно оба канала и общий read count, а не только иконку main.
+- `KordRotation/Core/RotationConditions.lua:62–143,152–193`: `Needs` ограничивает источники, `ReadSignal` и кэш на одну оценку, Eligibility отделён от правила. `:232–255` содержит `all/any` для short-circuit; differential должен явно проверять семантику, порядок вызовов, `nil` и side-effect counters.
+- `KordRotation/Core/AbilityEligibility.lua:258–389,390–505`: реальная финальная проверка пригодности и `Fact`; результат нельзя подменять legacy `spellUsable` без target/range/GCD/secret constraints. Тестировать `READY/BLOCKED/UNKNOWN` и причины по каждому применимому gate.
+- `tests/profile_contract_v1.lua:1–... ` загружает **реальные** `RotationProfiles.lua`, `RotationConditions.lua`, `RotationEngine.lua` с fake WoW inputs и искусственными spellID 101/102, проверяет регистрацию, правила, `SkipExceptions` и результаты; это **contract mock**, не парное сравнение двух зафиксированных исторических движков.
+- `tests/stage_02_08_v14_observation.lua:1–...` использует настоящий `CoreObservation` и mocks; `KordRotationDevTools/Trace.lua:1–...` ведёт opt-in trace, но не обеспечивает reproducible legacy-vs-candidate comparison, и может делать отдельные диагностические evaluations. Такие оценки не должны подменять live trace.
+- `scripts/run_local_lua_regression.sh:1–56` запускает Lua 5.1 с собственным списком suites; `.github/workflows/lua-regression.yml:1–...` содержит другой список (см. QA-03), в том числе триггер `push` вопреки действующему правилу ручного Actions. До QA-03 единого manifest нет. Отдельный `tests/differential_*.lua` и управляемый legacy baseline в проверенных путях не подтверждены.
+- `docs/rotation/Profile_Contract.md`, `docs/rotation/Canonical_API_Matrix.md` v14, `docs/rotation/Test_Matrix.md`, `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md` закрепляют договорённости для оценки семантики, источников, тестов и идентичности двух ZIP. **Исходниковое наличие не означает run/PASS**; реальный Lua 5.1/CI/WoW Forever в данном аудите не запускался.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Profiles.lua`, `Sonah/Classes/Hunter.lua` показывают отдельный registry/классовые приоритеты, а `Sonah/Core/Atoms/Units.lua`, `Spells.lua`, `Auras.lua` — чтение фактов. Полезно использовать реальные границы profile→fact как сценарии повторного ввода. **Нельзя** утверждать, что эти пути реализуют совместимый differential replay harness: он в упомянутых проверенных фрагментах не подтверждён; чужие исходники не являются legacy Kord и не дают клиентский PASS.
+2. **JustAC:** `JustAC/ActionBarScanner.lua`, `JustAC/BlizzardAPI/StateHelpers.lua`, `JustAC/DebugCommands.lua` разделяют боевую логику, панель и диагностические probes. Для QA-05 полезны отдельные fixture-поля `actionbar visibility/slot/binding`; не считать UI или debug путь независимым доказательством готовности способности. Универсальный парный тест двух версий Kord в проверенных путях не установлен.
+3. **ForeverAuras:** `ForeverAuras/API.lua`, `ForeverAuras/BlizzardAuraDisplay.lua`, `ForeverAuras/GenericTrigger.lua` различают API observation и visual display. Для QA-05 это основание отдельно сравнивать aura reason, upkeep recommendation и её показ при combat/target events; не принимать прежнее UI отображение за нормативный результат eligibility. Differential инфраструктура в этих фрагментах не подтверждена.
+4. **MaxDps:** `MaxDps/Core.lua`, `MaxDps/Buttons.lua`, `MaxDps/Helper.lua` разделяют selection, actionbar presentation и пригодность. Полезно сравнивать выбранное действие отдельно от подсветки, keybind и неудачи сопоставления кнопки; нельзя переносить их предположения о клиентском API на WoW Forever без v14. Парный version-pinned regression harness в указанных путях не доказан.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua`, `ForeverRotation/Rotations/Signals.lua`, `ForeverRotation/Rotations/Buffs.lua` показывают signal/engine границу и управление аурами. Для Kord полезно сравнивать порядок приоритетов и single/aoe/buffs при одном сохранённом state, но не копировать их engine или считать отдельные сигналы гарантированно безопасными для Forever; готовый QA-05 runner по этим фрагментам не подтверждён.
+6. **RotationGuide:** `RotationGuide/Core/State.lua`, `RotationGuide/Core/API.lua`, `RotationGuide/Core/Init.lua` показывают состояние, WoW API и event lifecycle. Для QA-05 важны event/revision replay, target changes и одинаковый fake clock; нельзя сравнивать рекомендации на разных snapshot и объявлять такое отличие регрессией. Исходниковый differential framework в указанных фрагментах не подтверждён.
+7. **RotationMaster:** `RotationMaster/Core/forecast.lua`, `RotationMaster/Core/rotation_scope.lua`, `RotationMaster/Core/assisted_highlight.lua` разделяют прогноз/область применения/подсветку; `RotationMaster/Core/condition_support.lua` содержит полезные границы условий. Применим принцип независимого evaluator output и presentation; **не** запускать старый forecast как второй live engine и не сравнивать speculative future queue с одиночной текущей рекомендацией v1 как равнозначные действия. Полный дифференциальный harness по этим проверенным путям не подтверждён.
+
+**Граница доказательств референсов:** перечисленные пути подтверждены предыдущими аудитами предоставленных семи ZIP и доступной историей проекта; в текущем QA-05 **новая построчная инспекция каждого Lua-фрагмента не выполнена**. Поэтому сравнение здесь архитектурное и не доказывает наличие/отсутствие полноценной differential-инфраструктуры в архивах; перед кодовой реализацией необходима адресная повторная проверка. Достоверный legacy baseline — только исторический Kord commit, не сторонний аддон.
+
+#### Выбранный путь Kord
+
+**Единый офлайн `DifferentialRegressionHarness` как надстройка к QA-03 Lua 5.1 mock harness и общему tests manifest, с парной загрузкой исторических production Lua в строго изолированные окружения.** Это **логический test-only контракт**, не обязательный новый runtime module и не второй игровой RotationEngine. Зафиксировать начальный legacy commit как immutable SHA и карту переносимых сценариев; воспроизводить один fixture в обеих версиях. Если исторический API/профиль несовместимы, применять только явный, версионированный **test-only input/output adapter**, сохраняющий различие unknown/false/secret и имеющий отдельные тесты; не добавлять runtime aliases в `KordRotation/`.
+
+Каноническое решение по разнице принимает `DifferentialOracle` из утверждённого `Profile_Contract.md`, требований EN-A2/EN-A3, AC-07, `AbilityEligibility`, v14 и утверждённой матрицы приоритетов профиля. `legacyOutput` — evidence о прошлом поведении, **не** oracle безопасности. `MATCH` допустим только при выполнении новых инвариантов. `EXPECTED_DELTA` документируется по `approvedContractRef` и конкретному stage; любое новое ложное `READY`, пропущенный UNKNOWN или нарушение приоритетов даёт REGRESSION независимо от legacy. Недоступные/secret входы всегда fail-closed. Отдельные агрегаты для choice parity, safety parity, diagnostic parity, API read counts и UI channel parity; не сравнивать несущественные локализованные подписи, абсолютное время/адреса фреймов и порядок диагностических записей, не влияющий на семантику.
+
+Взаимодействия: `EventBus` задаёт revisions и последовательности; `GameState`/`GameAPI` — единый safe input след; `RotationConditions` — lazy Needs; `AbilityEligibility` — единственный final READY; `RotationEngine` — результат текущего действия и routing; `CoreObservation`/`QA-02` — наблюдаемая трасса **без дополнительного повторного API чтения**; `QA-01` — opt-in независимость DevTools; `QA-04` — client evidence для неподтверждённых методов. Старый и новый engine запускаются отдельно в harness, никоим образом не одновременно в WoW.
+
+#### Требуемые изменения
+
+1. Выбрать и записать **точный historical Kord legacy Git SHA** (предконтрактный engine) и актуальный candidate SHA; исключить плавающий `main` как baseline, сохранять source provenance, License и profile version.
+2. Добавить QA-05 в единый tests manifest QA-03 и реализовать offline launcher Lua 5.1, запускающий pinned version-specific production modules в двух независимых окружениях с одинаковой последовательностью fixtures; не копировать алгоритмы в тестовые дублёры.
+3. Ввести `DifferentialFixture` schema validator с безопасными typed observations, `UNKNOWN`, `nil`, ревизиями и bounds; запретить leaked GUIDs, player names, raw `secret`/protected и несогласованные timestamp.
+4. Реализовать детерминированный replay fake clock и `EventBus`: `PLAYER_ENTERING_WORLD`, `PLAYER_TARGET_CHANGED`, `PLAYER_REGEN_DISABLED/ENABLED`, `SPELLS_CHANGED`, `SPELL_UPDATE_COOLDOWN`, `UPDATE_BINDINGS`, `ACTIONBAR_SLOT_CHANGED`, смены level/spec/talents и actionbar visibility. Проверять freshness snapshots и изменения revision.
+5. Сравнивать `READY/BLOCKED/UNKNOWN`, `actionType`, реальный `spellID/itemID`, выбранный приоритет, rank, `reason/subreasons`, `channel`, `NOT_EVALUATED` и число обращений к API; отдельный expected-failure registry для устаревших unsafe решений.
+6. Проверить `EN-A2/EN-A3`: first-match-wins, lazy `all/any`, short-circuit, одно чтение факта за оценку, отсутствие исполнения нижних правил после READY/UNKNOWN; отсутствие false-ready при скрытом `secret`.
+7. Проверить `AC-07` и `AbilityEligibility`: legacy READY против нового UNKNOWN/STOP при неизвестном GCD/cooldown/range/target/charge/cast/resource, запрещённых `onUnknown="skip"`, отсутствии проверки максимального изученного ранга — только документированные `EXPECTED_DELTA`; неожиданное расширение READY — регрессия.
+8. Провести paired scenarios: отсутствие/смена цели, friendly/enemy, дальняя/ближняя дистанция, dead target, buff/debuff present/absent/secret, incoming combat/out of combat, defensive/main routing, rank boundaries 1–59/60, pet exists/dead, items, AoE thresholds, burst/categories/config, actionbar paging/bindings/hidden-frame, профили verified/experimental/unregistered; неподдерживаемый action type отмечать `NOT_IMPLEMENTED`, не имитировать PASS.
+9. Проверить независимость DevTools OFF/ON и QA-02 trace: включение записи не меняет `legacy/candidate` решение или API read counts; `AuditFull` — отдельный offline режим, а не эквивалент lazy runtime; полная запись `NOT_EVALUATED` без дополнительных чтений.
+10. Формировать machine-readable differential report с SHA, version, runtime, fixture hashes, classification и `differencePaths`, агрегатами и ссылками на requirement/test IDs; gate `REGRESSION=0`, `unapproved EXPECTED_DELTA=0`, обязательные `INCONCLUSIVE=0`, явные `NOT_RUN`. Ручной GitHub Actions только перед совокупным QA по действующему правилу AGENTS, без auto-push; затем отдельное подтверждение в реальном WoW Forever на точном build, не считать mock PASS клиентским подтверждением.
+
+**Причины диагностики QA-05:** `diff_baseline_missing`, `diff_fixture_invalid`, `diff_input_mismatch`, `diff_profile_incompatible`, `diff_unknown_preserved`, `diff_decision_changed`, `diff_priority_changed`, `diff_reason_changed`, `diff_channel_changed`, `diff_api_read_count_changed`, `diff_approved_expected_delta`, `diff_unapproved_delta`, `diff_safety_regression`, `diff_evidence_incomplete`, `diff_client_unverified`, `diff_runner_not_executed`. Это внутренние статические коды; raw protected values в reason и subreason запрещены.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ЕДИНЫЙ ДИФФЕРЕНЦИАЛЬНЫЙ МЕХАНИЗМ / P1 / QA-03 MOCK FOUNDATION EXISTS.** Kord имеет production v1 engine и отдельные Lua 5.1 contract mocks, но version-pinned парный replay, доказанный legacy baseline, oracle с классификацией MATCH/EXPECTED_DELTA/REGRESSION/INCONCLUSIVE и машинный отчёт по всем обязательным сценариям не подтверждены. Источниковый аудит — PASS на перечисленных путях; полный повторный построчный аудит всех семи ZIP — **NOT RUN**; Lua 5.1/CI/WoW Forever в рамках QA-05 — **NOT RUN**. CLIENT PASS для v14 остаётся 0/101.
+
+**Архитектурные ссылки:** QA-01, QA-02, QA-03, QA-04, EN-A2, EN-A3, AC-07, DA-08, EN-A1, EN-A7, UI-05, UI-06, UI-08, `docs/rotation/Profile_Contract.md`, `docs/rotation/Canonical_API_Matrix.md`, `docs/rotation/Test_Matrix.md`, `tests/profile_contract_v1.lua`. **Ретроактивные уточнения добавлены в QA-01, QA-02, QA-03, QA-04, EN-A2, EN-A3, AC-07, DA-08.** QA-05 обобщает только тестовую инфраструктуру QA-03; не заменяет production providers, движок или матрицу QA-04.
+
+**Изменения Lua:** отсутствуют. Только документация.

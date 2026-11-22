@@ -1,3 +1,15 @@
+## KR-20261122-014 — аудит QA-05: дифференциальные тесты legacy и нового движка
+- Дата/время: 2026-11-22T12:00:00Z; идентификатор коммита — `git log --grep KR-20261122-014`.
+- Этап/тип: аудит требований QA-05 / docs / P1; изменены `REQUIREMENTS.md` и `CHANGELOG.md`. Lua, TOC, UI и ZIP не изменялись.
+- Контекст: новый контракт v1 и старый механизм должны сравниваться на одинаковом подтверждённом состоянии; простое совпадение со старой небезопасной логикой недопустимо. Универсального парного тестового механизма в проверенных путях нет; достоверный historical baseline SHA ещё предстоит закрепить.
+- Причина: QA-03 имеет отдельные Lua 5.1 mock suites, но не парный pinned replay/oracle и классификатор регрессий. Это выявленный инфраструктурный пробел, не доказанная игровая ошибка.
+- Решение: `DifferentialFixture`/`DifferentialOutcome`, fixed old/new SHA, deterministic state/events/revisions, реальные production Lua обеих версий, семантическое сравнение action/status/priority/channel/unknown/reasons/reads, `MATCH|EXPECTED_DELTA|REGRESSION|INCONCLUSIVE` с утверждённым evidence; никакого второго live engine.
+- Безопасность: старое unsafe READY не становится эталоном; `UNKNOWN→STOP`, секретные значения, lazy и единственный final `AbilityEligibility` обязательны. Результаты mocks не увеличивают QA-04 CLIENT PASS.
+- Ретроактивные связи: QA-01, QA-02, QA-03, QA-04, EN-A2, EN-A3, AC-07, DA-08; прежний текст и независимые механизмы сохранены.
+- Проверки: PASS — чтение актуальных GitHub `AGENTS.md`, `REQUIREMENTS.md`, `CHANGELOG_RULES.md`, исходников engine/conditions/eligibility и test harness; NOT RUN — полный новый построчный аудит семи ZIP, Lua 5.1, GitHub Actions, WoW Forever.
+- Выдано тестировщику: документационная спецификация QA-05 и будущие paired fixture scenarios; установка аддона и отдельный пользовательский тест не нужны.
+- Итог: требования QA-05 документированы; реализация differential harness **NOT IMPLEMENTED**. Следующий пункт аудита — по следующей задаче заказчика.
+
 ## KR-20261122-013 — аудит QA-04: per-call API matrix и client verdict
 - Дата: 2026-11-22; SHA — GitHub.
 - Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.
