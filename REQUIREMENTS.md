@@ -6595,6 +6595,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение DA-01:** DA-01 устанавливает ревизии каналов EventBus как канонический источник инвалидации ленивых наблюдений; нельзя считать кэш актуальным после MarkDirty. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-02:** DA-02 закрепляет lazy evaluation и evaluation-scoped read/fact/eligibility caches; Needs — allowlist, не eager preload. Исторический аудит сохранён.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6924,6 +6926,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-01:** DA-01 связывает LEVEL_UP, SPELLS_CHANGED и смену талантов с ревизиями identity/spellbook/talents; выбор уровня и ранга обязан переоцениваться после изменения. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-02:** DA-02: rank/spellbook/profile cache инвалидируется по identity/spellbook/talents revision; level-up сам по себе не доказывает новый ранг. Исторический аудит сохранён.
+
 ### EN-A9 — Несколько рекомендаций в очереди (главная и следующая)
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P2.**
@@ -6980,6 +6984,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-01:** DA-01: второй прогнозный слот инвалидируется при изменении любой ревизии его Needs; пакетное уведомление не разрешает устаревший прогноз. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-02:** DA-02: predicted next slot должен инвалидироваться при изменении любого канала зависимостей; кэш одной оценки не переживает следующий проход. Исторический аудит сохранён.
+
 ### EN-A10 — Мультидот и выбор цели
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P2.**
@@ -7029,6 +7035,8 @@ Burst — отдельная типизированная настройка п�
 **Изменения Lua:** отсутствуют. Только аудит и документация.
 
 **Ретроактивное уточнение DA-01:** DA-01 расширяет подписки и каналы для nameplate-unit/аур только после подтверждения безопасного источника; текущий unit-фильтр не покрывает произвольные nameplates. Исторический аудит сохранён.
+
+**Ретроактивное уточнение DA-02:** DA-02: per-target aura/TTD cache привязан к достоверной идентичности цели, ревизиям target/auras/health и не переживает смену/исчезновение nameplate. Исторический аудит сохранён.
 
 ### EN-A11 — Таблица допустимых исключений для skip с обоснованием и тестом
 
@@ -7145,5 +7153,59 @@ Burst — отдельная типизированная настройка п�
 **ОСНОВА РЕАЛИЗОВАНА, СКВОЗНАЯ КОРРЕКТНОСТЬ НЕ ДОКАЗАНА (P0):** есть каналы, немедленные ревизии, пакетная доставка, heartbeat, обработка ошибок и диагностика. Требуются проверка потребителей ревизий, инвалидации при вычислении, latency и расширения для nameplates.
 
 **Архитектурные ссылки:** EN-A2, EN-A8, EN-A9, EN-A10, EN-01, EN-03, DA-01, EventBus, GameState, AbilityEligibility, RotationEngine. Обратные уточнения добавлены в EN-A2, EN-A8, EN-A10, EN-A9.
+
+**Изменения Lua:** отсутствуют. Только аудит и документация.
+
+**Ретроактивное уточнение DA-02:** DA-02 уточняет: long-lived cache проверяет revision-vector до чтения, не полагаясь только на отложенный Flush; revision change во время оценки требует отмены stale READY. Исторический аудит сохранён.
+
+### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
+
+**Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
+
+#### Требование
+
+Два класса кэша: **evaluation-scoped** создаётся на один проход оценки и совместно используется main/defensive на согласованном snapshot; **long-lived** допускается только при явном dependency/Needs → EventBus channel revision mapping, проверке ревизий до чтения и безопасной инвалидации. `Needs` — allowlist разрешённых источников, не eager preload; ленивое чтение по требованию, не более одного чтения одного факта за оценку, включая UNKNOWN. Если revision изменилась во время оценки, нельзя выдавать stale READY; пересчёт в ограниченном бюджете или UNKNOWN→STOP. Никакого TTL-only подтверждения актуальности игровых фактов, не считать время доказательством состояния. Secret/protected значения не использовать как ключи, в логах или сравнениях без проверок.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationConditions.lua:80–135`: evaluation-scoped `readCache/readDone/reasonCache`, включая UNKNOWN; `:166–190` — `eligibilityCache`; `:283–308` — ленивый `factCache/factDone` с Needs allowlist.
+- `RotationConditions.lua:314–317`: `Create(profile,snapshot)` создаёт независимые таблицы кэша на контекст оценки.
+- `KordRotation/Core/GameState.lua:241–253`: snapshot revision и сохранение busRevisions; `:259–285` — `Invalidate/GetSnapshot` с сравнением ревизий EventBus до возврата cached snapshot; `:802–812` — подписки для инвалидации.
+- `KordRotation/Core/AbilityEligibility.lua:506–512`: `Invalidate` сохраняет причину, подписывается на каналы; сама запись причины не доказывает очистку всех потенциальных внутренних кэшей.
+- `KordRotation/Core/EventBus.lua:59–66`: `MarkDirty` немедленно повышает revision; `:92–109` — coalesced `Flush` уведомлений.
+- `KordRotation/Core/RotationEngine.lua:268–306`: main/defensive используют один свежий snapshot/context.
+- **Пробел доказательства:** не проведён полный аудит всех долгоживущих кэшей провайдеров, их dependency/revision mappings и повторной проверки revision-vector после оценки; не доказаны тесты смены цели, spellbook, специализации и mid-evaluation invalidation. Игровые тесты не проводились.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:213–214` очищает `namesCache/pendingNames` по `SPELLS_CHANGED/TALENTS_CHANGED`; `Sonah/Core/Organisms/BuffTracker.lua:267` помечает кэш устаревшим. Полезна явная привязка к событиям, но без revision-vector нет доказательства актуальности между event и callback.
+2. **JustAC:** `JustAC/ActionBarScanner.lua:372–375` документирует иерархию `InvalidateKeybindCache/InvalidateBindingCache` и очистку зависимых spell caches. Переносим точечную инвалидацию, не создавать глобальный wipe без необходимости.
+3. **ForeverAuras:** `ForeverAuras/Compatibility.lua:65–72` очищает `infoCache/nameCache`; полезен раздельный кэш spell-info и name resolution, но проверенный фрагмент не доказывает ревизии EventBus.
+4. **MaxDps:** `MaxDps/Helper.lua:2928–2931` очищает `TrinketBuffCache/TrinketDurationCache` при смене экипировки; полезна зависимость предметного кэша от события экипировки.
+5. **ForeverRotation:** `ForeverRotation/Core.lua:136` реализует `resetSpellCache` с очисткой `idCache/knownCache`; `ForeverRotation/CC.lua:100` сбрасывает typeCache при `SPELLS_CHANGED`. Полезен явный reset по событиям, но недостаточен как единый revision contract.
+6. **RotationGuide:** в проверенных фрагментах Lua не найдено подтверждённого ревизионного long-lived cache; `RotationGuide/Core/State.lua:36` обращается к spellbook API, что само по себе не доказывает кэш или его инвалидацию. Не утверждать отсутствия механизма во всём ZIP.
+7. **RotationMaster:** `RotationMaster/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:3997–4000` очищает/инвалидирует rangeCache; это сторонняя библиотека, а не доказательство общего revision cache в движке RotationMaster. Переносить только принцип управляемой инвалидации, не библиотеку целиком.
+
+**Ограничение:** строки проверены в предоставленных ZIP, но выборочные примеры не доказывают исчерпывающего покрытия всех кэшей референсов. TTL, wipe по событию и revision-aware cache — разные гарантии.
+
+#### Выбранный путь Kord
+
+**Сохранить `RotationConditions:Create` единственным evaluation-scoped cache context и `EventBus` каноническим источником ревизий.** Не создавать второй CacheManager без доказанной необходимости: долгоживущие кэши расширяются в существующих GameState/провайдерах, с декларацией `Needs/dependencyChannels`, сохранением revision-vector и сравнением с текущим EventBus перед каждым возвратом. Для одного прохода кэшировать также UNKNOWN и причину, но не переносить этот UNKNOWN в следующую оценку без новой проверки. Между main/defensive использовать один snapshot и согласованный контекст, сохраняя изоляцию channel-specific eligibility ключей. До выдачи READY сверять релевантные ревизии повторно; если состояние поменялось, результат не подтверждён. Для long-lived данных с внешними изменениями без подходящего события — не включать кэш, либо ввести доказанный канал инвалидации, но не полагаться на TTL. Не использовать stale value как fallback при UNKNOWN.
+
+#### Требуемые изменения
+
+1. Составить исчерпывающий inventory всех кэшей Kord: владелец, ключ, lifespan, Needs, event channels, invalidation, UNKNOWN handling.
+2. Утвердить единый revision-vector contract для long-lived caches, с проверкой **перед чтением** и после оценки; не зависеть от задержки Flush.
+3. Проверить правильность ключей `readCache/factCache/eligibilityCache` (spellID, target policy, cast, charges, scope, snapshot identity) и отсутствие cross-channel contamination.
+4. Проверить, что повторное UNKNOWN в одной оценке не вызывает второе GameAPI чтение, а новая оценка не наследует устаревший UNKNOWN.
+5. Обеспечить инвалидацию при target/auras/health/resources/cooldowns/cast/identity/spellbook/talents/equipment и других реально необходимых событиях.
+6. DevTools: cache owner, key-class, lifespan, dependency channels, revisions at read/current, hit/miss/stale/invalidated, reason без secret payload.
+7. Тесты: repeated fact one read, repeated UNKNOWN one read, next evaluation new read, multiple main/defensive, target switch, spellbook update, cooldown event before Flush, revision changes mid-evaluation, missing event, unknown dependencies, secret value, performance benchmark и in-game Lua 5.1.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО (P0):** evaluation-scoped ленивые кэши и ревизионная проверка GameState есть; глобальная доказанная корректность всех long-lived caches и mid-evaluation revision validation отсутствует. Расширять существующие модули, не создавать классовые или параллельные кэши.
+
+**Архитектурные ссылки:** DA-01, EN-A2, EN-A8, EN-A9, EN-A10, AbilityEligibility, RotationConditions, GameState, EventBus. Ретроактивные уточнения добавлены в DA-01, EN-A2, EN-A8, EN-A10, EN-A9.
 
 **Изменения Lua:** отсутствуют. Только аудит и документация.
