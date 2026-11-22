@@ -1,3 +1,42 @@
+## KR-20261122-062 — docs: reconcile IT-01/1.7 source changes and status
+- Дата: 2026-11-22 (точное время Git), этап 1/шаг 1.7 P0. Тип docs. Изменён CHANGELOG.md.
+- Контекст: независимые GitHub Contents API операции 056–061 не могли обновить несколько путей одним коммитом. Это **нарушает норму CHANGELOG_RULES о журнале в каждом коммите**. Фиксируем факты позднее, не объявляем исторические коммиты соответствующими правилу и не переписываем Git history.
+- Причина: ограничение доступного интерфейса атомарных многофайловых изменений; самостоятельная техническая последовательность по утверждённому плану.
+- PASS — сопоставление фактических SHA 056–061 с файлами и указанными статусами; NOT RUN — Lua 5.1, mock execution, GitHub Actions (manual only), WoW Forever.
+- Тестировщику: конечный QA после полного этапа; в данный момент source implementation не является client test.
+- Остаток: запуск Lua/моков, будущий способ атомарного многофайлового коммита; IT-01/1.8 и ещё частичный Soulwell 1.6. Связи IT-01, KR-048–061.
+
+## KR-20261122-061 — docs: IT-01/1.7 source record in REQUIREMENTS.md
+- Дата: 2026-11-22 (время Git), тип docs. SHA `6fbec59e429063b98634e55e85c40f577e38bcc8`.
+- Изменён REQUIREMENTS.md: перечислены точные методы/пути, контракты Needs.items, item Count/hasAny, memo, UNKNOWN, ссылки на коммиты, непроверенные API. Старый аудит сохранён.
+- PASS — статическая сверка нового блока с source commits 056–059; NOT RUN — Lua/mock/CI/Forever. Следующий IT-01/1.8.
+
+## KR-20261122-060 — docs: IT-01/1.7 status in phased plan
+- Дата: 2026-11-22 (время Git), тип docs. SHA `8f37b67ca1aee4ffa595d00513e5a3ab555c068e`.
+- Изменён поэтапный план: после шага 1.7 внесён SOURCE IMPLEMENTED / TEST NOT RUN, пути, ссылки, обязанности тестирования и следующий шаг.
+- PASS — статическая позиция блока и соответствие источнику; NOT RUN — Lua/mock/CI/Forever.
+
+## KR-20261122-059 — fix: secret-safe inventory observation validation
+- Дата: 2026-11-22 (время Git), IT-01/1.7 P0, тип fix. SHA `ff317d5478af007008b65983c82a38ac1d229063`.
+- Изменён `KordRotation/Core/RotationConditions.lua`, `readItemFact`: guarded pcall чтения статуса, BAGS_ONLY scope, ID и nonnegative integer count; защищённое поле => UNKNOWN `item_count_secret`, не Lua exception или fake zero. Новых WoW API нет.
+- PASS — статический осмотр guarded expression; NOT RUN — Lua 5.1, mock, CI, Forever. Тестировщику: проверить тайное значение item record в итоговой матрице. Следующий 1.8.
+
+## KR-20261122-058 — test: lazy inventory conditions mock
+- Дата: 2026-11-22 (время Git), IT-01/1.7 P0, тип test. SHA `9b92874a476baf2b919401194abe4967877879c7`.
+- Новый `tests/inventory_conditions_mock.lua`: объявленные и неразрешённые ID, per-evaluation memo, zero, hasAny, unknown, BAGS_ONLY vs BANK. Source mock only.
+- PASS — статический осмотр сценариев; NOT RUN — выполнение Lua/mock/CI/Forever. Тестировщику: общий IT-01 QA после этапа.
+
+## KR-20261122-057 — feat: lazy Needs.items observations
+- Дата: 2026-11-22 (время Git), IT-01/1.7 P0, тип feature. SHA `7591e046bdf4abffcab68043f00f5679ac0ade82`.
+- Изменён `KordRotation/Core/RotationConditions.lua`, функции `declared`, `readItemFact`, `value`, `C:Create`: readonly `S.items:count/familyCount/hasAny`, эквивалентные observable fields, одно per-evaluation memo, строго объявленный Needs.items и GameState reader. UNKNOWN — nil; count>0 не item eligibility.
+- WoW API: новых нет, только shared GameState. Основание: IT-01/1.7, исходный аудит RotationMaster/Core/item_conditions.lua и Sonah/Core/Atoms/Items.lua (ZIP повторно не проверены).
+- PASS — статические guards и отсутствие direct WoW calls; NOT RUN — Lua/mock, CI, Forever. Риск: runtime behavior требует теста.
+
+## KR-20261122-056 — feat: optional Needs.items profile declaration
+- Дата: 2026-11-22 (время Git), IT-01/1.7 P0, тип feature. SHA `285c106e4fa81544368fe04750fd393ea367856e`.
+- Изменён `KordRotation/Core/RotationProfiles.lua`: `allowedNeeds`, `itemNeeds`, `validate` принимают `Needs.items={ids={},families={}}` с ограничениями, дедупликацией и защитой входных значений. Старые Needs остаются доступными. Новых WoW API нет.
+- PASS — статическая сверка схемы и поддержки опционального элемента; NOT RUN — Lua/mock/CI/Forever. Тестировщику: не объявленные предметы не должны читаться; шаг 1.8 позже.
+
 ## KR-20261122-055 — docs: reconcile plan and requirement status after IT-01/1.6
 - Дата: 2026-11-22 (точный timestamp по Git). Тип docs, IT-01 этап 1/1.6 P0. Статус PARTIALLY IMPLEMENTED / LOCAL LUA NOT RUN / CLIENT NOT RUN.
 - Контекст/причина: после реальных кодовых изменений нужно синхронизировать исходный план и раздел IT-01, сохранив историю аудита. GitHub Contents API в текущем доступе формировал отдельные коммиты на каждый документ.
