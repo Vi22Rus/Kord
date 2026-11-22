@@ -42,10 +42,24 @@ local function boolRow(parent,key,value,y)
         function() return IS:Get(value) end,
         function(v) IS:Set(value,v) end)
 end
+-- Explicit bounds match Core/IndicatorSettings.lua. StepRow's signature is
+-- (step, formatter, minimum, maximum); never shift minimum into formatter.
+local stepBounds={
+    highlightStrength={0,100},
+    defensiveSlots={1,3},
+    defensiveSize={24,128},
+    defensiveAlpha={0,100},
+    interruptSize={24,128},
+    interruptSpellID={0,9999999},
+    audioCooldown={1,30},
+}
 local function stepRow(parent,key,value,y,step)
+    local range=stepBounds[value]
+    assert(range,"Missing indicator slider range: "..tostring(value))
     return UI:StepRow(parent,key,12,y,505,
         function() return IS:Get(value) end,
-        function(v) IS:Set(value,v) end,step or 1, (value=="defensiveSlots" and 1 or value=="audioCooldown" and 1 or value=="defensiveSize" or value=="interruptSize") and (value=="defensiveSize" or value=="interruptSize") and 24 or (value=="defensiveSlots" or value=="audioCooldown") and 1 or 0, ({highlightStrength=100,defensiveSlots=3,defensiveSize=128,defensiveAlpha=100,interruptSize=128,audioCooldown=30})[value] or 100)
+        function(v) IS:Set(value,v) end,
+        step or 1,nil,range[1],range[2])
 end
 
 -- License notice (2/3): stage-1 UI stores options, not protected combat hooks.
