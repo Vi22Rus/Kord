@@ -150,7 +150,8 @@ local function run(channel)
  local inCombat=type(combatRecord)=="table" and safe(combatRecord)
      and combatRecord.status=="READY" and safe(combatRecord.value)
      and combatRecord.value==true
- local auraInMain=inCombat and saved.buffsInCombatMain==true
+ local auraInMain=inCombat and
+     KR.RotationSettings:GetFlag("buffsInCombatMain")==true
  for i,rule in ipairs(profile.Rules) do
   local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
   local status,reason
