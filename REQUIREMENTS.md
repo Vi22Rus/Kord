@@ -1387,3 +1387,51 @@
 7. Тесты: нет override, талант заменяет базовую способность, прок меняет кнопку, форма/стойка, paging без spell override, несколько алиасов, разные ранги, secret override ID, nil API, изменение ID во время боя, макросы, видимая кнопка с effective ID и исходный ID в профиле.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-11.
+
+
+### SP-12 — Реактивные способности: окно действует, подсветка кнопки (после уворота, парирования, крита)
+
+**Приоритет: P1.**
+
+#### Требование
+
+Общеклассово определять для конкретного spellID: подтверждённое реактивное окно `reactiveWindowActive`, достоверный остаток `remainingSeconds`, `buttonGlowActive` и текущую пригодность `usable` **как независимые факты**. Причина активации (dodge/parry/crit/aura/иной proc) указывается только при подтверждённом источнике. Нельзя объявлять glow доказательством готовности, `IsSpellUsable=true` доказательством прокового окна, а отсутствие glow — доказательством отсутствия реактивного условия. Секретные/неполные значения → `UNKNOWN`.
+
+#### Аудит Kord
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 171–186: `C_Spell.IsSpellUsable`/`IsUsableSpell` уже проверяет общую пригодность; не различает реактивное окно и его происхождение.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 450–761: существует защищённое чтение аур и `AuraCooldownViewer`; нет общего `reactiveWindow` по spellID.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 35, 44–50: разрешены usability/aura API; `C_SpellActivationOverlay.IsSpellOverlayed` в allowlist не найден.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 23–35: `UNIT_AURA` учтён; отдельная обработка `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE` в проверенном списке не обнаружена.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua): нет самостоятельных условий `spell.reactiveWindowActive`/`spell.buttonGlowActive`.
+- Следовательно, общая пригодность и ауры реализованы частично, но нет доказательного провайдера реактивного окна, его длительности и состояния игровой подсветки.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Classes/Warrior.lua:19` явно использует общий `C.usable()` для реактивных Execute/Overpower/Revenge/Victory Rush; `Sonah/UI/ActionBars.lua:87–88` содержит текстуры spell activation overlay. Это подтверждает usable-гейтинг и визуальную поддержку, **не универсальный таймер реактивного окна**.
+2. **JustAC** — `JustAC/ActionBarScanner.lua:1184+` содержит event-driven proc tracking `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE`; `JustAC/JustAC.lua:803–804` регистрирует события; `JustAC/UI/UIRenderer.lua:1219–1220` использует `C_SpellActivationOverlay.IsSpellOverlayed`. Наиболее прямой референс для наблюдения glow.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua` предоставляет общие aura/spell триггеры; библиотека `LibCustomGlow` реализует `ProcGlow_Start/Stop`, **но это рисование подсветки, не доказательство чтения Blizzard proc glow**.
+4. **MaxDps** — `MaxDps/Buttons.lua:143–160` управляет регистрацией `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW` для стандартных кнопок; `LibCustomGlow` предоставляет собственную отрисовку. Наличие механизма отображения не равно подтверждённому реактивному таймеру.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:5,193+` прямо учитывает `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE` и `C_SpellActivationOverlay.IsSpellOverlayed`; `Bars.lua:90` задаёт отдельный цвет `proc`. Сильный Forever-специфичный образец для glow observation.
+6. **RotationGuide** — в проверенном поиске Lua по `IsSpellOverlayed`, `SPELL_ACTIVATION_OVERLAY_GLOW`, `reactive` подтверждённого общего proc-glow provider не обнаружено.
+7. **RotationMaster** — `LibCustomGlow` предоставляет `ProcGlow_Start/Stop`, а платформа и условия отдельно оценивают применимость заклинаний; подтверждённого универсального источника **времени реактивного окна** из этих признаков не следует.
+
+#### Сравнение и рекомендация
+
+**Основа — JustAC + ForeverRotation, с общими Aura/Eligibility контрактами Kord.** Из JustAC — событийное наблюдение и проверка `IsSpellOverlayed`; из ForeverRotation — поведение, проверенное на Forever, и разделение proc glow и пригодности; из Kord — secret-safe `GameAPI`, `GameState`, `AbilityEligibility` и `EventBus`. `ReactiveObservation(spellID)` — **логический общеклассовый контракт, не обязательный отдельный Lua-файл**. Триггеры по dodge/parry/crit, классовые spellID и ауры описываются данными/правилами профиля; не создавать Warrior/Rogue/Hunter reactive engines.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Есть общая проверка usability и наблюдение аур; отсутствуют самостоятельные подтверждённые реактивные окна и чтение glow.
+
+#### Требуемые изменения
+
+1. Проверить на WoW Forever доступность `C_SpellActivationOverlay.IsSpellOverlayed` и события `SPELL_ACTIVATION_OVERLAY_GLOW_SHOW/HIDE`; добавить разрешённое защищённое чтение через `GameAPI` и события в `EventBus`.
+2. В существующем общем коде ввести `ReactiveObservation(spellID)`: независимые `windowActive`, `windowRemainingSeconds`, `buttonGlowActive`, `triggerKind`, `status/reason/source`; glow не приравнивать к окну или READY.
+3. Учитывать spell override (SP-11) и подтверждённый действующий слот/кнопку (SP-10), чтобы glow не относился к старому ID/странице панели; различать spell overlay и собственную декоративную подсветку аддона.
+4. Если окно определяется подтверждённой аурой — использовать её проверенный ID/expiration; если игровое событие предоставляет только факт активации, не выдумывать длительность. Для dodge/parry/crit использовать лишь доступные подтверждённые события; неполный combat log не доказывает отсутствие прока.
+5. Ленивая оценка через `Needs`; событие/смена ауры/формы/цели/панели инвалидирует соответствующий факт. Сохранить единственный финальный READY в `AbilityEligibility`.
+6. Диагностика: отдельно объяснять `glow_unknown`, `window_unknown`, `window_expired`, `spell_override_changed`, `usable_blocked`, не подменяя unknown на false.
+7. Тесты на разных классах: dodge/parry/crit, появление/исчезновение glow, отсутствие glow при реальном проке, glow при недоступном spell, proc без известной длительности, override spellID, смена панели, secret/недоступный API, прерывание/истечение окна, отсутствие ложного READY.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-12.
