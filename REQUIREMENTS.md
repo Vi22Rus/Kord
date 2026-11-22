@@ -1539,6 +1539,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-07:** **См. TG-07: target CC and damage-break rules reuse shared SpellRequirementsObservation/AbilityEligibility; no class-specific eligibility engine.**
+
+
 **Архитектурная актуализация TG-05:** **См. TG-05: target-of-target and threat restrictions reuse common TargetAggroObservation, while final ability READY remains AbilityEligibility.**
 
 
@@ -1861,6 +1864,9 @@
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
 
 
+**Архитектурная актуализация TG-07:** **См. TG-07: CC detection reuses the canonical aura reader and GUID/secret safety; no independent CC aura scanner.**
+
+
 **Архитектурная актуализация AU-09:** **См. AU-09: условие обновления ауры использует тот же aura reader и его статусы; не создавать отдельный поиск ауры для refresh.**
 
 
@@ -1991,6 +1997,9 @@
 ### AU-04 — Тип: магия, яд, болезнь, проклятие, кровотечение; можно ли снять
 
 
+**Архитектурная актуализация TG-07:** **См. TG-07: dispel type, bleed and CC mechanic are separate metadata; share aura evidence but not classification semantics.**
+
+
 **Архитектурная актуализация AU-08:** **См. AU-08: dispelType не равен иммунитету, поглощению или отражению; defensive classification добавляется к тем же проверенным AuraData.**
 
 
@@ -2043,6 +2052,9 @@
 
 
 ### AU-05 — Поиск ауры по имени и семейству рангов, а не только по одному ID
+
+
+**Архитектурная актуализация TG-07:** **См. TG-07: CC aura rank-family/name resolution reuses AU-05, not hardcoded one-rank checks.**
 
 
 **Архитектурная актуализация AU-09:** **См. AU-09: обновление по имени/семейству использует AU-05 и конкретный matched aura instance; не смешивать ранги.**
@@ -2207,6 +2219,9 @@
 
 
 ### AU-08 — Защитные ауры цели (иммунитет, щит, отражение): не бить впустую
+
+
+**Архитектурная актуализация TG-07:** **См. TG-07: immunity/shields and active CC are separate observations; damage-break risk must not be inferred from defense.**
 
 
 **Архитектурная актуализация TG-01:** **См. TG-01: базовая доступность цели для атаки отличается от иммунитета/отражения; TargetDefenseObservation повторно использует тот же targetGUID и не заменяет TargetObservation.**
@@ -2626,3 +2641,54 @@
 **Архитектурные ссылки:** TG-02/PL-03 — здоровье, TG-01 — targetGUID, AU-06 — multi-GUID lifecycle. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-06.
+
+
+### TG-07 — Состояние контроля цели: превращена, заморожена, оглушена, в страхе, и сломается ли от урона
+
+**Раздел: 5. Цель. Приоритет: P1.**
+
+#### Требование
+
+Логический `TargetControlObservation(targetGUID)` поверх общего AU-01/AU-05 aura reader определяет подтверждённые активные эффекты контроля: `polymorph/incapacitate`, `root/frozen`, `stun`, `fear`, а также `silence/disorient` при наличии проверенной классификации. Каждая категория имеет независимые `READY(true/false)/UNKNOWN`, `matchedAuraID`, `source`, `reason`, `duration/remaining` из AU-02 если известны. `breaksOnDamage` — **отдельное свойство конкретного эффекта** со статусом READY/UNKNOWN, не свойство всей категории. Нельзя утверждать, что всякий fear/root/stun ломается от любого урона. `breakChance`, damage threshold, periodic damage, exceptions могут отличаться по версии/рангу/модификаторам. Если правила неизвестны, `breaksOnDamage=UNKNOWN`.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 440–761: `ReadSignal("target.debuff",spellID)` способен доказать наличие конкретной вредоносной ауры с targetGUID guard; универсальной классификации механики контроля, break-on-damage и ранговых семейств нет.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 66–67: `needs.auras` поддерживает конкретный `target.debuff`, но нет `target.cc.*`, `target.cc.breaksOnDamage` или агрегации нескольких эффектов.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua): нет общего gate для атак, которые могут сломать полезный контроль; окончательное READY остаётся здесь.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 23,35: `UNIT_AURA` уже инвалидирует ауры, но нет доказательной CC-specific механики или lifecycle.
+- AU-01/02/04/05 и SP-14 — канонические источники аур, рангов, времени, метаданных и ограничений; не дублировать.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Classes/Rogue.lua:152+` явно подавляет атаку по цели под Gouge/Blind; это полезный пример защиты ломаемого контроля. Но классовая проверка не является универсальным CC классификатором.
+2. **JustAC** — `SpellDB.lua:25,51` хранит набор CC spells, `DebugCommands.lua:1428–1436` использует `BlizzardAPI.IsUnitCrowdControlled` для подавления повторного CC; обобщённый признак «уже под контролем» не доказывает конкретную механику и break-on-damage.
+3. **ForeverAuras** — `Prototypes.lua:8456+` содержит trigger `Crowd Controlled` (потеря контроля над **игроком**); `BuffTrigger2.lua` даёт основу для отслеживания аур на цели. Не путать player loss-of-control trigger с target CC.
+4. **MaxDps** — `SpellData.lua:3343` содержит Polymorph ID, `MaxDps_Priest/Specialization/TWW/Holy.lua:83` различает полезность incapacitate/stun; retail IDs/механики не переносить автоматически на Forever.
+5. **ForeverRotation** — `CC.lua:1–2` описывает type-limited CC suggestions (Hibernate, Polymorph и др.), `Sync.lua:9,33` различает STUN/FEAR/CC состояния **игрока**; наличие этих проверок не подтверждает универсальный target CC + break-risk detector.
+6. **RotationGuide** — в проверенных Lua по Polymorph/Fear/CC-break универсальный классификатор цели не обнаружен; общая aura state может быть источником, но не готовым доказательством.
+7. **RotationMaster** — `constants.lua:254–257` содержит FEAR/INCAPACITATE mechanic labels; `Libs/LibClassicDurations/diminishingReturns.lua:7+` и `classAbilities.lua:542` дают CC spell metadata/DR families. DR-категория не равна break-on-damage; нужен проверенный Forever каталог spell mechanics.
+
+#### Рекомендация
+
+**Основа — Kord AU-01/05 + JustAC (CC spell classification) + RotationMaster (mechanic/DR metadata) + Sonah (не ломать полезный CC).** Единый декларативный `ControlEffectCatalog` (verified spellID/rank-family → controlMechanics, breaksOnDamage policy, provenance, version) без классового CC engine; `TargetControlObservation` агрегирует **только подтверждённые** ауры текущего GUID и каталог. Умение, которое может повредить контролируемую цель, получает `ControlBreakRiskObservation(abilityID,targetGUID)`, учитывающее direct/periodic/AoE/cleave/pet damage и конкретный CC. При UNKNOWN не выдавать ложное «контроль точно не сломается»; стратегия приоритетов должна быть явной и не смешиваться с физической возможностью каста. Различать `frozen` как root/mechanic и просто эффект замедления, а также контролируемый иммунитет/DR от текущего контроля.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНЫЙ CC-КОНТРАКТ — ДОРАБОТАТЬ (P1).** Есть запрос отдельного target debuff, но нет классификации CC, достоверного break-on-damage и защиты ротации от разрушения контроля.
+
+#### Требуемые изменения
+
+1. Повторно использовать AU-01/AU-05 aura reader, AU-02 duration и targetGUID TG-01; не создавать второй scanner.
+2. Создать версионированные, проверенные на Forever декларативные соответствия spellID/rank family → `controlMechanics`, `breaksOnDamage`, `damageThreshold`/chance if confirmed; unknown entries remain UNKNOWN.
+3. Отдельно учитывать polymorph/incapacitate, frozen/root, stun, fear; множественные одновременные эффекты не сворачивать в одну произвольную метку.
+4. Проверять принадлежность ауры текущей цели и статус источника; отсутствие записи в каталоге не доказывает отсутствие контроля.
+5. Не смешивать DR/immunity, slow, interrupt/silence и CC break; тип контроля не всегда определяет возможность разрушения уроном.
+6. `ControlBreakRiskObservation` оценивает способность (single-target, AoE, cleave, DoT, pet) и текущие подтверждённые эффекты; наличие уже активного DoT и будущие тики учитывать отдельно от немедленного удара.
+7. `RotationConditions` получают typed `target.cc.*` и `target.cc.breakRisk` с Needs; `AbilityEligibility` сохраняет финальное READY, а политика избегания breakable CC не должна скрытно блокировать критические defensive/interrupt abilities.
+8. Инвалидация по UNIT_AURA, target GUID, смене/снятию эффекта, проверенной механике break; отсутствие доказательства удаления → UNKNOWN, не false.
+9. Диагностика `cc_aura_unknown`, `cc_mechanic_unknown`, `cc_break_policy_unknown`, `cc_target_changed`, `cc_break_risk_unknown`; тесты Polymorph, Gouge, Blind, Fear, Frost Nova/root, stun, multi-CC, AoE, DoT tick, pet autoattack, unknown aura, rank variants, dispel, secret aura, target swap.
+
+**Архитектурные ссылки:** AU-01/02/04/05 — ауры, TG-01 — GUID, AU-08 — защиты, SP-14 — spell requirements. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-07.
