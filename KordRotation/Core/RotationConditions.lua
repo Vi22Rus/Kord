@@ -257,6 +257,16 @@ function methods:spellAvailable(id)
  local result=eligibility(ctx,id,{target="enemy",cast="idle",chargesRequired=false})
  return result.status
 end
+local function traceFact(ctx,kind,value,why)
+ ctx.observations=ctx.observations or {}
+ if #ctx.observations>=256 then return end
+ local state=value==true and "READY" or
+     (value==false and "BLOCKED" or "UNKNOWN")
+ local reason=why or (value==false and "not_learned"
+     or value==true and "none" or "fact_value_unverified")
+ ctx.observations[#ctx.observations+1]={
+   field="fact."..kind,status=state,reason=reason}
+end
 function methods:spellFact(id,kind)
  local ctx=contexts[self]
  if not ctx or not spellAllowed(ctx,id) or not safe(kind)
@@ -270,9 +280,14 @@ function methods:spellFact(id,kind)
  -- Range facts may be queried only for explicitly declared spell IDs.
  if kind=="inRange" and not has(ctx.profile.Needs.ranges,id) then return nil end
  local key=tostring(id)..":"..kind
- if ctx.factDone[key] then return ctx.factCache[key] end
+ if ctx.factDone[key] then
+  traceFact(ctx,kind,ctx.factCache[key],
+      (ctx.factReasons or {})[key])
+  return ctx.factCache[key]
+ end
  ctx.factDone[key]=true
  local result=nil
+ local why=nil
  local mod=KR.AbilityEligibility
  -- An unimplemented fact provider MUST NOT be inferred from full Eligibility.
  if mod and type(mod.Fact)=="function" then
@@ -281,9 +296,15 @@ function methods:spellFact(id,kind)
       and safe(record.status) and record.status=="READY"
       and safe(record.value) and type(record.value)=="boolean" then
    result=record.value
+  elseif ok and type(record)=="table" and safe(record)
+      and safe(record.reason) and type(record.reason)=="string" then
+   why=record.reason
   end
  end
  ctx.factCache[key]=result
+ ctx.factReasons=ctx.factReasons or {}
+ ctx.factReasons[key]=why
+ traceFact(ctx,kind,result,why)
  return result
 end
 function C:Create(profile,snapshot)
