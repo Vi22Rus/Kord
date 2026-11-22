@@ -77,7 +77,7 @@ eq(D.slots[1].data.keybind,"1","verified key")
 for i=2,5 do eq(D.slots[i].data,nil,"no predicted icon") end
 engineResult={status="BLOCKED",source="RotationEngine",queue={}}
 D:Refresh(true)
-eq(D.frame.visible,false,"blocked panel hidden")
+eq(D.frame.visible,true,"empty panel shell stays visible by user layout preference")
 eq(D.slots[1].data,nil,"blocked clears current")
 engineResult=ready();engineResult.queue[1].spellID=0
 D:Refresh(true)
