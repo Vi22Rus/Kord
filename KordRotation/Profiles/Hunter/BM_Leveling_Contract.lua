@@ -232,18 +232,20 @@ local function makeRules(spells,is60)
   local active=maintenance(S,c)
   if active~=true then return active end
   local travel=signal(S,"player.travelAspect")
+  local hawkMissing=S:isNot("player.buff",spells.AspectHawk)
+  -- An already confirmed Hawk never needs another cast.
+  if hawkMissing==false then return false end
+  local fighting=combat(S)
   if travel==true then
-   -- Sonah/Classes/Hunter.lua:147-170: keep travel aspect while
-   -- out of combat, but recommend switching to Hawk DURING combat.
-   -- A verified Hawk aura always wins; do not spam an active aspect.
-   local hawkMissing=S:isNot("player.buff",spells.AspectHawk)
-   if hawkMissing==false then return false end
-   local fighting=combat(S)
-   if fighting==true then return true end
+   -- Preserve Cheetah / Pack while travelling outside combat. Once
+   -- combat is confirmed, a missing/hidden Hawk is a valid safety switch.
    if fighting==false then return false end
+   if fighting==true then return true end
    return nil
   end
-  return S:isNot("player.buff",spells.AspectHawk)
+  -- Unknown travel aura cannot justify cancelling it before combat.
+  if travel~=false and fighting~=true then return nil end
+  return hawkMissing
  end)
  add("aspect_monkey","AspectMonkey",function(S,c)
   if not c.aspect then return false end
