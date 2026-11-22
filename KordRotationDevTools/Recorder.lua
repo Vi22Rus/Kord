@@ -223,6 +223,9 @@ function D:Start()
         started=self.started or 0,sessionID=self.journalID,
         records=self.records}
     if self.TraceStart then self:TraceStart() end
+    -- Once per opt-in session, log one row for each canonical v14 API
+    -- presence check. No combat API is executed by this census.
+    if self.ProbeAll then self:ProbeAll() end
     return true
 end
 function D:Stop()
