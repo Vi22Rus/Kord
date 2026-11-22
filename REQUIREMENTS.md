@@ -349,6 +349,9 @@
 
 ## PL-03 — Здоровье игрока: текущее, максимальное, процент
 
+
+**Архитектурная актуализация TG-02:** **См. TG-02: здоровье игрока и цели использует общий UnitHealthObservation(unit), а не два отдельных health provider; secret-safe current/max/percent и curve policy едины.**
+
 **Приоритет: P0.**
 
 ### Требование
@@ -1524,6 +1527,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-02:** **См. TG-02: execute/health threshold для атак использует общий UnitHealthObservation и подтверждённые percent/curve predicates, без отдельного класса health reader.**
+
+
 **Архитектурная актуализация TG-01:** **См. TG-01: target exists/alive/hostile/attackable/visible — единые факты GameState/TargetObservation, не отдельные проверки в классовых профилях.**
 
 
@@ -2280,6 +2286,9 @@
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
+
+**Архитектурная актуализация TG-02:** **См. TG-02: health snapshot цели привязан к тому же targetGUID/existence, не переносится на другую цель; alive/dead не выводить из недоступного числового здоровья.**
+
 **Раздел: 5. Цель. Приоритет: P0.**
 
 #### Требование
@@ -2326,3 +2335,53 @@
 **Архитектурные ссылки:** SP-08 — range, SP-14 — spell requirements, AU-08 — target defenses, PL-10 — facing. В прежних требованиях внесены обратные сноски на TG-01.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-01 и перекрёстные ссылки.
+
+
+### TG-02 — Здоровье цели: процент, текущее (если не защищено)
+
+**Раздел: 5. Цель. Приоритет: P0.**
+
+#### Требование
+
+Общеклассовый `UnitHealthObservation(unit)` предоставляет независимые `current`, `maximum`, `percent`, `percentThreshold(predicate)`, каждый с `READY/UNKNOWN`, reason, source, observedAt и unitGUID. Абсолютные значения возвращать **только** когда они безопасно читаются как обычные числа. Процент можно вычислить из подтверждённых current/max либо получить через подтверждённый Forever `UnitHealthPercent` и клиентскую curve — при этом **не** выдавать результат step curve за точный процент. Достоверность порогового сравнения не означает достоверность абсолютного здоровья.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 64–76,108–121: `cleanHealth(unit)` уже читает `UnitHealth` и `UnitHealthMax` через числовой secret-safe adapter, выдаёт current/max/percent при доступности, проверяет current<=max. Используется для player и target. При защищённом current точное здоровье остаётся UNKNOWN.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 784–791: `ReadHealthPercent(unit,curve)` делегирует отдельный процентный путь в GameAPI; пока не объединён с каноническим `cleanHealth`/target snapshot и не гарантирует произвольный точный процент в защищённом режиме.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 11,234–255: allowlist `UnitHealth/UnitHealthMax/UnitHealthPercent`; `ReadHealthPercent` требует проверенную non-secret client-supported curve и ограничивает числовой результат 0..100. Это правильный запрет на «разворачивание» secret значений.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 23,35: `UNIT_HEALTH`/`UNIT_MAXHEALTH` инвалидируют health, но необходима проверка identity и целевой области инвалидирования.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua): есть проверки существования/живости цели, но нет единого доказательного execute/health threshold из TG-02.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Curves.lua:101–102` использует `UnitHealthPercent(unit,true,curve)` под pcall; `Core/Atoms/Units.lua:538+` осторожно рассматривает доступность health в combat. Полезна модель безопасного процентного порога, не обход secret.
+2. **JustAC** — `UI/UINameplateOverlay.lua:1619+` явно предупреждает, что `UnitHealthMax` может быть secret в бою; `DefensiveEngine.lua:611+` не выдаёт защищённый pet health за обычное число. Не переносить безусловную арифметику из отдельных spell rules.
+3. **ForeverAuras** — `Conditions.lua:558` использует `UnitHealthPercent(ctx.unit,true,Curve(...))`, `Prototypes.lua:3386–3390` читает UnitHealth/UnitHealthMax для триггеров. Сильный пример пороговых кривых, но UI-триггер не гарантирует точный числовой процент.
+4. **MaxDps** — классовые модули (например, `MaxDps_Mage/Specialization/Classic/Frost.lua:110`) используют `UnitHealth("target")`; нет подтверждённого общего secret-safe percent provider для Forever.
+5. **ForeverRotation** — `Display.lua:203,227+` передаёт `UnitHealthPercent` с optional C_CurveUtil curve непосредственно в UI; `Rotations/Signals.lua:3+` описывает пороги через curve. Сильный референс разделения UI/threshold от сырого секретного значения.
+6. **RotationGuide** — `Core/Display.lua:203` использует `UnitHealthPercent("player",true,HealCurve())` для UI; не подтверждён универсальный точный target health в combat.
+7. **RotationMaster** — `Platform/gates.lua:5,92+` использует `UnitHealthPercent/UnitPowerPercent` через step curve и отдельно ограничивает health reads. Полезен доказательный threshold contract, а не универсальное извлечение точного числа.
+
+#### Рекомендация
+
+**Основа — существующий Kord GameState/GameAPI + Sonah + ForeverAuras + RotationMaster; ForeverRotation — образец безопасной передачи curve-результатов в UI.** Один логический `UnitHealthObservation(unit)` для player/target/pet/focus/party/raid, где поддерживается. Он объединяет `cleanHealth` и `ReadHealthPercent` без дублирования чтения. `current/max` и `exactPercent` возвращать только при доказанной доступности; `healthBelowThreshold(N)` может быть подтверждённым через безопасную кривую, **не становясь** exactPercent. `UnitHealthPercent` с curve не является обходом secret. Не вводить отдельный TargetHealthProvider, использовать уже PL-03.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Точное здоровье и обычный процент уже читаются в разрешённых случаях; защищённые процентные пороги предусмотрены, но не интегрированы в единый целевой контракт.
+
+#### Требуемые изменения
+
+1. Объединить PL-03 и TG-02 на общем `UnitHealthObservation(unit)`, без отдельного player/target reader; сохранить независимые статусы current, max, exactPercent и threshold.
+2. Для числовых `UnitHealth/UnitHealthMax` проверять finite, 0<=current<=max, max>0, secret-safe; при неконсистентных значениях UNKNOWN с причиной, а не clamp до фиктивного здоровья.
+3. Для процентных порогов использовать только подтверждённый на Forever `UnitHealthPercent(unit,true,curve)` с безопасной curve; сохранить идентичность threshold/curve и не выдавать дискретный результат за точный процент.
+4. При отсутствии curve или secret чисел возвращать UNKNOWN; не интерполировать по combat log, healthbar пикселям, соседним процентным ступеням или прежнему snapshot.
+5. Согласовывать `unitGUID` до/после чтения, проверять `UnitExists`, при target swap/потере GUID немедленно инвалидировать; отдельные status для отсутствующей и мёртвой цели.
+6. Для `AbilityEligibility` execute/health-based abilities использовать подтверждённый threshold result, а не `current/max` из неподтверждённого источника. Классовые пороги — декларативные данные, единый provider.
+7. Инвалидация по `UNIT_HEALTH`, `UNIT_MAXHEALTH`, `PLAYER_TARGET_CHANGED`, GUID и ревизиям EventBus; кэш не должен переживать смену цели.
+8. Диагностика `target_health_secret`, `target_health_percent_unknown`, `target_health_curve_unavailable`, `target_health_guid_changed`; тесты 100/99/50/20/0%, max=0, secret current/max, разрешённый порог при secret, разные curves, target swap, player/pet/focus, без цели, смерть, regen, UNKNOWN в бою.
+
+**Архитектурные ссылки:** PL-03 — общий health provider; TG-01 — идентичность/жизнь цели; SP-14 — execute/health requirements. Обратные сноски добавлены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-02 и обратные ссылки.
