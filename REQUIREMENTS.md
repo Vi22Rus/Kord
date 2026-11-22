@@ -1174,3 +1174,51 @@
 7. Тесты: mana/rage/energy/focus, два ресурса, нулевая стоимость, неактивный `requiredAuraID`, талантная скидка, временный прок бесплатного каста, смена ауры в бою, secret amount, неполная таблица, отсутствие API, кэш до/после `SPELLS_CHANGED`.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-07.
+
+
+### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
+
+**Приоритет: P0.**
+
+#### Требование
+
+Для конкретного spellID и неизменившейся цели получать `inRange` (`true/false/UNKNOWN`), отдельно наблюдать `target.melee` и классифицировать охотничью «мёртвую зону» **только при доказанных одновременно недоступных ближней и дальнобойной атаке именно из-за дистанции**. Не выводить числовые метры из булевых проверок. Не смешивать `out_of_range` с `spell_unusable`, отсутствием оружия/боеприпасов, неверной целью, формой или cooldown. Отсутствие проверки → `UNKNOWN`.
+
+#### Аудит Kord
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–240: проверяет допустимость цели, `C_Spell.SpellHasRange`, `C_Spell.IsSpellInRange` или legacy `IsSpellInRange`; `nil` не приравнивается к «в радиусе». Результат `out_of_range` блокирует способность.
+- `AbilityEligibility.lua`, строки 448–499: отдельный факт `inRange` привязан к проверенной цели, включая повторную сверку после API-чтения; смена цели → `UNKNOWN`.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 302–348: `target.melee` использует `C_SwingTimer.IsTargetWithinSwingRange(0)`; `CheckInteractDistance(target,3)` используется **только как отрицательное свидетельство** для melee. Не делает ошибочный вывод, что `IsSpellInRange=true` гарантирует ближний бой.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 19–20, 26, 36–37: необходимые range/swing API разрешены.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 48, 69–70, 277–285: есть `target.melee`, `spell.range` и `inRange` с разрешёнными `Needs.ranges`.
+- **Пробел:** нет отдельного `hunter.deadZone` и независимых доказательств доступности melee и ranged диапазонов для одной цели в одном согласованном наблюдении; не различается отсутствие дальнобойного оружия/боеприпасов и собственно дистанционная мёртвая зона.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua` использует spell range-проверки и безопасное чтение фактов; отдельный универсальный доказательный `hunter.deadZone` provider в проверенном коде не подтверждён.
+2. **JustAC** — `JustAC/GapCloserEngine.lua` использует spell-range API для gap closers; в диагностике Forever используется `C_SwingTimer.IsTargetWithinSwingRange(0)` как сигнал melee, поскольку spell range может быть некорректным индикатором реальной дистанции. Это особенно полезно для Kord.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua` и `Prototypes.lua` поддерживают range-триггеры/проверки дистанции для spell/unit; универсальный подтверждённый классификатор охотничьей мёртвой зоны не обнаружен.
+4. **MaxDps** — `MaxDps/Helper.lua` предоставляет spell range-проверки для ротаций; специализированное достоверное определение мёртвой зоны по двум независимым дальностям в проверенном коде не подтверждено.
+5. **ForeverRotation** — `ForeverRotation/Core.lua` и `Engine.lua` проверяют `IsSpellInRange` в логике применимости; универсальный доказательный hunter dead-zone provider не подтверждён.
+6. **RotationGuide** — `RotationGuide/Core/State.lua` использует проверки доступности spell/range для рекомендаций; отдельного надёжного `hunter.deadZone` provider не обнаружено.
+7. **RotationMaster** — `RotationMaster/Platform/actions.lua` отделяет наличие дальности у способности от `IsSpellInRange`; `RotationMaster/Conditions/spatial.lua` и `Conditions/spell.lua` отделяют spatial и spell conditions, возвращая недоступность при непроверенном API. Полного подтверждённого hunter dead-zone detector в проверенных местах нет.
+
+#### Сравнение и моя рекомендация
+
+**Основа — JustAC + RotationMaster с сохранением существующего Kord.** JustAC — проверенный на Forever сигнал `C_SwingTimer.IsTargetWithinSwingRange(0)` и предупреждение о ложных spell-range фактах; RotationMaster — разделение range applicability, платформенного API и условий. Собственная доработка — `HunterRangeObservation` для **двух независимых, заранее проверенных ID**: melee-сигнал и дальнобойный сигнал, оба для той же цели и с проверкой применимости. `deadZone=true` допустимо только при подтверждённом `melee=false`, `ranged=false` **и доказанном диапазонном основании** обеих недоступностей; иначе `UNKNOWN`. Не закреплять классические границы 5/8 ярдов как неизменный контракт Forever.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Spell range и melee уже есть; доказательный detector мёртвой зоны отсутствует.
+
+#### Требуемые изменения
+
+1. Сохранить `spell.inRange(spellID,targetGUID)` и `target.melee` как отдельные secret-safe факты, включая сверку GUID до/после чтения.
+2. Добавить ленивый `HunterRangeObservation` с `melee`, `ranged`, `deadZone`, `status/reason/source`, не заменяя их числовой дистанцией.
+3. Выбрать и подтвердить для WoW Forever репрезентативные melee/ranged spellID с реальными range-проверками; отделять `SpellHasRange=false` и отсутствующий API от `inRange=false`.
+4. Для `deadZone=true` требовать доказательства обоих диапазонов и исключения иных причин недоступности: cooldown, ресурс, оружие, боеприпасы, форма, неверная цель. Если один факт `UNKNOWN`, зона тоже `UNKNOWN`.
+5. Интегрировать `Needs.ranges` и `Needs.hunterDeadZone` без eager-чтений; итоговый READY только в `AbilityEligibility`.
+6. Инвалидировать по смене цели/GUID, движениям/позиции, изменениям оружия и применимости способности; не считать булевый range фактом на всю длительность боя.
+7. Тесты: 50/30/близкая дистанция, движение к цели и от неё, melee only, ranged only, dead zone, `IsSpellInRange=true` далеко от melee, secret/nil range, `SpellHasRange=false`, смена цели между чтениями, нет оружия/боеприпасов, GCD и cooldown не искажают дистанцию.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-08.
