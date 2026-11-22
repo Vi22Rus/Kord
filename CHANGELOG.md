@@ -1,3 +1,9 @@
+## KR-20261122 — Runtime API trace static coverage reconciliation
+
+- Static connector-backed cross-check of `V14Registry.lua` vs `GameAPI.lua`: **101 matrix rows**, **79 rows naming a direct method**, **29 distinct named methods**, **0 mapped methods absent from the GameAPI allowlist**. The remaining **22** are composite rows without a single safe method-probe. This validates source mapping only, not live execution in WoW Forever.
+- Reviewed the 23 `KordRotation/Core/*.lua` source modules for direct use of core game API methods outside the adapter; none were detected by the targeted scan. Fixed the protected-field-key order in generic instrumentation (secrecy checked before string inspection).
+- Runtime logger is **opt-in**, data-free apart from allowlisted API method/key metadata, status and bounded code/count. **LOCAL LUA NOT RUN, CI NOT RUN, FOREVER CLIENT NOT RETESTED** on this commit.
+
 ## KR-20261122 — Generic opt-in runtime GameAPI trace (v14, all real adapter calls)
 
 - **SOURCE IMPLEMENTED; MOCK/LUA/FOREVER CLIENT NOT RUN on current commit.** Runtime opt-in tracing is now centralized in `KordRotation/Core/GameAPI.lua` for every actual `Read`, `ReadTuple`, `ReadValues`, `ReadField`, `Probe`, `ReadHealthPercent`, and `ReadPowerPercent` invocation. New adapter methods and refusal codes are captured by a generic bounded validated schema, not an updated per-spell or per-error logger. The scanner additionally emits fixed checkpoints for button inspection and `FindSpell` validation (including failed rank/slot checks). Presence-only probes use `GameAPI.Probe.<method>` and are never merged with successful API reads. Field reads use `GameAPI.ReadField.<safeKey>`, without returning field values.
