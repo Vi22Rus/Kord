@@ -149,15 +149,31 @@ profile.Rules[1]={id="feign",type="SPELL",spell="Feign",
 -- default. The explicitly enabled Defensive window owns this channel.
 KR.db.rotationProfiles.HUNTER_TREE_1.categories.defensive=false
 combat=true
+eq(S:GetFlag("defensiveInCombatMain"),true,
+ "defensive main-in-combat checkbox defaults enabled")
+eq(spell(E:Evaluate()),5384,
+ "checked: defensive ability appears in main frame during combat")
+eq(E:EvaluateDefensive().status,"BLOCKED",
+ "checked: defensive does not duplicate in separate frame")
+eq(S:SetFlag("defensiveInCombatMain",false),true,
+ "uncheck defensive combat routing")
 eq(spell(E:EvaluateDefensive()),5384,
- "defensive ability routes to defensive window in combat")
+ "unchecked: combat defensive appears in defensive frame")
 eq(spell(E:Evaluate()),3044,
- "defensive ability cannot replace main DPS")
+ "unchecked: main frame continues damage rotation")
 combat=false
 eq(spell(E:EvaluateDefensive()),5384,
- "defensive action is independent of buff promotion")
+ "outside combat: defensive stays in defensive frame")
+eq(spell(E:Evaluate()),3044,
+ "outside combat: main frame remains damage")
+eq(S:SetFlag("defensiveInCombatMain",true),true,
+ "recheck defensive combat routing")
+combat=true
 KR.IndicatorSettings.Get=function() return false end
+eq(spell(E:Evaluate()),5384,
+ "main-frame defensive routing works even with separate frame disabled")
+combat=false
 eq(E:EvaluateDefensive().status,"BLOCKED",
- "disabled Defensive window blocks defensive recommendations")
+ "disabled Defensive window blocks its own recommendations")
 KR.IndicatorSettings.Get=function() return true end
 print("PASS global combat aura routing and dual engine channels")
