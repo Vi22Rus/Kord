@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-02:** **См. IT-02: IT-02 provides item cooldown and shared-group observations to canonical AbilityEligibility; only the final eligibility gate may issue READY.**
+
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 provides verified inventory counts only; item READY/use policy must be handled by the canonical eligibility path and never by item count alone.**
 
 **Архитектурная актуализация SW-04:** **См. SW-04: SW-04 resource reserve and queue status are candidate constraints; final READY only AbilityEligibility; unknown resource/queue cannot be treated as available.**
@@ -4035,6 +4037,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация IT-02:** **См. IT-02: IT-02 potion/healthstone/bandage cooldown is separate from group healing priority and target safety; count and cooldown do not establish a healing action.**
+
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 bandage/potion availability is an input to healing policy; count>0 alone does not make a healing action safe or usable.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 pet resurrection is distinct from GR-05 resurrection of group members and must not enter group dead-member selection.**
@@ -4386,6 +4390,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация IT-02:** **См. IT-02: IT-02 item cooldown is not pet-care cast/aura timing; reuse common monotonic clock and typed unknown conventions only.**
+
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory count is not item cooldown, spell cast timing, or a proof that a consumable effect is active.**
 
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 reuses validated cast-time observation/clock conventions but not pet-care-specific timers or static spell durations.**
@@ -4669,6 +4675,8 @@
 
 ### SW-04 — Следующий удар усиливается способностью — запас
 
+**Архитектурная актуализация IT-02:** **См. IT-02: IT-02 shared potion cooldown is independent of SW-04 next-swing resource reserve; do not treat item group cooldown as spell GCD.**
+
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory reserve and SW-04 player power reserve are distinct typed resources; do not mix item counts and rage/mana budget.**
 
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P2.**
@@ -4727,6 +4735,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-02:** **См. IT-02: IT-02 reuses IT-01 item IDs, bag scope, family catalog and revisions; count>0 is not cooldown READY, and do not create another bag scanner.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
 
 #### Требование
@@ -4775,5 +4785,61 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет подтверждённого bag count API allowlist, inventory revisions, bags-only snapshot и семейного каталога. Внедрение IT-01 необходимо для достоверных рекомендаций расходников.
 
 **Архитектурные ссылки:** SP-14, PE-04, PE-05, GR-05, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
+
+#### Требование
+
+Для предмета по `itemID` определять `cooldownActive`, `startTime`, `duration`, `remaining`, `enabled`, `status=READY/UNKNOWN`, `reason/source/revision`. Для функциональных групп (`POTION_SHARED` и **только подтверждённые** Forever shared cooldown families) отдельно определять `groupCooldownActive`, `groupRemaining`, `groupStatus`, `evidenceItemIDs`, `source/reason/revision`. **Групповой кулдаун зелий нельзя выводить из одной произвольной длительности или из cooldown первого предмета в каталоге**: проверять, что конкретные health/mana potions действительно разделяют lockout на Forever, какие подсемейства/исключения существуют, и как cooldown отражается на остальных itemIDs после применения одного зелья. `GetItemCooldown` может возвращать secret/nil, `enabled` в формате bool или 0/1; `enabled=false` **не означает готовность**. `remaining=max(0,start+duration-now)` вычислять только из валидированных конечных чисел с корректным `GetTime`; `duration=0,start=0` подтверждает отсутствие локального cooldown лишь при доказанной семантике API и полном item identity, но не общий potion cooldown, combat lockout или usability. Не смешивать GCD предмета, собственный cooldown, shared potion lockout, combat-use ограничение, наличие в сумке и item usable. `UNKNOWN` не становится `ready`, а estimated last-use timer не становится подтверждённым client cooldown.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: `GetTime` разрешён; `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown`, `C_Item.GetItemSpell` в проверенном allowlist отсутствуют.
+- `KordRotation/Core/GameState.lua:9–10,177,184–244`: общие revisions/clock/player snapshot, но нет `ItemCooldownObservation` или `SharedItemCooldownObservation`.
+- `KordRotation/Core/EventBus.lua:21–26,35–42`: spell/actionbar cooldown события есть, `BAG_UPDATE_COOLDOWN` и item cooldown revision не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:10,54–55,97,137,183`: spell-centric cooldown/usability checks, но не itemID-specific cooldown и не shared potion lockout.
+- `KordRotation/Core/RotationConditions.lua:27,63–74`: нет `items.cooldownRemaining(itemID)`, `items.cooldownActive(itemID)`, `items.sharedCooldownRemaining(family)` с `Needs.items`.
+- **IT-01** определяет общий `InventoryObservation` и `ItemFamilyCatalog`; IT-02 расширяет их cooldown observation, не дублирует inventory adapter.
+
+#### Сравнение семи референсов (проверенные Lua из ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Items.lua:119–142` использует `GetInventoryItemCooldown` для слота, `C_Item.GetItemCooldown` для itemID, secret-safe `Secret.Number`, last-use + learned cooldown fallback; `:132–135` отделяет enabled=false и короткий GCD. `:144–149` **считает неизвестный cooldown готовым** (`rem==nil or rem<=0.25`) — Kord обязан исправить fail-open. `:152–167` `SinceAnyUse` группирует историю использований, но история не является подтверждённым cooldown. Перенять secret-safe reads, provenance и last-use как ESTIMATED.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:332–366` сопоставляет item use-spell, использует `C_Item.GetItemCooldown`, in-combat use latch и проверяет secret; `:353–366` **fail-open** при secret (`onCooldown=false`) — для P0 неприемлемо. `JustAC/UI/UIRenderer.lua:456` читает cooldown для отображения; `JustAC/Data/Forever/Consumables.lua:1–7,524–535` предоставляет Forever consumable families. Перенять observed-use latch как ограниченное подтверждение факта использования, а не произвольный group ready.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:3427–3443` разделяет item cooldown и overlay GCD (`showgcd`), `:3715–3730` опрашивает `C_Container.GetItemCooldown` и нормализует bool/0/1 enabled; `ForeverAuras/CooldownViewerTrigger.lua:675` отслеживает `BAG_UPDATE_COOLDOWN`, `ForeverAuras/Prototypes.lua:5305–5307` публикует события item cooldown ready/changed/started. Перенять event invalidation, normalizer и GCD separation; не путать WeakAuras `ITEM_COOLDOWN_READY` с Blizzard event.
+4. **MaxDps:** `MaxDps/Helper.lua:1871–1885` вычисляет `remaining` из `GetItemCooldown` и `GetTime`, но `remains=100000` для неготовности — **невалидный unknown sentinel** для Kord. `MaxDps/SpellFrame.lua:383,525,560` отображает cooldown обычных предметов и trinket slots. Перенять идею одного reader для разных item uses, не считать sentinel точным временем.
+5. **ForeverRotation:** в проверенных Lua не найдено `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown` или универсальный shared potion cooldown provider. Не объявлять group cooldown доказанным по отсутствующим данным.
+6. **RotationGuide:** в проверенных Lua не найдено `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown` или универсальный shared potion cooldown provider. Приоритеты предметов не доказывают cooldown.
+7. **RotationMaster:** `RotationMaster/Platform/items.lua:211–255` выбирает `C_Item.GetItemCooldown` → `C_Container.GetItemCooldown` → legacy, проверяет `CanReadValue`, конечные числа, нормализует enabled; `RotationMaster/Core/item_conditions.lua:280–301` возвращает UNKNOWN при недоступном cooldown или disabled и считает `max(0,start+duration-now)`; `RotationMaster/Core/condition_support.lua:560–561` capability gating; `RotationMaster/main.lua:2696` регистрирует `BAG_UPDATE_COOLDOWN`. **Основной референс** для fail-closed cooldown adapter; универсальная доказательная potion group inference по этим строкам не подтверждена.
+
+#### Выбранный путь Kord
+
+**Один логический `ItemCooldownObservation` + `SharedItemCooldownObservation` поверх IT-01 `InventoryObservation`/`ItemFamilyCatalog` и единого EventBus.** `ItemCooldownAdapter` — read-only `C_Item.GetItemCooldown`, fallback `C_Container.GetItemCooldown` и legacy **только** после Forever API probe; `C_Item.GetItemSpell` — дополнительная проверка item use-spell identity, не замена itemID. Нормализовать `enabled` (bool/0/1), проверять secret/finite/start/duration/clock. `active=true` при подтверждённом cooldown с положительным remaining; `active=false` только при валидированном нуле; иначе UNKNOWN. При `enabled=false` — отдельный `DISABLED/UNKNOWN`, не ready.
+
+`SharedCooldownGroupCatalog` **переиспользует** IT-01 family itemIDs, но **не** приравнивает все функциональные семейства к общему cooldown: `healthPotion` и `manaPotion` могут разделять `POTION_SHARED`, тогда как healthstone, bandage, food, mana gem, trinket и GCD требуют отдельных подтверждённых связей. Группа получает `CONFIRMED_ACTIVE` только если (a) валидированные cooldown-состояния нескольких подходящих членов/категорий подтверждают общую блокировку, либо (b) подтверждённое применение itemID и проверенная на Forever duration/group rule дают явную **ESTIMATED_ACTIVE** с source/time horizon, не подменяя API-факт. `CONFIRMED_READY` — только если **все применимые** наблюдаемые члены и client shared lockout проверены, и нет известного combat-use restriction; иначе UNKNOWN. Если часть членов отсутствует в сумках, catalog-level group observation не должен делать ложный вывод об отсутствии общего cooldown; проверять доступные representative IDs и event evidence. Общее время до готовности может быть максимумом доказанных member cooldowns только при подтверждённой group semantics, но **не** произвольным max по всем расходникам. При missing/secret member cooldown `groupRemaining=UNKNOWN` с `knownLowerBound`, если допустимо. Separate item cooldown, GCD, shared potion cooldown и once-per-combat constraints.
+
+`BAG_UPDATE_COOLDOWN`, `BAG_UPDATE_DELAYED`, `ACTIONBAR_UPDATE_COOLDOWN`, подтверждённые item use/cast/zone/combat signals — только revision/invalidation; событие без itemID не подтверждает, что именно зелье использовано. Item use-spell attribution требует уникального соответствия, иначе UNKNOWN. Кэш по `itemID`, `bagRevision`, `itemCooldownRevision`, `groupCatalogRevision`, monotonic now; bounded TTL для countdown и event coalescing. Lazy `Needs.items.cooldown`, один reader для всех профилей; `AbilityEligibility` остаётся единственным final READY для item candidates после IT-01 count, item cooldown, group cooldown, usability/target/combat gates. Никаких protected item uses.
+
+#### Требуемые изменения
+
+1. Ввести `ItemCooldownObservation(itemID)` и `SharedItemCooldownObservation(groupID)` с active/remaining/enabled/status/source/revision.
+2. Валидировать Forever `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, legacy, типы enabled, secret/nil/finite, epoch и `GetTime`; добавить GameAPI read-only allowlist.
+3. Реализовать cooldown adapter с `UNKNOWN` для missing/secret/disabled/invalid; не считать `duration<=1.5` универсальным доказательством отсутствия собственного CD.
+4. Отделить item-specific cooldown от GCD, combat-use restriction, item count, charges и item usability.
+5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
+6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
+7. EventBus item cooldown revision по `BAG_UPDATE_COOLDOWN`, bag/actionbar/item-use/combat/zone events, coalescing и bounded refresh; не дублировать IT-01 bag scanner.
+8. RotationConditions `items.cooldownActive(itemID)`, `items.cooldownRemaining(itemID)`, `items.sharedCooldownRemaining(groupID)` и lazy `Needs.items.cooldown`; AbilityEligibility единственный final READY.
+9. DevTools-only диагностика: `item_cd_api_missing`, `item_cd_secret`, `item_cd_disabled`, `item_cd_invalid_tuple`, `item_cd_gcd_only`, `item_cd_remaining_unknown`, `item_cd_group_unknown`, `item_cd_group_partial`, `item_cd_group_estimated`, `item_cd_group_conflict`, `item_cd_use_attribution_unknown`, `item_cd_ready_confirmed`.
+10. Тесты: cooldown zero/active/expired, enabled bool/0/1/false, nil/secret/invalid numbers, own CD vs GCD, health/mana potion shared cooldown, healthstone independence, bandage and food, multiple ranks, absent item but active group lockout, item moved/split, cooldown starts after use, use-spell collision, combat secret, estimated last-use timer, reload/zone/clock discontinuity, missed BAG_UPDATE_COOLDOWN, API fallback, no false ready/no protected uses.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет item cooldown API allowlist, item cooldown observation/revisions и достоверной модели общего cooldown зелий. Существующий spell cooldown не заменяет item cooldown.
+
+**Архитектурные ссылки:** IT-01, SP-14, GR-05, PE-05, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
