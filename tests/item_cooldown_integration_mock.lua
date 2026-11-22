@@ -1,0 +1,68 @@
+-- IT-02/2.10: end-to-end mock from event revision to profile conditions.
+-- No game client or protected item use APIs are exercised.
+local now=100
+local mode="active"
+local callCount=0
+local KR={}
+KR.GameAPI={
+ IsSafeValue=function(_,v) return v~="SECRET" end,
+ ReadValues=function(_,name,id)
+  callCount=callCount+1
+  assert(name=="C_Item.GetItemCooldown" and id==118)
+  if mode=="missing" then return {status="UNKNOWN",reason="protected_value"} end
+  if mode=="disabled" then return {status="READY",value={90,30,false}} end
+  if mode=="revision_race" then
+   KR.EventBus:InvalidateItemCooldown("race_during_read")
+  end
+  return {status="READY",value={90,30,1}}
+ end,
+ Read=function(_,name,kind)
+  assert(name=="GetTime" and kind=="number")
+  return {status="READY",value=now}
+ end,
+ ReadField=function(_,obj,key)
+  if obj[key]==nil then return {status="UNKNOWN"} end
+  return {status="READY",value=obj[key]}
+ end
+}
+assert(loadfile("KordRotation/Core/EventBus.lua"))("KordRotation",KR)
+assert(loadfile("KordRotation/Core/ItemFamilyCatalog.lua"))("KordRotation",KR)
+assert(loadfile("KordRotation/Core/SharedCooldownGroupCatalog.lua"))("KordRotation",KR)
+assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
+assert(loadfile("KordRotation/Core/RotationConditions.lua"))("KordRotation",KR)
+local C=KR.RotationConditions
+local profile={Spells={},Needs={items={
+ ids={118},families={"HEALTH_POTION"},
+ cooldown=true,cooldownGroups={"POTION_SHARED"}
+}}}
+local S=C:Create(profile,{})
+assert(callCount==0)
+assert(S.items:cooldownActive(118)==true)
+assert(S.items:cooldownRemaining(118)==20)
+assert(S.items:sharedCooldownRemaining("POTION_SHARED")==nil)
+assert(S.items:cooldownActive(118)==true)
+assert(callCount==2)
+local first=KR.GameState:ReadItemCooldownObservation(118)
+assert(first.status=="READY" and first.revision==0)
+assert(first.gcdStatus=="UNKNOWN" and first.usabilityStatus=="UNKNOWN")
+assert(first.cooldownScope=="ITEM_SPECIFIC")
+assert(KR.EventBus:HandleEvent("BAG_UPDATE_COOLDOWN"))
+assert(KR.EventBus:GetItemCooldownRevision()==1)
+now=130
+local nextEval=C:Create(profile,{})
+assert(nextEval.items:cooldownActive(118)==false)
+assert(nextEval.items:cooldownRemaining(118)==0)
+assert(nextEval.items:sharedCooldownRemaining("POTION_SHARED")==nil)
+mode="disabled"
+assert(C:Create(profile,{}).items:cooldownActive(118)==nil)
+mode="missing"
+assert(C:Create(profile,{}).items:cooldownRemaining(118)==nil)
+mode="revision_race"
+local raced=KR.GameState:ReadItemCooldownObservation(118)
+assert(raced.status=="UNKNOWN" and raced.reason=="item_cd_revision_changed")
+assert(raced.active==nil and raced.remaining==nil)
+assert(C:Create(profile,{}).items:cooldownActive(118)==nil)
+local before=callCount
+assert(C:Create(profile,{}).items:cooldownActive(999)==nil)
+assert(callCount==before)
+print("item_cooldown_integration_mock PASS")

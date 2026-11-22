@@ -5148,6 +5148,13 @@
 
 10. Тесты: cooldown zero/active/expired, enabled bool/0/1/false, nil/secret/invalid numbers, own CD vs GCD, health/mana potion shared cooldown, healthstone independence, bandage and food, multiple ranks, absent item but active group lockout, item moved/split, cooldown starts after use, use-spell collision, combat secret, estimated last-use timer, reload/zone/clock discontinuity, missed BAG_UPDATE_COOLDOWN, API fallback, no false ready/no protected uses.
 
+**Реализация Kord — фактическое состояние IT-02/2.10 (2026-11-22, P0, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- Новый `tests/item_cooldown_integration_mock.lua` прогоняет существующие `EventBus` → `GameState` → `RotationConditions` на синтетическом itemID=118: нет eager reads, READY item-specific active, positive remaining, group UNKNOWN, event revision, истёкший own cooldown не доказывает shared READY, disabled/secret возвращают nil, ревизионная гонка не превращается в READY.
+- Никаких новых игровых API или item-use действий; используется задокументированный reader из IT-02 и каталог группы 2.5.
+- PASS: статическая сверка интеграционного mock и корректного подключения существующих Lua-модулей. NOT RUN: реальное исполнение Lua 5.1 mock, общий набор regression, GitHub Actions (manual only), WoW Forever.
+- Не покрыты подтверждённым тестом реальные группы health/mana potion, healthstones, item-use attribution, bag moves, combat secrets и клиентские тайминги. Пункт 2.10 остаётся частично реализованным; полный IT-02 не TESTED.
+
+
 #### Вердикт
 
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет item cooldown API allowlist, item cooldown observation/revisions и достоверной модели общего cooldown зелий. Существующий spell cooldown не заменяет item cooldown.

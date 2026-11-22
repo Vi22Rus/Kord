@@ -1,3 +1,14 @@
+## KR-20261122-095 — IT-02/2.10: integration mock for cooldown revisions and lazy conditions
+- Дата/время: 2026-11-22 UTC, точный SHA/time — Git log по KR-20261122-095.
+- Этап 2/2.10, IT-02 P0, type test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: разрозненные mocks покрывали по отдельности catalog, GameState и EventBus; отсутствовал сквозной сценарий source контрактов, включая revision race и fail-closed group cooldown. Это пробел тестового покрытия, не доказанный runtime bug.
+- Изменено: `tests/item_cooldown_integration_mock.lua` проверяет typed индивидуальный cooldown, immutable evaluation cache, event invalidation, group UNKNOWN, disabled/secret, revision race и запрет undeclared itemID. REQUIREMENTS и поэтапный план отражают partial coverage. Код ядра не изменён.
+- API: только synthetic `GameAPI.ReadValues/Read`, фактических WoW API-вызовов нет; исходные контракты Kord из IT-02 и выбранные Forever refs остаются источником.
+- Проверки: PASS — статическая проверка test assertions и соответствия существующим source methods. NOT RUN — Lua 5.1/mock/full regression, ручной GitHub Actions (только перед общим QA), WoW Forever (нет клиента). Не выдавать тестовый файл за успешный запуск.
+- Для тестировщика: итоговый IT-02 QA нужен для реального shared potion cooldown/healthstone, таймингов, source attribution, event loss, секретов и совместимости API. Без промежуточного install.
+- Результат: тест добавлен, часть 2.10 закрыта на уровне исходника, full 2.10/IT-02 не завершены; следующие работы — 2.6 correlated use evidence, 2.7 bounded TTL, 2.9 diagnostics bridge.
+- Связи: KR-20261122-089–094, IT-01–04, AC-02.
+
 ## KR-20261122-094 — IT-02/2.9: guarded DevTools cooldown diagnostics (partial)
 - Дата/время: 2026-11-22 UTC (Git history exact timestamp), SHA по `git log --grep KR-20261122-094`.
 - Этап 2/2.9 IT-02 P0; feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
