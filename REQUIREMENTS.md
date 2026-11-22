@@ -5913,3 +5913,55 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 **Архитектурные ссылки:** CC-01 (собственный school lockout — другое состояние), CC-04 (interrupt observation/selection), SP-14, EventBus. Обратные ссылки внесены в CC-01 и CC-04.
 
 **Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: первый обязательный.**
+
+#### Требование
+
+Движок обязан поддерживать `SPELL` как базовый тип рекомендованного действия: обычные и мгновенные заклинания, классовые способности, лечение, защитные, атакующие, бафы, формы и специальные действия, если они действительно представлены изучаемым/доступным spellID клиента. Для каждой рекомендации нужен подтверждённый `spellID`, имя/иконка (если доступны), приоритет, целевой контекст, `READY/BLOCKED/UNKNOWN`, причина и канал отображения. Нельзя выдавать `READY` только потому, что spellID есть в профиле. Не вызывать protected cast, не считать macro/item/weapon enchant типом SPELL лишь из-за наличия spellID эффекта.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161`: `rule.type=="SPELL"` разрешает spellID из `profile.Spells[rule.spell]`; другие типы этим путём не обрабатываются.
+- `RotationEngine.lua:214–251`: перед выдачей результата вызывается `RotationConditions:Check`, `READY` формирует запись `spellID`, `texture`, `name`, `recommendationType`, `channel`; это **реальная существующая реализация SPELL**.
+- `KordRotation/Core/AbilityEligibility.lua:51–69,75–99,224–232`: предусмотрены проверка известности, cooldown и дистанции; конкретные ограничения CC, interrupt, предметов и рангов требуют соблюдения соответствующих ранее описанных требований.
+- `KordRotation/Core/RotationConditions.lua:169–176`: использует `AbilityEligibility:Evaluate` и различает `READY/BLOCKED/UNKNOWN`; `:274–282` содержит `spellFact`, но `chargesAtLeast` пока возвращает `nil`, что не следует выдавать за полное покрытие всех charge conditions.
+- **Итог:** тип `SPELL` **реализован в основном маршруте**, но его полноту и корректность на Forever следует проверять по матрице SP/CC и игровыми тестами. Не маркировать AC-01 как полностью отсутствующий.
+
+#### Сравнение семи референсов (архитектурные ориентиры)
+
+1. **Sonah:** `Sonah/Core/Organisms/Engine.lua` и `Sonah/Core/Molecules/Conditions.lua` — условия и выбор spell actions; перенять разделение профиля и проверки, а не отдельный движок.
+2. **JustAC:** `JustAC/DefensiveEngine.lua`, классовые данные и `JustAC/BlizzardAPI/StateHelpers.lua` — специализированные defensive/spell условия; не переносить самостоятельный defensive evaluator вместо общего Kord.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua`, `ForeverAuras/SpellCooldown.lua` — spell observations/cooldowns, но trigger для отображения не равен подтверждённой рекомендации.
+4. **MaxDps:** `MaxDps/Helper.lua`, `MaxDps/Buttons.lua` — spell checks и вывод рекомендаций; полезен раздельный слой проверки и визуализации.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua` и классовые ротации — spell recommendation как основной маршрут; не копировать отдельные профили/импорты.
+6. **RotationGuide:** `RotationGuide/Core/State.lua` и классовые данные — spell state и профильные действия; не считать профильную запись доказательством READY.
+7. **RotationMaster:** `RotationMaster/Core/build_context.lua` и `RotationMaster/Conditions/build.lua` — нормализация контекста и условий; использовать общую contract/capability модель, не создавать второй runtime.
+
+**Граница проверки:** для AC-01 построчно проверен основной маршрут Kord; приведённые референсные пути — ориентиры, не новый исчерпывающий построчный аудит семи архивов. Совместимость конкретных Forever spell API подтверждается только отдельной проверкой клиента.
+
+#### Выбранный путь Kord
+
+**Сохранить существующий маршрут `RotationEngine → RotationConditions → AbilityEligibility → recommendation`** как единственный маршрут `SPELL`. Ввести/зафиксировать общий `ActionRecommendation` contract с `actionType="SPELL"`, `spellID`, `targetContext`, `status`, `reason`, `priority`, `channel`, `source`, `revision`, `name/texture` (только безопасно полученные). Обратная совместимость с текущими `spellID`-записями обязательна; не менять UI-поля без адаптера.
+
+Изученность/ранг, ресурсы, cooldown/charges/GCD, дальность, target, формы, позицию, движение, cast/channel, собственный CC, LoC и school lockout проверять через существующие общие SP/CC providers; `AbilityEligibility` — единственный итоговый gate. `UNKNOWN` не превращать в READY; поддерживать lazy conditions и memo на оценку. Для breaker и interrupt действия остаются `SPELL`, а их ситуационная пригодность приходит из CC-02/CC-04, без нового типа действия. Item use относится к отдельному типу, даже если предмет запускает spell effect.
+
+#### Требуемые изменения
+
+1. Зафиксировать `SPELL` как обязательный `ActionRecommendation.actionType` и сохранить совместимость с действующим `rule.type="SPELL"` и текущим выводом.
+2. Не переписывать работающий spell recommendation pipeline; проверить единый путь `RotationEngine/RotationConditions/AbilityEligibility` для всех классовых профилей.
+3. Проверить обязательные eligibility: learned/max rank, resource, cooldown/charges/GCD, range, target, form, cast/channel, movement, CC, school lockout и применимые Forever ограничения.
+4. Добавить явные typed `READY/BLOCKED/UNKNOWN` причины и DevTools трассировку для SPELL, не расширяя public recommendation секретными данными.
+5. Обеспечить правильный канал и визуализацию обычного, defensive, aura и situational SPELL без пропажи следующего допустимого действия.
+6. Тесты: known/unlearned, max rank, cast/channel, instant, target/no target, melee/ranged, cooldown/charges/GCD, ресурс, moving, own stun/silence, interrupt, defensive, pet spell, form, смена спека, nil/secret, правильный icon/keybind, отсутствие ложного READY и protected cast.
+
+#### Вердикт
+
+**БАЗОВЫЙ ТИП SPELL УЖЕ РЕАЛИЗОВАН; ПОЛНОЕ ПОКРЫТИЕ ТРЕБУЕТ ДОПОЛНИТЕЛЬНОЙ ПРОВЕРКИ.** AC-01 не требует нового spell engine, а фиксирует контракт и проверку полноты существующего.
+
+**Архитектурные ссылки:** SP-01–SP-14, CC-01–CC-05, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Последующие типы действий должны использовать общий recommendation contract и не подменять SPELL.
+
+**Изменения Lua:** отсутствуют. Только документация.
