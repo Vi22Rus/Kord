@@ -764,34 +764,44 @@ function S:ReadSignal(field,spellID,snapshot)
     return {status="READY",value=true,source="GameState.ReadSignal"}
 end
 
--- PLAN IT-01 / 1.1: one fail-closed inventory observation contract.
--- Counts and bag coverage are intentionally unavailable until the Forever
--- reader and item-family catalogue are validated in later IT-01 steps.
--- All three observations share this source; there is no bag scanner here.
-local function inventoryUnknown(source, reason)
-    return {status="UNKNOWN", source=source, reason=reason, revision=nil}
+-- IT-01 / 1.1: one logical inventory observation, never a bag scanner.
+-- No item read API or catalogue is validated yet; every derived observation
+-- uses this shared, fail-closed base and never implies count=0 or READY.
+local function inventoryObservation(reason)
+    return {
+        status="UNKNOWN",
+        source="GameState.InventoryObservation",
+        reason=reason or "inventory_reader_unverified",
+        scope="BAGS_ONLY",
+        inventoryScope="BAGS_ONLY",
+        -- revision/bagRevision/catalogRevision/observedAt are intentionally
+        -- absent until the corresponding sources are validated.
+    }
+end
+
+local function inventorySafeID(value, kind)
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" then return false end
+    local ok,safe=pcall(api.IsSafeValue,api,value)
+    if not ok or safe~=true then return false end
+    if kind=="item" then
+        return type(value)=="number" and value==math.floor(value)
+            and value>0 and value<math.huge
+    end
+    return type(value)=="string" and #value>0
 end
 
 function S:ReadInventoryObservation()
-    local result=inventoryUnknown("GameState.InventoryObservation",
-        "inventory_reader_unverified")
-    result.scope="BAGS_ONLY"
+    local result=inventoryObservation()
     result.items={}
     result.families={}
     return result
 end
 
 function S:ReadInventoryItemObservation(itemID)
-    local result=inventoryUnknown("GameState.InventoryItemObservation",
-        "inventory_reader_unverified")
-    local api=KR.GameAPI
-    local ok,safe=false,false
-    if api and type(api.IsSafeValue)=="function" then
-        ok,safe=pcall(api.IsSafeValue,api,itemID)
-    end
-    if ok and safe==true and type(itemID)=="number"
-        and itemID==math.floor(itemID) and itemID>0
-        and itemID<=99999999 then
+    local result=inventoryObservation("inventory_reader_unverified")
+    result.source="GameState.InventoryItemObservation"
+    if inventorySafeID(itemID,"item") then
         result.itemID=itemID
     else
         result.reason="item_id_unverified"
@@ -800,15 +810,9 @@ function S:ReadInventoryItemObservation(itemID)
 end
 
 function S:ReadInventoryFamilyObservation(familyID)
-    local result=inventoryUnknown("GameState.InventoryFamilyObservation",
-        "item_family_catalog_unverified")
-    local api=KR.GameAPI
-    local ok,safe=false,false
-    if api and type(api.IsSafeValue)=="function" then
-        ok,safe=pcall(api.IsSafeValue,api,familyID)
-    end
-    if ok and safe==true and type(familyID)=="string"
-        and #familyID>0 and #familyID<=64 then
+    local result=inventoryObservation("item_family_catalog_unverified")
+    result.source="GameState.InventoryFamilyObservation"
+    if inventorySafeID(familyID,"family") then
         result.familyID=familyID
     else
         result.reason="item_family_id_unverified"
