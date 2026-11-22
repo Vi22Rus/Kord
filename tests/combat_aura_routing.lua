@@ -40,11 +40,12 @@ KR.RotationProfiles={
  Has=function()return true end,
  ResolveForEngine=function()return profile end,
 }
--- Reuse the actual generic classification implementation, not a whitelist.
-local profileContract=KR.RotationProfiles
+-- Use the real generic classifier with mocked profile resolution.
+local mockedHas=KR.RotationProfiles.Has
+local mockedResolve=KR.RotationProfiles.ResolveForEngine
 assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
-KR.RotationProfiles.ResolveForEngine=profileContract.ResolveForEngine
-KR.RotationProfiles.Has=profileContract.Has
+KR.RotationProfiles.ResolveForEngine=mockedResolve
+KR.RotationProfiles.Has=mockedHas
 KR.AbilityEligibility={} -- engine ownership gate; mocked condition Check below
 KR.RotationConditions={
  Create=function()return {} end,
