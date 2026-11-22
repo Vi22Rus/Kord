@@ -56,6 +56,13 @@ local allowed = {
     ["C_NamePlate.GetNamePlates"]=true,
     -- IT-01/1.2: shared read-only exact item count (no item use).
     ["C_Item.GetItemCount"]=true,
+    -- IT-02/2.2: candidate read-only cooldown getters from approved requirements.
+    -- Exposing names does not assert their availability or return signature on Forever.
+    -- Callers MUST validate tuple/struct fields, enabled flags, finite timing
+    -- and secret values; missing API remains UNAVAILABLE/fail-closed.
+    ["C_Item.GetItemCooldown"]=true,
+    ["C_Container.GetItemCooldown"]=true,
+    GetItemCooldown=true,
     -- IT-01/1.3: one bounded, read-only inventory snapshot source.
     ["C_Container.GetContainerNumSlots"]=true,
     ["C_Container.GetContainerItemID"]=true,
