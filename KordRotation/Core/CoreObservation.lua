@@ -404,6 +404,10 @@ function O:ReadDisplay()
             KR.IndicatorSettings:Get("defensiveCombatOnly")==true or false,
         auraPromotion=KR.RotationSettings and
             KR.RotationSettings:GetFlag("buffsInCombatMain")==true or false,
+        defensiveInCombatMain=KR.RotationSettings and
+            KR.RotationSettings:GetFlag("defensiveInCombatMain")==true or false,
+        defensivePreferenceStored=type(KR.db)=="table"
+            and type(KR.db.defensiveInCombatMain)=="boolean",
         defensiveRecommendation=field(display,"defensiveReady")==true,
         defensiveStatus=status(field(display,"lastDefensiveStatus")),
         defensiveReason=reason(field(display,"lastDefensiveReason")) or "unknown",
