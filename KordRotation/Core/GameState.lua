@@ -1260,10 +1260,64 @@ function S:ReadSharedItemCooldownObservation(groupID)
         if type(catalog.PrepareUseSpellIndex)=="function" then
             pcall(catalog.PrepareUseSpellIndex,catalog,groupID)
         end
-        local observed=self:ReadObservedItemUse(groupID)
-        if observed.reason=="item_cd_use_attribution_estimated" then
-            result.useAttribution="ESTIMATED"
-            result.useObservedAt=observed.observedAt
+        local useOK,observed=pcall(self.ReadObservedItemUse,self,groupID)
+        if useOK and type(observed)=="table" then
+            local valid,accepted,observedAt=pcall(function()
+                return api:IsSafeValue(observed)
+                    and observed.reason=="item_cd_use_attribution_estimated"
+                    and observed.confidence=="ESTIMATED"
+                    and api:IsSafeValue(observed.observedAt)
+                    and finite(observed.observedAt,0),observed.observedAt
+            end)
+            if valid and accepted then
+                result.useAttribution="ESTIMATED"
+                result.useObservedAt=observedAt
+            end
+        end
+        -- Reuse the single bounded member-evidence pipeline. Source-only
+        -- confidence must never become a group READY or numeric remaining.
+        if type(self.ReadSharedItemCooldownMemberEvidence)=="function" then
+            local okEvidence,evidence=pcall(self.ReadSharedItemCooldownMemberEvidence,
+                self,groupID)
+            if okEvidence and type(evidence)=="table" then
+                local checked,fields=pcall(function()
+                    if not api:IsSafeValue(evidence)
+                        or evidence.groupID~=groupID
+                        or evidence.status~="UNKNOWN"
+                        or evidence.groupStatus~="UNKNOWN"
+                        or evidence.candidateCount~=result.candidateCount
+                        or not api:IsSafeValue(evidence.itemCooldownConfidence)
+                        or not api:IsSafeValue(evidence.groupLockoutConfidence)
+                        or not api:IsSafeValue(evidence.groupReadyConfidence)
+                        or (evidence.itemCooldownConfidence~="CONFIRMED"
+                            and evidence.itemCooldownConfidence~="UNKNOWN")
+                        or (evidence.groupLockoutConfidence~="ESTIMATED"
+                            and evidence.groupLockoutConfidence~="UNKNOWN")
+                        or evidence.groupReadyConfidence~="UNKNOWN"
+                        or not api:IsSafeValue(evidence.itemCooldownRevision)
+                        or not api:IsSafeValue(evidence.inventoryRevision)
+                        or not api:IsSafeValue(evidence.familyRevision)
+                        or not finite(evidence.itemCooldownRevision,0)
+                        or not finite(evidence.inventoryRevision,0)
+                        or not finite(evidence.familyRevision,1) then
+                        return nil
+                    end
+                    return {item=evidence.itemCooldownConfidence,
+                        group=evidence.groupLockoutConfidence,
+                        ready=evidence.groupReadyConfidence,
+                        itemRev=evidence.itemCooldownRevision,
+                        bagRev=evidence.inventoryRevision,
+                        familyRev=evidence.familyRevision}
+                end)
+                if checked and fields then
+                    result.itemCooldownConfidence=fields.item
+                    result.groupLockoutConfidence=fields.group
+                    result.groupReadyConfidence=fields.ready
+                    result.itemCooldownRevision=fields.itemRev
+                    result.inventoryRevision=fields.bagRev
+                    result.familyRevision=fields.familyRev
+                end
+            end
         end
     elseif reason=="item_cd_group_unknown" then
         result.reason="item_cd_group_unknown"

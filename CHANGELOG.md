@@ -1,3 +1,12 @@
+## KR-20261122-110 — IT-02/2.6: single guarded evidence pipeline for public group cooldown observation
+- Дата/время: 2026-11-22 UTC (точное время по Git); SHA: `git log --grep KR-20261122-110`. IT-02 P0, этап 2/2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: публичный group reader не использовал уже реализованный confidence evidence reader. Обнаружен исходниковый пробел, не клиентский дефект.
+- Причина: групповой observation и member evidence существовали раздельно; observed use не имел локального pcall.
+- Код: `KordRotation/Core/GameState.lua`, `S:ReadSharedItemCooldownObservation`: единый существующий member reader, guarded use read, проверки identity/count/revisions/confidence и тройка диагностической уверенности. Без второго сканера/провайдера, новых WoW API, protected действий и group READY/remaining на source-only данных.
+- Тесты: `tests/shared_item_cooldown_member_evidence_mock.lua` — public aligned/mixed/race synthetic assertions. PASS source/static anchor checks и Git commit. NOT RUN Lua 5.1 execution/mock/full regression (нет runtime), manual GitHub Actions, WoW Forever (нет клиента).
+- Тестировщику: в итоговом IT-02 QA проверить confidence vs groupStatus, race, source-only use и запрет false READY. Промежуточной установки не требуется.
+- Документы: REQUIREMENTS.md и поэтапный план синхронизированы в том же коммите. Риски: реальная shared cooldown семантика Forever ещё не подтверждена; group active/ready/remaining не реализованы. Связи KR-20261122-102–109, IT-01, IT-02/2.5–2.10.
+
 ## KR-20261122-109 — IT-02/2.6: fail-closed counter consistency for shared cooldown confidence
 - Дата/время: 2026-11-22 UTC (точное время Git commit); коммит: `git log --grep KR-20261122-109`. Тип: fix/test/docs, IT-02 P0, этап 2/2.6, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: оценка `ESTIMATED` могла появиться при двух совпавших таймерах и третьем активном несовпавшем кандидате; достаточность счетчиков по всем известным активным членам не проверялась. Это выявлено при анализе исходников; в WoW Forever не воспроизводилось.

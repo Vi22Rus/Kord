@@ -5120,6 +5120,10 @@
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
 
+**Реализация Kord — IT-02/2.6, KR-20261122-110 (2026-11-22; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- `GameState:ReadSharedItemCooldownObservation` теперь переиспользует существующий `ReadSharedItemCooldownMemberEvidence` после guarded чтения observed use, валидирует identity/count/revisions/confidence и раскрывает три confidence поля, не превращая source-only корреляцию в готовность группы или group remaining. Тест public aligned/mixed/race добавлен к `tests/shared_item_cooldown_member_evidence_mock.lua`.
+- PASS: статическая проверка исходников и Git-публикация. NOT RUN: Lua 5.1/mock/full regression, manual GitHub Actions и WoW Forever. Shared cooldown rule на Forever не подтверждён исходниками, поэтому `groupStatus=UNKNOWN` и `groupRemaining=nil`. SHA по `git log --grep KR-20261122-110`.
+
 **Реализация Kord — IT-02/2.6: согласованность confidence counters, KR-20261122-109 (2026-11-22; P0, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - `KordRotation/Core/SharedCooldownConfidence.lua`, `C:Evaluate`: groupLockoutConfidence=`ESTIMATED` допускается только при `alignedCandidateCount==knownActiveCount` и согласованности валидированных divergent/inactive counts; иначе `UNKNOWN`, без группового READY/remaining. Исправляет возможность частичного совпадения из двух таймеров при дополнительном несогласованном активном кандидате; никаких новых WoW API.
 - `tests/shared_item_cooldown_confidence_mock.lua`: добавлены отрицательные случаи third active unmatched, secret divergent count и inconsistent inactive count. PASS: статическая сверка изменений и атомарная публикация; NOT RUN: исполнение Lua 5.1/mock/full regression, ручной GitHub Actions, WoW Forever. Прежние исходные референсы IT-02 и ограничения client group semantics остаются действующими. SHA: `git log --grep KR-20261122-109`.

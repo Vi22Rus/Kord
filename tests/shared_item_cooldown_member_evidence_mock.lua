@@ -93,6 +93,13 @@ assert(aligned.status=="UNKNOWN" and aligned.remaining==nil)
 assert(aligned.itemCooldownConfidence=="CONFIRMED")
 assert(aligned.groupLockoutConfidence=="ESTIMATED")
 assert(aligned.groupReadyConfidence=="UNKNOWN")
+local publicAligned=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(publicAligned.groupLockoutConfidence=="ESTIMATED")
+assert(publicAligned.itemCooldownConfidence=="CONFIRMED")
+assert(publicAligned.groupReadyConfidence=="UNKNOWN")
+assert(publicAligned.groupStatus=="UNKNOWN" and publicAligned.status=="UNKNOWN")
+assert(publicAligned.groupRemaining==nil and publicAligned.active==nil)
+assert(publicAligned.itemCooldownRevision==5 and publicAligned.inventoryRevision==7)
 mode="single"
 local single=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(single.propagationEvidence=="SINGLE_CANDIDATE")
@@ -104,6 +111,9 @@ assert(divergence.propagationEvidence=="MIXED_CANDIDATES")
 assert(divergence.alignedCandidateCount==1 and divergence.divergentActiveCount==1)
 assert(divergence.groupStatus=="UNKNOWN" and divergence.remaining==nil)
 assert(divergence.groupLockoutConfidence=="UNKNOWN")
+local publicMixed=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(publicMixed.groupLockoutConfidence=="UNKNOWN")
+assert(publicMixed.groupReadyConfidence=="UNKNOWN")
 mode="wrong_time"
 local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongTime.useCorrelation=="UNKNOWN")
@@ -133,6 +143,9 @@ calls=0
 local raced=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(raced.status=="UNKNOWN" and raced.reason=="item_cd_revision_changed")
 assert(raced.candidateCount==nil and raced.candidateMaxRemaining==nil)
+local publicRace=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(publicRace.groupLockoutConfidence==nil)
+assert(publicRace.groupStatus=="UNKNOWN" and publicRace.remaining==nil)
 bus.cooldown=5
 mode="partial"
 KR.EventBus=nil
