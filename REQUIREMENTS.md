@@ -1850,3 +1850,53 @@
 7. Тесты на player buff/debuff, target buff/debuff, pet, focus (если есть), party/raid, own-vs-any caster, разные ранги и spellID, пустой unit, unit сменился в середине чтения, secret-positive, secret-negative, no API, обновление/исчезновение ауры, повторные ID и производительность в рейде.
 
 **Изменения кода:** не выполнялись; внесён аудит AU-01.
+
+**Архитектурная актуализация AU-02:** **См. AU-02:** длительность, expiration/remaining и число стаков — дополнительные независимые поля **того же** универсального `AuraPresenceObservation(unit,spellID,filter)`. Не создавать второй aura lookup/таймер/сканер для AU-02; использовать единый unitGUID, фильтры, secret-safe чтение, кэш и инвалидацию AU-01. Отсутствие подтверждённого времени или числа стаков не отменяет достоверного присутствия ауры.
+
+
+### AU-02 — Длительность, остаток времени, число стаков
+
+**Приоритет: P0.**
+
+#### Требование
+
+Для подтверждённой ауры по spellID на любом поддерживаемом AU-01 юните возвращать **независимые факты** `durationSeconds`, `expirationTime`, `remainingSeconds`, `applications/stacks` с отдельными `status/reason/source`. Не считать `nil` нулём. Постоянная аура (`duration=0`/`expirationTime=0` при подтверждённой семантике клиента) отличается от истекшей; `stacks=0`, `stacks=1` и отсутствие подтверждённого поля не взаимозаменяемы. Положительное presence не доказывает читаемость времени/стаков. `remaining` должен вычисляться из валидного `expirationTime` и согласованного `GetTime`, без устаревшего snapshot.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 443–761: уже выполняет защищённый spellID lookup, подтверждает identity, использует GUID target и secret-safe fallback; при этом не извлекает из AuraData `duration`, `expirationTime`, `applications` и не выдаёт отдельные поля remaining/stacks.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строка 50: `C_UnitAuras.GetAuraDuration` разрешён, а `ReadField` защищает отдельные поля. Наличие API в allowlist **не означает**, что конкретный AuraDuration object и его секретные значения можно преобразовать в обычные числа.
+- [`KordRotation/Core/AuraEvidence.lua`](KordRotation/Core/AuraEvidence.lua): положительное историческое подтверждение присутствия ауры не даёт гарантии актуального expiration/stacks.
+- AU-01 расширяет покрытие `player/target/pet/focus/party/raid` и фильтры; AU-02 **не должен повторять** unit validation, GUID guard, aura scan, spellID identity или отрицательное наблюдение.
+
+#### Семь референсов (проверены локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Auras.lua:152–163` отдельно читает `expirationTime`, `duration`, `applications` через `Secret.FieldNumber`, вычисляет `remaining` и для `expirationTime==0` использует бесконечность как внутренний маркер постоянной ауры. Сильный образец secret-safe независимых полей, но `stacks or 0` нельзя копировать как доказательное нулевое число.
+2. **JustAC** — `PrecombatEngine.lua:50–76` различает плоский remaining, постоянную ауру с duration 0 и недоступное время. При отсутствии timing местами использует консервативное решение для precombat, но это не достоверный универсальный `READY(false)`.
+3. **ForeverAuras** — `Init.lua:25–28` и `BuffTrigger2.lua` имеют поля `remaining/expirationTime`, `SecretAuraFlow.lua` отдельно обрабатывает скрытые ауры и UI-duration; полезна модель полей и секретности, не считать UI duration object автоматически числом.
+4. **MaxDps** — `MaxDps/Helper.lua:70–105` извлекает `applications/duration/expirationTime`, вычисляет `remains`, для `expirationTime==0` использует большой sentinel `99999`. Не копировать sentinel как фактические секунды.
+5. **ForeverRotation** — `Engine.lua:77+` читает `aura.duration` и `aura.expirationTime` для решения о повторном наложении; классические профильные `dur` являются оценкой, а не подтверждённым фактическим остатком.
+6. **RotationGuide** — `Core/State.lua:207–218` получает `applications`, нормализует число стаков и использует собственный `Tracked` fallback; нельзя выдавать fallback estimation за live факт.
+7. **RotationMaster** — `Platform/auras.lua:3–75` типизирует `applications/duration/expirationTime` **независимо**, помечает недоступные/secret поля в `record.unavailable`; `Libs/LibClassicDurations` даёт оценку длительности по combat log для старых клиентов, но это не прямое наблюдение. **Лучший архитектурный образец.**
+
+#### Сравнение и рекомендация
+
+**Основа — RotationMaster + Sonah + ForeverAuras внутри существующего AU-01 провайдера Kord.** RotationMaster — независимые типизированные поля и unavailable reasons; Sonah — secret-safe числа и вычисление remaining; ForeverAuras — работа с duration objects и hidden aura. `AuraDetailsObservation` — **не отдельный источник истины и не обязательный новый файл**, а дополнительные поля `AuraPresenceObservation` по тому же `unitGUID+spellID+filter+caster`. Для всех классов и поддерживаемых юнитов — один общий механизм.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Presence и API-примитивы есть, но независимых достоверных duration/remaining/stacks в Kord нет.
+
+#### Требуемые изменения
+
+1. Расширить результат AU-01 полями `durationSeconds`, `expirationTime`, `remainingSeconds`, `stacks` с независимыми статусами; единый spellID match, caster filter, unitGUID guard и event revision.
+2. Читать `duration`, `expirationTime`, `applications` из **того же подтверждённого AuraData** через `GameAPI.ReadField`; не повторять lookup и не сканировать ауры заново.
+3. `remaining=max(0, expirationTime-GetTime())` только для подтверждённых конечных чисел и непостоянной ауры. Постоянную ауру обозначать `isPermanent=READY(true)`, `remaining` — не конечное число, без `math.huge`/99999 как фактического времени.
+4. При отсутствии/секретности поля возвращать `UNKNOWN` именно для него. Установить правила нормализации `applications` (включая 0/1) по подтверждённому поведению Forever, не принудительно `max(1,stacks)` без основания.
+5. Разделять `observedRemaining` и `estimatedRemaining` из combat log/профиля/истории; оценка не повышает статус до `READY`. Для `C_UnitAuras.GetAuraDuration` проверить формат и поддержку duration object на Forever.
+6. Обновлять remaining по монотонному времени без повторного aura scan на каждый UI тик; сбрасывать при `UNIT_AURA`, смене GUID, caster, исчезновении ауры, переходе в secret mode.
+7. Тесты: 1/2/5 стаков, отсутствие поля, duration=0 permanent, expiration=0, истечение и refresh, DoT/HoT на разных целях, pet/focus/party, чужой caster, rank/override, secret duration при видимом presence, задержка обновления, reload и invalid clock.
+
+**Архитектурная ссылка:** **AU-01** — единственный общий aura provider. SP-12 (реактивные aura procs), SP-14 (требуемые/запрещённые ауры), PL-09 (классовые ауры) используют тот же источник; отдельные механизмы длительности для них не создавать.
+
+**Изменения кода:** не выполнялись; внесён аудит AU-02 и актуализация AU-01.
