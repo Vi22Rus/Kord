@@ -227,4 +227,26 @@ function P:Has(key,level)
  if level==nil then return true end
  return selectProfile(key,level)~=nil
 end
+-- Replace the active level interval atomically after the spellbook changes.
+-- Used for dynamically registered, learned-rank profiles at login/level-up.
+function P:Replace(classToken,specIndex,profile)
+ local key=type(classToken)=="string" and classToken.."_TREE_"..tostring(specIndex) or nil
+ if not key then return false,"invalid_profile_identity" end
+ local called,valid,why=pcall(validate,profile,classToken,specIndex)
+ if not called or not valid then return false,why or "profile_validation_error" end
+ local list=registry[key] or {}
+ for _,item in ipairs(list) do
+  if item.id~=profile.id and item.levelMin<=profile.levelMax
+    and profile.levelMin<=item.levelMax then
+   return false,"profile_level_overlap"
+  end
+ end
+ local ok,record=pcall(copy,profile,0)
+ if not ok or type(record)~="table" then return false,"profile_copy_unavailable" end
+ local updated={}
+ for _,item in ipairs(list) do if item.id~=profile.id then updated[#updated+1]=item end end
+ updated[#updated+1]=record
+ registry[key]=updated
+ return true,profile.id
+end
 -- No profiles are registered by default; old Hunter sources remain unloaded.
