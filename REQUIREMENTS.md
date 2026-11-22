@@ -5617,6 +5617,9 @@ HP ниже порога и доступен камень; HP ниже поро�
 
 ### CC-01 — Игрок под контролем: оглушён, испуган, обездвижен, обезмолвлен, не может кастовать
 
+**Архитектурная актуализация CC-04:** проверка прерываемости вражеского каста и доступности собственного прерывания выполняется через общий `InterruptOpportunityObservation` и `InterruptSelection` (см. CC-04); не подменять прерывание эффектом снятия контроля CC-02 и не создавать отдельный сканер каста.
+
+
 **Архитектурная актуализация CC-03:** для root/snare и решения об освобождении использовать общий `PlayerControlObservation` CC-01 и `ControlBreakSelection` CC-02; CC-03 добавляет отдельную политику необходимости снятия замедления/обездвиживания, а не второй LoC reader или breaker catalog (см. CC-03).
 
 
@@ -5676,6 +5679,9 @@ HP ниже порога и доступен камень; HP ниже поро�
 
 
 ### CC-02 — Каким способом можно разорвать контроль (способность, предмет)
+
+**Архитектурная актуализация CC-04:** проверка прерываемости вражеского каста и доступности собственного прерывания выполняется через общий `InterruptOpportunityObservation` и `InterruptSelection` (см. CC-04); не подменять прерывание эффектом снятия контроля CC-02 и не создавать отдельный сканер каста.
+
 
 **Архитектурная актуализация CC-03:** для root/snare и решения об освобождении использовать общий `PlayerControlObservation` CC-01 и `ControlBreakSelection` CC-02; CC-03 добавляет отдельную политику необходимости снятия замедления/обездвиживания, а не второй LoC reader или breaker catalog (см. CC-03).
 
@@ -5785,5 +5791,62 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Различение root/snare и решение, стоит ли расходовать освобождающее действие, не подтверждены как единая возможность в проверенном Kord.
 
 **Архитектурные ссылки:** CC-01, CC-02, SP-14, IT-01–IT-03, IT-12–IT-14. Обратные ссылки внесены в CC-01 и CC-02 в этом коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### CC-04 — Прерывания: можно ли прервать цель, какая способность у меня есть, готова ли она
+
+**Раздел: 12. Состояния контроля и помехи. Приоритет: P1.**
+
+#### Требование
+
+Для текущей враждебной цели различать `CAST` и `CHANNEL`, достоверно определять `castActive`, `spellID`, `start/end`, `remaining`, `notInterruptible` и `interruptible=TRUE/FALSE/UNKNOWN`. Отдельно проверять, есть ли у игрока **изученное и применимое** прерывание, готово ли оно по кулдауну/зарядам/ресурсу, хватает ли дистанции, правильна ли цель, форма, оружие, школа/контроль игрока и может ли способность сработать до завершения каста. `UNKNOWN` не повышать до `READY`. Не путать прямое прерывание каста со stun/silence/knockback: альтернативное прекращение каста допустимо только при подтверждённой восприимчивости цели к соответствующей механике; для боссов нельзя автоматически считать стан рабочим interrupt.
+
+Выход: `targetCastStatus`, `castSpellID`, `castKind`, `interruptible`, `remainingSeconds` (если branchable), `candidateSpellID`, `interruptKind=DIRECT/CC_STOP`, `known`, `cooldownReady`, `inRange`, `eligible`, `decision=INTERRUPT/WAIT/BLOCKED/UNKNOWN`, `reason/source/revision`. Рекомендовать, а не выполнять protected cast. Если цель не кастует, не рекомендовать interrupt; если флаг прерываемости скрыт, не выдавать ложное подтверждение.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:17,24–26,33,36,53`: allowlist содержит `UnitCastingInfo`, `UnitChannelInfo`, spell cooldown, `IsUsableSpell`, `IsSpellInRange`, `C_SpellBook.IsSpellKnown` — базовые read-only источники присутствуют.
+- `KordRotation/Core/GameState.lua:162–163`: читает `UnitCastingInfo` и `UnitChannelInfo`; в проверенном фрагменте нет подтверждённого typed `interruptible` observation с безопасным разбором `notInterruptible` и времени для враждебного каста.
+- `KordRotation/Core/AbilityEligibility.lua:63–88,224–232,244–249`: есть проверка изученности, cooldown, range и каста игрока; **нет подтверждённого** отдельного выбора interrupt-кандидата по прерываемости вражеского каста.
+- `KordRotation/Core/EventBus.lua:27–29,39–42`: есть `UNIT_SPELLCAST_START/STOP/INTERRUPTED/FAILED/CHANNEL_START/STOP`, но для interrupt decision нужно отдельно подтвердить `UNIT_SPELLCAST_DELAYED/CHANNEL_UPDATE`, смену цели и правильную привязку unit/GUID.
+- `KordRotation/Core/RotationConditions.lua`: в проверенном файле не найдено готового `target.castInterruptible`/`player.interruptReady`/`Needs.interrupt` условия.
+- **Вывод:** базовые API уже доступны, но завершённый единый contract «цель прерываема + моя конкретная способность готова» не подтверждён. Не создавать дублирующий reader там, где достаточно расширить GameState.
+
+#### Сравнение семи референсов (проверенные Lua-файлы ZIP)
+
+1. **Sonah:** `Sonah/Classes/Mage.lua:319–330` использует `C.targetCasting` и `C.targetInterruptible` для Counterspell; `Sonah/Classes/Druid.lua:436–437` — Bash/Feral Charge. Перенять раздельные условия каста и прерываемости; CC-замена не равна direct interrupt.
+2. **JustAC:** `JustAC/Data/InterruptAbilities.lua` содержит каталог interrupt/CC возможностей; `JustAC/BlizzardAPI/StateHelpers.lua:113–149` читает `UnitCastingInfo`/`UnitChannelInfo` и важность заклинания. Основной ориентир по каталогу классовых вариантов и Forever-специфичным данным, но `important` не доказывает `interruptible`.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:4586` использует `UnitCastingInfo`; `ForeverAuras/SpellCooldown.lua` — отображение spell cooldown. UI/триггер сам по себе не подтверждает готовность interrupt.
+4. **MaxDps:** `MaxDps/Buttons.lua:1166–1188` проверяет `UnitCastingInfo`/`UnitChannelInfo` и отображает interruptible; `MaxDps/Cooldowns.lua:788` содержит `classInterrupts`. Не переносить без проверки неоднозначную трактовку `nil` и boolean.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Interrupts.lua` — специализированные правила interrupt; `ForeverRotation/Announce.lua:1–4,21–54` различает успешное прерывание по событиям. Использовать для диагностической проверки факта, не для предположения успеха до применения.
+6. **RotationGuide:** `RotationGuide/UI/Options.lua:82` упоминает общий interrupt toggle; универсальный typed target-cast+player-ready механизм в просмотренных совпадениях не подтверждён.
+7. **RotationMaster:** `RotationMaster/Conditions/casting.lua:359–384` содержит `CAST_INTERRUPTABLE` и использует кэшированное cast observation; это основной референс для typed `interruptible` с `nil/reason` при недоступности флага, а не ложным `false`.
+
+#### Выбранный путь Kord
+
+Расширить имеющийся cast observation в GameState до **`InterruptOpportunityObservation`**, используя один `UnitCastingInfo/UnitChannelInfo` reader для target/focus/nameplate по доступности и безопасной идентификации GUID. Нормализовать **разные tuple** для cast/channel и проверить сигнатуры на Forever: `notInterruptible`, spellID, start/end, secret-значения. В случае `notInterruptible=true` direct interrupt BLOCKED; при `false` подтверждённо допустим; при `nil`/secret — UNKNOWN. При отсутствующем касте и достоверном источнике — WAIT. Не переносить устаревший каст между сменами целей/GUID.
+
+`InterruptSelection` берёт кандидатов из проверенного Forever-specific каталога (JustAC/MaxDps/классовые Sonah), различая `DIRECT_INTERRUPT`, `SILENCE`, `STUN/CC_STOP`. Для каждого проверяет spell known/ранг, доступность для класса/формы/талантов, ресурс, cooldown/charges/GCD, дальность, LoS/позицию только при достоверном API, собственные CC (CC-01), school lockout, ограничения цели и ожидаемое время достижения/применения. Не считать spell `IsUsableSpell` единственным доказательством, что прерывание сработает. При нескольких готовых вариантах выбирать по пользовательской политике (сохранение длинного cooldown, предпочтение direct interrupt), не дублируя итоговый `AbilityEligibility`.
+
+Для PvE/PvP важность и тайминг прерывания — отдельные настраиваемые условия, **не часть** бинарного факта `interruptible`; по умолчанию не выдавать `INTERRUPT`, если время/флаг недоступны и нет подтверждённого безопасного сценария. EventBus: cast/channel start/stop/delayed/update, смена цели, cooldown/charges, spellbook/таланты/форма, CC-01, GUID revisions, ограниченный heartbeat до конца каста; lazy `Needs.interruptOpportunity`, per-evaluation memo. Диагностика DevTools: target GUID, cast ID/type, notInterruptible, remaining (если допустимо), список кандидатов и причины отказа, источник UNKNOWN, event revision.
+
+#### Требуемые изменения
+
+1. Расширить GameState единым `InterruptOpportunityObservation` для cast/channel и `notInterruptible` с tri-state/secret-safe и корректной идентификацией цели.
+2. Верифицировать Forever сигнатуры `UnitCastingInfo`/`UnitChannelInfo`, включая разницу индексов, время, spellID, protected/secret поля; не угадывать `nil`.
+3. Ввести проверенный `InterruptAbilityCatalog` по классам/формам/талантам/рангам с различением прямого interrupt и CC-stop.
+4. Реализовать `InterruptSelection` с reuse spell known, cooldown/charges, resource, range, target, CC-01 и итогового `AbilityEligibility`.
+5. Добавить `RotationConditions` условия `target.casting`, `target.castInterruptible`, `player.interruptAvailable`, `Needs.interruptOpportunity`; не создавать второй cooldown/cast scanner.
+6. Добавить EventBus invalidation для подтверждённых Forever cast/channel update, смены target/GUID, spellbook/формы/спека и cooldown/charges.
+7. DevTools reasons: `target_not_casting`, `target_cast_unknown`, `target_not_interruptible`, `interrupt_spell_unknown`, `interrupt_not_known`, `interrupt_cooldown`, `interrupt_out_of_range`, `interrupt_player_controlled`, `interrupt_too_late`, `interrupt_ready`; без попытки раскрыть secret.
+8. Тесты: обычный каст/канал, некастующая цель, interruptible true/false/UNKNOWN, cast/channel tuple, цель сменена, фокус, дальность/LoS, learned/unlearned/rank, cooldown/GCD/charges, silence/stun иммунитет, босс, own stun/silence, каст почти завершён, 2+ кандидата, nil/secret, обновление каста и отсутствие ложного READY/protected cast.
+
+#### Вердикт
+
+**НЕ ПОДТВЕРЖДЕНО КАК ПОЛНАЯ УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** Базовые cast и spell-API уже есть, но единый безопасный выбор готового interrupt под конкретный каст не подтверждён.
+
+**Архитектурные ссылки:** CC-01, CC-02, SP-01, SP-14, EventBus/AbilityEligibility; обратные ссылки внесены в CC-01 и CC-02.
 
 **Изменения Lua:** отсутствуют. Только документация.
