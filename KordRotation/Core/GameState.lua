@@ -419,6 +419,22 @@ function S:ReadSignal(field,spellID,snapshot)
             r.reason=="api_call_failed") then
             return unknown("aura_lookup_unverified")
         end
+        -- ForeverAuras/BuffTrigger2.lua SafeForEachAura: a generic
+        -- targeted spell-ID query can still return an aura when the
+        -- player-specific lookup did not. Verify the exact ID and flag.
+        if unit=="player" then
+            local generic=api:Read("C_UnitAuras.GetUnitAuraBySpellID",
+                "table","player",spellID)
+            if generic.status=="READY" then
+                local sid=api:ReadField(generic.value,"spellId","number")
+                local help=api:ReadField(generic.value,"isHelpful","boolean")
+                if sid.status=="READY" and sid.value==spellID
+                    and help.status=="READY" and help.value==true then
+                    return {status="READY",value=true,
+                        source="GameState.ReadSignal.aura_unit_id"}
+                end
+            end
+        end
         -- Sonah/Core/Atoms/Auras.lua ReadApi: try an address-based
         -- localized spell-name lookup before any list enumeration.
         -- This is a documented third lookup, not a fabricated aura scan.
