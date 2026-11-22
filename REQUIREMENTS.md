@@ -362,6 +362,9 @@
 ## PL-03 — Здоровье игрока: текущее, максимальное, процент
 
 
+**Архитектурная актуализация EN-06:** **См. EN-06: reuse canonical player/target UnitHealthObservation, preserving secret-safe exact vs threshold health distinctions.**
+
+
 **Архитектурная актуализация TG-06:** **См. TG-06: health observation and history use shared UnitHealthObservation; estimated time-to-die is a separate derived metric, not a second health provider.**
 
 
@@ -2162,6 +2165,9 @@
 ### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
 
 
+**Архитектурная актуализация EN-06:** **См. EN-06: multi-dot candidate selection consumes per-GUID health/TTD and aura remaining, without duplicating enemy identity, health, or TTD providers.**
+
+
 **Архитектурная актуализация EN-04:** **См. EN-04: multi-target aura index supplies per-GUID CC aura observations; no separate AoE aura scanner.**
 
 
@@ -2466,6 +2472,9 @@
 ### TG-02 — Здоровье цели: процент, текущее (если не защищено)
 
 
+**Архитектурная актуализация EN-06:** **См. EN-06: use shared UnitHealthObservation(unit) for every GUID alias, not a separate multi-dot health reader.**
+
+
 **Архитектурная актуализация TG-06:** **См. TG-06: TTD consumes only validated TG-02 health observations, with no second secret-health reader; curve threshold does not supply exact numeric history.**
 
 **Раздел: 5. Цель. Приоритет: P0.**
@@ -2675,6 +2684,9 @@
 
 
 ### TG-06 — Время жизни цели (TTD): оценка с границей уверенности, nil если мало данных
+
+
+**Архитектурная актуализация EN-06:** **См. EN-06: generalize one bounded GUID-keyed TTD history to all observed enemies; no per-class or separate multi-dot estimator.**
 
 
 **Архитектурная актуализация EN-01:** **См. EN-01: per-enemy health/TTD history can share GUID indexing, but enemy count does not imply reliable TTD.**
@@ -3002,6 +3014,9 @@
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
 
+**Архитектурная актуализация EN-06:** **См. EN-06: multi-enemy health/TTD consumes the same bounded observed enemy registry and visibility coverage; no second nameplate scanner.**
+
+
 **Архитектурная актуализация EN-05:** **См. EN-05: auto AoE threshold consumes the same proven enemy count/coverage; do not add an independent counter or treat lower bound as exact.**
 
 
@@ -3064,6 +3079,9 @@
 ### EN-02 — Число врагов, находящихся в бою с группой
 
 
+**Архитектурная актуализация EN-06:** **См. EN-06: optional engaged-with-group filter uses EN-02 evidence on the same enemy GUID, not combat status alone.**
+
+
 **Архитектурная актуализация EN-05:** **См. EN-05: engaged-with-group count is a separately selectable evidence filter for AoE policy, not automatically interchangeable with nearby count.**
 
 
@@ -3122,6 +3140,9 @@
 
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+
+**Архитектурная актуализация EN-06:** **См. EN-06: health/TTD histories are keyed by canonical UnitIdentityIndex GUID, never by nameplate token or NPC name; alias changes do not duplicate samples.**
 
 
 **Архитектурная актуализация EN-05:** **См. EN-05: threshold count must use deduplicated canonical GUID identity before comparison.**
@@ -3291,5 +3312,61 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Режимы `auto/single/aoe` и UI уже есть, но порог N и достоверный auto-switch отсутствуют.
 
 **Архитектурные ссылки:** EN-01, EN-02, EN-03, EN-04, SP-14. Обратные ссылки внесены в старые задачи.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-06 — Здоровье и TTD по каждому врагу в списке (для выбора мультидота)
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P2.**
+
+#### Требование
+
+Для каждого **подтверждённого уникального enemyGUID** в общем наблюдаемом списке получать отдельный `UnitHealthObservation` (exact current/max/percent, если plain; пороговый percent отдельно) и `TTDObservation` (estimate/range/confidence/status/reason). `nil/UNKNOWN` при недостаточной истории, secret values, stale aliases или неопределённом DPS. Не выводить TTD из имени, уровня, одного процента здоровья или чужого GUID. Multi-DoT выбор должен учитывать время окупаемости эффекта, aura remaining, eligibility, безопасную достижимость цели и наличие надёжного адресуемого получателя; не пытаться автоматически переключать защищённые цели.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameState.lua:64–76,120–121`: `cleanHealth(unit)` читает `UnitHealth/UnitHealthMax` и строит snapshot; это применимо к произвольному unit token, но фактический snapshot не ведёт историю всех наблюдаемых enemyGUID.
+- `KordRotation/Core/GameState.lua:785–790`, `KordRotation/Core/GameAPI.lua:247–254`: `ReadHealthPercent(unit,curve)` доступен как отдельный защищённый пороговый/curve источник; не подменять им точное число здоровья.
+- `KordRotation/Core/RotationConditions.lua:72–73`: объявлены `target.ttd` при `needs.ttd` и `enemy.count` при `needs.enemyCount`, но нет `enemy[GUID].ttd` и `enemy[GUID].health` provider.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_HEALTH/UNIT_MAXHEALTH` invalidates health; нет доказанной per-GUID time-series для всех nameplates.
+- `KordRotation/Core/GameAPI.lua:10–11,56`: разрешены `UnitGUID`, health APIs и `C_NamePlate.GetNamePlates`; allowlist не означает доступность secret health или готовую реализацию.
+
+#### Сравнение семи референсов (Lua ZIP)
+
+1. **Sonah:** `Core/Atoms/Units.lua:722–775` описывает target/nameplate health estimator с `plateEst`, `UNIT_COMBAT`, seed/learned max и secret-safe fallback. Полезный ориентир **per-enemy history**, но предположение `fresh mob starts at 100%` нельзя автоматически объявлять достоверным фактом; индекс nameplate token необходимо заменить на GUID и проверять события.
+2. **JustAC:** `JustAC.lua:696` регистрирует `NAME_PLATE_UNIT_ADDED`, `UI/UINameplateOverlay.lua:1163` обслуживает lifecycle; `DefensiveEngine.lua:611` отмечает secret `UnitHealth("pet")`. Универсальный per-enemy TTD в проверенных местах не подтверждён.
+3. **ForeverAuras:** `Prototypes.lua:3386,3394` содержит `UnitHealth(unit)` и `UnitHealthPercent(...CurveConstants.ScaleTo100)` как источники, `GenericTrigger.lua:1402,1499` — nameplate events. Готовый TTD по каждому enemyGUID не подтверждён.
+4. **MaxDps:** `MaxDps/TimeToDie.lua:42,69,118` реализует time-to-die tracking/estimation; `MaxDps_Mage/Specialization/TWW/Frost.lua:576` потребляет `fd.timeToDie`. Не переносить retail предположения и недостоверный default `500` как факт TTD.
+5. **ForeverRotation:** `Engine.lua:991` слушает nameplate additions, `Display.lua:203–227` обсуждает curve-based `UnitHealthPercent`; не подтверждён общий per-GUID TTD provider.
+6. **RotationGuide:** `Core/Display.lua:203` применяет `UnitHealthPercent("player",true,HealCurve())`; per-enemy TTD в проверенных местах не подтверждён.
+7. **RotationMaster:** `Functions/forecast.lua:3–5,19–40` проверяет health-history forecast и возвращает nil/reason при недоступных/некорректных числах; полезная fail-closed модель TTD, но не готовое доказательство per-enemy TTD на Forever.
+
+#### Каноническая архитектура
+
+**Один `UnitIdentityIndex` EN-03 + один `ObservedEnemyIndex` EN-01/02 + общие `UnitHealthObservation(unit)` TG-02/PL-03 и `TTDObservation(GUID)` TG-06.** `MultiDotCandidateObservation(enemyGUID, spellID)` — только производное решение, не новый scanner или estimator. На каждую подтверждённую GUID-сущность хранить ограниченную историю `{time, health evidence, max/percent precision, damage/heal evidence, confidence, provenance, revision}`. Alias nameplateN/target/focus/mouseover может меняться, но GUID history не смешивать; при recycled token, death, evade, heal reset, смене encounter, stale sample — инвалидировать/пересчитать. Число записей, период и TTL bounded; lazy `Needs.enemyHealth/Needs.enemyTTD`.
+
+Оценка TTD допускается только по достаточному набору сопоставимых наблюдений и проверенному снижению здоровья; учитывать хил, шум, неполную видимость и диапазон ошибки. `TTD=UNKNOWN` при secret-only threshold, коротком окне, нестабильной скорости, невалидном максимуме или исчезнувшем GUID. Отдельные проценты и exact values не смешивать без доказанного преобразования.
+
+Для мультидота кандидат должен иметь достоверный recipient/binding (TG-11), проверенную дальность (TG-09), ауру и остаток (AU-06/AU-09), пригодность способности (SP-14) и достаточную ожидаемую продолжительность жизни; unknown TTD не трактовать как бесконечное время. Политика выбора при UNKNOWN должна быть явной, консервативной и не нарушать PR-01/02.
+
+#### Требуемые изменения
+
+1. Использовать единый GUID-index EN-03 и общий EN-01/02 registry; запретить отдельный nameplate scan для multi-dot.
+2. Расширить `UnitHealthObservation` на доступные enemy unit tokens с проверкой GUID до/после каждого snapshot и secret-safe semantics.
+3. Расширить общий TG-06 `TTDObservation` до bounded GUID-keyed history для нескольких врагов; никакого отдельного `MultiDotTTD`.
+4. Разделять exact health, процент и threshold curve; неизвестные exact значения не вычислять из кривой.
+5. История должна учитывать heal/damage, reset, death, evade, recycled nameplates, исчезновение алиаса, неполный combat log.
+6. Дать `MultiDotCandidateObservation` только подтверждённые/оценочные факты с provenance/confidence и причины UNKNOWN.
+7. Не рекомендовать мультидот на неадресуемую цель; не выполнять защищённые target switch/cast действия.
+8. Инвалидировать по `UNIT_HEALTH`, `UNIT_MAXHEALTH`, nameplate lifecycle, GUID changes, aura revisions, bounded heartbeat.
+9. Диагностика `enemy_health_secret`, `enemy_health_unknown`, `enemy_ttd_insufficient_history`, `enemy_ttd_unstable_rate`, `enemy_ttd_stale`, `enemy_guid_recycled`, `multidot_recipient_unknown`.
+10. Тесты: две одинаковые NPC names с разными GUID, один GUID в нескольких tokens, 0/1/many enemies, stable/unstable damage, heal, immune, reset, dead, new pull, threshold-only secret, disappearing nameplate, aura refresh, unaddressable unit, low TTD vs DoT duration.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord умеет читать здоровье отдельных юнитов и имеет сигнальное имя TTD, но не ведёт достоверную per-GUID health/TTD history для всех врагов.
+
+**Архитектурные ссылки:** EN-01, EN-02, EN-03, TG-02, PL-03, TG-06, AU-06. Обратные ссылки добавлены в предыдущие требования.
 
 **Изменения Lua:** отсутствуют. Только документация.
