@@ -5480,6 +5480,8 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 
 **Раздел:** 11. Предметы, зелья, камни здоровья, расходники. **Статус:** AUDITED FROM SOURCE ARCHIVES; REQUIREMENT RECORDED; LUA NOT IMPLEMENTED; CLIENT/CI NOT RUN.
 
+**Ретроактивное уточнение CL-04:** CL-04: яды разбойника и их обновление должны использовать общий WeaponEnchantProvider с mainhand/offhand, remaining/charges, spell/item rank, а не отдельный сканер Rogue.
+
 ### Требование и результат
 
 Перед рекомендацией действия движок должен определить, требуются ли **обязательные** расходуемые компоненты и хватает ли их в действительности: реагенты для заклинаний, боеприпасы совместимого типа для дальнобойного оружия, и только действительно обязательные символы/руны/модификаторы. Разделить `NOT_REQUIRED`, `AVAILABLE`, `MISSING`, `UNKNOWN` в наблюдении; на уровне eligibility `READY/BLOCKED/UNKNOWN`. `UNKNOWN` нельзя повышать до `READY`. Установленный символ, изменяющий эффект, **не является расходуемым реагентом** и его отсутствие само по себе не запрещает обычную версию заклинания.
@@ -6485,6 +6487,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-07:** QA-07 задаёт обязательные `UNKNOWN→STOP` и fail-closed сценарии с отсутствующими/secret фактами для каждого профиля; `UNKNOWN` не допускается маскировать как WAIT или BLOCKED ради совпадения.
 
+**Ретроактивное уточнение CL-04:** CL-04: UNKNOWN combo points, energy timing, stealth или interruptibility должны приводить к STOP для зависящего правила, а не ложному finisher/Kick.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6569,6 +6573,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-02:** CL-02: паладинские данные и действия объявляются через версионированный профильный контракт; никаких прямых Unit*/C_* API в профиле.
 
 **Ретроактивное уточнение CL-03:** CL-03: Hunter Needs/Spells/Rules расширяются только версионированно; legacy BM.Next(s,cfg) не v1 profile и не читает WoW API напрямую в новой архитектуре.
+
+**Ретроактивное уточнение CL-04:** CL-04: Rogue Needs и action policies расширяются версионированно; combo, energy tick, poison и stealth данные поставляют только общие providers.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8534,6 +8540,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-03:** CL-03: обязательно подтвердить в WoW Forever trap shared cooldown, ranged swing timing, ammo/equipment, pet happiness, dead-zone range и Feign Death threat outcomes; неподтверждённые API не объявлять реализованными.
 
+**Ретроактивное уточнение CL-04:** CL-04: подтвердить на WoW Forever combo power/target binding, energy tick timing, stealth detection, weapon enchant remaining/charges, interruptible casts и Gouge cast-break semantics.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8764,6 +8772,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-03:** CL-03: отдельные сценарии Hunter для аспектов, trap shared CD, pet state/commands/heal/revive/happiness, ammo, ranged swing/clipping, dead zone, Hunter's Mark, Feign Death и main/defensive routing.
 
+**Ретроактивное уточнение CL-04:** CL-04: каждый Rogue профиль обязан иметь scenarios combo points target binding, finisher, stealth, poison MH/OH, energy ticks, Kick/Gouge, Vanish/Evasion/Feint и cast disruption.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -8873,6 +8883,8 @@ CL-01 описывает **данные, условия и действия**, �
 **Ретроактивное уточнение CL-02:** CL-02: StanceStateProvider/ауры паладина используют общий переключаемый режим состояния, но паладинская aura не считается warrior stance; общие AuraStateProvider, ResourceStateProvider и AbilityEligibility расширяются без дублирования.
 
 **Ретроактивное уточнение CL-03:** CL-03: Warrior next-swing melee queue и Hunter ranged Auto Shot clipping — разные состояния; общий SwingStateProvider должен типизировать melee/ranged, не переносить Hunter autoShot.swing на Warrior.
+
+**Ретроактивное уточнение CL-04:** CL-04: Rogue energy ticks не равны Warrior rage; общий ResourceStateProvider типизирует ENERGY/RAGE и проверяет разные источники.
 
 ### CL-02 — Паладин: печати и суд, ауры, благословения, руки, Divine Shield, Consecration, воскрешение, снятие яда и болезни
 
@@ -9083,3 +9095,106 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО В ИСТОРИЧЕСКОМ HUNTER И ОБЩИХ ПРИМИТИВАХ / ПОЛНЫЙ CL-03 НЕ РЕАЛИЗОВАН / P0.** Исторический BM содержит большинство именованных механик, но не зарегистрирован как v1, отсутствует доказанное сквозное поведение shared trap CD, pet commands/happiness, ammo, ranged swing clipping и dead-zone safety; известные UI/target регрессии не признаны исправленными. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP без изменений.
 
 **Ретроактивные ссылки:** CL-01, CL-02, AC-03, AC-05, AC-06, QA-07, QA-04, EN-A1.
+
+**Ретроактивное уточнение CL-04:** CL-04: Rogue weapon poisons используют общий WeaponEnchantProvider/EquipmentProvider, но не Hunter ammo; interrupt/cast providers общие, а Rogue energy ticks отличаются от Auto Shot swing.
+
+### CL-04 — Разбойник: очки комбо, финишеры, скрытность, яды, энергия и такты, прерывания, уход и срыв каста
+
+**Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к данным, условиям и действиям, **не готовые приоритеты** Assassination/Combat/Subtlety, Leveling/60/PVE/PVP. Ротации — отдельные утверждённые профили; новых Rogue профилей в реестре нет.
+
+#### Конкретные механики, способности и условия
+
+| Механика | Способности / сущности | Обязательные факты и безопасная семантика |
+|---|---|---|
+| Очки комбо | Combo Points; Sinister Strike, Backstab, Hemorrhage, Mutilate (если доступны в версии клиента) | current/max, **привязка к конкретной цели**, изменение/сброс при смене target, тип ресурса, UNKNOWN vs 0, события revision; нельзя тратить «старые» очки другой цели |
+| Финишеры | Eviscerate, Slice and Dice, Rupture, Kidney Shot, Envenom (при подтверждении) | minimum/desired combo, cost, target, buff/debuff duration, spell learned/rank, range, immunity, energy, GCD; окончательный READY только из AbilityEligibility |
+| Скрытность | Stealth, Vanish, Shadow Dance (только если существует), opener: Cheap Shot, Garrote, Ambush, Sap | stealth confirmed/UNKNOWN, detection vs aura, combat, movement, target, behind-target requirement if proven, opener restrictions, post-Vanish state; не считать Vanish мгновенно гарантировавшим Stealth |
+| Яды и обновление | Instant Poison, Deadly Poison, Crippling Poison, Mind-numbing Poison, Wound Poison, Anesthetic Poison (по клиенту) | MH/OH separately, enchant family/ID, remaining, charges, inventory/usable item, target debuff stacks/ownership where applicable, refresh threshold, combat/OOC policy; отсутствие данных не означает отсутствие яда |
+| Энергия и такты | Energy, regeneration ticks, Adrenaline Rush, Thistle Tea (если есть) | current/max, spell cost, reserve, tick phase/period only if verified, time-to-next-tick, regen modifiers, fake clock; **не выдумывать 2-секундный tick** без QA-04, WAIT только при доказанном выгодном ожидании |
+| Прерывание | Kick, Gouge, Kidney Shot (контроль, не всегда полноценный interrupt), Blind (если применимо) | target cast/channel, interruptibility, cast remaining, target range, cooldown, energy, immunity, latency, positional requirements; `Kick` и control-based cast break — **разные категории** |
+| Уход / защита | Vanish, Evasion, Feint, Sprint, Preparation, Cloak of Shadows (если подтверждён) | threat/aggro, HP, combat, danger, cooldown, stealth availability, target, defensive channel, immunity/cleanse semantics only if confirmed; Vanish не равен гарантированному сбросу агро |
+| Срыв каста | Gouge, Kidney Shot, Cheap Shot, Blind, Kick | distinguish `INTERRUPT` from `CAST_DISRUPTION_BY_CC`; проверить, что цель подвержена CC, каст действительно прерывается, DR/immunity, PvE/PvP and boss restrictions; при неизвестной подверженности не выдавать гарантированную остановку |
+
+Названия — кандидаты в проверенный каталог, **не утверждение** наличия конкретного spellID/rank или механики в WoW Forever. Термин «уход» охватывает defensive escape, Vanish, threat reduction; приоритеты и thresholds принадлежат профилю. Не выполнять защищённые игровые действия автоматически.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameState.lua` читает `UnitPowerType`, `UnitPower`, `UnitPowerMax`, `target` и combat, но не доказана сквозная модель `comboPoints(target)` с target revision и energy tick phase.
+- `KordRotation/Core/RotationConditions.lua` предоставляет `resources.percent` и узкий `Needs`; `autoShot.swing` относится к Hunter и **не является** Rogue energy tick. Нет подтверждённых `combo/stealth/weaponPoison/energyTick` typed facts.
+- `KordRotation/Core/AbilityEligibility.lua` проверяет cost, cast, target/range/cooldown, но не доказывает финальные Rogue gates для finisher combo, stealth-only opener, MH/OH poison и control-based cast disruption.
+- `docs/rotation/Canonical_API_Matrix.md` содержит #47 weapon enchant, #49 combo points, #50 energy, #55 recent cast, #56 cast queue, #60 stealth, #62 interruptibility. Эти строки задают **кандидаты API**, а не подтверждённое поведение WoW Forever.
+- `docs/rotation/Profile_Registry.md`: только шесть Hunter PvE исходников, Rogue profiles отсутствуют. Не объявлять готовые Rogue QA-07 cases или CLIENT PASS.
+
+#### Сравнение семи референсов
+
+| Референс | Что проверять при реализации | Ограничение |
+|---|---|---|
+| Sonah | Rogue class conditions, combo target, stealth и energy | Не переносить priority без утверждения |
+| JustAC | Forever rotations, target/cast helpers, defensive behavior | SimC и Forever могут различаться |
+| ForeverAuras | Weapon enchant/aura/proc duration, secret-safe observations | Aura trigger не доказывает MH/OH poison refresh |
+| MaxDps | Rogue specialization logic, energy/finisher checks | Retail semantics не подтверждают Forever |
+| ForeverRotation | Buffs/signals, Rogue rule definitions | Сигнал не заменяет exact combo target |
+| RotationGuide | API/state и Rogue rule structure | Нужны совпадающие snapshots |
+| RotationMaster | Conditions/replay/forecast для combo/energy/stealth | Forecast не является точным API фактом |
+
+**Доказательная граница:** это архитектурные направления сверки семи предоставленных ZIP, а не утверждение о наличии конкретных функций; полного построчного ZIP-аудита в данном проходе **не было**. Нельзя объявлять чужие реализации клиентским oracle.
+
+#### Выбранная архитектура (универсальные провайдеры)
+
+1. **`ComboPointStateProvider`**: typed current/max, `targetIdentity`/revision, reset/move semantics только после проверки клиента, fail-closed при смене цели; переиспользуется другими классами, если combo resource применим.
+2. **`ResourceStateProvider`**: typed ENERGY, current/max, costs, reserve; `ResourceTickProvider` только с подтверждённым timing, fake clock и event invalidation. Общий с CL-01 Rage/CL-02 Mana, но без смешения единиц.
+3. **`StealthStateProvider`**: verified stealth and transitions, opener requirements, Vanish pending/confirmed, immunity and target positioning facts where supported; общий с формами/невидимостью других классов.
+4. **`WeaponEnchantProvider`**: MH/OH enchant, family, remaining/charges, item inventory/usable, applied poison; **канонический общий модуль IT-10**, не Rogue-only scanner.
+5. **`InterruptStateProvider`**: cast/channel/interruptible, cast remaining and Kick eligibility; **`CastDisruptionProvider`** отдельно оценивает CC break, DR/immunity, target validity; не маркировать Gouge гарантированным interrupt.
+6. **`ThreatStateProvider`**: defensive Vanish/Feint/Evasion, aggro/HP/escape, main vs defensive; общий с Hunter Feign Death CL-03.
+7. **`AbilityEligibility`**: единственный final READY, typed combo/energy/stealth/poison/interrupt/CC gates, spellbook/rank/range/cooldown; профиль определяет приоритет, но не подтверждает пригодность.
+8. **`Profile_Contract`**: новые `Needs`/условия/действия только через versioned schema, QA-06 static purity, lazy reads, UNKNOWN→STOP. Не создавать отдельный Rogue engine.
+
+#### Сценарные таблицы QA-07 (спецификация, не PASS)
+
+| ID | Состояние | Ожидаемое решение |
+|---|---|---|
+| `ROG-COMBO-01` | 5 combo на текущей цели, finisher eligible | finisher по утверждённому профилю |
+| `ROG-COMBO-02` | combo count UNKNOWN | STOP для обязательного finisher rule |
+| `ROG-COMBO-03` | target сменился, старые combo stale | не рекомендовать finisher по старым очкам |
+| `ROG-COMBO-04` | combo=0, finisher требует очки | BLOCKED |
+| `ROG-STEALTH-01` | Stealth confirmed, opener eligible | opener по утверждённому правилу |
+| `ROG-STEALTH-02` | stealth UNKNOWN | STOP для stealth-only opener |
+| `ROG-STEALTH-03` | Vanish recommended, state not yet confirmed | не считать персонажа скрытым до обновления |
+| `ROG-POISON-01` | MH poison missing, OH present | обновить только MH при eligible item |
+| `ROG-POISON-02` | OH enchant remaining UNKNOWN | не перезаписывать вслепую |
+| `ROG-POISON-03` | poison item absent | BLOCKED, не ложный READY |
+| `ROG-ENERGY-01` | energy меньше стоимости+резерва | BLOCKED |
+| `ROG-ENERGY-02` | tick phase verified, выгодно подождать | WAIT только по подтверждённому правилу |
+| `ROG-ENERGY-03` | tick phase UNKNOWN | не выдумывать таймер, STOP для зависимого правила |
+| `ROG-KICK-01` | interruptible cast, Kick ready/in range | READY при всех подтверждённых gates |
+| `ROG-KICK-02` | cast interruptibility UNKNOWN | STOP для interrupt rule |
+| `ROG-GOUGE-01` | cast active, Gouge available, target CC-susceptible | отдельное cast disruption, не `interrupt=true` |
+| `ROG-GOUGE-02` | target immune/DR unknown | не гарантировать срыв каста |
+| `ROG-VANISH-01` | threat high, defensive eligible | defensive Vanish только по утверждённому порогу |
+| `ROG-VANISH-02` | Vanish cast, stealth not yet confirmed | не запускать stealth-only opener |
+| `ROG-REVISION-01` | target/energy/weapon/stealth changed | invalidate stale snapshot и reevaluate |
+| `ROG-CHANNEL-01` | defensive escape eligible, main DPS independent | не подменять main защитной рекомендацией вопреки настройке |
+
+Каждый case привязывается к конкретному `profileID`, spellID/rank, evidence, priority, channel, reason, read counts, `NOT_RUN` до запуска. Никаких фиктивных Rogue профилей или MOCK/CLIENT PASS.
+
+#### Требуемые работы
+
+1. Подтвердить Rogue spell/rank/poison catalog и ограничения в WoW Forever; QA-04 для combo, energy ticks, stealth, weapon enchant, cast/interrupt.
+2. Реализовать ComboPointStateProvider с target identity и event revisions.
+3. Подключить typed ENERGY и ResourceTickProvider только при доказанном источнике timing; WAIT без подтверждения запрещён.
+4. Реализовать StealthStateProvider и подтверждение Vanish transitions.
+5. Подключить MH/OH poisons через общий WeaponEnchantProvider **IT-10**, включая remaining/charges/inventory.
+6. Подключить финальные combo/stealth/cost/target/range gates через AbilityEligibility.
+7. Реализовать InterruptStateProvider для Kick и CastDisruptionProvider для Gouge/Kidney Shot/Blind с DR/immunity.
+8. Добавить ThreatStateProvider и defensive routing для Vanish/Feint/Evasion, не выдумывать threat reset.
+9. Добавить 21+ QA-07 scenarios для каждого реально созданного Rogue профиля, проверять смену цели и stale combo.
+10. Интегрировать QA-06/QA-05, обновить реестры и диагностику; тесты Lua 5.1 mock, затем WoW Forever; без автозапуска GitHub Actions.
+
+**Диагностика:** `rogue_combo_unknown`, `rogue_combo_target_stale`, `rogue_finisher_insufficient_combo`, `rogue_stealth_unknown`, `rogue_vanish_pending`, `rogue_poison_mh_missing`, `rogue_poison_oh_unknown`, `rogue_energy_insufficient`, `rogue_energy_tick_unknown`, `rogue_kick_cast_unknown`, `rogue_kick_not_interruptible`, `rogue_cast_disruption_immunity_unknown`, `rogue_defensive_threat_unknown`, `rogue_snapshot_stale`.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / ROGUE-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Есть ресурсы, target, cooldown/cast Eligibility, но не доказаны combo target binding, stealth, MH/OH poison, energy ticks и CC cast disruption. Rogue профили отсутствуют. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись, только документация.
+
+**Ретроактивные ссылки:** CL-01, CL-03, IT-10, QA-07, QA-04, EN-A1, AC-07.

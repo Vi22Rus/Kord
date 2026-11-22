@@ -1,3 +1,14 @@
+## KR-20261122-020 — аудит CL-04: Rogue combo, stealth, poison, energy ticks, interrupt and escape
+- Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-020`.
+- Тип: docs / CL-04 / P0; `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
+- Контекст: Rogue нужны combo points на конкретной цели, финишеры, stealth, MH/OH poisons, energy/ticks, Kick, defensive Vanish и отдельный CC cast disruption. Общие ресурсы/Eligibility не покрывают все условия.
+- Причина: отсутствуют подтверждённые combo target binding, energy tick, stealth transition, weapon enchant/poison и CC cast disruption contracts; Rogue профилей нет.
+- Решение: общие ComboPointState, ResourceTick, StealthState, WeaponEnchant (IT-10), InterruptState, CastDisruption, ThreatState providers, 21 QA-07 сценарий и fail-closed UNKNOWN.
+- Семь ZIP: перечислены направления архитектурной сверки; полного построчного аудита в этом проходе не было.
+- Ретроактивные ссылки: CL-01, CL-03, IT-10, QA-07, QA-04, EN-A1, AC-07.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-04 документирован, реализация и клиентская проверка не выполнялись.
+
 ## KR-20261122-019 — аудит CL-03: Hunter aspects, traps, pet, ammo, Auto Shot and Feign Death
 - Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-019`.
 - Тип: docs / CL-03 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
