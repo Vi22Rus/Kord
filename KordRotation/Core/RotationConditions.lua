@@ -100,6 +100,7 @@ local function value(ctx,field,id)
   if #ctx.observations<256 then
    ctx.observations[#ctx.observations+1]={field=field,
     status=cached~=nil and "READY" or "UNKNOWN",
+    booleanValue=type(cached)=="boolean" and cached or nil,
     reason=cached==nil and
      ((ctx.reasonCache or {})[key] or "signal_unverified") or "none"}
   end
@@ -136,6 +137,7 @@ local function value(ctx,field,id)
  if #ctx.observations<256 then
   ctx.observations[#ctx.observations+1]={field=field,
     status=answer~=nil and "READY" or "UNKNOWN",
+    booleanValue=type(answer)=="boolean" and answer or nil,
     reason=answer==nil and (failure or "signal_unverified") or "none"}
  end
  return answer
@@ -332,7 +334,7 @@ function C:ObservationsSince(S,start)
  for i=(start or 0)+1,#(ctx.observations or {}) do
   local item=ctx.observations[i]
   result[#result+1]={field=item.field,status=item.status,
-    reason=item.reason}
+    reason=item.reason,booleanValue=item.booleanValue}
  end
  return result
 end
