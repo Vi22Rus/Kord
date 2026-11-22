@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 must not mistake player aura absence for weapon coating absence; use distinct WeaponTemporaryEnchantObservation.**
+
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 extends the universal aura reader to player/friendly harmful auras, remaining, periodic damage and source-confidence; do not duplicate scanner.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 must reuse universal aura presence/remaining observation and its secret-safe UNKNOWN, not introduce a parallel aura scanner.**
@@ -1589,6 +1591,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 refresh decision is advisory; only AbilityEligibility can grant final READY.**
 
 **Архитектурная актуализация IT-09:** **См. IT-09: IT-09 need and food compatibility never grant final READY; AbilityEligibility remains sole final READY gate.**
 
@@ -4365,6 +4369,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 weapon coatings and pet action autocast are unrelated despite similar toggle/enchant terminology; no duplicate pet mechanics.**
+
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 item inventory counts must remain distinct from pet action slots/autocast and pet spell readiness.**
 
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 player auto-repeat status is distinct from PE-04 pet autocast enabled; share safe spell API patterns, not state.**
@@ -4777,6 +4783,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 reuses IT-01 ItemFamilyCatalog and bag count for poisons/oils/stones; no duplicate inventory provider.**
+
 **Архитектурная актуализация IT-09:** **См. IT-09: IT-09 uses the same bag-only InventoryObservation and ItemFamilyCatalog for FOOD/DRINK/COMBO/PET_FOOD; no parallel bag scanner.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-01 bandage family and bag-only counts, not another inventory scanner.**
@@ -4846,6 +4854,8 @@
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 item cooldown is distinct from temporary weapon enchant remaining time; reuse IT-02 for item eligibility only.**
+
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-02 item cooldown; Recently Bandaged aura lockout is a distinct effect, not inferred from item cooldown.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses item/shared cooldown observations; buff remaining time is not item cooldown remaining time.**
@@ -4914,6 +4924,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 uses IT-03 item usability, level, combat and target restrictions; weapon slot and compatibility are additional gates.**
+
 **Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses item usability/level/zone/combat checks; pet-food compatibility is an additional separate gate.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-03 combat/target/level/zone/range item usability, with an additional bandage channel-risk gate.**
@@ -4981,6 +4993,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 reuses IT-04 ranked usable item selection for coatings within a compatible category and weapon slot.**
 
 **Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses ranked family selection for recovery food/drink, but selects by verified recoverable deficit and eligibility, not merely highest itemID.**
 
@@ -5163,6 +5177,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-07 — Зелья усиления и эликсиры: нужно ли обновить, остаток действия
 
+**Архитектурная актуализация IT-10:** **См. IT-10: IT-10 temporary weapon enchants are not player buffs; reuse refresh policy semantics but do not substitute aura scanner for weapon enchant API.**
+
 **Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses aura observations to distinguish active eating/drinking and Well Fed buff maintenance, not a second aura scanner.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses universal aura presence/duration observation, not a separate debuff timer scanner; hostile DoTs and Recently Bandaged differ from positive consumable buffs.**
@@ -5334,5 +5350,60 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ PLAYER/PET/RESOURCE/AURA API — ДОРАБОТАТЬ (P1).** В Kord есть player health/mana/combat, pet snapshot и aura primitives, но нет подтверждённого OOC food/drink selector, active eating suppression, pet diet/food compatibility и Feed Pet lifecycle policy.
 
 **Архитектурные ссылки:** IT-01, IT-03, IT-04, IT-06, IT-07, IT-08, PE-02, PE-05, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-10 — Яды, смазки, пропитки оружия: оставшееся время, нужно ли обновить
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
+
+#### Требование
+
+Для `MAIN_HAND` и `OFF_HAND` отдельно наблюдать временное покрытие оружия: `slot`, `weaponPresent`, `enchantPresent=TRUE/FALSE/UNKNOWN`, `enchantID`, `enchantCategory=POISON/OIL/SHARPENING_STONE/WEIGHTSTONE/CLASS_IMBUE/OTHER/UNKNOWN`, `remainingMilliseconds` или `remainingSeconds` **с явно подтверждённой единицей**, `charges`, `desiredCategory`, `desiredTier`, `compatibleItemID`, `refreshDue=TRUE/FALSE/UNKNOWN`, `decision=APPLY/REFRESH/KEEP/SUPPRESS/UNKNOWN`, `reason/source/revision`. Применять/обновлять только при подтверждённо пустом слоте покрытия либо при доказанном остатке <= настраиваемого `refreshThresholdSeconds`, с проверкой, что покрытие соответствует выбранной политике, подходит типу оружия и не заменяет более сильную/желательную пропитку. Не считать nil/secret время равным 0; не смешивать main/off, weapon enchant с обычной `player.buff` аурой, постоянное зачарование с временным, oil/stone с poison/шаманским imbue. При отсутствии оружия в руке не рекомендовать покрытие. Для rogue poisons учитывать изученность/наличие предметов по версии Forever, для shaman imbue — spell known/cooldown и применимость к руке; не предполагать, что все виды покрытия представлены предметами. Только рекомендации, без protected use/casts.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: в allowlist нет подтверждённых `C_Item.GetWeaponEnchantInfo`, `C_PaperDollInfo.GetTemporaryEnchantmentInfo`, `GetWeaponEnchantInfo`, `GetInventoryItemLink` и слотовых item APIs; обычные aura APIs присутствуют, но не заменяют weapon enchant.
+- `KordRotation/Core/GameState.lua:177,440–462`: есть `GetTime` и aura presence, но нет `WeaponTemporaryEnchantObservation` для main/off, expiry/charges и проверки экипировки.
+- `KordRotation/Core/EventBus.lua:20–35`: нет подтверждённого слотового `UNIT_INVENTORY_CHANGED`/`PLAYER_EQUIPMENT_CHANGED` или enchant-specific invalidation; aura event не гарантирует изменение weapon coating.
+- `KordRotation/Core/RotationConditions.lua:63–74`: нет `weapon.enchantRemaining`/`weapon.needsRefresh` и `Needs.weaponEnchants`.
+- `KordRotation/Core/AbilityEligibility.lua`: spell-centric final gate, нет отдельной item/weapon compatibility eligibility; использовать общую итоговую READY архитектуру IT-03/SP-14.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:755–770` читает `C_PaperDollInfo.GetTemporaryEnchantmentInfo` и различает типы покрытий; `Sonah/Classes/Rogue.lua:196–197` рекомендует яды отдельно для main/off при `weaponEnchantMissing`; `Sonah/Classes/Shaman.lua:225–226,431–432` проверяет class imbue; `Sonah/Classes/Warlock.lua:513,529–530` — Firestone/Spellstone. Перенять slot/category-aware policy, но `missing` не равно `near expiry`.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:44,62` читает `C_Item.GetWeaponEnchantInfo(slot)` и legacy `GetWeaponEnchantInfo`; `JustAC/Data/Forever/Consumables.lua:208–241` содержит Forever weapon oil/sharpening stone catalog с itemID, buffSpellID, stat и weapon mask. Перенять client-specific mappings/compatibility и adapter fallback; проверять единицы времени и структуры ответов.
+3. **ForeverAuras:** `ForeverAuras/ItemStatus.lua:47–107` использует `C_Item.GetWeaponEnchantInfo`, `C_PaperDollInfo.GetTemporaryEnchantmentInfo` и legacy `GetWeaponEnchantInfo` с различением main/off; `ForeverAuras/GenericTrigger.lua:4693,4793` отдаёт weapon enchant entries триггерам. **Основной референс для нормализации API/таймера**, но trigger display не является разрешением Lua refresh decision при secret.
+4. **MaxDps:** `MaxDps/Helper.lua:1660,2484` читает `GetInventoryItemLink`, но в проверенных Lua не подтверждён универсальный main/off temporary enchant remaining + refresh provider. Не выводить coating state из факта экипированного оружия.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:419–430,507` читает `C_Item.GetWeaponEnchantInfo` и проверяет наличие временного зачарования для выбранной руки; `:1161` выводит main/off диагностику. Перенять per-slot tri-state, но наличие ≠ подтверждённый остаток или правильный тип.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:321` проверяет `GetWeaponEnchantInfo()` только как boolean; нет подтверждённого полного per-slot expiry/type policy. Не переносить `Clean(...)=true` как достаточное основание refresh.
+7. **RotationMaster:** `RotationMaster/Conditions/weapon.lua:5–6,58–62` использует `GetWeaponEnchantInfo` либо `Platform.ComposedWeaponEnchantInfo`; `RotationMaster/Core/build_context.lua:419–422` готовит нормализованный reader; `RotationMaster/Core/condition_support.lua:397` capability gate; `RotationMaster/Conditions/build.lua:86–90` обрабатывает tuple main/off. **Основной референс для универсального condition/capability contract**; нормализатор ForeverAuras — основной источник по реальному weapon enchant API.
+
+#### Выбранный путь Kord
+
+**Один `WeaponTemporaryEnchantObservation` с `WeaponEnchantRefreshPolicy`** поверх `GameAPI` read-only adapter, общего `ItemFamilyCatalog` IT-01, IT-02 item cooldown, IT-03 eligibility, IT-04 family selection и единого `AbilityEligibility`. Не создавать по сканеру для rogue/shaman/warlock, не создавать отдельный consumable catalog, не использовать SP-01 player aura как доказательство отсутствия покрытия. В `GameAPI` добавить capability-probed `C_Item.GetWeaponEnchantInfo` для Forever, `C_PaperDollInfo.GetTemporaryEnchantmentInfo`/legacy только после проверки формата; нормализовать slot `MAIN_HAND/OFF_HAND`, hasEnchant, enchantID/type, remaining и charges с `READY/UNKNOWN`, не интерпретировать secret/nil/unsupported enum как false. Для `C_Item.GetWeaponEnchantInfo` проверять формат list/enum/remaining unit непосредственно на клиенте; legacy `GetWeaponEnchantInfo` возвращает другой tuple, и смешение ms/sec опасно. Для временного покрытия с известным `remaining=0` и `hasEnchant=true` перепроверить событие/момент, не заявлять ложное отсутствие. Оружие и тип слота получать из read-only `GetInventoryItemLink('player',16/17)`/verified slot metadata; unknown equipment → UNKNOWN.
+
+В **том же** IT-01 `ItemFamilyCatalog` описать `WEAPON_POISON`, `WEAPON_OIL`, `SHARPENING_STONE`, `WEIGHTSTONE`, `CLASS_IMBUE`, `enchantID`, `itemID/spellID`, `compatibleWeaponTypes`, `handRestrictions`, `tierOrder`, `overwritesGroups`, `class/spec`, `edition`, `source/verified`. `CLASS_IMBUE` может быть заклинанием, поэтому не требовать item count; яды rogue и oils/stones используют item inventory, если Forever edition это подтверждает. Отдельно различать **слои временных enchant categories**, если клиент допускает совместное наложение (например, Sonah описывает coexistence); нельзя считать любой найденный temporary enchant доказательством наличия именно желаемой категории. При отсутствии category-specific API и возможных нескольких покрытиях → UNKNOWN, не REFRESH. Конфликтующее покрытие, stronger existing tier, incompatible weapon или неизвестное overwrite rule подавляют замену; пользовательская `allowOverwrite` не отменяет item eligibility.
+
+`WeaponEnchantRefreshPolicy` хранит `enabled`, `refreshThresholdSeconds`, `prePullOnly`, `allowInCombat`, `mainHandPreference`, `offHandPreference`, `allowOverwriteWeaker`, `allowOverwriteStronger=false`, `conserveConsumables`. `KEEP` если желаемый confirmed enchant active и remaining > threshold, `REFRESH` при confirmed near expiry, `APPLY` при confirmed missing desired category, `SUPPRESS` при incompatible/stronger/disabled/no weapon, `UNKNOWN` при secret duration, category ambiguity, unsupported API, missing catalog. Переключение оружия/dual wield/смена экипировки инвалидирует slot observation и повторно проверяет тип/наличие, не переносит старый timer на новое оружие. Сравнение `remaining <= threshold` допустимо только для **branchable** числа/boolean, display-only curve — отдельно и не влияет на READY. Для class imbue использовать spellbook/ability eligibility, для item coating IT-01–04; итоговый READY только `AbilityEligibility`. EventBus `UNIT_INVENTORY_CHANGED`/`PLAYER_EQUIPMENT_CHANGED` (после проверки Forever), bag/item cooldown, spellcast/aura/class/spec/zone revisions и bounded heartbeat для приближения expiry; lazy `Needs.weaponEnchants`, per-evaluation memo, no protected actions.
+
+#### Требуемые изменения
+
+1. Ввести `WeaponTemporaryEnchantObservation` с per-slot/per-category typed remaining/charges и `WeaponEnchantRefreshPolicy`.
+2. Добавить capability-probed read-only `C_Item.GetWeaponEnchantInfo`, `C_PaperDollInfo.GetTemporaryEnchantmentInfo`/legacy adapter и проверить Forever tuple, enum, ms/sec, secret semantics.
+3. Ввести общий `WeaponEquipmentObservation` main/off weapon presence/type/identity и equip revision, без второго scanner.
+4. Расширить **IT-01 ItemFamilyCatalog** Forever poisons/oils/stones/class imbues, tier, enchantID, weapon masks, coexistence and overwrite rules.
+5. Реиспользовать IT-01 count, IT-02 cooldown, IT-03 usability/level/combat/weapon compatibility, IT-04 best tier; spell class imbue проверять через spellbook, не требовать item.
+6. Реализовать независимые main/off refresh thresholds и policies, pre-pull, in-combat, conservation, stronger protection, category-specific presence.
+7. Разделить itemID/spellID/enchantID, permanent enchant/player aura/temporary enchant, branchable timer vs display-only secret.
+8. EventBus equipment/bag/itemCD/spellcast/zone/class revisions + bounded expiry heartbeat; lazy Needs и per-evaluation memo.
+9. DevTools-only диагностика: `weapon_enchant_api_missing`, `weapon_enchant_secret`, `weapon_enchant_slot_unknown`, `weapon_enchant_no_weapon`, `weapon_enchant_type_unknown`, `weapon_enchant_duration_unit_unknown`, `weapon_enchant_category_ambiguous`, `weapon_enchant_compatibility_unknown`, `weapon_enchant_stronger_active`, `weapon_enchant_refresh_due`, `weapon_enchant_keep`, `weapon_enchant_item_unavailable`, `weapon_enchant_spell_unlearned`, `weapon_enchant_equipment_changed`.
+10. Тесты: main/off, one/two weapons, dual wield, missing weapon, swapped weapon, enchant absent/present, 0/threshold±1/long duration, milliseconds vs seconds, nil/secret time, category poison/oil/stone/class imbue, coexistence vs overwrite, stronger/weaker, rogue learned poison and items, shaman imbue spell, warlock Firestone/Spellstone, custom Forever oil IDs and weapon masks, item count/cooldown, class/spec changes, combat/OOC, event missed with bounded refresh, no false APPLY/REFRESH/READY/protected use.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** Kord имеет общий aura reader, но не имеет подтверждённого temporary weapon enchant API/slot observation, timer/charges, item-to-enchant catalog и refresh policy.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-07, SP-01, SP-14, PE-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
