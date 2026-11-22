@@ -1483,3 +1483,50 @@
 7. Тесты для нескольких классов и групп: ловушки, шоки, печати, проклятия; A запускает cooldown B; B не запускает A; разные ранги, override, GCD-only, общий ресурс без общего cooldown, взаимоисключение без cooldown, разные цели, pet, secret и отсутствие подтверждённого членства.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-13.
+
+
+### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Приоритет: P1.**
+
+#### Требование
+
+Универсально для всех классов проверять требования **конкретного spellID**: нужна ли цель (враждебная/дружественная/себя/не нужна), нужное положение относительно цели (позади/спереди/лицом), stealth, форма/стойка, наличие или отсутствие конкретных аур игрока/цели. **Различать правило, заданное профилем, и подтверждённое встроенное ограничение самого заклинания**: одно не доказывает другое. Не угадывать `behind=true` по `IsSpellUsable=false`. Для неизвестного источника — `UNKNOWN`, не ложный READY/BLOCKED. Не смешивать позицию и дальность (SP-08/PL-10), ауры и проки (SP-12), форму и требования ресурса (SP-06).
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–240, 267–278, 348–353: политика цели `enemy/friendly/self/none`, проверка существования, живости, отношения и дальности; **политика приходит от профиля**, нет универсального определения target requirement самого spellID.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 12–21, 66–70: разрешены факты цели, `player.buff` и `target.debuff` по разрешённым `Needs.auras`; нет общих условий `spell.requiresStealth`, `spell.requiresForm`, `spell.requiresBehind` и `spell.requiresAura`.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 302–348, 450–761: melee и aura observations существуют, но **melee не доказывает facing/behind**, aura presence не доказывает правило требования spell.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 14–20, 44–50: есть UnitCanAttack/Assist, aura и swing API; подтверждённого универсального безопасного facing/behind API в текущем allowlist нет.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 171–186: общая `IsSpellUsable` блокировка не объясняет, вызвана ли она stealth/form/aura/position. См. PL-09, PL-10, SP-06.
+
+#### Как делают семь референсов (локальные Lua архивы, выборочная проверка)
+
+1. **Sonah** — `Sonah/Classes/Rogue.lua` и `Sonah/Classes/Druid.lua` содержат правила stealth-opener, а `Core/Atoms/Units.lua` предоставляет общие наблюдения формы/состояния; классовые правила — **потребители**, не повод делать классовые версии ядра.
+2. **JustAC** — `JustAC/SpellDB.lua:378–380` прямо комментирует удаление отдельного `form/stealth/caster-aura CASTABILITY gating`, поскольку пригодность проверяет игровой API; `GapCloserEngine.lua` использует `IsStealthed` и target API. Это полезное предостережение против дублирования и выдумывания причин `unusable`.
+3. **ForeverAuras** — `ForeverAuras/Conditions.lua:792` сочетает `UnitExists`, `UnitCanAttack` и проверку дистанции, `Conditions.lua:1776` отслеживает attackable target; общие aura/stance triggers позволяют формировать отдельные условия, но не доказывают требования конкретного spellID автоматически.
+4. **MaxDps** — классовые профили используют `IsStealthed` и иные условия контекста; `MaxDps/Helper.lua` содержит target/usability проверки. Прямые профильные вызовы WoW API не переносить в Kord.
+5. **ForeverRotation** — `ForeverRotation/Rotations/Rogue.lua:28–29` задаёт `stealth=true` для Ambush/Garrote/Cheap Shot; `Rotations/Druid.lua:71–72` задаёт `stealth=true` и `behind=true` для Ravage; `CC.lua:64` отдельно трактует недоступность Sap вне stealth. Это пример **декларативных требований**, но не подтверждение точного API facing.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:224–227` получает форму через `GetShapeshiftFormID` и предоставляет `Stealthed`; условия профилей могут использовать их отдельно. Это общие наблюдения, не доказательная spell-requirements база.
+7. **RotationMaster** — `RotationMaster/Conditions/combat.lua` реализует общие условия `STEALTHED` и stance/form, `Conditions/spatial.lua` — пространственные условия; это образец раздельных типизированных условий, но недоступный пространственный факт не должен превращаться в false.
+
+#### Сравнение и рекомендация
+
+**Основа — RotationMaster + ForeverRotation + существующий Kord**: общие типизированные наблюдения/условия из RotationMaster; декларативные spell requirements из ForeverRotation; безопасные `GameAPI`, `GameState`, `RotationConditions`, `AbilityEligibility` Kord. `SpellRequirementsObservation(spellID,targetGUID)` — **общеклассовый логический контракт, не обязательный отдельный файл**. Данные о требованиях могут зависеть от ранга/override (SP-02/SP-11), таланта, формы и клиентской версии. Профиль определяет приоритет, но не обходит общий eligibility.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Цель и ауры частично доступны; нет полного универсального достоверного контракта ограничений способности и наблюдения положения/стелса/формы в одной согласованной проверке.
+
+#### Требуемые изменения
+
+1. Расширить существующие общие модули, не создавать файлы под классы: декларативный `SpellRequirementDefinitions` по проверенным spellID/семействам, `requireTarget`, `requirePosition`, `requireStealth`, `requireForm`, `requiredAuras`, `forbiddenAuras`, `source/verifiedForClient`. Не считать отсутствие записи доказательством отсутствия требования.
+2. Общий `SpellRequirementsObservation` выдаёт отдельные `targetSatisfied`, `positionSatisfied`, `stealthSatisfied`, `formSatisfied`, `aurasSatisfied` с индивидуальными `READY/BLOCKED/UNKNOWN`, причиной и источником; агрегирование не теряет неизвестность.
+3. Использовать target GUID и проверять его после API вызовов; позицию behind/facing брать только из доказанного PL-10, не из melee/range/IsSpellUsable.
+4. Stealth и форма — через общий PL-09; ауры — через защищённые наблюдения `GameState`/PL-09 с конкретными ID и scope (player/target/pet). `UNKNOWN` отсутствия ауры не равно `false`.
+5. `AbilityEligibility` остаётся единственным арбитром READY; `IsSpellUsable` — дополнительный общий gate, не доказательство конкретной причины блокировки.
+6. Инвалидация по target/movement/form/aura/talents/override/spellbook и связанным событиям; ленивое чтение только условий запрошенной способности.
+7. Тесты на нескольких классах: без цели/неверная цель, behind/facing, stealth и выход из stealth, смена формы/стойки, требуемый/запрещённый баф/дебаф, разные цели, override/ранги, secret API, ложная блокировка из-за отсутствия записи в каталоге, UNKNOWN без ложного READY.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-14.
