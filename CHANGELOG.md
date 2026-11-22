@@ -1,3 +1,11 @@
+## KR-20261122-097 — test: correct IT-02/2.7 coalesced Flush assertion
+- Дата/время: 2026-11-22 UTC, фактическое время по git; SHA: `git log --grep KR-20261122-097`.
+- Этап: IT-02/2.7 P0, тип test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: в mock сценарии накопленные Tick-вызовы (1.9s + 0.11s) пересекают интервал и item cooldown refresh, и EventBus Flush(0.20s), поэтому предыдущий assertion ошибочно ожидал неизменное число уведомлений сразу после Tick. Это дефект тестовой логики, найденный статической проверкой; само выполнение Lua не проводилось.
+- Исправлено: `tests/item_cooldown_revision_mock.lua` теперь ожидает вызов coalesced callback в том же Tick и отсутствие дополнительного callback без нового dirty event; `CHANGELOG.md` обновлён в том же коммите. Runtime Lua-модули не изменены.
+- Проверки: PASS — статическая сверка точной последовательности таймеров и исходных ветвей Tick/Flush; NOT RUN — Lua 5.1/mock/regression, GitHub Actions (manual-only), WoW Forever (недоступен). Не выдавать исправление assertion за фактический runtime PASS.
+- Для тестировщика: сценарии deadline/coalescing остаются в общем IT-02 QA; связи KR-20261122-096 и IT-02/2.7. Следующий шаг: завершение корелляции групповых cooldown и реальное исполнение тестов.
+
 ## KR-20261122-096 — IT-02/2.7: bounded cooldown refresh without item scanning
 - Дата/время: 2026-11-22 UTC; точное время Git history. SHA: `git log --grep KR-20261122-096`.
 - Этап/ID: IT-02 P0, этап 2 шаг 2.7; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

@@ -39,7 +39,9 @@ assert(bus:GetItemCooldownRevision()==idle)
 bus:Tick(0.11)
 assert(bus:GetItemCooldownRevision()==idle+1)
 assert(bus:Status().itemCooldownLastReason=="item_cd_periodic_refresh")
-assert(notifications==2) -- published on next coalesced Flush
+-- Tick crosses both refresh and existing 0.20s Flush threshold, so
+-- the coalesced notification is already delivered by the end of Tick.
+assert(notifications==3)
 bus:Tick(0.1)
 assert(notifications==3)
 bus:Tick(0.1)
