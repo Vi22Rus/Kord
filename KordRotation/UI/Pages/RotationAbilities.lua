@@ -99,12 +99,13 @@ function KR.Pages:Rotation(parent)
             function(value) S:SetCategory(category, value) end)
     end
 
-    local conditions = card(body, -829, 226)
+    local conditions = card(body, -829, 269)
     label(conditions, "ROT_CONDITIONS_TITLE", 16, -13, 510, true)
     local options = {
         {"ROT_ONLY_COMBAT", "cooldownsOnlyInCombat"},
         {"ROT_SAVE_RESOURCES", "conserveResources"},
         {"ROT_PREBUFFS", "prebuffs"},
+        {"ROT_BUFFS_IN_COMBAT_MAIN", "buffsInCombatMain"},
     }
     local rows = {}
     for i, item in ipairs(options) do
@@ -114,12 +115,12 @@ function KR.Pages:Rotation(parent)
             function(value) S:SetFlag(option, value) end)
     end
     local experimentalRow = UI:ToggleRow(conditions, "ROT_EXPERIMENTAL_OPTIN",
-        12, -172, 500,
+        12, -215, 500,
         function() return S:GetFlag("allowUnverifiedProfiles") or false end,
         function(value) S:SetFlag("allowUnverifiedProfiles", value) end)
     -- Schema-driven per-module configuration. Switching class, tree or
     -- level replaces these rows, never reuses another module's values.
-    local moduleCard=card(body,-1075,1170)
+    local moduleCard=card(body,-1118,1170)
     label(moduleCard,"ROT_MODULE_OPTIONS_TITLE",16,-13,510,true)
     local moduleName=rawLabel(moduleCard,16,-40,510)
     local moduleRows={}
@@ -133,7 +134,7 @@ function KR.Pages:Rotation(parent)
         displayedModule=selected
         local height=math.max(1170,90+#(module and module.Config or {})*45)
         moduleCard:SetHeight(height)
-        body:SetHeight(1075+height+45)
+        body:SetHeight(1118+height+45)
         for _,row in ipairs(moduleRows) do row.frame:Hide() end
         moduleRows={}
         moduleName:SetText(module and module.id or KR:L("ROT_NO_PROFILE"))
