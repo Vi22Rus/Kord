@@ -74,5 +74,27 @@ eq(structured:find("29",1,true)~=nil,true,
 eq(structured:find("PlayerName-SECRET",1,true),nil,
  "arbitrary personal data never exported")
 eq(D.dropped,0,"intentional cooldown coalescing is not data loss")
+-- Real ability refusal reasons previously went missing from the eighth
+-- detail column even when CoreObservation returned them safely.
+for _,why in ipairs({
+ "cast_unknown","usability_invalid","gcd_activity_unknown",
+ "range_unavailable","cooldown_active_unclassified",
+ "spell_known_unverified","target_relation_unknown"
+}) do
+ eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,why),
+  true,"known eligibility detail accepted: "..why)
+end
+local detailed=D:Export()
+for _,why in ipairs({
+ "cast_unknown","usability_invalid","gcd_activity_unknown",
+ "range_unavailable","cooldown_active_unclassified",
+ "spell_known_unverified","target_relation_unknown"
+}) do
+ eq(detailed:find("\t"..why,1,true)~=nil,true,
+  "real reason is exported in detail: "..why)
+end
+eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,
+ "unexpected_private_player_name"),true,"unknown detail does not break recording")
+eq(D.records[#D.records].detail,nil,"arbitrary details are never exported")
 eq(D:Stop(),true,"burst session stops")
 print("PASS DevTools recorder mock "..n.." assertions")
