@@ -85,7 +85,13 @@ local function audit()
   local before=C:ObservationCount(S)
   local st,why,checks,barReason
   if rule.type~="SPELL" then
-   st,why="BLOCKED","unsupported_action"
+   -- Unsupported action types are still audited for prerequisite data,
+   -- but never passed to AbilityEligibility or emitted as recommendations.
+   local evaluated,condition=pcall(rule.when,S,cfg)
+   if not evaluated then st,why="UNKNOWN","condition_error"
+   elseif condition==nil then st,why="UNKNOWN","condition_unknown"
+   elseif condition==false then st,why="BLOCKED","condition_false"
+   else st,why="BLOCKED","unsupported_action" end
   elseif rule.mode and rule.mode~="any" and rule.mode~=mode then
    st,why="BLOCKED","mode_not_selected"
   else
