@@ -102,7 +102,8 @@ function KR.RotationDisplay:Create()
         -- Even with no active profile, a previously displayed real icon
         -- must be cleared when settings/profile disappear.
         if not p.showPanel then
-            if KR.RotationDisplay.productionReady then
+            if KR.RotationDisplay.productionReady
+                or KR.RotationDisplay.defensiveReady then
                 KR.RotationDisplay:Refresh(true)
             end
             return
@@ -113,7 +114,8 @@ function KR.RotationDisplay:Create()
         local settings=registered and KR.RotationSettings:GetProfile(false)
         if settings and settings.enabled==true then
             KR.RotationDisplay:Refresh(true)
-        elseif KR.RotationDisplay.productionReady then
+        elseif KR.RotationDisplay.productionReady
+            or KR.RotationDisplay.defensiveReady then
             KR.RotationDisplay:Refresh(true)
         end
     end)
@@ -134,7 +136,8 @@ function KR.RotationDisplay:Create()
                 local id=KR.RotationSettings and KR.RotationSettings:GetProfileID()
                 local hasProfile=id and KR.RotationProfiles
                     and KR.RotationProfiles:Has(id)
-                if not display.productionReady and not hasProfile then return end
+                if not display.productionReady and not display.defensiveReady
+                    and not hasProfile then return end
                 display:Refresh(true)
             end)
         end
@@ -332,12 +335,16 @@ function KR.RotationDisplay:Refresh(skipLayout)
     local p = ensurePosition(KR.db)
     if not skipLayout then self:RefreshLayout() end
     self.productionReady=false
+    self.defensiveReady=false
     self.lastSummary={profileStatus="UNKNOWN",eligibilityReady=0,
         eligibilityBlocked=0,eligibilityUnknown=0}
     if p.testMode then
         -- Preserve preview artwork and numbers, never mark it live.
         for i,slot in ipairs(self.slots or {}) do
             slot:SetTestSlot(i,i==1)
+        end
+        for _,slot in ipairs(self.defensePreview or {}) do
+            slot:ClearDisplayData()
         end
     else
         local result
@@ -403,6 +410,7 @@ function KR.RotationDisplay:Refresh(skipLayout)
         if defensiveItem and defensiveItem.spellID==mainID then
             defensiveItem=nil
         end
+        self.defensiveReady=defensiveItem~=nil
         for i,slot in ipairs(self.defensePreview or {}) do
             if i==1 and defensiveItem then
                 slot:SetDisplayData({texture=defensiveItem.texture,
