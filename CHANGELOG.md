@@ -1,3 +1,13 @@
+## KR-20261122-013 — аудит QA-04: per-call API matrix и client verdict
+- Дата: 2026-11-22; SHA — GitHub.
+- Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.
+- Проверены v14 101-row matrix, `V14Registry`, `Probe`, `GameAPI`, BUILD_VARIANTS, семь reference ZIP и связанные требования.
+- Зафиксирован `ApiEvidenceRecord`, отдельные source/presence/client verdict, `CONFIRMED|UNCONFIRMED|DIFFERENT|NOT_RUN`, version/build/scenario evidence, multi-method chains, callsite inventory и secret safety.
+- 10 задач/тестов, обратные ссылки QA-01, QA-02, QA-03, EN-A7, DA-03, AC-07.
+- PASS: источниковый аудит; NOT RUN: Lua/CI/реальный WoW Forever; CLIENT PASS=0/101.
+- Вердикт: P0 частично реализовано, client verdict пока не доказан.
+
+
 ## KR-20261122-012 — аудит QA-03: Lua 5.1 mock tests и профили
 - Дата: 2026-11-22; commit SHA — GitHub.
 - Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не менялся.

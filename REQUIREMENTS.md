@@ -6464,6 +6464,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-01:** остановки UNKNOWN→STOP документируются точными machine-readable reason в безопасном observation bridge; подробный список проверенных приоритетов — только DevTools QA-01 по явному Start, без повторного вычисления правил.
 
+**Ретроактивное уточнение QA-04:** при `UNCONFIRMED/NOT_RUN/DIFFERENT` API, если критический факт не доказан безопасным альтернативным методом из v14, сохранять UNKNOWN→STOP. `DIFFERENT` требует отдельного исследования/согласования матрицы, а не скрытого runtime fallback.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6923,6 +6925,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение QA-03:** все профили и конфигурационные схемы, зарегистрированные по EN-A7, обязаны входить в единый Lua 5.1 profile contract/selection/config/eligibility test matrix; тест только Hunter BM не равен покрытию всех классов.
 
+**Ретроактивное уточнение QA-04:** профиль не может считать API-возможность доказанной на основании `V14Registry` или mock PASS; зависимости профиля должны ссылаться на конкретные matrixID и актуальные QA-04 client verdict, при непроверенном критическом факте сохранять UNKNOWN→STOP.
+
 ### EN-A8 — Профиль уровня: диапазон, смена рангов, граничные уровни
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -7365,6 +7369,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение QA-01:** все подробные event/engine/eligibility/API traces, opt-in recorder, performance samples и экспорт должны жить исключительно в отдельном `KordRotationDevTools` согласно QA-01; `KordRotation/Core/Diagnostics.lua` оставляет только bounded read-only support snapshot. Не создавать второй production recorder.
 
 **Ретроактивное уточнение QA-02:** диагностический журнал DA-03 обязан сохранять валидные новые reason/subreason из trusted core bridge без ручного whitelist кодов; не подменять их `diagnostic_code_unmapped`/`diagnostic_detail_unmapped`. Проверки, которые движок не исполнял, маркировать `NOT_EVALUATED`, а не пересчитывать.
+
+**Ретроактивное уточнение QA-04:** диагностический API trace использует канонические `matrixID` v14 и разделяет source-confirmed, presence-only и actual client-confirmed; экспорт не должен приписывать проверку игры исходниковому анализу.
 
 ### DA-04 — Бюджет времени на оценку, замер, предупреждение при превышении
 
@@ -8266,6 +8272,8 @@ Kord должен корректно реагировать на фактиче�
 
 **Ретроактивное уточнение QA-03:** DevTools QA-01 обязан иметь mock tests под настоящим Lua 5.1 для Start/Stop, reload, opt-in, secret, v14, recorder, byte-identical ZIP; единый CI/local test manifest QA-03, без пропуска devtools suites.
 
+**Ретроактивное уточнение QA-04:** `ProbeAll` DevTools QA-01 даёт только `PRESENCE_ONLY`, не `CONFIRMED` клиентской совместимости. Для каждого matrixID требуется отдельный проверенный `ApiEvidenceRecord` QA-04 с client build, сценарием, безопасными результатами и явным вердиктом; `CLIENT PASS` увеличивается лишь по подтверждённым реальным игровым тестам.
+
 ### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8332,6 +8340,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-03:** полный reason/subreason envelope QA-02 проверять Lua 5.1 mock-тестами, включая новый trusted reason без whitelist, NOT_EVALUATED и отсутствие повторной оценки ленивого engine; `AuditFull` отдельно маркировать diagnostic-only, проверять non-interference и не объявлять live-equivalent.
 
+**Ретроактивное уточнение QA-04:** полный журнал QA-02 связывает API reasons/subreasons с v14 `matrixID`, method, source, revision, client verdict и safe evidence. Отсутствие метода, secret result и несовпадение сигнатуры — разные причины; не превращать presence-only в подтверждение.
+
 ### QA-03 — Mock-тесты движка и профилей, запуск на Lua 5.1
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8389,6 +8399,69 @@ DevTools должен записывать **все достоверно сфо�
 **ЧАСТИЧНО РЕАЛИЗОВАНО / P0 / LUA 5.1 MOCK INFRASTRUCTURE EXISTS, COVERAGE AND PARITY NOT COMPLETE.** Реальные Lua 5.1 CI, mock suites и Python packaging tests существуют. Подтверждённое расхождение локального и CI списка тестов (17 против 27), отсутствует единый coverage gate и доказательство client QA. **Текущий запуск Lua/CI NOT RUN.**
 
 **Архитектурные ссылки:** QA-01, QA-02, EN-A2, EN-A3, EN-A7, DA-08, `tests/`, `.github/workflows/lua-regression.yml`, `scripts/run_local_lua_regression.sh`, `scripts/build_variants.py`. **Обратные ссылки добавлены в QA-01, QA-02, EN-A2, EN-A3, EN-A7, DA-08.**
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение QA-04:** mock-тесты Lua 5.1 QA-03 подтверждают только контракт адаптера и обработку `UNKNOWN/secret`, но не клиентский API verdict. Для каждой v14 строки отдельно требуются client evidence, build и сценарий QA-04; CI не вправе увеличивать CLIENT PASS.
+
+### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
+
+**Раздел: 17. Диагностика и качество. Приоритет: P0.**
+
+#### Требование
+
+Каждый реально используемый Kord вызов API и каждая из **101** утверждённых возможностей `docs/rotation/Canonical_API_Matrix.md` v14 должны иметь явную проверяемую связь `matrixID→selected API chain→runtime call sites→source evidence→client evidence→verdict`. Для каждой строки фиксировать вердикт **`CONFIRMED` (подтверждён), `UNCONFIRMED` (не подтверждён), `DIFFERENT` (поведение отличается в WoW Forever)**, а до первого игрового испытания отдельное состояние `NOT_RUN`. Не выдавать `NOT_RUN` за отрицательный тест и не выдавать наличие функции или Lua mock PASS за `CONFIRMED`. `DIFFERENT` допустим только при воспроизводимом фактическом отличии сигнатуры, семантики, возвращаемого типа, restricted/secret behavior или игрового сценария от утверждённой исходниковой гипотезы. `UNCONFIRMED` после теста означает недостаточность доказательств, включая ошибку, secret/protected, неподходящий сценарий или неустойчивый результат; конкретную причину хранить отдельно.
+
+**Контракт `ApiEvidenceRecord`:** `matrixVersion="v14"`, `matrixID=1..101`, `capability`, `methodChain`, `callSite`, `sourceVerdict=SOURCE_CONFIRMED|SOURCE_PARTIAL|SOURCE_OPEN`, `presenceStatus=PRESENT|MISSING|UNKNOWN|NOT_RUN`, `clientVerdict=CONFIRMED|UNCONFIRMED|DIFFERENT|NOT_RUN`, `reason`, `clientBuild`, `clientFlavor`, `addonCommit`, `testScenario`, `expectedBehavior`, `observedSafeBehavior`, `secretPolicy`, `evidenceID`, `testedAt`, `reviewer`, `supersedesEvidenceID`. Вердикт привязывается к **версии клиента и сценарию**, не является вечным свойством имени функции; при смене версии/API/сигнатуры ранее подтверждённые записи не стирать, а помечать `STALE_REQUIRES_RETEST`. Не собирать имена персонажей, GUID, цели, чат, сырые return values, frame refs или secret/tainted значения. `GetBuildInfo`/другие поля идентификации клиента использовать только при безопасном подтверждённом чтении; неизвестный build помечать UNKNOWN.
+
+**Покрытие:** для составных строк v14 (например, здоровье через `UnitHealth/UnitHealthMax/UnitHealthPercent`, cooldown через `C_Spell.GetSpellCooldown`, aura через `C_UnitAuras`, actionbar через `GetActionInfo/GetBindingKey`) фиксировать **каждый фактический метод и вызов** в chain, аргументы как безопасные типы/классы, сигнатуру/тип результата, ограничение secret, ошибки, условия применения и вывод о **возможности целиком**. Одна `PRESENT` функция не доказывает всю строку. Для вызовов вне 101 строк автоматически формировать `UNMAPPED_CALLSITE` в source inventory и запрещать тихое использование до рассмотрения расширения v14; не менять утверждённые 101 строки молча. У `V14Registry` одна строка на matrixID, в том числе `method=nil` у составных/непрямых возможностей — не заменять их выдуманным fallback. При нескольких методах с одинаковым именем `ProbeMethod(name)` не должен выдавать ID первой встретившейся строки как доказательство остальных; evidence связывать с конкретным `matrixID` и chain.
+
+**Приёмка:** отчёт по всем 101 строкам с суммой `CONFIRMED+UNCONFIRMED+DIFFERENT+NOT_RUN=101`, отдельно исходниковые 58/20/23, `PRESENCE_ONLY`, `STALE` и `UNMAPPED_CALLSITE`. Клиентский PASS увеличивать **только** после реального безопасного сценарного теста WoW Forever и воспроизводимого evidence; до таких тестов `CLIENT PASS=0/101`. При `DIFFERENT` блокировать использование спорной возможности как достоверного READY, создать исследовательскую задачу, сравнить исходники Blizzard Forever, референсы и фактический build, согласовать версионированную корректировку v14. При `UNCONFIRMED/NOT_RUN` сохранять `UNKNOWN→STOP` для критических фактов, не выводить `false/0` из `nil/secret`.
+
+#### Аудит Kord (main)
+
+- `docs/rotation/Canonical_API_Matrix.md:1–18` — **утверждённая v14**, 101 выбранная возможность; `58 SOURCE_CONFIRMED / 20 SOURCE_PARTIAL / 23 SOURCE_OPEN`; secret classification 44/26/31; **CLIENT PASS=0/101**, игровые тесты NOT RUN. Это нормативная исследовательская основа, не игровая сертификация.
+- `Canonical_API_Matrix.md:20–...` содержит конкретные chains и источниковые ограничения: `UnitExists` (ID 1), `UnitCanAttack` (2), `UnitHealth/UnitHealthMax/UnitHealthPercent` (3–5), `UnitPowerPercent` (6), `C_Spell.IsSpellInRange` (10), `C_Spell.GetSpellCooldown` (11), `C_UnitAuras.GetAuraDataByIndex` (12–13), `UnitThreatSituation` (14), `UnitCastingInfo` (15). Для HP, power, cooldown и aura документированы secret/restricted условия. Нельзя считать `nil` доказанным нулём.
+- `KordRotationDevTools/V14Registry.lua:1–108` — 101 ID с единственным `method` или отсутствующим method для составных строк; не содержит полного multi-method chain, client evidence, build/scenario/verdict.
+- `KordRotationDevTools/Probe.lua:4–34`: `ProbeMethod(name)` ищет в `catalog` **первый** ID для повторяющегося имени, вызывает read-only bridge и возвращает `reason="presence_only"`. `:36–68` `ProbeAll` обходит все 101 строки, но наличие API — не функциональный клиентский PASS. Нужна явная per-row evidence model; нельзя приравнивать `PRESENT` к `CONFIRMED`.
+- `KordRotation/Core/GameAPI.lua:220–230` прямо отделяет `IsSafeValue` от доказательства игровой поддержки, а `Probe` маркирует `presence_only_not_game_verified`. `:233–263` ограничивает health/power процентные чтения при secret/unknown. `:270–...` содержит diagnostic trace read-only адаптера, но ещё не полную карту runtime callsite→v14 ID.
+- `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md:18–20,38–46` закрепляет матрицу как единственный источник истины, отдельный opt-in DevTools и запрет на ложный CLIENT PASS. `tests/devtools_v14_registry.lua`, `tests/devtools_probe.lua`, `tests/stage_02_08_v14_*.lua` — существующие mock tests, не игровой verdict.
+- **Пробел:** нет отдельной подтверждённой `ApiEvidenceRecord` для каждой строки с реальным client build, сценарием и доказательством; нет полного callsite inventory и явного `DIFFERENT` workflow; `ProbeMethod` по одному имени теряет различие между несколькими matrixID. Ни одна из 101 строк не получила игрового PASS. Lua/CI/client в данном аудите NOT RUN.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua`, `Spells.lua`, `Auras.lua`, `Casts.lua` содержат реальные выбранные chains `UnitExists/UnitHealth/C_Spell.IsSpellInRange/C_UnitAuras`, уже привязанные к строкам v14. Считать источниковыми указателями, не игровым PASS Kord.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua`, `CooldownTracking.lua`, `SecretValues.lua` дают сравнение API/secret guards, но их успешный runtime в другом аддоне не доказывает текущий build и контекст Kord.
+3. **ForeverAuras:** `ForeverAuras/API.lua` и `BlizzardAuraDisplay.lua` дают aura/visibility evidence; сравнивать семантику aura data и секретность, не переносить API цепочки без v14.
+4. **MaxDps:** `MaxDps/Buttons.lua` показывает чтение actionbar/buttons и third-party UI; проверять slot/binding visibility отдельно от наличия метода.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua`, `Rotations/Buffs.lua` дают spell/cooldown/aura references; не подменять клиентскую проверку Kord чужим trace.
+6. **RotationGuide:** `RotationGuide/Core/State.lua`, `Core/API.lua` используют unit/target/spell API; источник для сравнения сценариев и аргументов, не сертификат клиентской совместимости.
+7. **RotationMaster:** `RotationMaster/Core/forecast.lua`, `Core/rotation_scope.lua`, `Core/assisted_highlight.lua` дают ограничения forecast/protected display; не объявлять их альтернативный runtime методом v14 без evidence.
+
+**Границы доказательств:** шесть reference ZIP исторически указаны в v14, RotationMaster дополнительно исследуется как архитектурный референс. Наличие метода в референсе или экспортированном Blizzard FrameXML — **не** клиентский PASS. В ходе QA-04 не выполнялись безопасные реальные игровые пробы.
+
+#### Выбранный путь Kord
+
+**Расширять утверждённую `Canonical_API_Matrix.md` и существующий `KordRotationDevTools/V14Registry.lua` единым versioned `ApiEvidenceRecord`/callsite inventory, не создавать вторую матрицу или новый probe engine.** Сохранить 101 ID и все source verdict; отдельно накапливать подтверждённые client verdict, безопасно отображать в DevTools и связывать с QA-02 trace. `ProbeAll` остаётся presence-only; полноценный client verdict требует сценария, expected/observed behavior, client build и явной проверки. Новые неизвестные API не добавлять автоматически; выносить на утверждение обновления матрицы. Для критического неподтверждённого API сохранять UNKNOWN→STOP.
+
+#### Требуемые изменения
+
+1. Ввести versioned `ApiEvidenceRecord` для каждого matrixID 1..101 с `sourceVerdict`, `presenceStatus`, `clientVerdict`, `reason`, build, commit, scenario, expected/observed safe behavior и evidence provenance.
+2. Составить полный статический inventory всех runtime API callsites в `KordRotation/` и `KordRotationDevTools/`; сопоставить каждый вызов с v14 ID или `UNMAPPED_CALLSITE`. Запретить ложную классификацию косвенного API как уже проверенного.
+3. Расширить `V14Registry` на multi-method chains и distinct row IDs; исправить `ProbeMethod` first-ID aliasing при одинаковом method, не ломая существующий presence-only режим.
+4. Сохранить `ProbeAll` безопасным read-only, не вызывать произвольные функции и protected gameplay actions; отделить method presence от actual scenario execution.
+5. Для каждой составной возможности фиксировать отдельно method presence, argument shape, return type/secret restrictions, context/target/movement/combat conditions и verdict всей chain.
+6. Реализовать три client verdict и `NOT_RUN`, а также `STALE_REQUIRES_RETEST` после изменения клиента/метода; никогда не превращать отсутствие теста в отрицательный результат.
+7. Добавить в QA-02 полный структурный trace API calls по matrixID с безопасными reason/subreason и ссылкой на evidence, без raw secret/tainted values.
+8. Обеспечить per-row UI и экспорт DevTools, список всех 101 строк и агрегаты `CONFIRMED/UNCONFIRMED/DIFFERENT/NOT_RUN`; отчёт `CLIENT PASS` только по реальным игровым подтверждениям.
+9. Тесты Lua 5.1: 101 уникальный ID, duplicates method→multiple IDs, nil method, missing bridge, secret/protected, method presence ≠ client PASS, DIFFERENT, stale build, evidence validation, unmapped callsites, version migration, безопасный экспорт, оба ZIP.
+10. В реальном WoW Forever провести матрицу безопасных сценариев на фиксированном client build для 101 строк: target/player/pet, combat/out of combat, spellbook/level/rank, cooldown/charges/GCD, aura, power/HP, movement/cast, group/instance, actionbar/bindings, secret restrictions. Для непроверяемых сценариев оставить `NOT_RUN/UNCONFIRMED` с точной причиной; различия документировать и согласовывать изменения v14 до изменения production API.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО / P0 / SOURCE MATRIX COMPLETE, CLIENT VERDICTS NOT VERIFIED.** Утверждённая v14 уже содержит 101 выбранную возможность и источниковые verdict, DevTools имеет per-row presence probes. Нет доказанного клиентского `CONFIRMED/DIFFERENT` evidence, полного runtime callsite inventory и отдельной модели client verdict. **CLIENT PASS=0/101.** Игровой QA, Lua/CI NOT RUN в этом аудите.
+
+**Архитектурные ссылки:** QA-01, QA-02, QA-03, EN-A7, DA-03, AC-07, `docs/rotation/Canonical_API_Matrix.md`, `KordRotationDevTools/V14Registry.lua`, `Probe.lua`, `KordRotation/Core/GameAPI.lua`, `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md`. **Обратные ссылки внесены в QA-01, QA-02, QA-03, EN-A7, DA-03, AC-07**.
 
 **Изменения Lua:** отсутствуют. Только документация.
 
