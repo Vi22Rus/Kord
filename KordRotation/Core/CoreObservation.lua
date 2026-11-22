@@ -97,7 +97,9 @@ function O:ReadEngineDiagnostic()
     if not engine or type(engine.Evaluate)~="function" then
         return {status="UNAVAILABLE",reason="engine_unavailable"}
     end
-    local ok,result=pcall(engine.Evaluate,engine)
+    local evaluate=type(engine.EvaluateBoth)=="function"
+        and engine.EvaluateBoth or engine.Evaluate
+    local ok,result,defensive=pcall(evaluate,engine)
     if not ok or not safe(result) or type(result)~="table" then
         return {status="UNKNOWN",reason="engine_exception"}
     end
@@ -158,6 +160,29 @@ function O:ReadEngineDiagnostic()
                         end
                     end
                     out.arcaneR4Checks=summary
+                end
+            end
+        end
+    end
+    -- Same snapshot as the main evaluation. Export only bounded status,
+    -- priority and fixed refusal vocabulary: never a selected spell ID.
+    if type(defensive)=="table" and safe(defensive) then
+        out.defensiveStatus=status(field(defensive,"status"))
+        out.defensiveReason=reason(field(defensive,"reason")) or "unknown"
+        local checks=field(defensive,"diagnostics")
+        if type(checks)=="table" and #checks<=64 then
+            -- Only a rule actually evaluated in this lane is meaningful:
+            -- routing exclusions are not failed aura conditions.
+            for i,check in ipairs(checks) do
+                if type(check)=="table" and safe(check) then
+                    local why=reason(field(check,"reason"))
+                    if why~="routed_to_other_channel" then
+                        out.defensivePriority=i
+                        out.defensiveRuleStatus=status(field(check,"status"))
+                        out.defensiveRuleReason=why or "unknown"
+                        if out.defensiveRuleStatus=="UNKNOWN"
+                            or out.defensiveRuleStatus=="READY" then break end
+                    end
                 end
             end
         end
