@@ -1,3 +1,13 @@
+## KR-20261122-010 — аудит QA-01: отдельный DevTools и побайтовое ядро
+- Дата: 2026-11-22; SHA через GitHub commit.
+- Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.
+- Аудит: `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md`, `KordRotationDevTools/{Trace,Probe,Recorder,Performance,UI,Locale,*.toc}`, `scripts/build_variants.py`, тестовые файлы, семь ZIP и предыдущие требования.
+- Зафиксирован контракт opt-in DevToolsSession/ObservationRecord, безопасные API probes v14, отдельные SavedVariables, запрет production recorder, побайтовая идентичность общего ядра в двух ZIP.
+- Добавлены 10 задач QA, обратные ссылки DA-03, DA-04, DA-05, UI-06, UI-07, AC-07.
+- PASS: статический аудит исходников/документации. NOT RUN: актуальная сборка ZIP, Lua mock suites, CI, WoW Forever; CLIENT PASS=0/101.
+- Вердикт: SOURCE IMPLEMENTED / P0 / FULL QA NOT CONFIRMED.
+
+
 ## KR-20261122-009 — аудит UI-08: скрытие панелей и сторонние actionbars
 - Дата: 2026-11-22 (точное время и SHA — GitHub).
 - Изменены: `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменён.

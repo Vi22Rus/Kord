@@ -6462,6 +6462,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение UI-06:** STOP/UNKNOWN объяснять исходным безопасным reason из AC-07 и приоритетом остановившего правила; UI-06 не заменяет UNKNOWN на BLOCKED или READY и не продолжает вычислять более низкие правила ради красивого объяснения.
 
+**Ретроактивное уточнение QA-01:** остановки UNKNOWN→STOP документируются точными machine-readable reason в безопасном observation bridge; подробный список проверенных приоритетов — только DevTools QA-01 по явному Start, без повторного вычисления правил.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -7351,6 +7353,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-06:** пользовательское краткое объяснение отсутствия иконки строится из того же snapshot/status/reason, что DevTools диагностика DA-03; подробные traces, запись и экспорт остаются исключительно в DevTools, без второго логгера в пользовательской сборке.
 
+**Ретроактивное уточнение QA-01:** все подробные event/engine/eligibility/API traces, opt-in recorder, performance samples и экспорт должны жить исключительно в отдельном `KordRotationDevTools` согласно QA-01; `KordRotation/Core/Diagnostics.lua` оставляет только bounded read-only support snapshot. Не создавать второй production recorder.
+
 ### DA-04 — Бюджет времени на оценку, замер, предупреждение при превышении
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P1.**
@@ -7409,6 +7413,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-07:** DA-07: настройки бюджета времени валидируются при загрузке/миграции, неподтверждённые числовые дефолты не вводятся. Исторический аудит сохранён.
 
+**Ретроактивное уточнение QA-01:** performance probes и измерение накладных расходов из DA-04 выполняются только в opt-in DevTools QA-01; нельзя включать тяжёлый постоянный profiler в пользовательский аддон.
+
 ### DA-05 — Нет постоянного сканирования: данные читаются по запросу
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7464,6 +7470,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение DA-06:** DA-06: шторм событий не должен запускать непрерывные полные сканы аур/cooldowns; только demand-driven bounded reads. Исторический аудит сохранён.
 
 **Ретроактивное уточнение UI-02:** UI-02: glow обновляется по изменению подтверждённой рекомендации и revision, без непрерывного полного сканирования кнопок. Исторический аудит сохранён.
+
+**Ретроактивное уточнение QA-01:** event storm, coalescing, dropped count и лимиты трассировки проверяются в отдельном DevTools QA-01; наблюдатель не должен сам создавать неконтролируемый OnUpdate/второй EventBus.
 
 ### DA-06 — Защита от «шторма» событий (кулдаун, ауры)
 
@@ -8048,6 +8056,8 @@ Kord Rotation должен позволять создавать, именова
 
 **Ретроактивное уточнение UI-08:** объяснение UI-06 различает отсутствие рекомендации и недоступность отображения keybind/glow из-за скрытой/неподтверждённой actionbar-кнопки; коды `button_not_visible|no_confirmed_visible_button|button_slot_unconfirmed|dynamic_routing_unverified` берутся из существующих providers UI-08, без нового API-опроса ради tooltip.
 
+**Ретроактивное уточнение QA-01:** пользовательское «почему нет иконки» остаётся компактным read-only explanation, а подробная трасса по evaluationID/reason/priority — в отдельном DevTools QA-01, через безопасный observation bridge. Никакой зависимости пользовательской сборки от DevTools.
+
 ### UI-07 — Локализация (ru, en), единые ключи
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -8110,6 +8120,8 @@ Kord Rotation должен позволять создавать, именова
 
 **Ретроактивное уточнение UI-08:** пользовательские сообщения о скрытой панели, неподтверждённой кнопке и неподтверждённой привязке используют единые `REASON_*`/`TIP_*` ключи UI-07 на шести языках; имена Bartender/Dominos/ElvUI и технические коды не локализуются.
 
+**Ретроактивное уточнение QA-01:** `KordRotationDevTools/Locale.lua` физически отдельный от пользовательского `Locale.lua`; оба проходят шестиъязычную валидацию UI-07, но DevTools-only тексты не попадают в user ZIP (QA-01).
+
 ### UI-08 — Реакция на скрытие панелей и аддоны панелей (Bartender, Dominos, ElvUI и др.)
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -8169,6 +8181,67 @@ Kord должен корректно реагировать на фактиче�
 **ЧАСТИЧНО РЕАЛИЗОВАНО / P1 / ИМЕЕТСЯ READ-ONLY ОСНОВА, НЕТ ПОДТВЕРЖДЁННОГО END-TO-END QA.** Scanner и binding resolver уже знают основные сторонние панели и безопасно проверяют видимые кнопки; остаются presentation lifecycle, все сценарии Hide/Show/paging и игровой QA. Не заявлять полную поддержку без тестов на WoW Forever.
 
 **Архитектурные ссылки:** UI-01, UI-02, UI-05, UI-06, UI-07, DA-08, `ActionBarScanner`, `BindingResolver`, `RotationDisplay`, `docs/STAGE_02_05_ACTIONBAR.md`, `docs/STAGE_02_06_BINDINGS.md`. **Обратные уточнения внесены в UI-01, UI-02, UI-05, UI-06, UI-07, DA-08.** Никакого нового engine, Eligibility или второго scanner.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### QA-01 — DevTools: запись, трассировка, зонды API. Отдельный аддон, ядро побайтово то же, что у пользователя
+
+**Раздел: 17. Диагностика и качество. Приоритет: P0.**
+
+#### Требование
+
+Две физические поставки: `KordRotation-user.zip` содержит **только** пользовательский `KordRotation/`; `KordRotation-dev.zip` содержит **тот же самый побайтовый `KordRotation/`** плюс отдельный `KordRotationDevTools/`. Единственный исходный каталог общего ядра; не допускаются условные debug-ветви, отдельные боевые алгоритмы, профили, настройки или скрытый recorder в пользовательской сборке. DevTools зависит от KordRotation, имеет собственные TOC/SavedVariables/локали/UI, **не** изменяет ротацию, приоритеты, eligibility, protected состояния или данные игрока. Наличие DevTools не должно менять выдачу рекомендаций при одинаковом достоверном состоянии.
+
+**Контракт наблюдения:** общий KordRotation предоставляет только bounded read-only `KordRotationCoreObservation` с проверенными и санитизированными snapshot, status/reason, revisions, API matrix ID и opt-in методами Begin/End trace. `DevToolsSession` — отдельный state machine `OFF→RECORDING→STOPPED→EXPORTED/CLEARED`; после установки и `/reload` запись **OFF**, автоматический старт запрещён. `Record(kind,status,reason,matrixID,source,revision,elapsed,count)` принимает только allowlisted scalar data; secret/tainted значения не сравнивать, не сериализовать и не приводить к строке до безопасной проверки. Запрещены raw GUID, имена игроков, target names, chat, combat-log payload, сырые frame refs, SavedVariables пользователя, содержимое ошибок без фильтра. Отдельные записи `EVENT/ENGINE/PROFILE/ELIGIBILITY/METHOD/API/ERROR/PERFORMANCE` должны иметь bounded reason и источник, приоритет/evaluationID только при реально доступных проверенных полях; без повторного запуска движка ради диагностики. API-пробы по `Canonical_API_Matrix v14` **не доказывают** игровую функциональность: `PRESENT`/наличие метода ≠ `CLIENT PASS`, не превращать `UNKNOWN` в READY.
+
+**Лимиты и жизненный цикл:** ручные Start/Stop, разовый ProbeAll, ограниченный кольцевой буфер и SavedVariables, dedup/rate limit, счётчик dropped, throttled observations, замеры CPU/latency без постоянного тяжёлого OnUpdate, явный Clear/Export. Никаких произвольных файлов, HTTP, скрытой телеметрии или автосбора. Экспорт — подготовка очищенного текста для ручного копирования пользователем; `/reload` сохраняет разрешённые SavedVariables, но не возобновляет запись. Отсутствие bridge/API → `UNAVAILABLE/UNKNOWN` с точным reason, не фиктивный PASS. В обоих ZIP общие файлы `KordRotation/` должны иметь **одинаковые имена, размеры, SHA-256 и содержимое**, а пользовательская сборка не должна содержать ни одного DevTools файла/скрытого debug toggle/зависимости. DevTools UI на `ruRU/enUS/frFR/deDE/ptBR/esES` по UI-07.
+
+#### Аудит Kord (main)
+
+- `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md:9–16,38–46` уже нормативно устанавливает две физические поставки, побайтовое равенство ядра, ручной opt-in, матрицу v14, secret safety и отдельные SavedVariables. Статус документа: source implemented, полный клиентский QA не выполнен.
+- `KordRotationDevTools/KordRotationDevTools.toc:1–16`: `## Dependencies: KordRotation`, `## SavedVariables: KordRotationDevToolsDB`, отдельные `Locale/Core/Recorder/V14Registry/Probe/Trace/Performance/UI` — физическое разделение присутствует.
+- `KordRotationDevTools/Trace.lua:4–29,30–77,79–95`: whitelist событий, `TraceStart/TraceStop`, защита unit `player`, throttled observation 0.75 с, Begin/EndAPITrace через bridge. При недоступном bridge записывается `method_trace_unavailable`; наличие этих методов не доказывает end-to-end полноту всех engine/eligibility transitions.
+- `KordRotationDevTools/Probe.lua:4–34,36–68`: метод сверяется с `V14Registry`, `ProbeAll` проходит строки, возвращает `presence_only_not_client_pass`; при активной записи сохраняет row-specific API entries. `:72–...` есть `Why()` с санитизированным read-only core bridge.
+- `KordRotationDevTools/Recorder.lua`, `Performance.lua`, `UI.lua`, `Locale.lua`: отдельные модули для записи, замеров, интерфейса и шести локалей; полная функциональность/лимиты требуют отдельного mock и client QA.
+- `scripts/build_variants.py:14–43`: берёт TOC-загруженные Lua и assets из **одного** source tree; `:45–70` формирует два ZIP, проверяет одинаковое содержимое общих файлов, отсутствие DevTools в user и наличие в dev, пишет SHA-256 manifest. В коде есть строгая byte equality, но **в текущем аудите сборка не запускалась**, поэтому результат для актуального HEAD не заявляется.
+- `tests/test_build_variants.py`, `tests/devtools_boot.lua`, `tests/devtools_probe.lua`, `tests/devtools_recorder.lua`, `tests/devtools_trace.lua`, `tests/devtools_trace_signals.lua`, `tests/devtools_ui_locale.lua`, `tests/devtools_v14_registry.lua`: исходники тестов существуют. Их наличие не равно выполненному PASS; текущий прогон NOT RUN.
+- `KordRotation/Core/Diagnostics.lua` и `KordRotation/UI/Pages/AdvancedDiagnostics.lua`: пользовательская сборка предоставляет bounded support snapshot/кнопку открытия опционального DevTools, но не встроенный recorder; граница соблюдена по исходникам.
+- **Пробел:** не подтверждены текущий ZIP byte-identity manifest после реальной сборки, сквозная запись всех требуемых engine/eligibility reasons, overflow и /reload, секретные значения, производительность, экспорт, полный mock regression и реальный WoW Forever. v14 **CLIENT PASS = 0/101** до доказательств, наличие метода/исходника не меняет счётчик.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Profiles.lua` и `Sonah/UI/ActionBars.lua` демонстрируют разделение profile/state и UI; использовать отдельные диагностические точки, но не переносить ротационную логику в DevTools. Готовая побайтовая dual-addon схема не подтверждена.
+2. **JustAC:** `JustAC/DebugCommands.lua` содержит отдельные inspect/debug команды; полезна явная команда для ручной поддержки. Не копировать debug в production KordRotation.
+3. **ForeverAuras:** `ForeverAurasOptions/InformationOptions.lua` имеет Debug Log UI, `ForeverAuras/API.lua` — отдельные API-функции; заимствовать разделение представления и доступа, не считать это доказательством изолированного DevTools ZIP.
+4. **MaxDps:** `MaxDps/Options.lua` содержит `debugMode`; это менее строгая модель по сравнению с утверждённым отдельным DevTools, не переносить debug toggle в пользовательский аддон.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua` содержит trace-параметр, `ForeverRotation/Rotations/Signals.lua` документирует `/fr why`; полезны reason/priority observations, но не второе вычисление или изменение engine.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua` имеет status-диагностику; полезен компактный read-only summary, но status не заменяет session recorder/API matrix.
+7. **RotationMaster:** `RotationMaster/Core/forecast.lua` и `Core/assisted_highlight.lua` имеют диагностируемые состояния/guards; использовать проверяемые reasons, не копировать engine или тяжёлый runtime profiler в production.
+
+**Границы доказательств:** референсы сравнивались по указанным Lua и предыдущим проверенным участкам; наличие trace/debug в чужом аддоне не доказывает byte-identical dual-install architecture. API совместимость и точные версии Forever проверять отдельно.
+
+#### Выбранный путь Kord
+
+**Оставить существующие `KordRotationDevTools/*`, `KordRotationCoreObservation`, `scripts/build_variants.py` и единственный `KordRotation/` каноническими.** Дорабатывать покрытие traces и QA **в этих модулях**, не создавать второй recorder, EventBus, engine, probe registry или дублирующее ядро. Все P0 требования диагностического наблюдения закрываются только доказанными source/mock/client результатами; `SOURCE IMPLEMENTED` не равен `QA COMPLETE`. Для ранее рекомендованных универсальных механизмов ссылки обязательны: DA-03 и UI-06 используют QA-01, DA-04/DA-05 используют opt-in замеры, AC-07 сохраняет причины STOP. Сохранить архитектуру двух физических аддонов из нормативного документа.
+
+#### Требуемые изменения
+
+1. Утвердить формальную схему `DevToolsSession` и `ObservationRecord`: matrixID, module, status, machine reason, timestamp, revision, evaluationID/priority при наличии, bounded scalar context; запрещать raw/secret значения.
+2. Проверить все входы `KordRotationCoreObservation` и `Trace.lua` на отсутствие повторной оценки движка, изменение профиля/Eligibility, секретные значения и несанкционированный protected API.
+3. Проверить явный opt-in Start/Stop, состояние OFF после установки и /reload, отсутствие hidden production recording, отдельные `KordRotationDevToolsDB` и отсутствие dev кода в user ZIP.
+4. Покрыть `EVENT/ENGINE/PROFILE/ELIGIBILITY/METHOD/API/ERROR/PERFORMANCE` без фиктивных событий и без потери первого UNKNOWN/STOP reason; недоступные поля помечать `UNAVAILABLE`.
+5. Проверить `V14Registry` и `ProbeAll` по всем 101 строкам матрицы; presence-only не переводить в CLIENT PASS, сохранять ID и evidence для ручной игровой проверки.
+6. Проверить кольцевой буфер, ограничения записей и SavedVariables, dedup/rate-limit, dropped counter, безопасный экспорт/очистку и корректный жизненный цикл после /reload.
+7. Проверить нагрузку DevTools в OFF и RECORDING, throttled observations, EventBus storm, ограничение времени/памяти, отсутствие постоянного тяжёлого profiler и влияния на вывод Kord.
+8. Запускать `scripts/build_variants.py` и `tests/test_build_variants.py` на текущем HEAD; сравнить списки общих файлов, SHA-256 и bytes, подтвердить отсутствие DevTools в user и корректную зависимость dev.
+9. Прогнать `tests/devtools_*.lua`, регрессию ядра, locale/tooltip на шести языках, сценарии missing bridge, protected/secret, API exception, overflow, restart/reload, manual export, два одновременно загруженных аддона.
+10. В реальном WoW Forever подтвердить загрузку двух аддонов, все UI-кнопки, Start/Stop, trace engine/eligibility/STOP, API probe на актуальном клиенте, performance, безопасный экспорт и паритет пользовательских рекомендаций; протоколировать по версии клиента, build/commit и строке v14. Без игры отмечать NOT RUN.
+
+#### Вердикт
+
+**SOURCE IMPLEMENTED / P0 / ПОЛНЫЙ QA НЕ ПОДТВЕРЖДЁН.** Отдельный DevTools, TOC-зависимость, собственные SavedVariables, трассировка, API-пробы, UI и сборщик побайтово идентичных общих файлов присутствуют в исходниках. Нельзя утверждать полную готовность до реального запуска сборки, всех тестов и WoW Forever. `CLIENT PASS=0/101` остаётся действующим нормативным значением.
+
+**Архитектурные ссылки:** DA-03, DA-04, DA-05, UI-06, UI-07, AC-07, `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md`, `docs/rotation/Canonical_API_Matrix.md`, `KordRotationDevTools/*`, `scripts/build_variants.py`. **Обратные ссылки добавлены в DA-03, DA-04, DA-05, UI-06, UI-07, AC-07**; повторно создавать ранее предусмотренные инструменты запрещено.
 
 **Изменения Lua:** отсутствуют. Только документация.
 
