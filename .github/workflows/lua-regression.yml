@@ -48,6 +48,7 @@ jobs:
             tests/hunter_bm_rank_selection.lua \
             tests/hunter_bm_leveling_contract.lua \
             tests/hunter_bm_aspect_switch.lua \
+            tests/hunter_bm_aspect_bar_rank.lua \
             tests/rotation_module_config.lua \
             tests/bm_full_audit.lua \
             tests/diagnostics_devtools_launch.lua; do
