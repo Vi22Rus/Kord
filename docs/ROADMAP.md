@@ -1,3 +1,11 @@
+## Binding UI rule — Defensive ability placement (confirmed 2026-11-22)
+
+- One Advanced checkbox, `defensiveInCombatMain`, ON by default: while in confirmed combat, route `defensive` abilities into the main frame; OFF routes these abilities only into the separate Defensive frame.
+- Out of combat, use the separate Defensive frame, irrespective of the checkbox. Never duplicate a spell in both frames.
+- This explicitly excludes aura/buff promotion; `buffsInCombatMain` is a separate legacy policy.
+- Keep eligibility and unknown handling conservative; verified spell/condition checks are still required.
+- Current implementation committed in main, covered by `tests/combat_aura_routing.lua`.
+
 # ROADMAP — этапы разработки Kord Rotation
 
 **Текущая контрольная точка:** [Contract v1 2.9-C Status](rotation/Contract_v1_Status_2_9.md) — SOURCE IMPLEMENTED, но 17-suite Lua 5.1 и WoW Forever ещё NOT RUN. Блокирующие провайдеры и CFG UI описаны там, это не завершённый Hunter-ready движок.
