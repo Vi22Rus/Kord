@@ -201,6 +201,25 @@ eq(verifiedAbsent.value,false,"missing debuff explicitly false")
 local absentBuff=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
 eq(absentBuff.status,"READY","fully enumerated missing buff proven")
 eq(absentBuff.value,false,"missing buff explicitly false")
+-- Sonah/ForeverAuras reference: when the client hides auras, do NOT
+-- attempt forbidden batch/index enumeration after a direct-ID miss.
+local deniedReads=0
+C_Secrets={ShouldAurasBeSecret=function() return true end}
+C_UnitAuras.GetUnitAuras=function()
+ deniedReads=deniedReads+1
+ error("auras cannot be accessed when secret")
+end
+C_UnitAuras.GetAuraDataByIndex=function()
+ deniedReads=deniedReads+1
+ error("auras cannot be accessed when secret")
+end
+local hidden=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(hidden.status,"UNKNOWN","hidden aura absence stays unknown")
+eq(hidden.reason,"aura_hidden_by_client","explicit source-backed refusal")
+eq(deniedReads,0,"no forbidden aura enumeration under restrictions")
+C_Secrets.ShouldAurasBeSecret=function() return false end
+C_UnitAuras.GetUnitAuras=nil
+
 C_UnitAuras.GetAuraDataByIndex=function()
  return {spellId="SECRET"}
 end
