@@ -20,6 +20,7 @@ Core\AuraEvidence.lua
 Core\AuraCooldownViewer.lua
 Core\SpellCatalogue.lua
 Core\ItemFamilyCatalog.lua
+Core\SharedCooldownGroupCatalog.lua
 Core\GameState.lua
 Core\ActionBarScanner.lua
 Core\BindingResolver.lua

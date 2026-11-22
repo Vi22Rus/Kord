@@ -5154,6 +5154,16 @@
 - **Осталось:** подтвердить GCD именно для item-use и API cooldown signatures, закрыть 2.2–2.3 при наличии доказательств, реализовать 2.5–2.10. Это разделение фактов, а не итоговая готовность использовать предмет; связанные IT-01, IT-03, IT-04, AC-02.
 
 
+#### Реализация Kord — фактическое состояние (IT-02, этап 2, шаг 2.5, частично)
+- **ID/дата/приоритет/статус:** IT-02, 2026-11-22, P0, PARTIALLY IMPLEMENTED; client verification NOT RUN. Исходные аудиты/вердикты сохранены.
+- **Код:** новый `KordRotation/Core/SharedCooldownGroupCatalog.lua`: `GetGroup("POTION_SHARED")` возвращает только source-backed кандидат `HEALTH_POTION` + `MANA_POTION` из существующего `ItemFamilyCatalog`, отдельный список исключений `HEALTHSTONE/BANDAGE/FOOD/DRINK/MANA_GEM/TRINKET`, семейную revision при валидном чтении и `status="UNKNOWN"`/`verification="PENDING_FOREVER"`. `ListGroups()` возвращает отдельную копию. Исключения и кандидаты НЕ доказывают group cooldown. Свойства active/remaining/itemIDs намеренно не выдаются. Модуль подключён в `KordRotation/KordRotation.toc` между ItemFamilyCatalog и GameState, сохраняя единый исходный каталог обоих пакетов.
+- **Тест:** `tests/shared_cooldown_group_catalog_mock.lua` проверяет отсутствие READY и фальшивого remaining, непересечение исключений и защиту от изменения возвращённых копий.
+- **Источники:** source-only `KordRotation/Core/ItemFamilyCatalog.lua` (JustAC/Data/Forever/Consumables.lua и Forever item listings из исходного аудита). Непосредственное подтверждение общей группы на Forever отсутствует; референсный архив в этой итерации повторно не открывался. WoW API новых нет.
+- **Доказательства:** коммит `KR-20261122-089`, SHA `git log --grep KR-20261122-089`; файлы исходников см. GitHub history по SHA, тест в этом же коммите.
+- **Проверки:** PASS — статическая сверка ограниченного unknown-контракта, подключения TOC и assertions; NOT RUN — Lua 5.1, mock runtime, CI, WoW Forever.
+- **Осталось:** доказать реальные правила и исключения `POTION_SHARED` на Forever и обновить каталог без ложной READY; затем inference 2.6. Это частичная реализация и НЕ удовлетворяет критерию «верифицированная группа».
+
+
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
