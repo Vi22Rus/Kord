@@ -44,6 +44,23 @@ eq(p.Rules[6].recommendationType,"utility",
 eq(p.Rules[7].recommendationType,"debuff",
  "Hunter's Mark excluded from player buff routing")
 eq(p.Rules[7].spell,"Mark","prepull mark")
+-- UnitPower is secret in WoW Forever. Zero-reserve policy must
+-- not demand a percent the client cannot reveal; nonzero reserve
+-- must continue to fail closed until that percent is verified.
+local arcaneRule
+for _,rule in ipairs(p.Rules) do
+ if rule.id=="ranged_arcane" then arcaneRule=rule break end
+end
+eq(type(arcaneRule),"table","ranged arcane rule available")
+local range={spellFact=function()return true end,
+ observe=function(_,name)
+  if name=="target.melee" then return false end
+  if name=="resources.percent" then return nil end
+ end}
+eq(arcaneRule.when(range,{hawk_arcane="arcane",mana="max"}),true,
+ "zero mana reserve needs no secret percentage; eligibility still runs")
+eq(arcaneRule.when(range,{hawk_arcane="arcane",mana="balanced"}),nil,
+ "balanced reserve remains unknown when power is protected")
 local has={}
 for _,rule in ipairs(p.Rules) do has[rule.spell or rule.action]=true end
 for _,key in ipairs({"Feign","AspectHawk","AspectMonkey",
