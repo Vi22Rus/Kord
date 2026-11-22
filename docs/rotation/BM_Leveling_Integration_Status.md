@@ -108,3 +108,17 @@ DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVaria
 **Remaining blocker:** on the supplied 2026-11-22 game recording `C_Secrets.ShouldAurasBeSecret` was true and all direct known-ID lookups were nil. No reference establishes a trustworthy **initial negative** in that state, so a previously unobserved Aspect of the Hawk still correctly remains UNKNOWN rather than spuriously re-cast. This patch provides real operational pathways for nonsecret aura checks and observed self-casts, but has NOT been tested in the Forever client and does not warrant a claim that Aspect of the Hawk now appears under every state.
 
 **Validation:** source reviewed against Sonah/ForeverAuras/JustAC, Lua mock added but not run, no Forever client test. 
+
+## 2026-11-22 — Reference-driven Hawk aspect switching after user battle log (8797–8821)
+
+**Live evidence:** newest two-page test starts with `C_UnitAuras.GetPlayerAuraBySpellID READY` and `bm_signal_2_player_travelaspect READY` at t8797, while rule #2 `condition_false`. After combat begins, the direct player-aura, generic by-ID and by-name paths return `no_value` 1062 times, `C_Secrets.ShouldAurasBeSecret` is readable and hidden-mode returns `player.buff UNKNOWN/aura_hidden_by_client`. Rule #2 transitions to UNKNOWN. This proves a false rule decision was possible in the presence of a *confirmed positive travel aspect*; previous code always did `if travel==true then return false`, unlike Sonah.
+
+**Source:** `Sonah/Classes/Hunter.lua:142–171` specifically separates an out-of-combat reminder (wait while Cheetah or Pack active) from an in-combat emergency combat-aspect switch. `travelOn(def)` checks `C.buff(def)` and that its evidence is not consumed by a later cast of a combat aspect.
+
+**Implemented in the canonical core:**
+- `BM_Leveling_Contract.lua` rule #2 returns TRUE to recommend Hawk in combat if a confirmed travel aspect is active, even if the current Hawk aura lookup is hidden/UNKNOWN. A verified already-active Hawk still blocks duplicate recommendation. Out of combat, it leaves Cheetah/Pack active.
+- `AuraEvidence.lua` tracks 5118/13159 by *verified positive direct observation* for at most 120 seconds through secret-combat transitions, and consumes it when a player `UNIT_SPELLCAST_SUCCEEDED` event confirms a combat aspect. Covers known Hawk ranks 13165/14318–14322/25296, Beast, Monkey, Wild. Self-cast positive records remain bounded. A historical positive record is not refreshed from itself; `PLAYER_ENTERING_WORLD` and death reset all records.
+- `GameState:ReadSignal("player.travelAspect")` records a verified Cheetah/Pack presence and can reuse unconsumed *positive* travel evidence while live APIs are hidden. This is deliberately NOT a generic fabricated absence or an unconditionally optimistic cast.
+- New mock `tests/hunter_bm_aspect_switch.lua` and stage state evidence checks; new mock is included in manual Lua 5.1 CI workflow.
+
+**State:** SOURCE IMPLEMENTED / MOCK NOT RUN / FOREVER CLIENT NOT RETESTED. No claim of confirmed in-game rendering; client-side eligibility still requires a verified actionbar spell/rank, usability, cooldown, etc.
