@@ -554,6 +554,37 @@ local function resolveSpells(entries)
  for _,id in ipairs(hawkRanks) do
   if seen[id] then spells.Hawk=id break end
  end
+ -- Sonah ActionSlots: only pair a learned rank with an independently
+ -- verified exact spell ID on a visible action button.
+ local scanner=KR.ActionBarScanner
+ if scanner and type(scanner.GetSnapshot)=="function" then
+  local ok,bar=pcall(scanner.GetSnapshot,scanner)
+  if ok and type(bar)=="table" and bar.status=="READY"
+      and type(bar.entries)=="table" then
+   local visible={}
+   for _,button in ipairs(bar.entries) do
+    if type(button)=="table" and type(button.spellID)=="number"
+        and (not api or not api.IsSafeValue
+             or api:IsSafeValue(button.spellID)) then
+     visible[button.spellID]=true
+    end
+   end
+   for _,key in ipairs({"AspectHawk","AspectMonkey"}) do
+    local selected,selectedRank
+    for _,entry in ipairs(entries) do
+     if type(entry)=="table" and entry.known==true
+         and type(entry.id)=="number" and visible[entry.id]
+         and entry.name==names[key] then
+      local rank=type(entry.rankNumber)=="number" and entry.rankNumber or 0
+      if not selected or rank>selectedRank then
+       selected,selectedRank=entry.id,rank
+      end
+     end
+    end
+    if selected then spells[key]=selected end
+   end
+  end
+ end
  return spells
 end
 function M:Register()
