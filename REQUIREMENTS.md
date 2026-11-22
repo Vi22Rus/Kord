@@ -506,3 +506,50 @@
 6. Тесты: обычные и secret-значения, отсутствующий API, вход/выход из боя, каст без затрат маны, расход маны, смена формы/ресурса, непрерывная/тиковая модель, задержанные/дублированные события.
 
 **Изменения кода:** не выполнялись; внесён аудит PL-06.
+
+
+## PL-07 — Боевой статус, группа/рейд/соло и режим подземелья
+
+**Приоритет: P2.**
+
+### Требование
+
+Безопасно различать `inCombat`/`outOfCombat`, `solo`/`party`/`raid`, нахождение внутри инстанса и его тип (`none`, `party`, `raid`, `pvp`, `arena`, `scenario`, если поддерживается клиентом). Не отождествлять `party` (тип инстанса) с нахождением в группе. При недоступном API/secret/неизвестном типе возвращать `UNKNOWN`, а не `solo` или `none`. Отдельно фиксировать, какие режимы подземелья (обычный/героический/мифик и др.) **реально предоставляет WoW Forever**; не переносить retail-специфичные ID без проверки.
+
+### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строка 127: `player.combat` читается через `UnitAffectingCombat`; строки 200–223: контекст читает `IsInGroup`, `IsInRaid`, `IsInInstance` и `GetInstanceInfo`, выделяет тип инстанса `party/raid/pvp/arena/scenario/none`; неизвестный тип → `UNKNOWN`.
+- `GameState.lua`, строки 224–243: состояние боя включает `combat.player` и `combat.lockdown` как отдельные признаки, а контекст включён в снимок. Это не то же самое, что режим подземелья или сложность.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 13–15: необходимые API включены в allowlist и обрабатываются общими проверками.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 7–27: доступны `player.combat` и `context.instanceType`, но не явные `context.groupMode`, `context.inGroup`, `context.inRaid`, `context.difficultyID`.
+- В проверенном контексте отсутствует нормализованный `solo/party/raid` и явный уровень сложности подземелья. `GetInstanceInfo` используется только для первых двух результатов, не для `difficultyID`.
+
+### Как реализовано в семи референсах (проверены локальные ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Units.lua:184–186` использует `UnitAffectingCombat("player")` с безопасным чтением; `Sonah/Core/Atoms/World.lua:38–52` получает `IsInGroup`, `IsInRaid`, `IsInInstance` через secret-safe обёртки, `GetInstanceInfo` через `pcall`, выдаёт `nil` при неизвестности. Специализированного классификатора сложности подземелья в проверенных файлах нет.
+2. **JustAC** — `JustAC/Engine.lua:329–337` читает `UnitAffectingCombat` через защищённый вызов и учитывает `InCombatLockdown`; `JustAC/BlizzardAPI/StateHelpers.lua:107–120` разделяет `IsInGroup`, `IsInRaid`, `IsInInstance` и `GetInstanceInfo` с `pcall` и проверкой secret. `SpellQueue.lua:1441–1449` отдельно использует `GetInstanceInfo` для правил сложности. Не смешивает группу с типом инстанса.
+3. **ForeverAuras** — `ForeverAuras/Prototypes.lua:1298–1337` реализует универсальные триггеры боевого состояния; `Prototypes.lua:1741–1788` — триггеры группы/рейда; `Prototypes.lua:1888–1941` — тип инстанса и сложность через `GetInstanceInfo`. Система условных триггеров, не единый канонический снимок.
+4. **MaxDps** — `MaxDps/Helper.lua:119–127` читает `UnitAffectingCombat` и `IsInGroup`/рейд для выбора правил; `MaxDps/Helper.lua:2099–2110` получает тип и сложность инстанса для сценарных проверок. Прямые игровые чтения не следует переносить в Kord без адаптера.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:63–69` использует `UnitAffectingCombat` для проверки боевого статуса; `ForeverRotation/Rotations/Signals.lua:60–77` добавляет `inGroup`/`inRaid`/тип инстанса через доступные API. В проверенном коде нет подтверждённой полной карты difficultyID для WoW Forever.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:61–70` предоставляет `InCombat` через `UnitAffectingCombat`; `Core/Engine.lua:47–58` использует это в правилах. В проверенных файлах нет отдельного полноценного нормализатора `solo/party/raid` и сложности подземелья.
+7. **RotationMaster** — `RotationMaster/Conditions/unit_states.lua` реализует условия боя и группы; `RotationMaster/Platform/world.lua` выделяет наблюдения группы, рейда, типа инстанса и сложности с защитой вызовов и неизвестных данных. Проверка client-specific difficultyID требуется и для этого референса.
+
+### Моя рекомендация
+
+**Основой выбрать Sonah + RotationMaster**: от Sonah взять безопасное раздельное чтение `IsInGroup`/`IsInRaid`/`IsInInstance`/`GetInstanceInfo`, от RotationMaster — нормализацию контекста и объяснимые статусы. **Из ForeverAuras** взять независимые измерения типа инстанса и сложности, не смешивая их с составом группы. В Kord сохранить существующий `GameState.context` и расширить его, а не создавать параллельный источник. Не копировать прямые вызовы MaxDps и не выводить сложность по одному факту нахождения в `party`.
+
+### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ТРЕБУЕТСЯ ДОРАБОТКА (P2).**
+
+Базовые флаги боя, группы/рейда и тип инстанса реализованы. Нет нормализованного `solo/party/raid` и достоверной классификации сложности подземелья.
+
+### Требуемые изменения
+
+1. Добавить в `GameState.context` нормализованное `groupMode` (`solo/party/raid/UNKNOWN`) из независимых подтверждённых `IsInGroup` и `IsInRaid`, с приоритетом рейда и без подстановки `solo` при недостоверных данных.
+2. Добавить `difficultyID` и `difficultyLabel` из безопасного чтения `GetInstanceInfo` (проверить клиентский контракт и поддерживаемые режимы WoW Forever). Неизвестный ID не угадывать.
+3. Разделить `combat.player`, `combat.lockdown`, `context.groupMode`, `context.instanceType`, `context.difficultyID` и статусы каждого сигнала.
+4. Предоставить необходимые сигналы в `RotationConditions`; не допускать ложного `READY` при неизвестном обязательном условии.
+5. Тесты: соло на улице/в инстансе, группа вне инстанса, рейд, переход группы в рейд, разные сложности, вход/выход из инстанса, secret, отсутствующий API, неизвестный тип/ID, задержки событий.
+
+**Изменения кода:** не выполнялись; внесён аудит PL-07.
