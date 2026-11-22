@@ -111,7 +111,8 @@ local function levelOf(snapshot)
      or not validID(r.value) or r.value>100 then return nil end
  return r.value
 end
-local function run()
+local function run(channel)
+ channel=channel=="defensive" and "defensive" or "main"
  if not KR.RotationProfiles or type(KR.RotationProfiles.ResolveForEngine)~="function"
     or not KR.RotationSettings or not KR.AbilityEligibility
     or not KR.RotationConditions or not KR.GameState then
@@ -145,11 +146,22 @@ local function run()
  local S=KR.RotationConditions:Create(profile,snapshot)
  if not S then return unknown("condition_context_missing",profile.id) end
  local diagnostics={}
+ local combatRecord=snapshot.player and snapshot.player.combat
+ local inCombat=type(combatRecord)=="table" and safe(combatRecord)
+     and combatRecord.status=="READY" and safe(combatRecord.value)
+     and combatRecord.value==true
+ local auraInMain=inCombat and saved.buffsInCombatMain==true
  for i,rule in ipairs(profile.Rules) do
   local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
   local status,reason
   local ruleChecks,ruleBarReason
-  if rule.type~="SPELL" then
+  -- Route an aura to exactly one recommendation channel.
+  -- UNKNOWN combat is never treated as confirmed combat.
+  local auraRule=rule.recommendationType=="aura"
+  if (auraRule and ((channel=="main")~=auraInMain))
+      or (not auraRule and channel=="defensive") then
+   status,reason="BLOCKED","routed_to_other_channel"
+  elseif rule.type~="SPELL" then
    status,reason="BLOCKED","unsupported_action"
   elseif rule.mode~=nil and rule.mode~="any" and rule.mode~=mode then
    status,reason="BLOCKED","mode_not_selected"
@@ -212,15 +224,22 @@ local function run()
    local record={spellID=spellID,texture=texture,name=name,
     keybind=keybind,bindingSource=bindingSource,
     source=profile.status=="verified" and "verified_profile" or "experimental_profile",
-    priority=i,category=rule.category,mode=mode}
+    priority=i,category=rule.category,mode=mode,
+    channel=channel}
    return {status="READY",source="RotationEngine",profileID=profile.id,
-    mode=mode,queue={record},diagnostics=diagnostics}
+    mode=mode,channel=channel,queue={record},diagnostics=diagnostics}
   end
  end
  return blocked("no_eligible_rule",profile.id,diagnostics)
 end
 function E:Evaluate()
- local ok,result=pcall(run)
+ local ok,result=pcall(run,"main")
+ if not ok or type(result)~="table" then return unknown("engine_exception") end
+ return result
+end
+-- Independent optional aura channel: unknown DPS conditions cannot block it.
+function E:EvaluateDefensive()
+ local ok,result=pcall(run,"defensive")
  if not ok or type(result)~="table" then return unknown("engine_exception") end
  return result
 end
