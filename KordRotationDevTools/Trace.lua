@@ -61,9 +61,14 @@ function D:TraceStart()
     self.lastDetailKeys={}
     self.nextDetailedAt=nil
     self.methodAggregate={}
+    self.apiTraceUnavailableRecorded=nil
     local bridge=_G.KordRotationCoreObservation
     if type(bridge)=="table" and type(bridge.BeginAPITrace)=="function" then
-        pcall(bridge.BeginAPITrace)
+        local ok,enabled=pcall(bridge.BeginAPITrace)
+        self.apiTraceStarted=ok and enabled==true
+        if not self.apiTraceStarted then
+            self:Record("METHOD","UNAVAILABLE","method_trace_unavailable")
+        end
     end
     self:ObserveTransition()
     return true
@@ -136,6 +141,13 @@ function D:DrainAPIMethods()
         self:Record("METHOD","UNKNOWN","method_trace_overflow")
         return false
     end
+    if result.active~=true then
+        if not self.apiTraceUnavailableRecorded then
+            self:Record("METHOD","UNAVAILABLE","method_trace_unavailable")
+            self.apiTraceUnavailableRecorded=true
+        end
+        return false
+    end
     local ids={}
     for _,row in ipairs(self.V14Registry or {}) do
         if type(row.method)=="string" and ids[row.method]==nil then
@@ -150,7 +162,12 @@ function D:DrainAPIMethods()
         if type(item)=="table" and self:Safe(item)
             and self:Safe(item.method) and self:Safe(item.status)
             and self:Safe(item.reason) and self:Safe(item.count)
-            and type(item.method)=="string" then
+            and type(item.method)=="string"
+            and type(item.status)=="string"
+            and type(item.reason)=="string"
+            and type(item.count)=="number" and item.count>=1
+            and item.count<=1000000000 and
+            item.count==math.floor(item.count) then
             self.methodAggregate=self.methodAggregate or {}
             local key=item.method.."|"..item.status.."|"..item.reason
             local existing=self.methodAggregate[key]
