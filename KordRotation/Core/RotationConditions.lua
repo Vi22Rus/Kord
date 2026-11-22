@@ -116,12 +116,16 @@ local function readItemFact(field,id)
  if not ok or type(record)~="table" or not safe(record) then
   return nil,"item_provider_error"
  end
- local valid=record.status=="READY" and safe(record.status)
-     and record.inventoryScope=="BAGS_ONLY" and safe(record.inventoryScope)
+ local verified,valid=pcall(function()
+  return safe(record.status) and record.status=="READY"
+     and safe(record.inventoryScope) and record.inventoryScope=="BAGS_ONLY"
+     and safe(record[family and "familyID" or "itemID"])
      and record[family and "familyID" or "itemID"]==id
      and safe(record.count) and type(record.count)=="number"
      and record.count==record.count and record.count>=0
      and record.count<math.huge and record.count==math.floor(record.count)
+ end)
+ if not verified then return nil,"item_count_secret" end
  if valid then
   if field=="items.hasAny" then return record.count>0,nil end
   return record.count,nil
