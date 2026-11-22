@@ -66,9 +66,12 @@ function D:TraceStart()
     if type(bridge)=="table" and type(bridge.BeginAPITrace)=="function" then
         local ok,enabled=pcall(bridge.BeginAPITrace)
         self.apiTraceStarted=ok and enabled==true
-        if not self.apiTraceStarted then
-            self:Record("METHOD","UNAVAILABLE","method_trace_unavailable")
-        end
+    else
+        self.apiTraceStarted=false
+    end
+    if not self.apiTraceStarted then
+        self:Record("METHOD","UNAVAILABLE","method_trace_unavailable")
+        self.apiTraceUnavailableRecorded=true
     end
     self:ObserveTransition()
     return true
@@ -133,6 +136,10 @@ function D:DrainAPIMethods()
     if not self.active then return false end
     local bridge=_G.KordRotationCoreObservation
     if type(bridge)~="table" or type(bridge.APITrace)~="function" then
+        if not self.apiTraceUnavailableRecorded then
+            self:Record("METHOD","UNAVAILABLE","method_trace_unavailable")
+            self.apiTraceUnavailableRecorded=true
+        end
         return false
     end
     local ok,result=pcall(bridge.APITrace)
