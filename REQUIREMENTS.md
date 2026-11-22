@@ -6071,6 +6071,8 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-02 — ITEM: предмет, зелье, камень (после IT-01–IT-04)
 
+**Ретроактивное ограничение → NO-01:** NO-01 forbids UseItemByName, UseInventoryItem, C_Container.UseContainerItem or item-use macros; ITEM remains a recommendation.
+
 **Архитектурная актуализация EN-A1:** типы AC-01–AC-07 и новые Needs/Rules разрешены только в согласованной версии контракта профиля; реестр должен отвергать несовместимый `contractVersion`, а не молча принимать новый тип (см. EN-A1). Существующий `RotationProfiles` — канонический реестр, без параллельного registry.
 
 
@@ -6142,6 +6144,8 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 
 ### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
+
+**Ретроактивное ограничение → NO-01:** NO-01 forbids executing pet commands or protected pet action buttons; PET_COMMAND is only a displayable suggestion.
 
 **Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 demon pet commands remain PET_COMMAND recommendations only, with PE-04 eligibility.
 
@@ -6220,6 +6224,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 ### AC-04 — TARGET: смена цели (рекомендация, не действие)
 
+**Ретроактивное ограничение → NO-01:** NO-01 makes TARGET strictly informational; no TargetUnit/AssistUnit/target macros, even outside combat.
+
 **Архитектурная актуализация EN-A1:** типы AC-01–AC-07 и новые Needs/Rules разрешены только в согласованной версии контракта профиля; реестр должен отвергать несовместимый `contractVersion`, а не молча принимать новый тип (см. EN-A1). Существующий `RotationProfiles` — канонический реестр, без параллельного registry.
 
 
@@ -6287,6 +6293,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 
 ### AC-05 — STANCE_OR_FORM: смена стойки, ауры, облика
+
+**Ретроактивное ограничение → NO-01:** NO-01 makes STANCE_OR_FORM a recommendation only; no CastShapeshiftForm, CancelAura, protected click or automatic transition.
 
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 makes Druid shape changes a canonical FormStanceObservation/STANCE_OR_FORM case; no second druid shapeshift engine or protected cancellation.
 
@@ -6520,6 +6528,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-05:** CL-05: неизвестный Weakened Soul, тип диспела, mana reserve, статус wand или состояние группы → STOP для зависимого правила.
 
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
+
+**Ретроактивное ограничение → NO-01:** NO-01 is a cross-contract invariant: no new action type, Needs or profile may authorize execution, target mutation or movement.
 
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 new form/resource/HoT Needs require versioned Profile_Contract and strict registry rejection on mismatch; no runtime aliases.
 
@@ -7769,6 +7779,8 @@ Burst — отдельная типизированная настройка п�
 
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
+**Ретроактивное ограничение → NO-01:** NO-01 constrains recommendation icons/queue to visual information; no OnUpdate action execution, click simulation or automatic macro binding.
+
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
 
 #### Требование
@@ -8668,6 +8680,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 — канонический источник проверенных ожидаемых решений для candidate в дифференциальных тестах. Legacy output остаётся свидетельством, а не oracle; QA-05 привязывает каждое сравнение к `scenarioID` и approved expectation.
 
 ### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
+
+**Ретроактивное ограничение → NO-01:** NO-01 extends purity/negative checks from profiles to core, UI and DevTools: no protected automation through wrappers, aliases or dynamic dispatch.
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
 
@@ -9848,3 +9862,91 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / DRUID-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Существуют общие ресурсы, ауры, spell eligibility и event bus, но нет end-to-end form, parallel typed resources, combo ownership, HoT group coverage, Revive/Rebirth/Dispel и безопасного aura cancel. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Архитектурные ссылки:** PL-09, CL-01/02/04/05/06/07/08, AC-05, AC-07, DA-08, EN-A1, QA-04/07; обратные ссылки в этих ранее существовавших требованиях внесены в этом же коммите. Следующий этап — не считать Druid профиль готовым до реальной реализации и тестов.
+
+
+### NO-01 — Запрещено нажимать кнопки, выполнять макросы, менять цель и двигать персонажа
+
+**Раздел 19. Что нельзя и чего не стоит делать. Приоритет: P0 (безусловный запрет).** Действует для обоих аддонов `KordRotation` и `KordRotationDevTools`, всех девяти классов, профилей, режимов PVE/PVP, UI, обработчиков событий, инструментов отладки, тестов и будущих типов действий. **Kord — read-only рекомендательный аддон, а не исполнитель ротации.**
+
+#### Требование
+
+**Инвариант `NO_EXECUTION`:** ни один исполняемый путь Kord не должен программно активировать заклинание/предмет/способность питомца, нажать игровую кнопку, исполнить макрос, установить/сменить/очистить игровую цель, отправить команду движения или имитировать ввод пользователя. Это относится к прямым вызовам WoW API, обёрткам, `_G[name]`, `loadstring`, `RunScript`, protected/secure frames, `SetAttribute` с action/macro/spell/item, `SetBinding`/`SetBindingClick`, кликам через `:Click()`, таймерам/`OnUpdate`, callbacks и косвенной делегации в другой аддон. **Не искать обходы ограничений Blizzard**: вне боя, через secure шаблоны, hardware-event, addon communication или пользовательский макрос, автоматически создаваемый Kord, запрет остаётся.
+
+| Категория | Примеры недопустимых вызовов/паттернов | Разрешённое поведение |
+|---|---|---|
+| Нажатие кнопок и каст | `CastSpellByID`, `CastSpellByName`, `UseAction`, `SpellStopCasting`, `UseInventoryItem`, `UseItemByName`, `C_Container.UseContainerItem`, `PetActionButton:Click()`, `ActionButton:Click()` | Только вычислить `AbilityEligibility`, показать SpellID/ItemID/иконку/привязку/причину; игрок сам использует штатную панель |
+| Макросы и скрипты | `RunMacro`, `RunMacroText`, `CreateMacro`/редактирование макроса для последующего исполнения, `RunScript`, динамическая строка `/cast`, `/use`, `/target`, `/click` | Отображать текстовую подсказку без исполнения, генерации исполняемого макроса или привязки; не вызывать макрос по нажатию на интерфейс Kord |
+| Цель и фокус | `TargetUnit`, `TargetNearestEnemy`, `TargetLastTarget`, `AssistUnit`, `ClearTarget`, `FocusUnit`, `ClearFocus`, `SetRaidTarget` (изменение метки — тоже side effect) | `AC-04 TARGET` — исключительно информационная рекомендация `«выбери другую цель»`, без смены target/focus и маркировки |
+| Движение и камера | `MoveForwardStart/Stop`, `MoveBackwardStart/Stop`, `StrafeLeftStart/Stop`, `StrafeRightStart/Stop`, `TurnLeftStart/Stop`, `TurnRightStart/Stop`, `JumpOrAscendStart`, `AscendStart`, `CameraOrSelectOrMoveStart`, `MoveViewLeftStart`, `ClickToMove`, вызовы навигации/инъекции ввода | Только визуальная информация о дальности, движении, положении, маршруте или необходимости подойти; без изменения позиции/камеры |
+| Protected secure UI и bindings | `SecureActionButtonTemplate` как исполняющая поверхность, `SetAttribute("type","spell"|"macro"|"item"|"target")`, `SetBinding`, `SetBindingClick`, `SetOverrideBindingClick`, synthetic click/keyboard | Только read-only `BindingResolver`, подсветка/текст/иконка. Даже пользовательский клик по Kord не должен запускать боевое действие |
+| Питомцы, облики, расходники | `PetAttack`, `PetFollow`, `CastPetAction`, `CastShapeshiftForm`, `CancelAura`, `UseContainerItem`, автоматическое лечение/воскрешение/диспел | `AC-02 ITEM`, `AC-03 PET_COMMAND`, `AC-05 STANCE_OR_FORM` — только рекомендации. `WAIT`/`STOP` — состояние вывода, не команда |
+
+**Граница:** обычные пользовательские настройки самого Kord (перемещение/масштабирование **собственных** UI-фреймов, выбор профиля, изменение параметров, открытие окна, ручной экспорт диагностического текста) допустимы; запрет относится к игровому управлению, защищённым боевым действиям, цели/фокусу, игровым bindings и движению персонажа. Read-only чтение API/аур/клавиш, отображение подсказок и запись локального диагностического журнала допустимы. **Рекомендация не становится разрешением исполнить действие** даже при `READY`, подтверждённом GCD, `combat=false`, нажатием пользователем на кнопку Kord или наличии secure-frame.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:1–55`: исходный комментарий «read-only, fail-closed» и явный allowlist; перечисленные запрещённые action APIs не обнаружены в просмотренном allowlist. **Это не доказательство отсутствия обхода в остальных Lua**.
+- `KordRotation/Core/RotationEngine.lua:1–20,212–247`: формирует статус, очередь/кандидата и `keybind`; в адресно проверенных строках нет вызова каста, макроса, изменения цели или движения.
+- `KordRotation/Core/BindingResolver.lua:1–3,36,75`: документирован read-only binding resolver, проверка строки `CLICK ...` — **парсинг**, не выполнение secure click; сохранение этого разграничения обязательно.
+- `KordRotation/Core/AbilityEligibility.lua:187–238,267–298,353–385`: проверки target/range/cooldown и возвращаемые candidate/eligibility; разрешение `READY` не должно вести к protected call.
+- `KordRotation/Core/RotationProfiles.lua:10–20,159`: декларативные action categories, target policy и validation; регистрация профиля не даёт права исполнять действие.
+- `KordRotation/Core/EventBus.lua:1–32`: event-driven revisions; обработчики событий не должны превращаться в trigger action.
+- `KordRotationDevTools`: отдельный аддон с общим байт-в-байт ядром; DevTools не исключение из NO-01. **Полный динамический аудит всех Lua обоих аддонов не выполнен**.
+
+#### Сравнение семи референсов и граница применимости
+
+1. **Sonah:** условия и классовые атомы применимы для чтения фактов/приоритетов, но никакие возможные action/cast helpers не переносятся в Kord; сравнивать только read-only observation.
+2. **JustAC:** Forever rotations и StateHelpers — источник class/spell conditions, **не** основание для автоматизации игровых действий или использования macro/click paths.
+3. **ForeverAuras:** aura scanning/secret-safe API — допустимый read-only образец; любые trigger actions/clicks не переносить.
+4. **MaxDps:** engine glow/highlight/read-only recommendation — допустимая концепция; secure action execution запрещён независимо от того, разрешён ли в другом аддоне.
+5. **ForeverRotation:** rotation signals/priorities — источник рекомендательных условий, не исполнительного поведения.
+6. **RotationGuide:** списки/иконки рекомендаций — допустимы; макросы/автовыбор цели/движение не переносятся.
+7. **RotationMaster:** condition platform, spell/item/pet/target observations — допустимы только как read-only контракты; импортировать механизм автоматического исполнения, protected clicks или macro bridge запрещено.
+
+**Доказательная граница:** сравнение семи проектов основано на ранее документированных адресных исследованиях, **в этом проходе не выполнен новый полный построчный анализ их Lua**. Запрет NO-01 является архитектурным решением Kord независимо от того, какие действия поддерживают референсы.
+
+#### Выбранный путь Kord
+
+**Один общий `RecommendationOnlyBoundary` / `NO_EXECUTION` invariant** на уровнях `GameAPI` allowlist, `Profile_Contract`, `RotationEngine`, `AbilityEligibility`, UI и DevTools. Это нормативный запрет, **не требование создавать новый runtime модуль**. В профилях — чистые `Needs`/`Rules`; в движке — данные `actionType`, `spellID`, `itemID`, `targetHint`, `keybind`, `reason`, `status`, `revision`; в UI — только показ и подсветка, без secure-action surface. `TARGET` из AC-04 означает совет о выборе цели, а не `TargetUnit`; `PET_COMMAND` из AC-03 — рекомендация команды, а не `PetAttack`; `STANCE_OR_FORM` из AC-05 — совет о смене облика, а не `CastShapeshiftForm`.
+
+Не использовать `issecretvalue` или Blizzard protected restrictions как единственный механизм защиты: даже если действие технически доступно в конкретной версии/вне боя, NO-01 запрещает его **по продуктовой политике**. `UNKNOWN`/secret нельзя обходить выполнением действия «для проверки». Разрешённая диагностика — журналирование `would_recommend`, `would_block`, `reason`, а не `would_execute` с фактическим выполнением.
+
+#### Требуемые изменения и приёмка
+
+1. Добавить QA-06 статический **denylist + semantic review** для всех `KordRotation/**/*.lua` и `KordRotationDevTools/**/*.lua`, включая вызовы через aliases, `_G`, `loadstring`, `RunScript`, `secure` templates, event callbacks, macro text, synthetic clicks, bindings и сторонние библиотеки; совпадение строки в комментарии/локализации не считать исполнением.
+2. Проверить `GameAPI` allowlist, все API adapters, `RotationEngine`, `AbilityEligibility`, `BindingResolver`, UI callbacks, action highlights и DevTools: ни одна ветвь `READY` не должна иметь executable path.
+3. Для всех типов AC-01–AC-07 закрепить typed output `recommendationOnly=true`; новый actionType отклонять без версионирования EN-A1 и доказанного read-only UI.
+4. В Lua 5.1 mocks подменить каждый запрещённый API spy/stub, который при вызове немедленно проваливает тест; проверить `READY`, `BLOCKED`, `UNKNOWN`, target change, form/pet/item, combat/OOC, hardware-click UI callbacks, event storms.
+5. Проверить отсутствие макросов/создаваемых macro buttons/secure action bindings в `.toc`, XML, Lua, packaged ZIP и зависимостях; сравнить user/dev каноническое ядро побайтово.
+6. При клиентской приёмке на Forever отдельно подтвердить, что пользователь сам нажимает штатную кнопку, а Kord не меняет цель/позицию, не кастует, не исполняет макросы и не создаёт игровые bindings. **Не проводить запрещённые действия ради тестирования в реальном бою** — тестировать негативные гарантии безопасными mocks/инструментами.
+
+**DevTools-only причины:** `no01_execution_api_denied`, `no01_macro_execution_denied`, `no01_target_mutation_denied`, `no01_movement_denied`, `no01_secure_click_denied`, `no01_binding_mutation_denied`, `no01_pet_execution_denied`, `no01_action_contract_invalid`, `no01_dynamic_dispatch_unverified`, `no01_ui_click_action_forbidden`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Сценарий | Ожидаемый результат |
+|---|---|---|
+| `NO01-01` | Spell READY | recommendation emitted, cast spy calls 0 |
+| `NO01-02` | Item READY | ITEM icon, item-use spy calls 0 |
+| `NO01-03` | PET_COMMAND READY | advice only, pet command spy calls 0 |
+| `NO01-04` | STANCE_OR_FORM READY | advice only, form/cancel spy calls 0 |
+| `NO01-05` | TARGET suggestion | no target/focus/raid marker mutation |
+| `NO01-06` | WAIT/STOP | no gameplay side effects |
+| `NO01-07` | combat=false, spell usable | still no cast |
+| `NO01-08` | click Kord UI recommendation | no secure gameplay action |
+| `NO01-09` | event storm/OnUpdate | no action/macro/movement |
+| `NO01-10` | alias `_G[name]` to prohibited API | static/dynamic test FAIL |
+| `NO01-11` | RunMacroText or `/click` bridge | static/dynamic test FAIL |
+| `NO01-12` | synthetic click / SetBindingClick | static/dynamic test FAIL |
+| `NO01-13` | UI drag/scale Kord own frame | allowed, no player movement |
+| `NO01-14` | DevTools probes | read-only, forbidden spy calls 0 |
+| `NO01-15` | user/dev ZIP canonical files | byte-identical, no executor |
+| `NO01-16` | secret/UNKNOWN gameplay state | STOP, never execute for discovery |
+
+**QA статус:** сценарии документированы, **не запускались**. Статическая проверка отдельных файлов не заменяет полное сканирование двух пакетов, mocks и клиентскую приёмку.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПОДТВЕРЖДЕНО ПО ПРОСМОТРЕННЫМ ИСХОДНИКАМ / ПОЛНАЯ НЕГАТИВНАЯ ГАРАНТИЯ НЕ ПРОВЕРЕНА / P0.** Просмотренные `GameAPI`, `RotationEngine`, `BindingResolver`, `AbilityEligibility` ориентированы на read-only рекомендации; полный source audit всех Lua/XML/ZIP, запрет через динамические алиасы, mocks и WoW Forever не выполнены. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** AC-02, AC-03, AC-04, AC-05, EN-A1, QA-06, UI-01; они дополнены ссылкой на NO-01 в этом же коммите. Дополнительно связаны AC-07, CL-01–09, но классовые требования не переписываются: NO-01 действует глобально независимо от локальной ссылки.
