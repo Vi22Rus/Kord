@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 non-clipping window is a profile/policy constraint on candidates, not permission to override AbilityEligibility's final READY.**
+
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 timing is advisory input for next-swing and weaving policies, not spell READY; only AbilityEligibility issues final READY.**
 
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 supplies confirmed auto-attack/auto-repeat states as inputs; AbilityEligibility alone issues final READY, and unknown never means inactive.**
@@ -3301,6 +3303,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 must retain EN-04 breakable CC and target safety even if an action fits the ranged shot window.**
+
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 autoattack recommendations must respect EN-04 breakable crowd-control safety; do not activate attack against protected targets.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target-switch candidates must respect existing breakable-CC safety and not infer safe AoE from a cast candidate.**
@@ -3480,6 +3484,8 @@
 
 
 ### EN-07 — Ближайшая цель для смены, цель с прерываемым кастом
+
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 depends on confirmed ranged target/range and must not treat unknown distance or dead zone as a safe Auto Shot window.**
 
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 must not infer swing completion or target range from nearest-target geometry; range evidence is independent.**
 
@@ -4366,6 +4372,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 reuses validated cast-time observation/clock conventions but not pet-care-specific timers or static spell durations.**
+
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 reuses monotonic clock/revision conventions but swing estimation is independent from pet care cast/aura timing.**
 
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 active auto-repeat is not a cast-duration/cooldown timer; keep SW-02 future swing timing separate from PE-05 pet-care timing.**
@@ -4478,6 +4486,8 @@
 
 ### SW-01 — Автоатака включена / выключена; автострельба и волшебная палочка
 
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 requires confirmed hunter Auto Shot active state and auto-switch policy from SW-01; an inactive/unknown repeat mode cannot be treated as a known upcoming shot.**
+
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 extends SW-01's confirmed melee/Auto Shot/wand active-state observation with independent main-hand, off-hand and ranged remaining estimates; active does not prove timer.**
 
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P0.**
@@ -4531,6 +4541,8 @@
 
 ### SW-02 — Таймеры ударов: до следующего ближнего и дальнего удара
 
+**Архитектурная актуализация SW-03:** **См. SW-03: SW-03 consumes SW-02 ranged swing remaining and its confidence/revision; never create a second ranged swing timer or convert ESTIMATED into confirmed timing.**
+
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P1.**
 
 #### Требование
@@ -4577,5 +4589,58 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** В Kord есть range API и Auto Shot active observation, но нет доказанного player swing anchor/speed provider для remaining main/off/ranged.
 
 **Архитектурные ссылки:** SW-01, SP-14, EN-07, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### SW-03 — Окно «не клиппить Auto Shot» для стрелка
+
+**Раздел: 10. Автоатака и таймеры ударов. Приоритет: P1.**
+
+#### Требование
+
+Для охотника определять, может ли конкретная предлагаемая способность быть применена **без задержки следующего Auto Shot** (клиппинга). Не путать: `Auto Shot active` (SW-01), `ranged swing remaining` (SW-02), `cast time`, `GCD`, `animation/shot lock`, `reset/pause ranged swing` и `travel time` — разные факты. `AutoShotClipWindowObservation(playerGUID,targetGUID,actionSpellID)` содержит `autoShotActive`, `shotRemaining`, `shotTimingConfidence`, `actionLockDuration`, `actionResetsRangedSwing`, `safetyMargin`, `windowRemaining`, `decision=SAFE/UNSAFE/UNKNOWN/NOT_APPLICABLE`, `reason/source/revision`. Концептуально действие, **не сбрасывающее** цикл, безопасно только при подтверждённом `shotRemaining > actionLockDuration + safetyMargin` (или при доказанном особом окне после выстрела); если действие **сбрасывает** цикл, обычное сравнение времени недостаточно и применяется отдельная подтверждённая reset policy. `safetyMargin` учитывает валидированную задержку/джиттер клиента и профиля, не должен быть произвольным универсальным числом. Результат `UNKNOWN` не превращать в `SAFE` и не обходить другие проверки AbilityEligibility. Защита не означает автоматическую стрельбу или каст.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameState.lua:768–778,384–389`: `ReadAutoShot(75)` и `autoShot.active` существуют, но нет отдельного клиппинг-окна; `:303–335` `C_SwingTimer.IsTargetWithinSwingRange(0)` проверяет melee **range**, не фазу Auto Shot.
+- `KordRotation/Core/RotationConditions.lua:50,63–74,283–285`: `autoShot.active` зарегистрирован, `autoShot.swing` требует `Needs.swing`, но не доказан provider ranged remaining и `autoShot.clipSafe(spellID)`.
+- `KordRotation/Core/GameState.lua:159–171`: базовый player cast/channel snapshot, полный cast timing не подтверждён; нельзя объявлять известным `actionLockDuration` только по факту каста.
+- `KordRotation/Core/EventBus.lua:27–30,39–42`: cast events есть, но `PLAYER_SWING`/ranged shot phase и отдельная clip-window revision в проверенном mapping не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:240–254`: проверяет занят ли игрок кастом, но не предоставляет hunter shot clipping policy; финальный READY остаётся исключительно здесь.
+
+#### Сравнение семи референсов (проверенные Lua)
+
+1. **Sonah:** `Sonah/Core/Atoms/Casts.lua:149–175` читает скорость дальнего оружия и событие `PLAYER_SWING` через secret-safe adapter; `Sonah/Classes/Hunter.lua:220–230` учитывает автоматическое переключение Auto Attack/Auto Shot, `:373` отмечает потребность в shot weaving/auto-shot sync. В проверенном hunter profile не подтверждён универсальный расчет `cast duration + margin < next shot`. Перенять validated swing anchor и auto-switch, не выдавать отсутствие клиппинг-гейта за готовое решение.
+2. **JustAC:** `JustAC/Data/Forever/Rotations.lua:112–124` содержит **конкретные** hunter swing gates: `Rapid Fire` при ranged remaining `<0.1`, `Aimed Shot` при `>1`, `Multi-Shot` при `>0.5`, `Summon Hawk` при `>1`. `JustAC/BlizzardAPI/CooldownTracking.lua:400–415` использует эмпирическую оценку первого Auto Shot после START_AUTOREPEAT (0.15 s), `:418–445` подтверждает `PLAYER_SWING` и сброс/пересоздание ranged anchor. Перенять **порог как per-action policy**, event-anchored timing и диагностику, но пороги 0.1/0.5/1 и FIRST_SHOT_AIM не считать универсальными гарантиями или валидированными для каждого билда.
+3. **ForeverAuras:** `ForeverAuras/Types.lua:4210–4219` перечисляет `reset_ranged_swing_spells` (Auto Shot, Shoot, Feign Death и др.), `:4248–4249` отмечает Steady Shot/Aimed Shot в таблице `noreset_swing_spells`; `ForeverAuras/SwingTimer.lua:13–44` хранит ranged expiration и отдельную range-проверку. Перенять **специфичную для заклинания reset/no-reset классификацию** и event-backed phase; каталог не доказывает, что любой spell мгновенно/безопасно проходит в окне.
+4. **MaxDps:** `MaxDps/SwingTimer.lua:10–18,23–47` вычисляет ranged remaining по событиям `RANGE_DAMAGE/MISSED` и скорости оружия, но `math.huge` для неизвестного состояния и отсутствие per-action lock/clip policy не подходят для fail-closed SW-03. Перенять только независимый ranged timer SW-02; не считать `math.huge` безопасным бесконечным окном.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Hunter.lua:28,47,67` предлагает Aimed Shot по приоритету, в проверенных Lua не подтверждён отдельный Auto Shot clipping gate или ranged phase reader. Приоритет `Aimed Shot on cooldown` не гарантирует отсутствие клиппинга.
+6. **RotationGuide:** `RotationGuide/Data/Hunter.lua:37` содержит Aimed Shot как ranged ability, в проверенных Lua не подтверждён общий shot clipping window. Каталог spellID — не таймер.
+7. **RotationMaster:** `RotationMaster/Conditions/edition_state.lua:24–26` определяет Auto Shot/Wand как ranged swing, `RotationMaster/Conditions/weapon.lua:475–505` читает ranged remaining по последнему выстрелу, `RotationMaster/main.lua:7474–7482` отфильтровывает неавтоматические ranged casts из якорей. Перенять точную классификацию auto-repeat и UNKNOWN при отсутствующем логе, но отдельная per-action clip policy в проверенных местах не подтверждена.
+
+#### Выбранный путь Kord
+
+**Один `AutoShotClipWindowObservation` поверх SW-01 `PlayerAutoAttackObservation`, SW-02 `PlayerSwingObservation.ranged`, общего `CastTimingObservation` и spell metadata/policy.** Никакого второго swing scanner и отдельного hunter event loop. `ShotInteractionPolicy(spellFamily,clientBuild)` — проверенный Forever-каталог `PRESERVES/RESETS/PAUSES/UNKNOWN` (на базе ForeverAuras, но с валидацией конкретного билда); `ActionLockObservation` — реальный cast/channel duration + проверенные GCD/animation/shot locks, а не просто GCD всех инстантов. Для non-reset: `safeBudget = shotRemaining - actionLockDuration - safetyMargin`, `SAFE` только при положительном бюджете и достаточно надёжном shot anchor; reset/pauses — отдельная политика, не маскировать сравнение простым `>0`. Если shot inactive, dead-zone, target/range unconfirmed, event stale, speed secret, action lock неизвестен, haste/weapon swap или mode auto-switch — `UNKNOWN/NOT_APPLICABLE` с reason. При `shotRemaining` близком к нулю допустима отдельная `WAIT_FOR_SHOT` подсказка (не spell READY) только когда есть подтверждённая фаза; после подтверждённого `PLAYER_SWING` окно пересчитывается. Предусмотреть `safetyMargin` настройкой с документированными границами, отдельно от порогов отдельных spell families; не навязывать всем классам или всем hunter abilities один порог.
+
+**Критический нюанс:** не каждый instant spell клиппит Auto Shot и не всякий cast сбрасывает таймер; необходимо тестировать на Forever, что реально останавливает/сдвигает выстрел, включая движение, GCD, Aimed/Multi/Steady Shot, смену дистанции, Feign Death и авто-переключение. `ShotInteractionPolicy` ограничивает рекомендации профиля, но **не** даёт `READY` и не обходит `AbilityEligibility`. Lazy `Needs.autoShotClip` (подразумевает SW-01/SW-02/cast timing), memo на evaluation, event revision и bounded вычисления.
+
+#### Требуемые изменения
+
+1. Ввести `AutoShotClipWindowObservation` с SAFE/UNSAFE/UNKNOWN/NOT_APPLICABLE, `safeBudget`, source/reason/revision; не дублировать SW-02.
+2. Переиспользовать SW-01 Auto Shot active и SW-02 ranged remaining с подтверждённым phase confidence; неизвестный/устаревший timer — UNKNOWN.
+3. Валидировать на Forever `PLAYER_SWING` ranged, `UnitRangedDamage`, cast/channel start/end, ranged reset/pause, тайминг первого выстрела и смену режима.
+4. Создать `ShotInteractionPolicy` для spell families `PRESERVES/RESETS/PAUSES/UNKNOWN` с версионированной проверкой Forever; различать Aimed/Multi/Steady/Feign Death и другие действия.
+5. Ввести `ActionLockObservation` (cast time, validated animation/shot lock, applicable GCD) и отдельный конфигурируемый `safetyMargin`; не считать каждый instant равным одному GCD без доказательства.
+6. Ввести `autoShot.clipSafe(spellID)`/эквивалент как lazy RotationConditions, UNKNOWN fail-closed, без повторного сканирования.
+7. Определить `WAIT_FOR_SHOT`/post-shot policy без ложного spell READY, отдельно от обычной приоритетной ротации и AbilityEligibility.
+8. EventBus: shot/cast/weapon/haste/target/range/movement/auto-repeat invalidation; bounded per-evaluation memo, no per-frame heavy scan.
+9. DevTools-only диагностика: `autoshot_clip_timer_unknown`, `autoshot_clip_anchor_stale`, `autoshot_clip_action_lock_unknown`, `autoshot_clip_reset_policy_unknown`, `autoshot_clip_margin_applied`, `autoshot_clip_unsafe`, `autoshot_clip_wait_for_shot`, `autoshot_clip_auto_switch_invalidated`, `autoshot_clip_spell_family_unknown`.
+10. Тесты: Auto Shot off/on, first shot after enable, shot just fired, shot imminent, Aimed/Multi/Steady cast/instant variants, spell reset/pause/no-reset, haste and weapon swap, latency/margin, movement, minimum range/dead zone, auto-switch melee/ranged, target changed, delayed/missing/out-of-order swing event, secret speed, unknown action lock, false-safe prevention, unknown->not safe, no protected casts.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** В Kord есть Auto Shot active read и начатый `Needs.swing` contract, но нет подтверждённого ranged phase timer, per-action reset/lock policy и вычисляемого non-clipping window.
+
+**Архитектурные ссылки:** SW-01, SW-02, SP-14, EN-04, PE-05, EN-07. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
