@@ -32,6 +32,41 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     eligibility_blocked_count=true,eligibility_unknown_count=true,
     profile_ui=true,engine_decisive_priority=true,
     engine_decisive_reason=true}
+-- Fixed engine/eligibility refusal vocabulary. These tokens are emitted
+-- by our own modules; do not accept arbitrary user/player/API strings.
+-- Keeping this list aligned with AbilityEligibility and RotationEngine
+-- prevents a real UNKNOWN cause from being silently exported as "unknown".
+local fixedRefusals={
+    spell_known_unverified=true,cooldown_activity_unknown=true,
+    cooldown_active_unclassified=true,cooldown_invalid=true,
+    cooldown_disabled=true,cooldown_clock_unknown=true,
+    individual_cooldown=true,gcd_unavailable=true,
+    gcd_activity_unknown=true,gcd_invalid=true,gcd_clock_unknown=true,
+    charges_api_missing=true,charges_unavailable=true,charges_invalid=true,
+    no_charges=true,usability_unavailable=true,usability_invalid=true,
+    insufficient_resources=true,spell_unusable=true,
+    target_policy_required=true,target_unknown=true,
+    target_life_unknown=true,target_dead=true,
+    target_relation_unknown=true,target_relation_invalid=true,
+    out_of_range=true,range_unavailable=true,cast_policy_required=true,
+    cast_api_unavailable=true,cast_unknown=true,invalid_spell_id=true,
+    options_protected=true,policy_protected=true,
+    charge_policy_required=true,level_policy_invalid=true,
+    scanner_unavailable=true,player_unknown=true,player_missing=true,
+    player_life_unknown=true,player_dead=true,player_level_unknown=true,
+    player_level_too_low=true,fact_kind_unverified=true,
+    fact_options_unverified=true,fact_value_unverified=true,
+    cooldown_fact_unavailable=true,range_target_unverified=true,
+    range_target_changed=true,range_fact_unavailable=true,
+    fact_provider_unimplemented=true,
+    specialization_unknown=true,target_mode_invalid=true,
+    auto_target_count_unverified=true,game_state_missing=true,
+    profile_for_level_missing=true,condition_context_missing=true,
+    unsupported_action=true,mode_not_selected=true,rule_disabled=true,
+    condition_invalid=true,eligibility_status_invalid=true,
+    condition_unknown_skipped=true,
+}
+for code in pairs(fixedRefusals) do reasons[code]=true end
 -- Only bounded scalar diagnostics can be exported. No user strings,
 -- frame objects, spell IDs, slot IDs or names are accepted.
 local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
