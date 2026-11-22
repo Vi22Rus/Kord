@@ -151,5 +151,31 @@ eq(D:Record("API","UNKNOWN","matrix_probe",23,nil,
  "no_single_safe_probe"),true,"composite row recorded")
 eq(D.records[#D.records].detail,"no_single_safe_probe",
  "unavailable matrix evidence retained")
+D.apiTraceAllowed={UnitExists=true,
+ ["GameAPI.ActionBarScanner.findspell"]=true}
+eq(D:Record("METHOD","UNKNOWN","method_call",1,nil,
+ "future_api_error","UnitExists",42),true,
+ "generic API failure accepted without an explicit reason whitelist")
+eq(D.records[#D.records].detail,"future_api_error",
+ "future adapter failure kept verbatim after code-pattern validation")
+eq(D.records[#D.records].count,42,"method count recorded")
+eq(D:Record("METHOD","UNKNOWN","method_call",nil,nil,
+ "unexpected_type","GameAPI.ReadField.isActive",11),true,
+ "per-field method label automatically accepted")
+eq(D.records[#D.records].method,"GameAPI.ReadField.isActive",
+ "method metadata retained")
+eq(D:Record("METHOD","UNKNOWN","method_call",nil,nil,
+ "unknown","Private Player Name",1),true,
+ "malformed method rejected")
+eq(D.records[#D.records].method,"GameAPI.unsupported",
+ "user-input method cannot enter journal")
 eq(D:Stop(),true,"burst session stops")
+local methodExport=D:Export()
+eq(methodExport:find("GameAPI.ReadField.isActive",1,true)~=nil,true,
+ "field-specific method exported")
+eq(methodExport:find("future_api_error",1,true)~=nil,true,
+ "new future method reason exported without a per-code patch")
+eq(methodExport:find("Private Player Name",1,true),nil,
+ "untrusted method never exported")
+
 print("PASS DevTools recorder mock "..n.." assertions")
