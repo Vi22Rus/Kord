@@ -311,8 +311,45 @@ function S:FindSpell(id)
         return copy
     end
     if candidates>0 then self:Invalidate("button_changed") end
+    -- Distinguish a truly missing visible button from a different rank/ID
+    -- of the same localized spell. Never accept a name match as a verified
+    -- action: the selected rank may differ from the key-bound rank.
+    local mismatch=false
+    if candidates==0 and KR.SpellCatalogue and
+        type(KR.SpellCatalogue.Read)=="function" then
+        local ok,book=pcall(KR.SpellCatalogue.Read,KR.SpellCatalogue)
+        if ok and type(book)=="table" and book.status=="ready"
+            and type(book.entries)=="table" then
+            local wanted
+            for _,entry in ipairs(book.entries) do
+                if entry.id==id and type(entry.name)=="string" then
+                    wanted=entry.name
+                    break
+                end
+            end
+            if wanted then
+                local sameNameIDs={}
+                for _,entry in ipairs(book.entries) do
+                    if entry.name==wanted and isInteger(entry.id,99999999) then
+                        sameNameIDs[entry.id]=true
+                    end
+                end
+                for _,entry in ipairs(self.entries or {}) do
+                    if entry.spellID~=id and sameNameIDs[entry.spellID] then
+                        local live=inspect(entry.button,entry.source)
+                        if live and live.slot==entry.slot and
+                            live.spellID==entry.spellID then
+                            mismatch=true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
     return {status="UNKNOWN",
         reason=candidates>0 and (failureReason or "button_revalidation_unknown")
-            or "spell_not_confirmed_on_visible_bar"}
+            or (mismatch and "visible_spell_rank_mismatch"
+                or "spell_not_confirmed_on_visible_bar")}
 end
 -- Copyright notice: see root LICENSE.
