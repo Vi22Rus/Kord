@@ -44,7 +44,12 @@ jobs:
             tests/devtools_boot.lua \
             tests/devtools_ui_locale.lua \
             tests/devtools_v14_registry.lua \
-            tests/devtools_trace_signals.lua; do
+            tests/devtools_trace_signals.lua \
+            tests/hunter_bm_rank_selection.lua \
+            tests/hunter_bm_leveling_contract.lua \
+            tests/rotation_module_config.lua \
+            tests/bm_full_audit.lua \
+            tests/diagnostics_devtools_launch.lua; do
             echo "RUN $f"
             lua5.1 "$f"
           done
