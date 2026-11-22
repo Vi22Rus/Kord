@@ -1,6 +1,5 @@
 name: Lua regression (WoW mock, not in-game)
-# Automatically validate updates to the engine and regression tests.
-# The workflow performs Lua 5.1 mocks, not in-game verification.
+# New and LEGACY tests are automatically discovered by the shared runner.
 on:
   push:
     branches: [main]
@@ -8,6 +7,8 @@ on:
       - 'KordRotation/**'
       - 'KordRotationDevTools/**'
       - 'tests/**'
+      - 'scripts/run_local_lua_regression.sh'
+      - 'scripts/check_lua_syntax.lua'
       - '.github/workflows/lua-regression.yml'
   workflow_dispatch:
 permissions:
@@ -23,58 +24,6 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y lua5.1
-      - name: Check syntax of all game modules and mock tests
+      - name: Run all Lua 5.1 mock tests, syntax and Python checks
         shell: bash
-        run: |
-          set -euo pipefail
-          while IFS= read -r -d '' f; do
-            luac5.1 -p "$f"
-          done < <(find KordRotation KordRotationDevTools tests -name '*.lua' -type f -print0)
-      - name: Run existing and canonical v14 mock tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          failed=0
-          for f in \
-            tests/stage_02_03_game_state.lua \
-            tests/aura_cooldown_viewer_reference.lua \
-            tests/stage_02_04_spell_catalogue.lua \
-            tests/stage_02_05_actionbar.lua \
-            tests/stage_02_06_bindings.lua \
-            tests/stage_02_07_eligibility.lua \
-            tests/profile_contract_v1.lua \
-            tests/stage_02_08_v14_state.lua \
-            tests/stage_02_08_v14_argument_guards.lua \
-            tests/stage_02_08_v14_display.lua \
-            tests/stage_02_08_v14_observation.lua \
-            tests/devtools_recorder.lua \
-            tests/devtools_probe.lua \
-            tests/devtools_trace.lua \
-            tests/devtools_boot.lua \
-            tests/devtools_ui_locale.lua \
-            tests/devtools_v14_registry.lua \
-            tests/devtools_trace_signals.lua \
-            tests/hunter_bm_rank_selection.lua \
-            tests/hunter_bm_leveling_contract.lua \
-            tests/hunter_bm_aspect_switch.lua \
-            tests/combat_aura_routing.lua \
-            tests/indicator_slider_bounds.lua \
-            tests/hunter_bm_aspect_bar_rank.lua \
-            tests/rotation_module_config.lua \
-            tests/bm_full_audit.lua \
-            tests/diagnostics_devtools_launch.lua \
-            tests/inventory_observation_contract.lua \
-            tests/inventory_bag_snapshot_mock.lua \
-            tests/item_family_catalog_mock.lua \
-            tests/inventory_family_count_mock.lua \
-            tests/inventory_event_revisions_mock.lua \
-            tests/inventory_conditions_mock.lua \
-            tests/inventory_item_eligibility_mock.lua \
-            tests/inventory_diagnostics_mock.lua \
-            tests/inventory_integration_regression.lua; do
-            echo "RUN $f"
-            lua5.1 "$f" || failed=1
-          done
-          test "$failed" -eq 0
-      - name: Verify byte-identical packaging and TOC references
-        run: python3 -m unittest discover -s tests -p 'test_build_variants.py' -v
+        run: bash scripts/run_local_lua_regression.sh
