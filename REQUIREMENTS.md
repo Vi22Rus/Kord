@@ -6468,6 +6468,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-05:** если legacy продолжал выбор при неизвестном критическом факте, новое `UNKNOWN→STOP` фиксировать как `EXPECTED_DELTA`, а не восстанавливать опасный legacy fallback. UNKNOWN/secret в QA-05 нельзя преобразовывать в READY ради совпадения.
 
+**Ретроактивное уточнение QA-06:** QA-06: при обнаружении запрещённого API или динамического обхода в профиле build gate FAIL; нельзя объявлять READY либо обойти UNKNOWN/STOP через прямой игровой вызов.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6542,6 +6544,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение EN-A7:** EN-A7 фиксирует допустимые mode single/aoe/any у правил и отдельные пользовательские single/aoe/auto; не создавать новый профильный mode evaluator. Исторический аудит сохранён.
 
 **Ретроактивное уточнение EN-A8:** EN-A8 уточняет, что levelMin/levelMax включительны, перекрытие диапазонов запрещено, а статус и версия профиля проверяются для конкретного диапазона. Исторический аудит сохранён.
+
+**Ретроактивное уточнение QA-06:** QA-06: статический контроль профилей проверяет исходники и замыкания `when` до допуска через реестр; runtime validation EN-A1 остаётся обязательной и не заменяет статическую проверку.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -6636,6 +6640,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-05:** first-match-wins сравнивать не только по конечному spellID, но и по вызванным приоритетам, количеству чтений, skip/STOP и `NOT_EVALUATED`. Старый eager/unsafe traversal не является нормативным baseline; ожидаемые отличия фиксируются в QA-05.
 
+**Ретроактивное уточнение QA-06:** QA-06: запрещены прямые WoW API и скрытые вызовы через глобальные алиасы внутри `rule.when`; все факты читаются только через разрешённые `S` и `Needs`, сохраняя lazy first-match-wins.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6698,6 +6704,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-03:** Lua 5.1 mocks для lazy all/any проверяют точное число чтений и отсутствие вызова непройденных child predicates; NOT_EVALUATED не должен провоцировать чтение.
 
 **Ретроактивное уточнение QA-05:** differential fixtures проверяют точные API read counts и lazy short-circuit `all/any` для нового движка. Изменение старого eager порядка на lazy — `EXPECTED_DELTA` только с утверждённым контрактом и отсутствием ложного READY.
+
+**Ретроактивное уточнение QA-06:** QA-06: составные lazy predicates могут вызывать только разрешённые методы `S` и чистые локальные helper-функции; прямой `Unit*`/`C_*` и побочные эффекты в child closures запрещены.
 
 ### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
 
@@ -6932,6 +6940,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение QA-03:** все профили и конфигурационные схемы, зарегистрированные по EN-A7, обязаны входить в единый Lua 5.1 profile contract/selection/config/eligibility test matrix; тест только Hunter BM не равен покрытию всех классов.
 
 **Ретроактивное уточнение QA-04:** профиль не может считать API-возможность доказанной на основании `V14Registry` или mock PASS; зависимости профиля должны ссылаться на конкретные matrixID и актуальные QA-04 client verdict, при непроверенном критическом факте сохранять UNKNOWN→STOP.
+
+**Ретроактивное уточнение QA-06:** QA-06: любое новое profile Needs/condition API должно проходить статический gate на отсутствие прямых глобальных WoW API; разрешённый provider реализуется в ядре и проверяется по QA-04, не через профиль.
 
 ### EN-A8 — Профиль уровня: диапазон, смена рангов, граничные уровни
 
@@ -8284,6 +8294,8 @@ Kord должен корректно реагировать на фактиче�
 
 **Ретроактивное уточнение QA-05:** при дифференциальной проверке QA-05 DevTools включён/выключен на одинаковом sanitized trace и точном SHA; он не должен менять production-решения. Диагностический `AuditFull` не выступает эталоном live-движка и выполняется только изолированно.
 
+**Ретроактивное уточнение QA-06:** QA-06: DevTools не является способом обойти статический запрет игровых вызовов в профилях; результат линтера включается в offline QA report, а не в runtime user build.
+
 ### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8418,6 +8430,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-05:** единый Lua 5.1 manifest/harness QA-03 используется и для воспроизводимых QA-05 differential fixtures; сравниваются реальные version-pinned old/new Lua на одном safe deterministic input trace, а не два mock-алгоритма. Изменения классифицируются как MATCH/EXPECTED_DELTA/REGRESSION/INCONCLUSIVE с evidence, а не объявляются автоматическим FAIL при любом отличии.
 
+**Ретроактивное уточнение QA-06:** QA-06: добавить обязательный offline static profile purity gate в единый Lua 5.1 test manifest QA-03; синтаксический `luac -p` и runtime mocks не заменяют AST/scope проверку, а проверка исходника не подтверждает клиентский PASS.
+
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8549,5 +8563,75 @@ DevTools должен записывать **все достоверно сфо�
 **НЕ РЕАЛИЗОВАНО КАК ЕДИНЫЙ ДИФФЕРЕНЦИАЛЬНЫЙ МЕХАНИЗМ / P1 / QA-03 MOCK FOUNDATION EXISTS.** Kord имеет production v1 engine и отдельные Lua 5.1 contract mocks, но version-pinned парный replay, доказанный legacy baseline, oracle с классификацией MATCH/EXPECTED_DELTA/REGRESSION/INCONCLUSIVE и машинный отчёт по всем обязательным сценариям не подтверждены. Источниковый аудит — PASS на перечисленных путях; полный повторный построчный аудит всех семи ZIP — **NOT RUN**; Lua 5.1/CI/WoW Forever в рамках QA-05 — **NOT RUN**. CLIENT PASS для v14 остаётся 0/101.
 
 **Архитектурные ссылки:** QA-01, QA-02, QA-03, QA-04, EN-A2, EN-A3, AC-07, DA-08, EN-A1, EN-A7, UI-05, UI-06, UI-08, `docs/rotation/Profile_Contract.md`, `docs/rotation/Canonical_API_Matrix.md`, `docs/rotation/Test_Matrix.md`, `tests/profile_contract_v1.lua`. **Ретроактивные уточнения добавлены в QA-01, QA-02, QA-03, QA-04, EN-A2, EN-A3, AC-07, DA-08.** QA-05 обобщает только тестовую инфраструктуру QA-03; не заменяет production providers, движок или матрицу QA-04.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение QA-06:** QA-06: парный differential replay обязан сначала проверять candidate profile static purity; legacy violations записываются как известные отклонения, а не переносятся в новый runtime ради MATCH. Статическая проверка не исполняет профили.
+
+### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
+
+**Раздел: 17. Диагностика и качество. Приоритет: P1.**
+
+#### Требование
+
+Каждый исполняемый профиль `KordRotation/Profiles/<Class>/Kord_<Class>_<Spec>_<Mode>_<ContentType>.lua` и каждый profile-defined callback/helper, используемый `Rules[].when`, до регистрации/сборки должны проходить **офлайн статическую проверку отсутствия прямого обращения к WoW API, глобальному игровому состоянию, protected-функциям и скрытым обходным путям**. Профиль является чистой декларацией приоритетов и условий; единственный разрешённый способ получать игровые факты — документированные методы `S` из `RotationConditions`, с `Needs` и проверкой пригодности только через `AbilityEligibility`. `when(S,cfg)` не должен читать raw snapshot, `KR.GameAPI`, `GameState`, `_G`, `C_Spell`, `Unit*`, `GetTime`, `GetSpellInfo`, `C_*`, `GetItemCount`, `IsUsableSpell`, `UnitAura`, `GetActionInfo`, `C_Container`, `InCombatLockdown`, `CastSpellByID` или иные игровые функции, даже если они доступны через алиасы. Запрещены также protected writes, `load/loadstring`, `dofile`, `require`, `getfenv/setfenv`, `debug`, dynamic `_G[name]`, глобальные переменные и metatable-прокси, способные обходить границу. **Не запрещать без разбора чистые Lua 5.1 `math`, `string`, `table`, `tonumber`, `type` и локальные helpers**; разрешённые операции задаются положительным списком по контексту, а не одним регулярным выражением.
+
+**Контракт `ProfileStaticAuditRecord`:** `schemaVersion`, `profilePath`, `profileID` (если определим без исполнения), `sourceSHA256`, `contractVersion`, `checkerVersion`, `luaDialect=5.1`, `scope=production_profile|test_fixture|legacy`, `status=PASS|FAIL|INCONCLUSIVE|NOT_RUN`, `violations[{ruleID,severity,path,line,column,symbol,callChain,reason}]`, `coverage[{file,closureID,reachable,verdict}]`, `dependencyHashes`, `runCommit`. Не считать отсутствие найденной строки доказательством чистоты; `PASS` только при успешном полном разборе и анализе разрешённых источников. Любой непроанализированный динамический путь в production-профиле — FAIL/INCONCLUSIVE, **никогда PASS**.
+
+**Статическая семантика:** Lua 5.1 lexer/parser/AST с учётом лексических областей, локальных shadowing, closure capture, alias propagation и call graph. Выявлять `local f=UnitHealth; f("target")`, `local wow=_G; wow.UnitAura(...)`, `local api=KR.GameAPI; api:Read(...)`, `local k="Unit".."Health"; _G[k](...)`, вызовы `S["observe"]` только если разрешены статически и корректно, `S.foo` не из allowlist, `cfg` как источник игровых данных, глобальные записи и вызовы из вложенных функций/переданных callbacks. Сравнивать символы **после разрешения scope**, чтобы не выдавать ложный запрет для `local UnitHealth = function(x) return x end`, если это действительно чистая локальная функция. Однако локальные функции должны анализироваться транзитивно. Комментарии/строки с `UnitHealth` не являются вызовами.
+
+**Граница доверия:** `S` создаётся только ядром, содержит только методы и не отдаёт raw `snapshot` или API handles. Статический gate проверяет **исходник**, но не может сам доказать отсутствие всех runtime side effects у внешнего userdata/C API, поэтому дополнительно требуются `RotationProfiles:Register` schema validation, Lua 5.1 sandbox/mock tests и client QA. Отдельные тестовые fixtures могут намеренно содержать запрещённые примеры и должны быть изолированы от production profile glob. Нельзя заменять parser `grep` или `luac -p`: первый не учитывает алиасы/комментарии, второй проверяет лишь синтаксис. `luac5.1 -p` остаётся независимым обязательным этапом.
+
+#### Аудит Kord (main)
+
+- `docs/rotation/Profile_Contract.md:1–... §1,§3,§10` прямо запрещает профильным правилам игровые API и требует статического помощника **вне ядра**; спецификация существует, но в проверенных test/runner путях её обязательное исполнение не подтверждено.
+- `AGENTS.md` («Актуальный этап 2.9») устанавливает no direct WoW API, lazy `Needs`, `UNKNOWN→STOP`, final `AbilityEligibility`, единый каталог `KordRotation/` и отдельный DevTools; QA-06 не добавляет runtime engine или developer-код в user ZIP.
+- `KordRotation/Core/RotationProfiles.lua:91–198` валидирует metadata, `Spells`, `Needs`, `Rules` и `type(rule.when)=="function"`; проверка **не анализирует тело функции/замыкания** и не запрещает `UnitHealth` или `_G` внутри `when`. `:199–...` выполняет реестровый допуск; нужен отдельный build gate до него.
+- `KordRotation/Core/RotationEngine.lua` вызывает `rule.when(S,cfg)` под `pcall` и проверяет итоговый статус. `pcall` защищает от Lua exception, **но не от прямого чтения игровых глобалов и побочных эффектов**, и не заменяет QA-06.
+- `KordRotation/Core/RotationConditions.lua:196–314` предоставляет методы `S:observe/is/isNot/eq/ge/le/all/any/spellAvailable/spellFact` и `Create`; `Needs` ограничивает легитимные чтения. Наличие интерфейса `S` не гарантирует, что профиль не использует `_G`.
+- `KordRotation/Profiles/Hunter/Kord_Hunter_BM_Leveling_PVE.lua:1–... ` содержит **исторический** `BM.Next(s,cfg)` и набор локальных helpers, использующих старый `s.ready` и поля state. В проверенных местах нет прямого WoW API, но это **не доказывает** прохождения статической проверки по новому контракту: старый state-shaped API несовместим с v1 `S`; не объявлять его migrated/verified. Если файл присутствует в поставке, QA-06 обязан классифицировать его как `legacy` и отдельно проверить, может ли он исполняться в production.
+- `tests/profile_contract_v1.lua` проверяет реальные registry/conditions/engine на mock входах и `SkipExceptions`, но не проверяет синтаксическое дерево исходных профилей на запрещённые global lookups. `scripts/run_local_lua_regression.sh` проверяет синтаксис и запускает 17 suites; `.github/workflows/lua-regression.yml` запускает 27 Lua suites (см. QA-03), без доказанного отдельного static purity gate. **Наличие Lua syntax PASS не означает QA-06 PASS.**
+- `KordRotation/Core/GameAPI.lua` — единственная допустимая read-only API boundary в ядре; профиль не может обходить QA-04 v14 посредством `GameAPI.Read` напрямую. Тестовый checker должен жить в `scripts/` или `tests/`, без изменения byte-identical production ZIP.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Profiles.lua`, `CustomRotation.lua`, `Sonah/Core/Molecules/Conditions.lua` — точки разделения профиля, пользовательских правил и условий. Для QA-06 полезен принцип проверки **не только файла профиля, но и вызываемых им conditions/helpers**. Не считать наличие `Conditions.lua` доказательством static purity enforcement.
+2. **JustAC:** `JustAC/Data/Forever/Rotations.lua`, `JustAC/Data/SimcRotations.lua`, `JustAC/RotationImport.lua` демонстрируют разные пути происхождения правил. Перенять идею **единой проверки после импорта/генерации и до допуска**; нельзя доверять импортированному тексту как заранее безопасному.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua`, `ForeverAuras/SecretAuraConditions.lua`, `ForeverAuras/GenericTrigger.lua` содержат условия и обработку наблюдений/secret. Для QA-06 это контраст: сложный trigger допускает игровые обращения в runtime-адаптере, но **профиль Kord не получает такого права**. Наличие отдельного conditions-файла не подтверждает статический запрет.
+4. **MaxDps:** `MaxDps/Core.lua`, `MaxDps/Modules/Profiler.lua`, `MaxDps/Helper.lua` иллюстрируют разделение runtime и измерений. Использовать разграничение game adapter и профиля; не переносить runtime helper с игровыми API в `Rules[].when`. Статический Lua AST gate в этих путях не доказан.
+5. **ForeverRotation:** `ForeverRotation/Core.lua`, `ForeverRotation/Rotations/Signals.lua`, `ForeverRotation/Rotations/Buffs.lua` демонстрируют выделение игровых сигналов из логики ротации. Перенять разделение signal provider и condition; не разрешать profile helper напрямую вызывать `UnitAura` или другие функции.
+6. **RotationGuide:** `RotationGuide/Core/API.lua`, `RotationGuide/Core/State.lua`, `RotationGuide/Core/Engine.lua` отделяют игровые API от engine. Для Kord нужен такой же контроль **всех путей вызова**, включая вложенные helpers, а не только `Rules` literal. Готовый профильный purity linter не подтверждён.
+7. **RotationMaster:** `RotationMaster/Core/condition_support.lua`, `RotationMaster/Platform/world_state.lua`, `RotationMaster/Core/rotation_scope.lua` — референс разграничения platform/world-state и evaluator. Для QA-06 переносить **границу ответственности**, не игровую реализацию: profile condition не вправе обходить `S` и v14, даже если платформа имеет безопасный adapter. Готовый AST checker в указанных путях не доказан.
+
+**Доказательная граница:** в данном проходе проверено фактическое наличие перечисленных файлов в предоставленных семи ZIP, но **полный построчный аудит реализаций их функций не проводился**. Сравнение — архитектурное; наличие универсального AST-linter у любого референса **не утверждается**. Перед реализацией parser можно повторно исследовать точечные call chains, не копируя сторонние лицензируемые реализации.
+
+#### Выбранный путь Kord
+
+**Один `ProfilePurityStaticChecker` — offline test-only gate поверх QA-03, до допуска любых production профилей, с Lua 5.1 AST + scope/call-graph analysis.** Это логический модуль в `scripts/`/`tests/`, **не** новый игровой provider и **не** второй engine. Проверка применяется ко всем реально подключённым `.toc` профилям, всем файлам `KordRotation/Profiles/**` и локальным helpers/closure dependencies; unreferenced/legacy файлы учитываются отдельно, чтобы их нельзя было случайно подключить без проверки. Положительный список разрешает pure Lua 5.1 и документированные `S` methods; любые игровые источники разрешены только в ядре, где проходят QA-04 v14.
+
+Рекомендуемая архитектура: `ProfileSourceDiscovery` (полный manifest по `.toc` и профилям) → `Lua51Parser` (синтаксис, scope, symbols, alias resolution) → `ProfilePurityAnalyzer` (call graph, callbacks, global accesses, escapes) → `ProfileStaticAuditRecord` (path:line:column, evidence, deterministic status) → QA-03 common manifest и QA-05 preflight. Parser должен быть version-pinned; если внешняя библиотека отсутствует или не распознала синтаксис, **fail closed**, а не «сканирование прошло». Lua 5.1 runtime test с подменой опасных глобалов — дополнительный отрицательный тест, не замена AST.
+
+Важное уточнение: `S:spellAvailable`/`S:spellFact` и `S:observe` разрешены лишь по контракту и declared `Needs`; доступ к `KR.GameAPI` или `KR.GameState` запрещён даже если такой код не вызывает прямой `Unit*`. Допустимость `S["method"]` зависит от статически проверенного literal method и контекста; вычисляемый ключ/alias с неизвестным происхождением — FAIL. Проверять транзитивные вызовы и upvalues. Статический анализ не должен выполнять код профиля или изменять его приоритеты.
+
+#### Требуемые изменения
+
+1. Составить исчерпывающий `ProfileSourceManifest` из `KordRotation/Profiles/**`, `.toc` references и profile registration, с `ACTIVE_V1|LEGACY|UNREFERENCED|TEST_FIXTURE`; исключить скрытые/случайно подключённые файлы из PASS.
+2. Реализовать offline Lua 5.1 lexer/parser AST с source positions и lexical scope; syntax error, parser missing и unsupported grammar дают FAIL/INCONCLUSIVE, а не silent skip.
+3. Ввести allowlist pure Lua 5.1 и методов `S`; deny direct WoW globals, `C_*`, `_G`, `KR.GameAPI`, `GameState`, protected calls, динамическую загрузку и глобальные записи, включая обращения в table initializers и вложенных closures.
+4. Реализовать transitive alias/upvalue/call-graph analysis для `local f=UnitHealth`, `local t=_G`, `KR["GameAPI"]`, computed keys, higher-order callbacks, local helpers и metatable-based escape; непроверяемые пути fail closed.
+5. Проверить `when(S,cfg)` и весь граф достижимых helpers: нет доступа к raw snapshot/недекларированным `Needs`, `S` остаётся method-only, условия возвращают `true/false/nil` без side effects; финальный READY по-прежнему только `AbilityEligibility`.
+6. Отделить historical `BM.Next(s,cfg)` и legacy profiles от активного v1: нельзя объявлять legacy PASS как v1 purity; случайное подключение legacy к runtime — FAIL.
+7. Добавить детерминированные negative fixtures: direct `UnitHealth`, `C_Spell.IsSpellUsable`, `GetTime`, `_G["UnitAura"]`, alias, concatenated key, nested closure, local helper, callback escape, `loadstring`, `setfenv`, global assignment, `KR.GameAPI:Read`, `S` dynamic method, undeclared `Needs`.
+8. Добавить positive fixtures: чистая локальная функция, shadowed local `UnitHealth`, pure `math.min`, `string`/table operations, комментарии и строки с API names, разрешённые `S:is`/`S:all`/`S:spellFact` с lazy closures; исключить false positives.
+9. Интегрировать QA-06 в единый QA-03 Lua 5.1 manifest и QA-05 preflight; проверять все production профили при локальной сборке и ручном совокупном CI. При FAIL блокировать release/verified status; не менять игровые runtime модули или user ZIP ради проверки.
+10. Формировать `ProfileStaticAuditRecord` с source SHA, profile/closure coverage, location, ruleID, callChain, severity и fail-closed status; добавить DevTools-only агрегат по запросу, не исполняющий анализ в бою. Принятие: 100% production source coverage, 0 forbidden paths, 0 unexplained INCONCLUSIVE, positive/negative fixture PASS, Lua 5.1 syntax PASS; отдельный WoW Forever QA и v14 CLIENT PASS не подменять.
+
+**Причины диагностики QA-06:** `profile_static_parser_missing`, `profile_static_parse_error`, `profile_static_source_untracked`, `profile_static_legacy_active`, `profile_static_wow_global`, `profile_static_gameapi_bypass`, `profile_static_dynamic_global`, `profile_static_dynamic_load`, `profile_static_global_write`, `profile_static_alias_escape`, `profile_static_callback_escape`, `profile_static_undeclared_need`, `profile_static_raw_snapshot`, `profile_static_unresolved_call`, `profile_static_inconclusive`. Причины — статические machine-readable codes без пользовательских или protected значений.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ОБЯЗАТЕЛЬНЫЙ STATIC PURITY GATE / P1.** Контракт отсутствия прямого WoW API в профиле уже утверждён; runtime registry проверяет структуру, engine вызывает `when` под `pcall`, а Lua 5.1 runner проверяет синтаксис. Однако обязательный AST/scope/call-graph анализ всех подключённых production профилей и отрицательные обходные тесты в проверенных путях **не подтверждены**. Текущий исторический BM-файл нельзя считать мигрированным v1. **SOURCE AUDIT PASS; QA-06 CHECKER NOT IMPLEMENTED; LUA/CI/WOW FOREVER NOT RUN; CLIENT PASS=0/101.**
+
+**Архитектурные ссылки:** EN-A1, EN-A2, EN-A3, EN-A7, AC-07, QA-01, QA-03, QA-04, QA-05, `docs/rotation/Profile_Contract.md`, `KordRotation/Core/RotationProfiles.lua`, `RotationConditions.lua`, `RotationEngine.lua`, `scripts/run_local_lua_regression.sh`. **Обратные ссылки внесены в EN-A1, EN-A2, EN-A3, EN-A7, AC-07, QA-01, QA-03, QA-05.** QA-06 использует общую тестовую инфраструктуру QA-03, но не заменяет runtime реестр, QA-04 или differential oracle QA-05.
 
 **Изменения Lua:** отсутствуют. Только документация.

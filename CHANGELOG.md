@@ -1,3 +1,14 @@
+## KR-20261122-015 — аудит QA-06: static profile purity, no WoW API in profiles
+- Дата: 2026-11-22; точный timestamp и SHA — GitHub commit `KR-20261122-015`.
+- Тип: docs / P1 / QA-06; изменены только `REQUIREMENTS.md` и `CHANGELOG.md`; Lua, TOC, ZIP не менялись.
+- Контекст: Profile_Contract v1 запрещает прямой игровой API в профиле; `RotationProfiles:Register` валидирует структуру, `RotationEngine` оборачивает `when` в pcall, но ни одно не доказывает чистоту Lua callbacks. `luac -p` проверяет синтаксис, не global access.
+- Причина: отсутствует обязательный parser/scope/call graph gate для production профилей, алиасов и nested closures. Исторический BM.Next(s,cfg) не является подтверждённым v1 profile.
+- Решение: единый offline `ProfilePurityStaticChecker` поверх QA-03 с `ProfileSourceManifest`, Lua 5.1 AST, lexical scope, alias/upvalue/call graph, positive allowlist, fail-closed dynamic access, `ProfileStaticAuditRecord`, negative/positive fixtures и QA-05 preflight.
+- Семь референсов: перечислены конкретные пути в ZIP, исследована архитектурная применимость; полного построчного аудита реализаций в этом проходе не было, наличие чужого AST checker не утверждается.
+- Обратные ссылки: EN-A1, EN-A2, EN-A3, EN-A7, AC-07, QA-01, QA-03, QA-05; исторический текст сохранён.
+- Проверки: PASS — чтение GitHub AGENTS/Profile_Contract/Core/test runner, наличие файлов в семи ZIP, документальная сверка; NOT RUN — Lua 5.1, Actions, WoW Forever, полная построчная инспекция семи ZIP.
+- Итог: QA-06 специфицирован, статический checker ещё не реализован; CLIENT PASS=0/101. Следующий шаг — следующая задача пользователя.
+
 ## KR-20261122-014 — аудит QA-05: дифференциальные тесты legacy и нового движка
 - Дата/время: 2026-11-22T12:00:00Z; идентификатор коммита — `git log --grep KR-20261122-014`.
 - Этап/тип: аудит требований QA-05 / docs / P1; изменены `REQUIREMENTS.md` и `CHANGELOG.md`. Lua, TOC, UI и ZIP не изменялись.
