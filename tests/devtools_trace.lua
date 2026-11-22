@@ -79,6 +79,16 @@ eq(#D.records,count,"unchanged state not duplicated")
 eq(D:Measure().status,"READY","read-only measurement")
 eq(D:Stop(),true,"stop")
 eq(traceEnds,1,"trace stops on recorder Stop")
+local methodTotals=0
+for _,part in ipairs(D.settings.sessions or {}) do
+ for _,entry in ipairs(part.records or {}) do
+  if entry.kind=="METHOD" and entry.reason=="method_total" then
+   methodTotals=methodTotals+1
+  end
+ end
+end
+eq(methodTotals,2,"terminal totals persisted for both observed methods")
+
 local report=D:Export()
 eq(report:find("GameAPI.ActionBarScanner.findspell",1,true)~=nil,
  true,"method name persisted through SavedVariables export")
