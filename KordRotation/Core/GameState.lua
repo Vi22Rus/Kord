@@ -1158,8 +1158,11 @@ function S:ReadItemCooldownObservation(itemID)
     return result
 end
 
+-- IT-02/2.6 (partial): the one shared group catalog is the sole
+-- source of group identity. Membership candidates alone are NOT cooldown
+-- evidence. Until correlated use / validated cooldown facts exist, fail closed.
 function S:ReadSharedItemCooldownObservation(groupID)
-    local result=unknownItemCooldown("item_cd_group_unimplemented",
+    local result=unknownItemCooldown("item_cd_group_unknown",
         "GameState.SharedItemCooldownObservation")
     if not inventorySafeID(groupID,"family") then
         result.reason="item_cd_group_id_unverified"
@@ -1167,7 +1170,40 @@ function S:ReadSharedItemCooldownObservation(groupID)
     end
     result.groupID=groupID
     result.groupStatus="UNKNOWN"
-    -- Group catalog and evidence arrive in IT-02/2.5–2.6.
+    local catalog=KR.SharedCooldownGroupCatalog
+    if not catalog or type(catalog.GetGroup)~="function" then
+        result.reason="item_cd_group_catalog_missing"
+        return result
+    end
+    local ok,group=pcall(catalog.GetGroup,catalog,groupID)
+    local api=KR.GameAPI
+    if not ok or type(group)~="table" or not api
+        or type(api.IsSafeValue)~="function" then
+        result.reason="item_cd_group_catalog_invalid"
+        return result
+    end
+    local safeOk,isSafe=pcall(api.IsSafeValue,api,group)
+    if not safeOk or isSafe~=true then
+        result.reason="item_cd_group_catalog_invalid"
+        return result
+    end
+    -- Only allow the explicitly defined candidate group to flow into
+    -- diagnostics. Do not copy secret, mutable or unverified group fields.
+    if group.status~="UNKNOWN" or group.groupID~=groupID then
+        result.reason="item_cd_group_catalog_invalid"
+        return result
+    end
+    if group.reason=="item_cd_group_unverified"
+        and group.verification=="PENDING_FOREVER" then
+        result.reason="item_cd_group_partial"
+        result.catalogSource="SharedCooldownGroupCatalog"
+        result.verification="PENDING_FOREVER"
+    elseif group.reason=="item_cd_group_unknown" then
+        result.reason="item_cd_group_unknown"
+    else
+        result.reason="item_cd_group_catalog_invalid"
+    end
+    -- No remaining, active or revision is inferred from family membership.
     return result
 end
 

@@ -1,3 +1,16 @@
+## KR-20261122-090 — IT-02/2.6: connect shared cooldown observation to fail-closed catalog (partial)
+- Дата/время: 2026-11-22 UTC (точное время по Git); коммит: `git log --grep KR-20261122-090`.
+- Этап / требование: 2 / IT-02 P0 / шаг 2.6; тип feature/test; статус PARTIALLY IMPLEMENTED, CLIENT NOT RUN.
+- Задача: по утверждённому плану связать общий group reader с каталогом, не признавая групповой cooldown подтверждённым по принадлежности к семейству.
+- Контекст/факт: `GameState:ReadSharedItemCooldownObservation` возвращал `item_cd_group_unimplemented` даже после появления `SharedCooldownGroupCatalog` (KR-20261122-089). Это исходное отсутствие интеграции, не подтверждённый баг в клиенте. Воспроизведение: исходник метода до изменения.
+- Причина: reader не вызывал каталог; игровой cooldown и shared event attribution отсутствуют и остаются NOT VERIFIED.
+- Файлы и методы: `KordRotation/Core/GameState.lua` — `S:ReadSharedItemCooldownObservation(groupID)` теперь guarded read-only lookup `SharedCooldownGroupCatalog:GetGroup` через pcall и `GameAPI:IsSafeValue`; отдельная диагностика unknown group, partial/pending и invalid/missing catalog. `tests/shared_item_cooldown_observation_mock.lua` — новый контрактный Lua 5.1 mock.
+- API и референсы: новых WoW API нет; используются внутренние Kord GameAPI/SharedCooldownGroupCatalog, исторические кандидаты JustAC и RotationMaster из IT-02/2.5 без новой проверки оригинальных ZIP. Никакого вывода о group READY/remaining/active.
+- Проверки: PASS — статическая сверка патча с существующим методом, защитой неизвестной группы, pcall и отсутствием source-derived READY; NOT RUN — реальный Lua 5.1, выполнение mock, полный regression (Lua 5.1 недоступен в connector-only среде); GitHub Actions (только вручную перед общим QA); WoW Forever (клиент недоступен).
+- Выдано тестировщику: новый mock включается существующим discovery runner; проверять pending/unknown/error и отсутствие READY в общем этапе IT-02. Промежуточная игровая установка не нужна.
+- Ограничения: корреляция реального item-use, отдельный shared-lockout timer, доказательства поведения Forever, ревизии 2.7, conditions 2.8 и DevTools 2.9 не реализованы. `REQUIREMENTS.md` и крупный поэтапный план требуют синхронизации: connector чтения этих файлов возвращает пустой текст, поэтому здесь статус/проверка отражены в CHANGELOG без ложной правки исходных требований.
+- Связи: IT-01/IT-02/IT-03/IT-04/AC-02, KR-20261122-089.
+
 ## KR-20261122-089 — IT-02/2.5: fail-closed shared potion group catalog
 - Дата/время: 2026-11-22 UTC, точное время/SHA по Git: `git log --grep KR-20261122-089`. Этап 2/шаг 2.5, IT-02 P0, тип feature/test/docs; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: отдельный `ItemFamilyCatalog` перечисляет Forever consumables, но принадлежность к функциональной семье НЕ доказывает общий cooldown. Без отдельного group catalog возникает риск ложного shared READY; подтверждённой клиентской ошибки нет, первопричина не установлена.
