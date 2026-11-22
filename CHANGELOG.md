@@ -1,3 +1,12 @@
+## KR-20261122-025 — аудит CL-09: Druid forms, resources, combo, HoT, resurrection, dispel, aura cancellation
+- Дата: 2026-11-22; время/зона: GitHub commit metadata UTC. ID коммита `KR-20261122-025`; точный SHA — `git log --grep KR-20261122-025`.
+- Задача: документировать CL-09 как P0 требование, не внедрять Lua. Ожидалось: безопасные form/resource/HoT/rez/dispel/aura cancel контракты и обратные ссылки. Фактически: общие primitives есть, Druid-specific end-to-end нет.
+- Причина пробела: `GameState.cleanPower` читает один активный тип, `UPDATE_SHAPESHIFT_FORM` обновляет только actionbar; отсутствуют typed form, inactive mana, combo GUID, HoT group, corpse selection и safe cancellation.
+- Изменения: `REQUIREMENTS.md` добавлен CL-09 (конкретные способности, Kord audit, семь ZIP, архитектура, 10 работ, DevTools reasons, 31 QA-07 сценарий, вердикт). Обратные ссылки внесены в CL-01/02/04/05/06/07/08, AC-05, DA-08, QA-04/07, EN-A1. `CHANGELOG.md` — эта запись. Lua/TOC/ZIP не менялись.
+- Решение: переиспользовать FormStanceObservation PL-09/AC-05, typed ResourceStateProvider, ComboPointObservation, Aura/HoT, FriendlyUnitSelection, Resurrection/Dispel providers; `Shifting Power` не равен classic powershifting, `Lifebloom` нельзя предполагать; «срыв ауры» неоднозначен и не даёт права защищённой автоматической отмены.
+- Проверки: GitHub source/API matrix, адресные Lua в семи ZIP — SOURCE/DOC AUDIT PASS; полный построчный ZIP audit NOT RUN, Lua 5.1 NOT RUN, CI NOT RUN, WoW Forever NOT RUN, CLIENT PASS 0/101.
+- Передача: только документация, пользовательскую сборку менять/тестировать не требуется. Открыто: Forever formID/index mapping, inactive mana visibility, combo target semantics, rank/HoT/dispel/rebirth, значение «срыв ауры». Следующий пункт аудита — по запросу заказчика.
+
 ## KR-20261122-024 — аудит CL-08: Warlock shards, demons, Bane/Curse, DoT, Life Tap, stones, Fear, Ritual of Summoning
 - Дата: 2026-11-22, Europe/Stockholm; commit identification: `KR-20261122-024` in git log. Этап: требования / документация, не Lua релиз.
 - Контекст и ожидаемое: описать проверяемый P0 контракт чернокнижника и связать с универсальными providers; ранее общего Warlock end-to-end контракта не было. В реальном клиенте пользовательскую ошибку не воспроизводили, BUG не заявлен.
