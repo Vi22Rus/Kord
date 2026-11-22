@@ -834,3 +834,57 @@
 6. Тесты: нулевой/максимальный ранг, choice-node, смена конфигурации/спека, переобучение, недоступный API, secret-поля, частичная карта, дублированные spellID и отсутствие потребителей.
 
 **Изменения кода:** не выполнялись; внесён аудит PL-13.
+
+
+## 2. Заклинания и способности
+
+### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
+
+**Приоритет: P0.**
+
+#### Требование
+
+Для конкретного spellID установить `known=true/false/UNKNOWN` с источником и причиной. Источники: книга игрока, подтверждённое изучение через талант, активная руна/гравировка WoW Forever и независимый API `C_SpellBook.IsSpellKnown` (при наличии). **Отсутствие в перечисленном каталоге не доказывает незнание**; отрицательный результат допустим только при достоверном отрицательном ответе подходящего API либо исчерпывающей проверке применимого источника с подтверждённым контрактом. Разделять известность, пассивность, доступность в форме, usability, cooldown и право `AbilityEligibility` выдать READY. Учитывать ранги и заменяющие/override spellID, player/pet banks, secret и несовместимость клиентских API.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/SpellCatalogue.lua`](KordRotation/Core/SpellCatalogue.lua), строки 52–182, 209–252: есть безопасный ограниченный обход legacy/modern книги, ID-ключи, отказ публиковать частично просканированный каталог, инвалидация по `spellbook/talents/identity`. Каталог не является исчерпывающим перечнем талантных/рунических заклинаний.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 47–71: наличие ID в каталоге → `READY`; отсутствие → проверка `C_SpellBook.IsSpellKnown(id, PlayerBank)`, `false` → `BLOCKED/not_learned`, неизвестность → `UNKNOWN`. **Дефект:** при `catalogue.status ~= "ready"` функция немедленно возвращает `UNKNOWN` и вообще не пытается независимый known-API, даже если тот доступен. Нельзя считать эту зависимость обязательной.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 38–54: разрешены `C_SpellBook.IsSpellKnown` и `FindSpellBookSlotForSpell`, но нет канонического объединённого источника «книга + талант + руна».
+- [`KordRotation/Core/Talents.lua`](KordRotation/Core/Talents.lua), строки 85–166: читаются `C_Traits` и суммы рангов, но индивидуальные spellID/choice-node наружу не предоставляются (см. PL-13).
+- Отдельный `C_Engraving`-провайдер ещё не реализован (см. PL-05). Следовательно, нет подтверждения рунических spellID из активных гравировок. В `RotationConditions.lua` есть `known`-условие, которое использует `AbilityEligibility`, но оно наследует описанные ограничения.
+
+#### Как делают семь референсов (проверены локальные ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua:84,150–196`: сначала сопоставляет изученные ID/ранги и имена в книге; затем **специально** вызывает `C_SpellBook.IsSpellKnown(id, PlayerBank)` для талантных/пассивных способностей, которые никогда не попадают в книгу; `IsPlayerSpell` — устаревший fallback. Использует `Secret.Call` и проверяет варианты ID. Это прямое подтверждение принципа SP-01.
+2. **JustAC** — `JustAC/GapCloserEngine.lua:70–103`: для form-gated способности проверяет `IsSpellKnown`, а не `IsSpellAvailable` (иначе известное заклинание ошибочно исключается из-за текущей формы); отдельно исключает пассивные. `JustAC/BlizzardAPI/SpellQuery.lua:106–133` проверяет пассивность через spell API и `FindSpellBookSlotForSpell`/информацию записи. Источники известности и применимости разделены.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua:2634,2724,2984` вызывает `WeakAuras.IsSpellKnownIncludingPet(effectiveSpellId)`; учитывает эффективный spellID и банк питомца в системе триггеров. Полноценного подтверждённого объединения с активными рунами/гравировками в этих местах нет.
+4. **MaxDps** — `MaxDps/Helper.lua:2538–2543,2589`: использует `IsSpellKnownOrOverridesKnown(spell)`, отдельно проверяет `C_Spell.IsSpellUsable` и cooldown; для некоторых нерозничных клиентов проверяет слоты способностей питомца. Прямой булевый gate и клиентские предположения не заменяют тристейт-провайдер.
+5. **ForeverRotation** — `ForeverRotation/Core.lua:153–161`: `ns.known(name)` разрешает ID по имени и вызывает `C_SpellBook.IsSpellKnown` через `pcall`, кэширует `false` даже при неудаче API. Это простой known-gate, но `UNKNOWN` теряется; нельзя копировать в Kord.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:27–55`: строит карту книги `name → highest rank spellID` через `C_SpellBook.GetSpellBookItemInfo`, исключая пассивные записи; в проверенном механизме не обнаружено независимого доказательства известных талантных/рунических заклинаний вне книги. Отсутствие в карте нельзя трактовать как незнание.
+7. **RotationMaster** — `RotationMaster/Platform/spells.lua:286–342`: `Platform:IsSpellKnown(spellID,pet)` валидирует ID/банк, предпочитает `C_SpellBook.IsSpellKnown` с Player/Pet enum, fallback на legacy `IsSpellKnown`; `pcall`, проверка secret и типа, `nil,reason` при недостоверности. `RotationMaster/Conditions/known_spell.lua:4–53`: отдельное условие known вызывает платформенный адаптер, не WoW API напрямую. Не доказано, что это само по себе охватывает активные гравировки Forever.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + Sonah**, дополнить идеей JustAC: 
+- RotationMaster даёт наиболее подходящий платформенный тристейт-контракт `known/unknown+reason`, player/pet banks и проверку secret.
+- Sonah явно решает проблему «заклинание изучено через талант/пассивность, но отсутствует в книге» и умеет сопоставлять ID/ранги.
+- JustAC демонстрирует, почему нельзя смешивать известность с текущей доступностью по форме и почему пассивность — отдельный фильтр.
+- Для рун/гравировок требуется отдельный **достоверный** провайдер `C_Engraving` по PL-05; ни один из приведённых known-gate сам по себе не доказывает его наличие.
+
+Не копировать `api error → false` из ForeverRotation, `catalogue absence → false` из упрощённых карт и прямые WoW API в профили.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ИСПРАВИТЬ (P0).** Главный принцип «нет в каталоге ≠ не изучено» уже заложен, но есть преждевременный `UNKNOWN` при недоступном каталоге, не хватает независимого talent/rune evidence и проверки соответствующих spellID.
+
+#### Требуемые изменения
+
+1. Перестроить `AbilityEligibility.spellKnown`: не требовать `catalogue.ready` для независимого `C_SpellBook.IsSpellKnown`; использовать каталог как положительное свидетельство, а не обязательный gate.
+2. Добавить `SpellKnowledgeObservation` с `spellID`, `known`, `source`, `status/reason`, `player/pet bank`, `rank/override` (когда подтверждены). При противоречии источников не выдавать ложный `BLOCKED`.
+3. Интегрировать индивидуальные таланты PL-13 и активные гравировки PL-05, не приписывая изучение по одному наличию spellID в базе.
+4. Разделить known, passive, usability, form gating, cooldown, rune activation и окончательную eligibility; профили запрашивают факты через `Needs` и `RotationConditions`.
+5. Кэшировать на проход, инвалидировать по `SPELLS_CHANGED`, `LEARNED_SPELL_IN_TAB` (если поддерживается), смене талантов, рунических гравировок, специализации, конфигурации и банка питомца.
+6. Тесты: книга содержит ID; книга не содержит ID, но known-API true; каталог недоступен, known-API true; талантный spell вне книги; активная/неактивная руна; highest rank и override; пассивная способность; form-gated известная способность; player/pet bank; secret/ошибка/отсутствующий API; конфликт свидетельств.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-01.
