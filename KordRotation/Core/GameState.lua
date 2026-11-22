@@ -316,15 +316,31 @@ function S:ReadSignal(field,spellID,snapshot)
         -- establish false. A failed scan is UNKNOWN, never false.
         local cheetah=self:ReadSignal("player.buff",5118,snapshot)
         if cheetah.status=="READY" and cheetah.value==true then
+            if KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
+                KR.AuraEvidence:ObserveLive(5118)
+            end
             return {status="READY",value=true,source="TravelAspectAuras"}
         end
         local pack=self:ReadSignal("player.buff",13159,snapshot)
         if pack.status=="READY" and pack.value==true then
+            if KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
+                KR.AuraEvidence:ObserveLive(13159)
+            end
             return {status="READY",value=true,source="TravelAspectAuras"}
         end
         if cheetah.status=="READY" and cheetah.value==false
             and pack.status=="READY" and pack.value==false then
             return {status="READY",value=false,source="TravelAspectAuras"}
+        end
+        -- Sonah's C.buff + C.no(C.consumed(...)) remembers a confirmed
+        -- travel aspect until our successful combat-aspect cast consumed it.
+        -- This permits the combat safety recommendation even when the
+        -- client hides aura details on entering combat.
+        if KR.AuraEvidence and KR.AuraEvidence.ReadTravel then
+            local past=KR.AuraEvidence:ReadTravel()
+            if past and past.status=="READY" and past.value==true then
+                return past
+            end
         end
         return unknown("travel_aspect_aura_unverified")
     elseif field=="autoShot.active" then
