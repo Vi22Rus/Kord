@@ -1,3 +1,11 @@
+## KR-20261123-123 — IT-02/2.6: synchronize REQUIREMENTS and canonical plan via Git blobs
+- Дата/время: 2026-11-23 UTC (точное время в Git); SHA: `git log --grep KR-20261123-123`. Этап 2/2.6 IT-02 P0; docs; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: кодовый коммит KR-20261123-122 опубликован, но его записи отсутствовали в REQUIREMENTS.md и поэтапном плане из-за ограниченного чтения больших файлов стандартным fetch_file. Причина: крупные документы возвращались пустыми из обычного contents reader; прямой Git Blob SHA успешно возвращает полное содержимое.
+- Изменения: `REQUIREMENTS.md` — фактическая реализация, методы, источник WoW API, подтверждённый коммит SHA, проверки и остаток. `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` — строка [x] DONE (CODE MERGED) для fix KR-122 с прямой ссылкой, исходные [ ] OPEN и все прежние 21 выполненные подпункты сохранены. `CHANGELOG.md` — текущая запись. Нового Lua-кода в этом коммите нет.
+- Метод: чтение исходных больших документов по существующему Git blob SHA; точечная вставка в исходный текст, создание новых Git blobs, единый tree/commit, fast-forward ref.
+- Проверки: PASS — уникальные якоря 2.6, исходные документы сохранены как неизменённая подпоследовательность с вставкой, не изменены прежние статусы и незавершённые критерии, публикация Git. NOT RUN — Lua 5.1, mock/full regression, manual CI, WoW Forever; документационная синхронизация не является игровым тестом.
+- Тестировщику: промежуточная установка не требуется; использовать прежнюю итоговую матрицу + forged/public attribution scenario. Риски: реальные shared-cooldown правила и producer состояний всё ещё не подтверждены. Связи KR-20261123-120/121/122, IT-02/2.6.
+
 ## KR-20261123-122 — IT-02/2.6: reject forged public item-use attribution
 - Дата/время: 2026-11-23 UTC (точное по Git); SHA: `git log --grep KR-20261123-122`. Этап 2/2.6 IT-02 P0; fix/test; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: публичный `GameState:ReadSharedItemCooldownObservation` принимал `useAttribution=ESTIMATED` от недостоверного `ReadObservedItemUse` без проверки источника, тогда как `ReadSharedItemCooldownMemberEvidence` уже требовал событие игрока. Причина доказана сравнением двух ветвей GameState; игровой баг не заявляется.
