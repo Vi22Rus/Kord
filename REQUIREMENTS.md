@@ -2640,6 +2640,8 @@
 
 ### TG-05 — Цель в бою, цель цели (агро на мне / на питомце / на другом)
 
+**Архитектурная актуализация TH-01:** **См. TH-01: TH-01 is the canonical per-enemy/per-actor threat observation; target-of-target is corroborating evidence, never a substitute for threat-table ownership.**
+
 
 **Архитектурная актуализация EN-02:** **См. EN-02: player/pet/group threat and target-of-target observations are evidence for group engagement, but targettarget alone is not proof of threat leadership.**
 
@@ -3094,6 +3096,8 @@
 
 ### EN-02 — Число врагов, находящихся в бою с группой
 
+**Архитектурная актуализация TH-01:** **См. TH-01: TH-01 actor-specific threat evidence can support engaged-with-group classification but neither threat nil nor combat flag alone proves group engagement.**
+
 **Архитектурная актуализация EN-08:** **См. EN-08: engaged-with-group counting reuses EN-08 bounded enemy refresh and cached GUID evidence, not a separate periodic nameplate scan.**
 
 
@@ -3158,6 +3162,8 @@
 
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+**Архитектурная актуализация TH-01:** **См. TH-01: TH-01 threat observations use the shared GUID identity index and validated actor/target aliases; no independent nameplate scanner.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 switch/cast candidates must use canonical GUID identity and alias validation; never choose by name or recycled token.**
 
@@ -3456,6 +3462,8 @@
 
 ### EN-08 — Бюджет: чтение nameplates не чаще заданного интервала, без постоянного сканирования
 
+**Архитектурная актуализация TH-01:** **См. TH-01: TH-01 reuses the shared budgeted enemy snapshot and lazy per-actor reads; threat queries do not trigger independent full plate enumeration.**
+
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target selection and cast tracking reuse the EN-08 refresh budget; interrupt urgency does not authorize unbounded nameplate enumeration.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
@@ -3509,5 +3517,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** EventBus уже ограничивает частоту инвалидаций, но канонический бюджетированный nameplate scanner/registry с общей кэшированной выборкой, лимитом частоты и измеряемыми затратами не подтверждён. Отсутствие реализации EN-01/EN-03 не позволяет объявить EN-08 выполненным.
 
 **Архитектурные ссылки:** EN-01, EN-02, EN-03, EN-04, EN-05, EN-06, TG-01, TG-09, TG-06, AU-06. Обратные ссылки внесены в EN-01…EN-06; они уточняют прежние рекомендации о чтении nameplates без удаления исторического аудита. EN-07 пока отсутствует в REQUIREMENTS.md и потому обратная ссылка в него не добавлялась.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
+
+**Раздел: 7. Угроза и агро. Приоритет: P1.**
+
+#### Требование
+
+Для конкретного подтверждённого `enemyGUID` различать, **кто сейчас удерживает агро** (игрок, его питомец, подтверждённый танк группы/рейда, иной участник, неизвестно), и **каков уровень угрозы** каждого проверяемого actor unit относительно этого врага. Наличие записи в threat table, высокий threat status, `isTanking`, текущая `targettarget` и назначенная роль `TANK` — разные факты, которые нельзя приравнивать. Если API возвращает nil/secret, алиас сменился, actor недоступен или танк не определён, вернуть `UNKNOWN(reason)`, а не `false` или «агро на танке». Не утверждать глобальное «на мне никто не висит» на основании одного target или неполного списка nameplates.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:15`: `UnitThreatSituation` и `UnitDetailedThreatSituation` есть в allowlist; не доказана корректность каждой комбинации actor/enemy tokens на клиенте Forever.
+- `KordRotation/Core/GameState.lua:148–152`: target snapshot читает `UnitThreatSituation("player","target")` и проверяет целочисленный диапазон 0..3. Это **уровень угрозы игрока к текущей цели**, а не доказанный владелец агро у всех врагов.
+- `KordRotation/Core/GameState.lua:392–405`: есть отдельные `target.targetsPlayer`/`player.hasAggro` с защитой GUID от смены цели. Target-of-target не подменяет `isTanking` и не устанавливает threat другого actor.
+- `KordRotation/Core/RotationConditions.lua:21,55`: `target.threat` и `target.targetsPlayer` доступны как отдельные условия, но нет общего `ThreatObservation(enemyGUID,actorGUID)` для pet/tank.
+- `KordRotation/Core/EventBus.lua`: общая событийная инвалидизация есть; подтверждённого отдельного per-GUID/per-actor threat revision и полноты наблюдений всех врагов нет.
+
+#### Сравнение семи референсов (Lua ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:1318–1323` вызывает `Secret.CallNumber(UnitThreatSituation,"player","target")` и fallback `("player")`; `Sonah/Classes/Hunter.lua:130,173–177` трактует unknown как возможную угрозу для защитной реакции. Перенять secret-safe read и консервативную защитную политику, но не выдавать «возможно агро» за доказанное `isTanking`; player-only не покрывает pet/tank.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:74–100` перебирает известные nameplate unit tokens и проверяет `UnitThreatSituation("player",u)` для оценки противников на threat table; `JustAC/DebugCommands.lua:5510–5519` отдельно исследует role/threat участников группы. Перенять проверку конкретной пары actor/enemy и диагностику, но не смешивать presence in threat table с владением агро и не делать второй scanner.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:97–98` оборачивает `UnitDetailedThreatSituation(unit1,unit2)` в `pcall`, `:8300–8305` получает aggro/status/percent/rawPercent/value с fallback `UnitThreatSituation`. Перенять структурированный detailed observation и fallback с сохранением статуса доступности; не переносить retail предположения о plain numeric threat в secret API.
+4. **MaxDps:** `MaxDps/Helper.lua:2235–2247` использует `UnitThreatSituation('player',unit) ~= nil` для учёта врагов на threat table, а `MaxDps_Druid/Specialization/Classic/Feral.lua:141` потребляет threat для классового условия. Перенять отделение общего наблюдения от классового решения; **nil** нельзя объявлять «нет агро», а запись в таблице угрозы — «держит агро».
+5. **ForeverRotation:** в проверенных Lua-файлах прямой `UnitThreatSituation`/`UnitDetailedThreatSituation` и универсальный actor-specific threat provider не подтверждены. Не заимствовать недоказанную модель и не утверждать полного отсутствия механизма без иных доказательств.
+6. **RotationGuide:** в проверенных Lua-файлах прямой `UnitThreatSituation`/`UnitDetailedThreatSituation` и универсальный actor-specific threat provider не подтверждены. Не выводить threat ownership из простого combat/target состояния.
+7. **RotationMaster:** `RotationMaster/Conditions/combat.lua:561–591` реализует `THREAT` через `Platform.GetUnitThreatObservation` с per-pass `Functions.cache.getCached`, возвращая `nil,reason` при неизвестном статусе; условие сравнивает порог 0..3. Перенять общий platform observation, lazy memo и трёхзначную семантику, расширив её до actor/enemy pairs и detailed `isTanking`.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Базовый контракт RotationMaster (единый lazy `ThreatObservation` с per-evaluation cache и `UNKNOWN(reason)`) + структурированные поля `UnitDetailedThreatSituation` по модели ForeverAuras + secret-safe ограничения Sonah + общий GUID-index EN-03 и EN-08 budget.** Это лучше прямых player-only проверок Sonah/MaxDps и повторных per-consumer обходов: одна общеклассовая точка получения фактов, явное разделение `onThreatTable`, `threatStatus`, `isTanking`, `percent` и `ownerEvidence`, без фиктивного владельца агро. `UnitGroupRolesAssigned`/другой подтверждённый roster-role источник может обозначить кандидата-танка, но **роль не доказывает удержание агро**. Сначала доказать API shape и secret behavior в Forever v14, затем разрешать соответствующие поля. `UnitIsUnit("targettarget",actor)` использовать только как отдельное косвенное свидетельство с проверкой GUID и моментом наблюдения. Движок не делает protected actions; окончательный `READY` способности остаётся за `AbilityEligibility`.
+
+#### Требуемые изменения
+
+1. Расширить общий слой наблюдений логическим `ThreatObservation(enemyGUID,actorGUID)`, без отдельного классового файла/сканера; actor aliases: player, pet, подтверждённые party/raid units, назначенные танки.
+2. Получать `UnitDetailedThreatSituation(actorUnit,enemyUnit)` и/или `UnitThreatSituation(actorUnit,enemyUnit)` только для проверенных адресуемых пар; возвращать отдельные `isTanking/status/percent/rawPercent/value` с provenance, доступностью и `UNKNOWN` по каждому полю.
+3. Различать `hasAggro`, `onThreatTable`, `highThreat`, `isAssignedTank`, `enemyTargetsActor`; не смешивать nil, false, zero и secret.
+4. Поддержать player/pet/party/raid/tank и solo; проверить UnitGUID до/после чтения, не переносить угрозу между recycled enemy/actor tokens.
+5. Переиспользовать EN-01/02/03/08 индекс врагов и bounded refresh; отдельное чтение threat по `Needs` с per-pass memo, без полного nameplate scan при каждом запросе.
+6. Инвалидировать на target/roster/pet/nameplate changes, combat/threat events только при подтверждённой поддержке клиентом, bounded heartbeat; учитывать TTL и revision.
+7. Потребителям давать доказательные состояния для защитных и танковых приоритетов; неизвестное агро — консервативная политика профиля, не ложное `READY` и не доказанное `false`.
+8. DevTools-only диагностика: `threat_actor_unknown`, `threat_enemy_unknown`, `threat_secret`, `threat_api_unavailable`, `threat_status_invalid`, `threat_is_tanking_unknown`, `tank_role_unconfirmed`, `threat_guid_changed`, `threat_stale`, `threat_target_of_target_only`.
+9. Тесты: solo player/pet, party/raid with assigned tank, multiple tanks, role unknown, tank without aggro, pet holds aggro, player highest threat but not tanking, threat table entry without aggro, target-of-target mismatch, nil/0/1/2/3, secret percentages, enemy swaps, recycled aliases, 0/1/many enemies, partial coverage, combat reset/evade, threat transfer, event burst and per-pass caching.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже читает уровень угрозы игрока на текущем target и имеет GUID guards, но нет доказанного универсального actor-specific per-enemy threat/aggro ownership provider для игрока, питомца и танка.
+
+**Архитектурные ссылки:** TG-05, EN-02, EN-03, EN-08, PL-07, SP-14. Обратные архитектурные ссылки в TG-05, EN-02, EN-03 и EN-08 добавлены в том же коммите; PL-07/SP-14 используют существующие общие контракты без замены их механизмов.
 
 **Изменения Lua:** отсутствуют. Только документация.
