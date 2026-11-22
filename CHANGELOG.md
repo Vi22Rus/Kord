@@ -1,3 +1,10 @@
+## KR-20261122 — Exhaustive v14 presence census and lossless fixed-reason DevTools trace
+
+- At explicit DevTools Start, `ProbeAll` now writes **101 separately indexed API journal records** (`kind=API`, `reason=matrix_probe`, `matrix=1..101`, detail `presence_only`/`api_missing`/`no_single_safe_probe` or fixed refusal). All rows are covered once per recording. This checks **API presence, not execution, capability support, secret usability, or 101 client passes**. Unmapped composite rows remain UNKNOWN; no speculative protected game calls.
+- Fixed the established journal defect that discarded `spell_not_confirmed_on_visible_bar` and `visible_spell_rank_mismatch` from `bm_bar_N` details. Added new aura/travel refusal codes to bounded scalar allowlists. Recording persists numeric matrix row, status, and detail without target, name, GUID, keys, or spell ID.
+- Added mock assertions to `tests/devtools_probe.lua` (all 101 rows, no false READY for composite row 23) and `tests/devtools_recorder.lua` (whitelisted scanner/aura reasons and matrix ID persistence). **SOURCE CHANGED; TESTS NOT RUN; CLIENT NOT RETESTED.**
+- The current journal still cannot prove runtime behavior for all 101 composite matrix capabilities: it contains a 101-row source-level presence census plus event-driven engine/audit stage observations. Future dynamic per-method invocation coverage must preserve the read-only security boundary and must not be labeled implemented.
+
 ## KR-20261122 — WoW Forever BM live diagnostics, UI stabilization and aura reading (documentation reconciliation)
 
 - **SOURCE CHANGED; LUA MOCK / WoW FOREVER RETEST NOT RUN on the latest SHA.** Startup event registration in `Init.lua` is protected with `pcall`; unsupported `LEARNED_SPELL_IN_TAB` no longer aborts UI bootstrap. Event availability depends on the client; this is not proof of all startup pathways.
