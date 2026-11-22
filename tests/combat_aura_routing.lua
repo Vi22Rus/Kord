@@ -46,6 +46,10 @@ local mockedResolve=KR.RotationProfiles.ResolveForEngine
 assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
 KR.RotationProfiles.ResolveForEngine=mockedResolve
 KR.RotationProfiles.Has=mockedHas
+KR.IndicatorSettings={Get=function(_,key)
+ if key=="defensiveEnabled" then return true end
+ return nil
+end}
 KR.AbilityEligibility={} -- engine ownership gate; mocked condition Check below
 KR.RotationConditions={
  Create=function()return {} end,
@@ -127,4 +131,33 @@ for _,kind in ipairs({"utility","debuff"}) do
  eq(E:EvaluateDefensive().status,"BLOCKED",
   "non-maintenance stays out of Defensive: "..kind)
 end
+-- A defensive spell is NOT an aura and must use the defensive
+-- panel even when global buff promotion is enabled in combat.
+profile.Spells.Feign=5384
+KR.SpellCatalogue.Read=function()
+ return {status="ready",entries={
+  {id=13165,known=true,name="Aspect of the Hawk",texture=13165},
+  {id=3044,known=true,name="Arcane Shot",texture=3044},
+  {id=7294,known=true,name="Retribution Aura",texture=7294},
+  {id=5384,known=true,name="Feign Death",texture=5384},
+ }}
+end
+profile.Rules[1]={id="feign",type="SPELL",spell="Feign",
+ category="defensive",target="none",cast="idle",chargesRequired=false,
+ when=function() return true end}
+-- Existing saved profiles still contain defensive=false from the old
+-- default. The explicitly enabled Defensive window owns this channel.
+KR.db.rotationProfiles.HUNTER_TREE_1.categories.defensive=false
+combat=true
+eq(spell(E:EvaluateDefensive()),5384,
+ "defensive ability routes to defensive window in combat")
+eq(spell(E:Evaluate()),3044,
+ "defensive ability cannot replace main DPS")
+combat=false
+eq(spell(E:EvaluateDefensive()),5384,
+ "defensive action is independent of buff promotion")
+KR.IndicatorSettings.Get=function() return false end
+eq(E:EvaluateDefensive().status,"BLOCKED",
+ "disabled Defensive window blocks defensive recommendations")
+KR.IndicatorSettings.Get=function() return true end
 print("PASS global combat aura routing and dual engine channels")
