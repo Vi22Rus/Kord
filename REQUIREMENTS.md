@@ -544,6 +544,9 @@
 ## PL-07 — Боевой статус, группа/рейд/соло и режим подземелья
 
 
+**Архитектурная актуализация TG-10:** **См. TG-10: battleground/arena/zone PvP context is distinct from a unit's own PvP flag; share existing instance observation.**
+
+
 **Архитектурная актуализация TG-05:** **См. TG-05: player combat/group context and target combat/threat share EventBus and typed combat observations; player combat does not prove target combat.**
 
 **Приоритет: P2.**
@@ -1545,6 +1548,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-10:** **См. TG-10: PvP-only spell restrictions consume shared player identity/PvP observations and remain subject to AbilityEligibility.**
+
+
 **Архитектурная актуализация TG-09:** **См. TG-09: per-spell range eligibility consumes shared range facts but remains spell-specific; never infer precise distance from a single spell check.**
 
 
@@ -2341,6 +2347,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-10:** **См. TG-10: target player/NPC identity and PvP flags extend the same GUID-bound TargetObservation; attackability does not equal PvP flag.**
+
+
 **Архитектурная актуализация TG-09:** **См. TG-09: distance bounds are bound to confirmed targetGUID; target existence/attackability is separate from distance.**
 
 
@@ -2463,6 +2472,9 @@
 
 
 ### TG-03 — Уровень относительно игрока, классификация (обычная, элита, босс, редкая)
+
+
+**Архитектурная актуализация TG-10:** **См. TG-10: UnitClassification normal/elite/boss is separate from player-vs-NPC and PvP flag; do not infer either from classification.**
 
 
 **Архитектурная актуализация TG-04:** **См. TG-04: creature type (Beast/Undead/etc.) is distinct from UnitClassification (elite/rare/boss); do not conflate.**
@@ -2819,3 +2831,52 @@
 **Архитектурные ссылки:** SP-08 — canonical range/deadzone; TG-01 — target identity; TG-08 — movement separate; SP-14 — spell requirements. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-09.
+
+
+### TG-10 — Цель — игрок (PvP) или NPC; флаг PvP
+
+**Раздел: 5. Цель. Приоритет: P2.**
+
+#### Требование
+
+В рамках общего `TargetObservation(targetGUID)` независимые доказательные поля `isPlayer`, `isNPC`, `isPvPFlagged`, `isFreeForAllPvP` (если Forever подтверждает API), `canAttack`, `pvpContext` (arena/battleground/world zone), `status/reason/source`. `isNPC` выводится как логическое отрицание `isPlayer` **только при подтверждённом** существовании юнита и READY boolean `UnitIsPlayer`. `UnitCanAttack` не равен `UnitIsPVP`; battleground/arena context не доказывает флаг каждого юнита; PvP-enabled NPC и игрок с выключенным флагом — отдельные случаи. Любой secret/nil → UNKNOWN, не false.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155,134–135: `unitSnapshot("target")` уже читает `UnitIsPlayer("target")` как `record.isPlayer`, а `UnitCanAttack("player","target")` отдельно как `record.attackable`. `UnitIsPVP`/`UnitIsPVPFreeForAll` для цели не читаются, `isNPC` не экспонируется как отдельный типизированный факт.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строка 12: `target.isPlayer` доступен декларативным условиям; `target.pvpFlag`/`target.isNPC` отсутствуют.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9–20: `UnitIsPlayer`, `UnitCanAttack`, `GetInstanceInfo` в allowlist; `UnitIsPVP` и `UnitIsPVPFreeForAll` отсутствуют. Нельзя включать без проверки на Forever.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строка 20: `PLAYER_TARGET_CHANGED` уже инвалидирует цель; PvP-specific revision/update пока не подтверждён.
+- PL-07 содержит контекст боя/группы/инстанса, но не подменяет unit PvP flag.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Units.lua:1298–1307` `Units.InPvP()` определяет **контекст PvP** (arena, battleground, combat zone или атакуемый игрок), прямо отмечает, что `UnitIsPVP` часто secret. Не считать `InPvP()` равным PvP-флагу цели.
+2. **JustAC** — `PrecombatEngine.lua:456–474` secret-safe `UnitIsPlayer(unit)` отделяет реального игрока от NPC при проверке групповых баффов; `JustAC.lua:457` содержит настройки `pvpFlag`, но название настройки не подтверждает универсальный reader `UnitIsPVP("target")`.
+3. **ForeverAuras** — `Prototypes.lua:2814` определяет `UnitIsPlayer(unit)` как player/npc, `Prototypes.lua:10144` использует `UnitIsPVP("player")` для PvP trigger **игрока**, не цели. Полезно разделение unit type и PvP flag.
+4. **MaxDps** — `Helper.lua:2987` различает PvP instance и world PvP zone; универсальный `UnitIsPVP("target")` в проверенных Lua не обнаружен.
+5. **ForeverRotation** — `Engine.lua:337–346` `enemyPlayerTarget()` использует `UnitExists`, `UnitCanAttack`, `UnitIsPlayer` и проверяет secret. Хороший образец PvP enemy player classification, но не PvP flag.
+6. **RotationGuide** — в проверенных Lua универсальные `UnitIsPVP`/`UnitIsPlayer` readers не обнаружены; не утверждать наличие PvP-флага без исходного доказательства.
+7. **RotationMaster** — `Platform/unit_flags.lua:3–69` `GetUnitFlagObservation(unit,"pvp")` использует `UnitIsPVP(unit)`, проверяет `UnitExists`, `CanReadValue`, policy, тип boolean и выдаёт nil/reason при secret. **Лучший образец** для добавления PvP flag observation в Kord.
+
+#### Рекомендация
+
+**Основа — Kord GameState/RotationConditions + RotationMaster Platform/unit_flags.lua + Sonah (контекст PvP vs unit flag) + ForeverRotation (attackable enemy player).** Расширить существующий `TargetObservation` фактами `isNPC` и `pvpFlag`, а не создавать отдельный PvP scanner. Проверять `UnitIsPVP("target")` через GameAPI только после подтверждения наличия/secret поведения на Forever; `UnitIsPVPFreeForAll` — опционально. Контекст инстанса/зоны — отдельный `PvPContextObservation` на базе PL-07. Условия ротации могут различать player, NPC, PvP flag, attackability и PvP context, но финальное READY остаётся `AbilityEligibility`.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Тип player/NPC выводим из уже читаемого `UnitIsPlayer`; собственный PvP-флаг цели и FFA отсутствуют.
+
+#### Требуемые изменения
+
+1. Экспонировать `isNPC` только при подтверждённом `UnitIsPlayer==false` и подтверждённом существовании target; UNKNOWN identity не становится NPC.
+2. Проверить на Forever `UnitIsPVP("target")` и `UnitIsPVPFreeForAll("target")`: доступность, secret flags, ограничения в бою; разрешить в GameAPI только подтверждённые API.
+3. Разделить `isPlayer`, `isPvPFlagged`, `isFreeForAllPvP`, `attackable`, `enemyPlayer`, `pvpContext`. `enemyPlayer` требует обоих подтверждённых `isPlayer=true` и `attackable=true`.
+4. `pvpContext` получать из существующего PL-07 (arena, battleground, zone), не использовать как замену PvP-флага конкретного юнита.
+5. Target GUID guard до/после чтений, invalidation по PLAYER_TARGET_CHANGED, UNIT_FLAGS и подтверждённым PvP/zone events; не наследовать флаг прежней цели.
+6. Декларативные `target.isNPC`, `target.isPvPFlagged`, `target.isEnemyPlayer`, `context.inPvP` с Needs и UNKNOWN, без классового PvP движка.
+7. Диагностика `pvp_flag_secret`, `pvp_flag_unavailable`, `pvp_flag_target_changed`, `target_identity_unknown`, `pvp_context_not_unit_flag`; тесты NPC enemy/friendly, hostile player, same-faction player, arena/battleground, open-world flagged/unflagged, FFA, secret, target swap, no target.
+
+**Архитектурные ссылки:** TG-01 — target identity, TG-03 — classification, PL-07 — context, SP-14 — spell restrictions. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-10.
