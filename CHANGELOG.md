@@ -1,3 +1,11 @@
+## 2026-11-22 — New journal 19148–19176: Defensive diagnostics and secret mana
+
+- In a logged precombat state (`19148`), Hawk aura was positively detected (`bm_signal_2_player_buff=fact_true`), so rule 2 was correctly false. No attack passed (`eligibility_ready_count=0`, `no_eligible_rule`), including `resources.percent=direct_field_unverified` from protected `UnitPower`.
+- In combat (`19153`), `bm_signal_2_player_buff=aura_hidden_by_client`. This is UNKNOWN, not evidence that Hawk is missing. The profile must not recommend a known-active buff on a guess.
+- The new `defensive_in_combat_main` / `defensive_preference_stored` fields were exported as `diagnostic_code_unmapped`: the recorder's allowlist omitted the corresponding keys. Fixed whitelist and regression test. **The old files cannot establish the effective setting value**; don't claim a routing bug is proved by those fields.
+- BM `mana=max` (0% configured reserve) previously returned UNKNOWN on a protected mana percentage despite imposing no percentage threshold. Changed this rule to bypass only the zero-threshold comparison, never the downstream `AbilityEligibility` checks (usable/actual resources/cooldown/range). Nonzero reserve modes still require verified percentage and remain UNKNOWN otherwise. Tests cover both.
+- Default BM mana setting remains `balanced` (leveling reserve 30%). Without readable percentage, that reserve cannot be verified; change to `max` *only if the player accepts no configurable reserve*, not as a silent engine default.
+
 ## 2026-11-22 — Defensive checkbox visibility and first-target Hawk troubleshooting
 
 - Log 18681: Hunter Hawk was READY in main and Defensive was empty while user reported main-in-combat checkbox unchecked. Previous DevTools logged only `aura_promotion`, the WRONG independent switch, so the log cannot establish persisted `defensiveInCombatMain` value.
