@@ -1,3 +1,11 @@
+## KR-20261122-112 — IT-02/2.6: verified use/propagation provenance on group confidence
+- Дата/время: 2026-11-22 UTC (точное время Git commit), SHA: `git log --grep KR-20261122-112`. IT-02 P0, 2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: public group confidence не сообщал диагностические причины своей оценки; source gap, а не баг клиента. Причина — bridge KR-110 копировал уровни confidence без validated evidence enums.
+- `KordRotation/Core/GameState.lua`: guarded `useCorrelation` и `propagationEvidence`, запрет группового ESTIMATED без обоих подтверждающих source-only enums; не введены новые WoW API, сканеры, protected actions или ложные READY/remaining.
+- `tests/shared_item_cooldown_member_evidence_mock.lua`: public aligned/mixed/stable-after-race assertions. PASS: source static anchor verification и Git commit. NOT RUN: Lua 5.1 mock/full regression (нет локального интерпретатора), manual Actions и WoW Forever.
+- Выдано тестировщику: сопоставлять confidence с use/propagation, mixed и race; промежуточный игровой запуск не требуется.
+- Обновлены REQUIREMENTS.md и поэтапный план. Остаток — доказанная Forever shared cooldown semantics, полноценные group ACTIVE/READY/remaining. Связи KR-102–111, IT-01, IT-02/2.5–2.10.
+
 ## KR-20261122-111 — IT-02/2.6: correct post-race mock expectation
 - Дата/время: 2026-11-22 UTC (точное время по Git), SHA через `git log --grep KR-20261122-111`; IT-02 P0, шаг 2.6, test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: статический разбор KR-20261122-110 выявил неправильное ожидание `nil` при втором вызове public group reader в race mock. Первый вызов уже изменил revision, поэтому следующий снимок может быть согласованным, но его group confidence остается UNKNOWN.

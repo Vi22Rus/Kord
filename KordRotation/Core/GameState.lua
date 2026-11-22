@@ -1294,6 +1294,17 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         or (evidence.groupLockoutConfidence~="ESTIMATED"
                             and evidence.groupLockoutConfidence~="UNKNOWN")
                         or evidence.groupReadyConfidence~="UNKNOWN"
+                        or not api:IsSafeValue(evidence.useCorrelation)
+                        or (evidence.useCorrelation~="ESTIMATED"
+                            and evidence.useCorrelation~="UNKNOWN")
+                        or not api:IsSafeValue(evidence.propagationEvidence)
+                        or (evidence.propagationEvidence~="ALIGNED_CANDIDATES"
+                            and evidence.propagationEvidence~="SINGLE_CANDIDATE"
+                            and evidence.propagationEvidence~="MIXED_CANDIDATES"
+                            and evidence.propagationEvidence~="UNKNOWN")
+                        or (evidence.groupLockoutConfidence=="ESTIMATED"
+                            and (evidence.useCorrelation~="ESTIMATED"
+                                or evidence.propagationEvidence~="ALIGNED_CANDIDATES"))
                         or not api:IsSafeValue(evidence.itemCooldownRevision)
                         or not api:IsSafeValue(evidence.inventoryRevision)
                         or not api:IsSafeValue(evidence.familyRevision)
@@ -1305,6 +1316,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     return {item=evidence.itemCooldownConfidence,
                         group=evidence.groupLockoutConfidence,
                         ready=evidence.groupReadyConfidence,
+                        useCorrelation=evidence.useCorrelation,
+                        propagation=evidence.propagationEvidence,
                         itemRev=evidence.itemCooldownRevision,
                         bagRev=evidence.inventoryRevision,
                         familyRev=evidence.familyRevision}
@@ -1313,6 +1326,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     result.itemCooldownConfidence=fields.item
                     result.groupLockoutConfidence=fields.group
                     result.groupReadyConfidence=fields.ready
+                    result.useCorrelation=fields.useCorrelation
+                    result.propagationEvidence=fields.propagation
                     result.itemCooldownRevision=fields.itemRev
                     result.inventoryRevision=fields.bagRev
                     result.familyRevision=fields.familyRev
