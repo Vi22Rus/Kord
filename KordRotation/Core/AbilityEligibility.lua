@@ -293,20 +293,27 @@ function A:Evaluate(id,options)
     local catalogue=KR.SpellCatalogue and KR.SpellCatalogue:Read()
     local knownStatus,knownReason=spellKnown(id,catalogue)
     if knownStatus~="READY" then return candidate(knownStatus,knownReason,id) end
-    if not KR.ActionBarScanner or not KR.ActionBarScanner.FindSpell then
-        return candidate("UNKNOWN","scanner_unavailable",id)
-    end
-    local bar=KR.ActionBarScanner:FindSpell(id)
-    if not bar or bar.status~="READY" then
-        local result=candidate("UNKNOWN","action_slot_unconfirmed",id)
-        -- Fixed scanner failure codes only; no raw frame, slot or spell ID.
-        local reason=bar and bar.reason
-        if type(reason)=="string" and #reason<=64
-            and reason:match("^[a-z][a-z0-9_]*$") and api:IsSafeValue(reason) then
-            result.barReason=reason
-        end
-        return result
-    end
+    -- A recommendation is a read-only spell decision, NOT an action bar
+    -- operation. Rotation Master separates spell facts from UI button maps.
+    -- Missing/hidden/mismatched buttons may remove the keybinding label,
+    -- but never make a learned and eligible action into UNKNOWN.
+    local bar,barIssue
+    if KR.ActionBarScanner and
+        type(KR.ActionBarScanner.FindSpell)=="function" then
+        local ok,record=pcall(KR.ActionBarScanner.FindSpell,
+            KR.ActionBarScanner,id)
+        if ok and type(record)=="table" and api:IsSafeValue(record) then
+            bar=record
+            if record.status~="READY" then
+                local reason=record.reason
+                if type(reason)=="string" and #reason<=64
+                    and reason:match("^[a-z][a-z0-9_]*$")
+                    and api:IsSafeValue(reason) then
+                    barIssue=reason
+                else barIssue="action_slot_unconfirmed" end
+            end
+        else barIssue="action_slot_unconfirmed" end
+    else barIssue="scanner_unavailable" end
     local state=options.stateSnapshot
     if state==nil then state=KR.GameState and KR.GameState:GetSnapshot() end
     if not state or not state.player or not state.player.exists
@@ -351,6 +358,7 @@ function A:Evaluate(id,options)
         -- This is a core-only, bounded diagnostic snapshot. No action slots,
         -- player data, spell IDs or untrusted values enter the check list.
         result.checks=checked
+        if barIssue then result.barReason=barIssue end
         return result
     end
     -- Keep canonical laziness: when definitely BLOCKED, remaining checks
@@ -372,7 +380,8 @@ function A:Evaluate(id,options)
     end
     if unknown then return checkedResult("UNKNOWN",unknown) end
     local result=checkedResult("READY",nil)
-    result.slot=bar.slot
+    if bar and bar.status=="READY" and
+        api:IsSafeValue(bar.slot) then result.slot=bar.slot end
     result.target=options.target
     return result
 end
