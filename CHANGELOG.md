@@ -1,3 +1,12 @@
+## KR-20261122-091 — docs: synchronize IT-02/2.6 partial integration with requirements and roadmap
+- Дата/время: 2026-11-22 UTC, точный Git timestamp по истории; SHA: `git log --grep KR-20261122-091`.
+- Этап/ID: 2/2.6, IT-02 P0; тип docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN. Код не изменён этим коммитом.
+- Причина: KR-20261122-090 добавил guarded catalog lookup, но не выполнил обязательную корреляцию нескольких member cooldown и observed-use. Требуются честные статусы и прямая связь со source commit.
+- Изменено: `REQUIREMENTS.md` — запись фактической реализации Kord внутри IT-02/2.6 с путями, API, тестом и исходным SHA; `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` — тот же частичный статус около шага 2.6; `CHANGELOG.md` — эта запись. Исторические аудит, вердикт, исходные шаги и остальные статусы не удалены.
+- Проверки: PASS — проверка уникальности обоих якорей шага 2.6, наличие исходной строки до и после вставки, ссылка на действительный кодовый SHA; NOT RUN — Lua 5.1, mock, regression, GitHub Actions, WoW Forever: документационный коммит не запускает их и не доказывает runtime-совместимость.
+- Референсы/API: нового WoW API нет, ссылки на существующий IT-02 source audit. Для тестировщика — аккумулировать тесты группы до окончания IT-02; промежуточная установка не нужна.
+- Результат: статус синхронизирован; следующий источник фактов — completion item-use attribution и проверенные group cooldown наблюдения; связи KR-20261122-089/090, IT-01/02/03/04, AC-02.
+
 ## KR-20261122-090 — IT-02/2.6: connect shared cooldown observation to fail-closed catalog (partial)
 - Дата/время: 2026-11-22 UTC (точное время по Git); коммит: `git log --grep KR-20261122-090`.
 - Этап / требование: 2 / IT-02 P0 / шаг 2.6; тип feature/test; статус PARTIALLY IMPLEMENTED, CLIENT NOT RUN.

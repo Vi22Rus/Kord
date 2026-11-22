@@ -5107,6 +5107,15 @@
 4. Отделить item-specific cooldown от GCD, combat-use restriction, item count, charges и item usability.
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
+
+**Реализация Kord — фактическое состояние IT-02/2.6 (2026-11-22; этап 2, P0, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- Подшаг: подключение каталога к общему `SharedItemCooldownObservation`, НЕ group inference из item-use. Кодовый [KR-20261122-090 / 0dff448c3e1ebfbcec16e561db88a541e7e7ade4](https://github.com/Vi22Rus/Kord/commit/0dff448c3e1ebfbcec16e561db88a541e7e7ade4).
+- Реализовано: [`KordRotation/Core/GameState.lua`](https://github.com/Vi22Rus/Kord/blob/0dff448c3e1ebfbcec16e561db88a541e7e7ade4/KordRotation/Core/GameState.lua), `S:ReadSharedItemCooldownObservation(groupID)` — проверка groupID, защищённый `SharedCooldownGroupCatalog:GetGroup` (`pcall`, `GameAPI:IsSafeValue`), различение неизвестной группы, отсутствующего/ошибочного каталога и `PENDING_FOREVER`. Никакой `READY`, `active` или `remaining` из family metadata не выводится.
+- Тестовый исходник: [`tests/shared_item_cooldown_observation_mock.lua`](https://github.com/Vi22Rus/Kord/blob/0dff448c3e1ebfbcec16e561db88a541e7e7ade4/tests/shared_item_cooldown_observation_mock.lua), варианты pending/unknown/secret/missing/error и запрет ложного READY.
+- API/референсы: новых WoW API нет; переиспользуются внутренние `GameAPI:IsSafeValue`, каталог IT-02/2.5; исторический источник выбранного пути — Sonah/JustAC/ForeverAuras/RotationMaster из исходного сравнения IT-02. Прямой runtime-тест Forever не выполнялся.
+- Проверки: PASS — статическая сверка ветвей и состава опубликованного коммита; NOT RUN — Lua 5.1/mock execution, полный regression, ручной GitHub Actions, WoW Forever (нет локального игрового клиента).
+- Незавершённое: фактические use attribution, подтверждение group semantics, проверенные member cooldown states, `CONFIRMED/ESTIMATED/UNKNOWN`, `CONFIRMED_READY` с полным набором, revision/provenance. Следующий независимый шаг 2.7 после проверки зависимостей; IT-02 остаётся PARTIALLY IMPLEMENTED.
+
 7. EventBus item cooldown revision по `BAG_UPDATE_COOLDOWN`, bag/actionbar/item-use/combat/zone events, coalescing и bounded refresh; не дублировать IT-01 bag scanner.
 8. RotationConditions `items.cooldownActive(itemID)`, `items.cooldownRemaining(itemID)`, `items.sharedCooldownRemaining(groupID)` и lazy `Needs.items.cooldown`; AbilityEligibility единственный final READY.
 9. DevTools-only диагностика: `item_cd_api_missing`, `item_cd_secret`, `item_cd_disabled`, `item_cd_invalid_tuple`, `item_cd_gcd_only`, `item_cd_remaining_unknown`, `item_cd_group_unknown`, `item_cd_group_partial`, `item_cd_group_estimated`, `item_cd_group_conflict`, `item_cd_use_attribution_unknown`, `item_cd_ready_confirmed`.
