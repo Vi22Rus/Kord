@@ -49,6 +49,11 @@ assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/RotationConditions.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/RotationEngine.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Profiles/Hunter/BM_Pilot_Experimental.lua"))("KordRotation",KR)
+-- Pilot is now a 61+ fallback; test its condition logic independently
+-- at level 30, where the production selector uses full BM leveling.
+local pilot=KR.RotationProfiles:Get("HUNTER_TREE_1",61)
+assert(pilot)
+KR.RotationProfiles.ResolveForEngine=function()return pilot end
 local result=KR.RotationEngine:Evaluate()
 eq(result.status,"BLOCKED","cooldown on rank 4 blocks recommendation")
 eq(result.reason,"no_eligible_rule","no inappropriate lower-rank fallback")
