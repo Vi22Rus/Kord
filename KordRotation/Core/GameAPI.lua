@@ -32,6 +32,7 @@ local allowed = {
     ["C_Spell.GetSpellCharges"]=true,
     ["C_Spell.IsSpellUsable"]=true,
     ["C_Spell.IsSpellInRange"]=true,
+    ["C_Spell.SpellHasRange"]=true,
     ["C_SpellBook.GetSpellBookItemInfo"]=true,
     ["C_SpellBook.GetNumSpellBookSkillLines"]=true,
     ["C_SpellBook.GetSpellBookSkillLineInfo"]=true,
