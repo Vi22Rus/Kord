@@ -195,9 +195,12 @@ function D:DrainAPIMethods()
         end
     end
     if self:Safe(result.overflow) and
-        type(result.overflow)=="number" and result.overflow>0 then
+        type(result.overflow)=="number" and result.overflow>0
+        and result.overflow==result.overflow
+        and result.overflow<math.huge then
         self:Record("METHOD","UNKNOWN","method_trace_overflow",
-            nil,nil,result.overflow)
+            nil,nil,"none","GameAPI.unsupported",
+            math.min(1000000000,math.floor(result.overflow)))
     end
     return true
 end
