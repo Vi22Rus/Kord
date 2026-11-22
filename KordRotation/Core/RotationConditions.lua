@@ -130,8 +130,8 @@ local function readItemFact(field,id)
   if field=="items.hasAny" then return record.count>0,nil end
   return record.count,nil
  end
- local why=record.reason
- if not safe(why) or type(why)~="string" then
+ local whyOK,why=pcall(function() return record.reason end)
+ if not whyOK or not safe(why) or type(why)~="string" then
   why="item_count_unverified"
  end
  return nil,why
