@@ -165,16 +165,21 @@ local function makeRules(spells,is60)
   if c.mark=="all" then return true end
   local kind=signal(S,"target.classification")
   local elite=kind=="elite" or kind=="rareelite" or kind=="worldboss"
-  if c.mark=="elite" then return type(kind)=="string" and elite or nil end
+  if c.mark=="elite" then
+   if type(kind)~="string" then return nil end
+   return elite
+  end
   local instance=signal(S,"context.inInstance")
   if c.mark=="instance" then return instance end
   if c.mark=="elite_or_instance" then
-   return type(kind)=="string" and (elite or instance==true)
-      or (instance==true and true or nil)
+   if elite or instance==true then return true end
+   if type(kind)=="string" and instance==false then return false end
+   return nil
   end
-  local ttd=signal(S,"target.ttd")
   if elite then return true end
-  return type(ttd)=="number" and ttd>=15 or nil
+  local ttd=signal(S,"target.ttd")
+  if type(ttd)~="number" then return nil end
+  return ttd>=15
  end
  local function markWhen(S,c)
   local enabled=and2(target(S),markAllowed(S,c))
@@ -295,7 +300,8 @@ local function makeRules(spells,is60)
   if kind=="elite" or kind=="worldboss" or kind=="rareelite" then return true end
   if type(kind)~="string" then return nil end
   local ttd=signal(S,"target.ttd")
-  return type(ttd)=="number" and ttd>=15 or nil
+  if type(ttd)~="number" then return nil end
+  return ttd>=15
  end
  local function cds(S,c,key)
   if is60 then
