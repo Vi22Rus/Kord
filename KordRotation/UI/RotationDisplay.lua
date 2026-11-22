@@ -412,7 +412,7 @@ function KR.RotationDisplay:Refresh(skipLayout)
         local okSummary,summary=pcall(summarizeOutcome,result)
         if okSummary and type(summary)=="table" then self.lastSummary=summary end
         local okItem,item=pcall(verifiedRecommendation,result)
-        if not okItem then item=nil end
+        if not okItem or not p.showPanel then item=nil end
         if item then
             self.productionReady=true
             self:SetSlotData(1,{texture=item.texture,name=item.name,
