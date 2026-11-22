@@ -142,3 +142,25 @@ DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVaria
 **To test in WoW Forever:** Add Aspect of the Hawk to Blizzard's Cooldown Manager *buff display* if it is not already tracked, then enter combat with the Kord indicator. If that Blizzard item exists, its plain presence flag can supply the aspect state even when `GetPlayerAuraBySpellID` returns no data. Other untracked auras remain UNKNOWN (safe). A negative aural condition cannot be proven by an absent viewer item.
 
 **Status:** source implementation landed in GitHub; mock cases written but **Lua 5.1 and live WoW Forever tests have not been run**. Not a guaranteed fix for a player whose Cooldown Manager doesn't track the aura. Do not claim completion of full 101-row matrix.
+
+## 2026-11-22 — User-approved global combat aura routing
+
+Architectural decision: one checkbox in **Advanced / General preferences**, saved account-wide in `KR.db.buffsInCombatMain` (default ON). This controls only the destination of **verified missing offensive auras/aspects/stances**. It does not cast, enable, suppress or invent spells.
+
+| Combat | Checkbox | Route of `recommendationType="aura"` |
+|---|---|---|
+| false | either | Defensive |
+| true | true | Main rotation |
+| true | false | Defensive |
+| UNKNOWN | either | Defensive (never assume confirmed combat) |
+
+Additional invariants:
+- Independently evaluate the main and Defensive channels from actual existing Kord priority rules. Never pull a previous recommendation into the second slot or invent a queue.
+- Skip aura rules belonging to the other channel **before** checking their condition or eligibility. Non-aura conditions cannot force Defensive to UNKNOWN.
+- A recommendation must pass `AbilityEligibility`, spell catalogue, source checks and visible-button/binding rules. No protected gameplay commands are issued.
+- No spell may appear simultaneously in both windows. At present only Hunter `AspectHawk`, `AspectMonkey`, and BM60 `Trueshot` are tagged aura. Paladin will use the same semantic marker when a validated profile is registered.
+- The first Defensive icon now supports verified aura recommendations. Its other slots and the interrupt indicator remain nonoperational placeholders.
+- A missing Hawk before battle may be offered without a target; a verified active Cheetah/Pack aspect still prevents the unwanted out-of-combat switch.
+- Newly initialized settings enable Defensive and show it out of combat. Previously saved choices remain authoritative. If a player disabled Defensive or selected 'only in combat', they must change those existing preferences to see pre-combat auras.
+- Automatic refresh on checkbox changes. Manual Lua 5.1 workflow includes two-channel routing mocks; in-game validation still outstanding.
+
