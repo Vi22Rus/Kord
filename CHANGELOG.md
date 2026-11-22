@@ -1,3 +1,13 @@
+## KR-20261122-009 — аудит UI-08: скрытие панелей и сторонние actionbars
+- Дата: 2026-11-22 (точное время и SHA — GitHub).
+- Изменены: `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменён.
+- Аудит: ActionBarScanner/BindingResolver/RotationDisplay, docs stage 2.5/2.6, семь ZIP и предыдущие требования.
+- Зафиксирован единый read-only `ActionBarPresentationState` поверх существующих providers; скрытие стороннего actionbar не скрывает собственную main-панель. UNKNOWN не равен ABSENT; без protected writes.
+- 10 задач/тестов, обратные ссылки UI-01, UI-02, UI-05, UI-06, UI-07, DA-08.
+- PASS: документационный аудит/структура и обратные ссылки. NOT RUN: Lua/CI/реальный WoW Forever и версии BT4/Dominos/ElvUI.
+- Вердикт: частично реализовано, P1; end-to-end поддержка требует QA.
+
+
 ## KR-20261122-008 — аудит UI-07: единые ключи локализации
 - Дата: 2026-11-22; commit SHA определяется через `git log --grep KR-20261122-008`.
 - Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.

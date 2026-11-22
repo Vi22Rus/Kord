@@ -7645,6 +7645,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-05:** combat/target visibility инвалидируется по EventBus (UI-05), независимо от пересмотра spec/level и actionbar/bindings; смена спека не должна менять общий режим показа без явного применения пресета настроек.
 
+**Ретроактивное уточнение UI-08:** общий механизм инвалидации DA-08 обязан учитывать actionbar Hide/Show, paging, addon load/unload where observable, bindings, form/stance/override и live revalidation из UI-08. Не предполагать, что все сторонние аддоны посылают Blizzard event; TTL fallback остаётся ограниченным.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -7708,6 +7710,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-07:** подписи текущей/следующей рекомендации, пустого слота и прогнозного статуса UI-01 используют единый registry UI-07, не локализуют `SpellID`, source или машинные статусы `READY/PREDICTED/UNKNOWN`.
 
+**Ретроактивное уточнение UI-08:** основная рекомендация и её texture не зависят от наличия видимой actionbar-кнопки; доступность подсветки и клавиши определяется общими read-only `ActionBarScanner`/`BindingResolver` и `ActionBarPresentationState` UI-08. Скрытие сторонней панели не означает, что spell стал недоступен.
+
 ### UI-02 — Подсветка кнопки на панели (если разрешено), показ клавиши привязки
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -7763,6 +7767,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-05:** подсветка текущей actionbar-кнопки и отображение клавиши должны учитывать итоговую видимость main по `DisplayVisibilityPolicy` (UI-05); скрытая main-панель не должна оставлять stale glow, но видимость не меняет eligibility и не разрешает protected операции.
 
 **Ретроактивное уточнение UI-06:** отсутствие keybind/glow при существующей READY-иконке — отдельная причина `binding_unverified|button_not_visible|glow_blocked`, а не «нет рекомендации». UI-06 отображает explanation из существующего UI-02 observation, не дублирует поиск кнопок.
+
+**Ретроактивное уточнение UI-08:** подсветка и keybind UI-02 обязаны пользоваться каноническим `ActionBarPresentationState` UI-08 поверх существующих `ActionBarScanner`/`BindingResolver`; при Hide/Show, paging, override, смене action/бинда сбрасывать stale glow/label, `UNKNOWN` не считать `UNBOUND` или `ABSENT`. Не создавать второй scanner или glow engine.
 
 ### UI-03 — Окно настроек из схемы CFG: группы, подсказки, конфликты источников
 
@@ -7974,6 +7980,8 @@ Kord Rotation должен позволять создавать, именова
 
 **Ретроактивное уточнение UI-07:** `COMBAT_ONLY|TARGET_ONLY|ALWAYS` — непереводимые внутренние enum, UI label/tooltip и legacy conflict explanations — единые ключи UI-07 на шести языках. Не сохранять текст текущего языка вместо enum.
 
+**Ретроактивное уточнение UI-08:** `DisplayVisibilityPolicy` UI-05 управляет только собственной main-панелью Kord; скрытие Blizzard/Bartender/Dominos/ElvUI actionbar не скрывает main автоматически. UI-08 определяет независимую видимость и пригодность кнопок для keybind/glow.
+
 ### UI-06 — Индикация причины: почему нет иконки (для отладки и поддержки)
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -8038,6 +8046,8 @@ Kord Rotation должен позволять создавать, именова
 
 **Ретроактивное уточнение UI-07:** все `RecommendationAbsenceExplanation.reason` UI-06 отображаются через единый reason→locale key registry UI-07; технические коды остаются стабильными непереводимыми значениями, при отсутствии перевода используется проверенный fallback без ложного объяснения.
 
+**Ретроактивное уточнение UI-08:** объяснение UI-06 различает отсутствие рекомендации и недоступность отображения keybind/glow из-за скрытой/неподтверждённой actionbar-кнопки; коды `button_not_visible|no_confirmed_visible_button|button_slot_unconfirmed|dynamic_routing_unverified` берутся из существующих providers UI-08, без нового API-опроса ради tooltip.
+
 ### UI-07 — Локализация (ru, en), единые ключи
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -8095,6 +8105,70 @@ Kord Rotation должен позволять создавать, именова
 **ЧАСТИЧНО РЕАЛИЗОВАНО / P1 / ШЕСТИЯЗЫЧНЫЙ КАТАЛОГ ЕСТЬ, ПОЛНОЕ ПОКРЫТИЕ НЕ ДОКАЗАНО.** У Kord уже есть `KR:L/KR:Format`, шесть языков и отдельный DevTools locale. Обнаружены generic placeholder-подсказки и динамические ключи, для которых не подтверждён полный coverage/semantic review. Статический аудит выполнен; исчерпывающий поэлементный игровой QA и точные проценты покрытия **не выполнены**.
 
 **Архитектурные ссылки:** UI-01/UI-03/UI-04/UI-05/UI-06, DA-07, EN-A5, `KordRotation/Core/Locale.lua`, `KordRotationDevTools/Locale.lua`, `AdvancedDiagnostics.lua`, `RotationAbilities.lua`, `AGENTS.md`. **Обратные уточнения внесены в UI-01, UI-03, UI-04, UI-05, UI-06, DA-07**: существующие интерфейсы и будущие механизмы должны пользоваться единым ключевым каталогом, без второго runtime resolver.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение UI-08:** пользовательские сообщения о скрытой панели, неподтверждённой кнопке и неподтверждённой привязке используют единые `REASON_*`/`TIP_*` ключи UI-07 на шести языках; имена Bartender/Dominos/ElvUI и технические коды не локализуются.
+
+### UI-08 — Реакция на скрытие панелей и аддоны панелей (Bartender, Dominos, ElvUI и др.)
+
+**Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
+
+#### Требование
+
+Kord должен корректно реагировать на фактическую видимость, переназначение, смену страниц и привязок **стандартных и сторонних панелей действий**, не вмешиваясь в их защищённое управление. Целевые семейства: стандартные `ActionButton`/`MultiBar*`, Bartender4 (`BT4Button*`), Dominos (`DominosActionButton*` и `MultiBar*ActionButton*`), ElvUI (`ElvUI_Bar*Button*`), EllesmereUI (`EABButton*`) и уже загруженные варианты `LibActionButton-1.0`. «И др.» означает **условное** обнаружение через безопасный проверенный интерфейс, а не обещание поддержки любого аддона. Нельзя выводить `ABSENT` из отсутствия обнаруженной кнопки: покрытие scanner — `CONFIRMED_BUTTONS_ONLY`. Скрытие панели стороннего аддона не означает запрета на применение spell и не скрывает собственную `KordRotationRecommendationPanel` (UI-05).
+
+**Канонический контракт:** `ActionBarPresentationState(spellID,scannerSnapshot,bindingSnapshot,visibility,slot,buttonSource,actionbarRevision,bindingRevision,observedAt)` → `status=READY|UNBOUND|UNKNOWN|HIDDEN`, `reason`, `spellID`, `slot`, `source`, `bindingLabel` (только READY), `glowEligible` (только при актуальной видимой подтверждённой кнопке и разрешённом UI-02 glow), `revisions`, `observedAt`. Это **тонкий presentation adapter** поверх существующих `ActionBarScanner` и `BindingResolver`, не новый scanner, binding resolver или Eligibility. `READY` означает только проверенное отображение кнопки/клавиши, не готовность заклинания; `UNBOUND` — подтверждённая видимая кнопка без назначенной клавиши; `UNKNOWN` — непроверенные API/слот/маршрут/paging/секретные значения; `HIDDEN` — доказанное `IsVisible()==false` для конкретной ранее наблюдённой кнопки, но **не** утверждение, что у spell нет другой видимой кнопки. При нескольких кнопках выбирать детерминированно по доказанному binding route и действительному слоту, без фиктивного keybind. Отсутствие видимой кнопки не препятствует отображению собственной READY spell icon в Kord.
+
+**События:** обновлять по `ACTIONBAR_SLOT_CHANGED`, `ACTIONBAR_PAGE_CHANGED`, `UPDATE_BINDINGS`, `PLAYER_ENTERING_WORLD`, `ADDON_LOADED`, изменениям stance/form/stealth/override, а также доступным EventBus `actionbar/bindings/identity/talents`; конкретный набор событий подтверждать на WoW Forever. При `Hide/Show` родителя или дочерней кнопки `IsShown()` может отличаться от `IsVisible()`; для glow/keybind требуется **фактическая** видимость в текущей иерархии и проверенный активный слот. Сторонние аддоны могут не публиковать событие: применять уже существующие ограниченные TTL/live revalidation, а не бесконечный OnUpdate или hooks к чужим protected frames. При смене actionbar/page/bindings немедленно инвалидировать прежние подтверждения, снять stale glow/keybind; если нет безопасного способа подтвердить новую кнопку, вернуть UNKNOWN. Не вызывать `SetAttribute`, `SetBinding`, `SetOverrideBindingClick`, `UseAction`, `CastSpell`, не переуправлять чужими фреймами, не добавлять обязательную стороннюю библиотеку.
+
+**Разделение UI:** `RotationDisplay` main и независимый defensive остаются под управлением UI-05/IndicatorSettings; скрытие чужого actionbar влияет **только** на доступность actionbar glow/клавиши UI-02. Показ рекомендаций, READY/UNKNOWN/STOP и порядок правил движка не меняются. Для UI-06 объяснять «иконка есть, но кнопка панели скрыта/не подтверждена» отдельно от «нет рекомендации». Для UI-07 локализовать пользовательский текст на шесть языков, не локализовать технические коды и названия аддонов. Не пытаться подсветить невидимую или protected кнопку.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/ActionBarScanner.lua:6–20`: ограничение `MAX_SLOT=180`, `MAX_BUTTONS=1200`, `TTL=0.6`; Blizzard, Dominos-extra и несколько `LibActionButton-1.0` вариантов. Это существующий **канонический** read-only scanner.
+- `ActionBarScanner.lua:100–127`: `visible(button)` проверяет `IsVisible()`; `inspect` возвращает `button_not_visible`, `button_slot_unconfirmed`, `button_action_unconfirmed`, `button_action_info_unconfirmed`, `button_action_not_spell`, `button_spell_id_unconfirmed`. `GetAttribute("action")`, `GetPagedID()`, `GetAction()` используются с проверкой; не угадывать слот из имени.
+- `ActionBarScanner.lua:135–178`: обнаружение `BT4Button1..180`, `DominosActionButton1..180`, `EABButton1..180`, `ElvUI_Bar1..15Button1..12`, `MultiBar*ActionButton` и `LibStub`/`GetAllButtons()` без загрузки чужих библиотек.
+- `ActionBarScanner.lua:193–260,267–300`: EventBus invalidation, revision, TTL, `coverage="CONFIRMED_BUTTONS_ONLY"`, повторная проверка кнопки перед выдачей; отсутствие найденных видимых слотов не означает полное отсутствие spell.
+- `KordRotation/Core/BindingResolver.lua:68–113,128–154`: предпочитает реальный `GetBindingAction()`/атрибут `binding`, проверяет `GetBindingKey` и обратный `GetBindingAction`; `dynamic_routing_unverified`, `binding_reverse_mismatch` дают UNKNOWN. `:176–240` кэширует команды, но live-revalidates кнопки через scanner; различает READY, UNBOUND, UNKNOWN.
+- `KordRotation/UI/RotationDisplay.lua:31–68,135–151,493–500`: собственные main/defensive фреймы созданы относительно `UIParent`, не дочерние элементы Bartender/Dominos/ElvUI; EventBus actionbar/bindings уже вызывает Refresh. Отсутствует подтверждённый end-to-end `ActionBarPresentationState` для glow/visibility при всех скрытиях.
+- `docs/STAGE_02_05_ACTIONBAR.md`, `docs/STAGE_02_06_BINDINGS.md`: уже зафиксированы совместимость шести семейств, `UNKNOWN` вместо ABSENT, mock-тесты и **AWAITING IN-GAME QA**. Исторические локальные mock PASS в документах не означают текущий клиентский PASS.
+- **Пробел:** нет подтверждённого единого presentation-контракта для скрытых/перемещённых чужих панелей, полного учёта сторонних Hide/Show без событий, live glow cleanup, инвалидации всех custom paging и игровых тестов установленных версий Bartender/Dominos/ElvUI. Нельзя объявлять поддержку 100%.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/ActionSlots.lua:21–34,78–81` — чтение `HasAction/GetActionInfo/GetBindingKey`; `Sonah/UI/ActionBars.lua:359–392,400–470,503–544,582–587` — обнаружение Blizzard, Bartender, Dominos, ElvUI и LAB с проверками страниц/атрибутов. Перенять **принцип** подтверждения текущего слота, не копировать целиком UI.
+2. **JustAC:** `JustAC/ActionBarScanner.lua:155–223,226–257,429–439,1006–1027,1160–1166` — LAB, привязки, кэш, инвалидация. Полезна реакция на смену кнопки/бинда; не переносить macro parser или чужую модель исполнения.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua` управляет видимостью собственных aura элементов; это пример отличия собственной панели от внешнего actionbar. Не использовать aura visibility как источник факта о spell button.
+4. **MaxDps:** `MaxDps/Buttons.lua:348–395,493–529,565–650,765–795` — поиск реальных кнопок и сторонних панелей. Заимствовать safe discovery, но не переносить большую glow-подсистему и чужие библиотеки.
+5. **ForeverRotation:** `ForeverRotation/Display.lua` содержит отдельный вывод рекомендаций; `ForeverRotation/Core.lua` проверяет protected combat. Это подтверждает необходимость раздельного UI output и actionbar safety, но не доказывает одинаковую поддержку всех сторонних Hide/Show.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua` реагирует на события цели/состояния; `RotationGuide/Core/State.lua` учитывает combat lockdown. Использовать только подход к событиям/безопасности; наличие actionbar visibility contract в проверенных файлах не подтверждено.
+7. **RotationMaster:** `RotationMaster/Core/assisted_highlight.lua` — отдельная подсветка actionbar, `RotationMaster/Core/forecast.lua` — прогноз; protected-guards. Полезна изоляция glow от engine READY; не переносить отдельный engine или неподтверждённые hooks.
+
+**Границы доказательств:** указанные референсы и существующие документы содержат статические свидетельства; поддержка конкретной версии UI-аддона и событий WoW Forever требует реального игрового тестирования. `IsVisible()` не доказывает правильный paging без проверки action slot и binding route.
+
+#### Выбранный путь Kord
+
+**Единый `ActionBarPresentationState` как тонкий read-only адаптер поверх уже существующих `ActionBarScanner` и `BindingResolver`; повторное использование EventBus revisions/TTL.** UI-02 получает из него допустимость keybind/glow, UI-06 — объяснение, UI-05 остаётся независимой политикой видимости собственной панели. Не создавать второй scanner/провайдер, не подключать Ace/LibActionButton принудительно, не hook protected foreign UI. При доказанном скрытии кнопки убрать подсветку и устаревшую подпись; при неизвестном состоянии — UNKNOWN, не выдумывать бинды/слоты.
+
+#### Требуемые изменения
+
+1. Реализовать `ActionBarPresentationState` с `READY|UNBOUND|UNKNOWN|HIDDEN`, причиной, источником, spellID, slot, bindingLabel, glowEligible, revision/observedAt; не дублировать scanner.
+2. Разделить видимость собственной панели Kord (UI-05) и чужих actionbar кнопок: скрытая чужая панель не скрывает main/defensive и не блокирует рекомендации.
+3. Повторно проверять `IsVisible` и активный слот/SpellID перед отображением keybind/glow; учитывать parent Hide/Show и dynamic paging, fail-closed при protected/secret.
+4. Подключить EventBus `actionbar/bindings/identity/talents`, доступные события смены страниц/форм/override и bounded TTL; не создавать второй частый polling loop.
+5. Поддерживать обнаруженные семейства Blizzard, Bartender4, Dominos, ElvUI, EllesmereUI, LAB только через проверенные read-only API; при неизвестном custom UI возвращать UNKNOWN, не объявлять поддержку «всех аддонов».
+6. При изменении видимости/slot/binding снимать старый glow и label, не оставлять stale overlay на скрытой/переиспользованной кнопке, не выполнять protected writes.
+7. Для нескольких видимых кнопок одного SpellID использовать детерминированный приоритет подтверждённого binding route и актуального слота; не выбирать скрытую только потому, что она имеет меньший индекс.
+8. В UI-06 объяснять отдельно `button_not_visible`, `no_confirmed_visible_button`, `button_slot_unconfirmed`, `dynamic_routing_unverified`, `binding_reverse_mismatch` без вывода «spell unavailable»; UI-07 шесть локалей.
+9. DevTools opt-in trace: `actionbar_visibility_changed`, `actionbar_slot_changed`, `actionbar_binding_changed`, `actionbar_route_unknown`, `actionbar_glow_cleared`, source/revision без сырых frame refs, названий персонажей или protected данных. Production не пишет developer history.
+10. Тесты: Blizzard/BT4/Dominos/ElvUI/EAB/LAB; Hide/Show child и parent; spell на двух кнопках, одна скрыта; paging/stealth/stance/override; addon load, отсутствие события и TTL; изменение клавиши и reverse mismatch; защищённый GetAttribute, secret IsVisible, отсутствующая библиотека; READY icon при скрытой actionbar; main/defensive независимо; stale glow/keybind cleanup; coalescing/event storm; Lua 5.1, обе ZIP, реальный WoW Forever с конкретными версиями аддонов.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО / P1 / ИМЕЕТСЯ READ-ONLY ОСНОВА, НЕТ ПОДТВЕРЖДЁННОГО END-TO-END QA.** Scanner и binding resolver уже знают основные сторонние панели и безопасно проверяют видимые кнопки; остаются presentation lifecycle, все сценарии Hide/Show/paging и игровой QA. Не заявлять полную поддержку без тестов на WoW Forever.
+
+**Архитектурные ссылки:** UI-01, UI-02, UI-05, UI-06, UI-07, DA-08, `ActionBarScanner`, `BindingResolver`, `RotationDisplay`, `docs/STAGE_02_05_ACTIONBAR.md`, `docs/STAGE_02_06_BINDINGS.md`. **Обратные уточнения внесены в UI-01, UI-02, UI-05, UI-06, UI-07, DA-08.** Никакого нового engine, Eligibility или второго scanner.
 
 **Изменения Lua:** отсутствуют. Только документация.
 
