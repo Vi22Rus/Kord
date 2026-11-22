@@ -139,6 +139,26 @@ function O:ReadEngineDiagnostic()
             if type(fourthRank)=="table" then
                 out.arcaneR4Status=status(field(fourthRank,"status"))
                 out.arcaneR4Reason=reason(field(fourthRank,"reason")) or "unknown"
+                out.arcaneR4BarReason=reason(field(fourthRank,"barReason"))
+                local checks=field(fourthRank,"checks")
+                local validNames={
+                    cast=true,usability=true,charges=true,
+                    cooldown=true,gcd=true,range=true
+                }
+                if type(checks)=="table" and #checks<=6 then
+                    local summary={}
+                    for i=1,#checks do
+                        local check=field(checks,i)
+                        local name=field(check,"name")
+                        if type(name)=="string" and validNames[name] then
+                            summary[#summary+1]={
+                                name=name,status=status(field(check,"status")),
+                                reason=reason(field(check,"reason")) or "none"
+                            }
+                        end
+                    end
+                    out.arcaneR4Checks=summary
+                end
             end
         end
     end
