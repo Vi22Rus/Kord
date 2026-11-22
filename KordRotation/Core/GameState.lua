@@ -1476,6 +1476,29 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
             result.propagationEvidence="SINGLE_CANDIDATE"
         end
     end
+    -- Separate individual certainty from group-lockout certainty.
+    local provider=KR.SharedCooldownConfidence
+    if provider and type(provider.Evaluate)=="function" then
+        local ok,level=pcall(provider.Evaluate,provider,result)
+        if ok and type(level)=="table" then
+            local safeResult,valid=pcall(function()
+                return api:IsSafeValue(level)
+                    and level.status=="UNKNOWN"
+                    and level.groupReadyConfidence=="UNKNOWN"
+                    and (level.itemCooldownConfidence=="CONFIRMED"
+                        or level.itemCooldownConfidence=="UNKNOWN")
+                    and (level.groupLockoutConfidence=="ESTIMATED"
+                        or level.groupLockoutConfidence=="UNKNOWN")
+                    and api:IsSafeValue(level.reason)
+            end)
+            if safeResult and valid then
+                result.itemCooldownConfidence=level.itemCooldownConfidence
+                result.groupLockoutConfidence=level.groupLockoutConfidence
+                result.groupReadyConfidence="UNKNOWN"
+                result.confidenceReason=level.reason
+            end
+        end
+    end
     -- No group active/remaining, confidence CONFIRMED or READY is emitted.
     return result
 end

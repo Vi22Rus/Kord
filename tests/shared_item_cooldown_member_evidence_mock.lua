@@ -6,6 +6,7 @@ local bus={cooldown=5,inventory=7}
 function bus:GetItemCooldownRevision() return self.cooldown end
 function bus:GetInventoryRevision() return self.inventory end
 KR.EventBus=bus
+assert(loadfile("KordRotation/Core/SharedCooldownConfidence.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
 local S=KR.GameState
 local original=S.ReadItemCooldownObservation
@@ -81,20 +82,28 @@ assert(result.useCorrelationReason=="item_cd_use_member_time_match")
 assert(result.propagationEvidence=="MIXED_CANDIDATES")
 assert(result.alignedCandidateCount==2 and result.divergentActiveCount==0)
 assert(result.inactiveCandidateCount==1)
+assert(result.itemCooldownConfidence=="CONFIRMED")
+assert(result.groupLockoutConfidence=="UNKNOWN")
+assert(result.groupReadyConfidence=="UNKNOWN")
 mode="aligned_only"
 local aligned=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(aligned.propagationEvidence=="ALIGNED_CANDIDATES")
 assert(aligned.alignedCandidateCount==2 and aligned.unknownCount==17)
 assert(aligned.status=="UNKNOWN" and aligned.remaining==nil)
+assert(aligned.itemCooldownConfidence=="CONFIRMED")
+assert(aligned.groupLockoutConfidence=="ESTIMATED")
+assert(aligned.groupReadyConfidence=="UNKNOWN")
 mode="single"
 local single=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(single.propagationEvidence=="SINGLE_CANDIDATE")
 assert(single.alignedCandidateCount==1)
+assert(single.groupLockoutConfidence=="UNKNOWN")
 mode="divergent"
 local divergence=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(divergence.propagationEvidence=="MIXED_CANDIDATES")
 assert(divergence.alignedCandidateCount==1 and divergence.divergentActiveCount==1)
 assert(divergence.groupStatus=="UNKNOWN" and divergence.remaining==nil)
+assert(divergence.groupLockoutConfidence=="UNKNOWN")
 mode="wrong_time"
 local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongTime.useCorrelation=="UNKNOWN")
