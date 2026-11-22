@@ -4787,6 +4787,9 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
+
+
 **Архитектурная актуализация IT-14:** пользовательский выбор/пороги/автоподбор расходников задаются через единый `ItemSelectionPolicy` (см. IT-14), без второго каталога предметов и без обхода `AbilityEligibility`.
 
 **Ретроактивная архитектурная ссылка → IT-11:** обязательные реагенты/боеприпасы/символы проверяются единым `RequiredMaterialsObservation` (см. IT-11); инвентарь и eligibility не дублировать.
@@ -4862,6 +4865,9 @@
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
+**Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
+
+
 **Архитектурная актуализация IT-10:** **См. IT-10: IT-10 item cooldown is distinct from temporary weapon enchant remaining time; reuse IT-02 for item eligibility only.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-02 item cooldown; Recently Bandaged aura lockout is a distinct effect, not inferred from item cooldown.**
@@ -4931,6 +4937,9 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
+
+**Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
+
 
 **Ретроактивная архитектурная ссылка → IT-11:** обязательные реагенты/боеприпасы/символы проверяются единым `RequiredMaterialsObservation` (см. IT-11); инвентарь и eligibility не дублировать.
 
@@ -5003,6 +5012,9 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
+
 
 **Архитектурная актуализация IT-14:** пользовательский выбор/пороги/автоподбор расходников задаются через единый `ItemSelectionPolicy` (см. IT-14), без второго каталога предметов и без обхода `AbilityEligibility`.
 
@@ -5917,6 +5929,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
 
+**Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
+
+
 **Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: первый обязательный.**
 
 #### Требование
@@ -5963,5 +5978,62 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 **БАЗОВЫЙ ТИП SPELL УЖЕ РЕАЛИЗОВАН; ПОЛНОЕ ПОКРЫТИЕ ТРЕБУЕТ ДОПОЛНИТЕЛЬНОЙ ПРОВЕРКИ.** AC-01 не требует нового spell engine, а фиксирует контракт и проверку полноты существующего.
 
 **Архитектурные ссылки:** SP-01–SP-14, CC-01–CC-05, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Последующие типы действий должны использовать общий recommendation contract и не подменять SPELL.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-02 — ITEM: предмет, зелье, камень (после IT-01–IT-04)
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: после реализации IT-01–IT-04.**
+
+#### Требование
+
+Поддержать `ITEM` как самостоятельный тип **рекомендуемого** действия: зелья, камни здоровья/души, расходники, активируемые предметы из сумок и экипировки. `ITEM` должен ссылаться на `itemID` и при необходимости `inventorySlot`, а не выдавать `spellID` эффекта предмета за действие `SPELL`. Движок выбирает один конкретный применимый предмет, подтверждает наличие/количество, кулдаун и общий cooldown, условия использования (бой/вне боя, уровень, цель, зона, экипировка), порог потребности и настройки игрока. Только рекомендации; никакого `UseItem`, `UseInventoryItem`, `RunMacroText` или автоматического protected action.
+
+Общий результат: `actionType="ITEM"`, `itemID`, `inventorySlot` (для экипированного), `targetContext`, `status=READY/BLOCKED/UNKNOWN`, `reason`, `priority`, `channel`, `source/revision`, `name/texture` при безопасной доступности. `UNKNOWN` по обязательному условию не становится READY. Отсутствие предмета или отсутствие необходимости применить его — разные причины отказа.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161`: основной путь берёт `spellID` **только при** `rule.type=="SPELL"`; полноценного разрешения `ITEM` в проверенном основном маршруте нет.
+- `RotationEngine.lua:214–251`: `RotationConditions:Check(S,spellID,policy)` и выдача записи `spellID/texture/name` ориентированы на SPELL; контракт `itemID/inventorySlot` в этой ветке не подтверждён.
+- `KordRotation/Core/AbilityEligibility.lua:51–99,224–232`: spell known, spell cooldown, spell range — **не заменяют** item count, item use restrictions и item/shared cooldown.
+- `KordRotation/Core/RotationConditions.lua:169–176`: итоговый gate работает со `spellID`; нельзя передавать itemID в эту функцию без явного typed action dispatch.
+- **Итог:** `ITEM` не подтверждён как самостоятельный action type текущего RotationEngine. Реализация зависит от IT-01–IT-04; остальные предметные требования расширяют поведение, но не должны порождать новый recommendation engine.
+
+#### Сравнение семи референсов (проверенные пути ZIP, архитектурные ориентиры)
+
+1. **Sonah:** `Sonah/Core/Atoms/Items.lua` — item availability; `Sonah/Core/Molecules/Conditions.lua` — условия; `Sonah/Core/Organisms/Engine.lua` — решение. Перенять разделение наблюдения, пригодности и выбора, не смешивать itemID со spellID.
+2. **JustAC:** `JustAC/Data/HealingItems.lua`, `JustAC/Data/Forever/Consumables.lua`, `JustAC/DefensiveEngine.lua` — каталоги зелий/камней и защитные item decisions. Использовать Forever-specific классификацию; не копировать отдельный defensive движок.
+3. **ForeverAuras:** `ForeverAuras/ItemStatus.lua`, `ForeverAuras/Prototypes.lua` — item cooldown/availability observations; отображение триггера не равно item READY.
+4. **MaxDps:** `MaxDps/Helper.lua`, `MaxDps/Buttons.lua` — potion/trinket рекомендации и вывод; не переносить готовность по одной только иконке.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua` — условия расходников и предметных эффектов; перепроверить конкретные itemIDs, cooldown и способ вывода перед переносом.
+6. **RotationGuide:** `RotationGuide/Core/State.lua` и профили — предметные условия в общем контексте; в просмотренных исходниках не подтверждён полный typed `ITEM` контракт, не считать его существующим по аналогии со SPELL.
+7. **RotationMaster:** `RotationMaster/Core/build_context.lua`, `RotationMaster/Conditions/build.lua` — общие conditions/context; использовать общий pipeline, а не копировать профильные импорт/экспорт.
+
+**Граница доказательств:** для AC-02 основной маршрут Kord проверен по строкам; ссылки на ZIP описывают подтверждённые ранее пути, но не являются новой построчной проверкой всех механизмов семи референсов. Проверить реальные Forever item API и itemIDs перед реализацией.
+
+#### Выбранный путь Kord
+
+**Расширить существующий `RotationEngine → RotationConditions → AbilityEligibility → recommendation`** до typed action dispatch, сохраняя действующую SPELL ветку AC-01 без регрессий. `ActionRecommendation` содержит `actionType`, `actionID`, `itemID` для ITEM и `spellID` для SPELL, `inventorySlot` для экипировки, status/reason/priority/channel/source/revision. Не создавать второй item rotation engine. Слой условий может использовать единый интерфейс, но `ITEM` проверяется **item-specific** eligibility и возвращает окончательный READY через общий `AbilityEligibility`, без вызова spell-known для itemID.
+
+**Обязательный порядок зависимости:** IT-01 `InventoryObservation/ItemFamilyCatalog` → IT-02 item/shared cooldown → IT-03 item usability/level/target/combat/zone → IT-04 best eligible item in family → AC-02 typed recommendation. IT-05–IT-14 добавляют специальные политики: камни, мана/HP, бинты, еда, покрытия оружия, материалы, on-use экипировка, emergency и ручной выбор. Использовать существующие каталоги и сканеры, а не создавать отдельные.
+
+Если ITEM находится в сумке — хранить itemID и подтверждённый bag count/доступность; если on-use в слоте — slot identity и revision оборудования. Иконка/название/кнопка могут иметь разные способы привязки: для ITEM UI не должен ошибочно искать spell keybind; при отсутствии доступного бинда отображать предмет без выдуманного хоткея. Приоритеты SPELL и ITEM сравниваются общим арбитром; неизвестный предмет не блокирует навсегда следующие правила. Защищённые игровые действия не выполняются.
+
+#### Требуемые изменения
+
+1. После IT-01–IT-04 добавить `actionType="ITEM"` и typed item dispatch в существующий RotationEngine, не изменяя семантику `SPELL`.
+2. Зафиксировать единый `ActionRecommendation` контракт и адаптер UI для itemID/slot, названия, иконки, причины, приоритета, канала и keybind без подмены spellID.
+3. Реиспользовать IT-01 inventory/catalog, IT-02 cooldown, IT-03 eligibility, IT-04 family selection; итоговый READY через общий `AbilityEligibility`.
+4. Для on-use экипировки проверять слот, текущий itemID, shared cooldown и equipment revision; для расходников — count/level/zone/combat/target restrictions.
+5. Применять пороги/настройки IT-05–IT-14, включая MANUAL/AUTO/OFF и экономию расходников, без дублирования policy.
+6. EventBus bag/equipment/item cooldown/config revisions, lazy Needs и memo на оценку; DevTools reasons `item_missing`, `item_unknown`, `item_on_cooldown`, `item_unusable`, `item_below_threshold`, `item_manual_unavailable`, `item_ready`.
+7. Тесты: SPELL-only regression, item in bag/equipment, potion/healthstone/soulstone, count=0/1, shared cooldown, level/zone/combat/target, slot changed, auto/manual/off, missing/secret item data, item icon/name/bind, конкуренция SPELL/ITEM, no false READY, no protected use.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ ПОСЛЕ IT-01–IT-04.** Существующий SPELL pipeline является основой; предметный typed dispatch и item-specific gate ещё необходимо внедрить.
+
+**Архитектурные ссылки:** AC-01, IT-01–IT-14, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки на AC-02 внесены в IT-01–IT-04 и AC-01 в этом коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
