@@ -411,3 +411,51 @@
 5. Добавить тесты переключения типа, каждого из четырёх ресурсов, нулевого максимума, `current>maximum`, отсутствующего API, secret и корректной инвалидации кэша.
 
 **Изменения кода:** не выполнялись; внесён аудит PL-04.
+
+
+## PL-05 — Вторичные ресурсы: очки комбо, осколки душ, руны и гравировки WoW Forever
+
+**Приоритет: P0.**
+
+### Требование
+
+Независимо и достоверно наблюдать очки комбо (с учётом привязки к цели в классическом клиенте), осколки душ (в зависимости от клиента — предметы в сумках или тип power), руны как расходуемые слоты/ресурс, и **руны гравировок на экипировке** (`C_Engraving`, когда система поддерживается WoW Forever). Не смешивать rune cooldown с engraving. Разделять `not_applicable`, `UNKNOWN` и достоверный ноль; secret и отсутствующие API не превращать в `READY`. Не выполнять гравировку и не менять экипировку: только чтение.
+
+### Аудит Kord
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 80–104, 229–243: наблюдается лишь активный `UnitPowerType` с `UnitPower`/`UnitPowerMax`. Нет отдельных провайдеров combo points, soul shards, rune slots и equipped engravings.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 8–56: есть `UnitPower`/`UnitPowerMax`, но нет `GetComboPoints`, `GetRuneType`, `GetRuneCooldown` и методов `C_Engraving` в allowlist.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 7–27: только `resources.percent`, без типизированных сигналов вторичных ресурсов.
+- Требуется отдельно проверить WoW Forever API: наличие гравировок нельзя выводить только из наличия `C_Engraving` в другой версии клиента.
+
+### Как реализовано в семи референсах (локальные ZIP-архивы)
+
+1. **Sonah:** `Sonah/Classes/Rogue.lua` и `Classes/Druid.lua` используют combo points в правилах билдеров и финишеров; в частности, у друида предусмотрены отслеживаемые оценки потраченных очков, когда прямые значения secret. `Classes/Warlock.lua`, функция `shardsBelow`: осколки считаются **как предмет 6265 в сумках** через `Items.Count`; неизвестное количество считается «мало» для генерации, но не для безусловной траты. В проверенных файлах специализированного `C_Engraving` не обнаружено.
+2. **JustAC:** `JustAC/SpellQueue.lua`, около строк 990–1020: типизированные дискретные ресурсы (`combo_points`, `runes`, `soul_shard` и др.) сопоставляются с `Enum.PowerType`; отдельно проверяется минимальная стоимость через `C_Spell.GetSpellPowerCost` и secret-guards. `DebugCommands.lua` содержит диагностику resourcepoints. Специализированного `C_Engraving` в проверенных Lua не обнаружено.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua`, около строк 1614, 3720–3767, 3846: универсальные триггеры power, отдельная опция `engraving` и отображение заряженных combo points. `GenericTrigger.lua`, около строк 2285, 3270, 3522: чтение `GetRuneCooldown` для слотов рун. Наличие параметра `engraving` не означает, что реализован полный надёжный реестр экипированных `C_Engraving` рун.
+4. **MaxDps:** `MaxDps/SecretHelper.lua`, около строк 391–405: отдельная нормализация `combo_points` в `ComboPoints` для resource gates. Профили классов используют `Enum.PowerType.ComboPoints`/`SoulShards` и соответствующие power-reads. Специальный адаптер `C_Engraving` в проверенных Lua не найден.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua`, около строк 97–103: `comboPoints()` читает `UnitPower` по `Enum.PowerType.ComboPoints`, затем пробует `GetComboPoints("player","target")` через `safeNumber`. `Rotations/Rogue.lua` и `Custom.lua` применяют `minCp`/`maxCp`. Отдельного механизма `C_Engraving` в проверенных Lua нет.
+6. **RotationGuide:** `RotationGuide/Core/State.lua`, строки 231–237: `ComboPoints()` сначала использует `Clean(GetComboPoints("player","target"))`, затем `Clean(UnitPower("player",Enum.PowerType.ComboPoints))`. `Core/Engine.lua`, около строки 68: `(S.ComboPoints() or -1) < rule.cp` блокирует правило при неизвестных очках — безопаснее, чем разрешить финишер, но теряет явную причину `UNKNOWN`. Адаптер гравировок не найден.
+7. **RotationMaster:** `RotationMaster/Platform/points.lua`: выделенный адаптер для combo points, soul shards, rune-power и иных дискретных ресурсов с `nil,reason` при недостоверности. `Platform/runes.lua`: отдельные безопасные читатели типа и cooldown каждого слота рун. **`Platform/engraving.lua`**: отдельный feature-detected `C_Engraving` адаптер, защищённые вызовы через `pcall`, различение отсутствия API, отключённой механики, ожидания загрузки списка, secret и ошибки. Предусмотрено чтение рун, нанесённых на экипировку, и известных рун без изменения экипировки; данные обновляются по событиям.
+
+### Моя рекомендация
+
+**Выбрать архитектуру RotationMaster**: три независимых провайдера `points`, `runes` и `engraving`, каждый возвращает проверенное значение либо `nil + reason`. Для **классических осколков душ** добавить подход **Sonah** (предмет 6265 в сумках), только когда фактический клиент использует предметную модель; для других клиентов использовать типизированный power-подход JustAC/RotationMaster. Для очков комбо полезен порядок fallback RotationGuide/ForeverRotation, но с сохранением `UNKNOWN` и проверки целевой идентичности. Не переносить эвристические оценки combo points Sonah как подтверждённые числа, не смешивать DK rune slots и гравировки и не подменять `UNKNOWN` нулём.
+
+### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ОТДЕЛЬНАЯ СИСТЕМА — НЕОБХОДИМО ДОРАБОТАТЬ (P0).**
+
+Общий power-reader частично покрывает дискретные ресурсы, когда они являются активным power type; отдельные combo points, soul shards, rune slots и гравировки в проверенном каноническом контракте отсутствуют.
+
+### Требуемые изменения
+
+1. Добавить `SecondaryResources` с отдельными ленивыми провайдерами `comboPoints`, `soulShards`, `runeSlots`, `engravings`; статус, причина, происхождение и ревизия на каждый сигнал.
+2. Для combo points проверить `GetComboPoints` и `UnitPower` с учётом target GUID, переключения/потери цели и secret.
+3. Для soul shards определить по версии WoW Forever предметную или power-модель; проверять доступность сумок и типы данных, не угадывать ноль.
+4. Для rune slots при наличии соответствующего класса/API читать каждый слот отдельно, с готовностью/cooldown, без вычислений над secret.
+5. Для `C_Engraving` реализовать feature detection и безопасное чтение экипированных/известных рун; различать «система отсутствует», «не загружена», «нет руны» и «API недоступен». Отдельно проверить события инвалидации при смене экипировки, руны и загрузке списка.
+6. Все игровые вызовы — через allowlist `GameAPI`; условия профиля — через `RotationConditions`, решение READY — только `AbilityEligibility`.
+7. Тесты: смена цели, secret combo points, предметные и power shards, отсутствие DK API, разные rune slots, отсутствие `C_Engraving`, pending list, смена экипировки, смена гравировки, некорректный ответ API.
+
+**Изменения кода:** не выполнялись; внесён аудит PL-05.
