@@ -1,3 +1,11 @@
+## 2026-11-22 — Actual core aura provider improvements sourced from Sonah/ForeverAuras
+
+- `GameState:ReadSignal` now tries ForeverAuras' targeted `C_UnitAuras.GetUnitAuraBySpellID(unit,spellID)` after a failed player-specialized lookup; exact ID and helpful flag must be readably verified. This adds a possible real successful data path when the specialized method returns nil.
+- Added Sonah's bounded `GetAuraDataBySpellName(unit,localizedName,filter)` lookup; retrieves a localized name from `C_Spell.GetSpellInfo` or legacy `GetSpellInfo`, validates exact SpellID and aura kind. A nil by-name return proves absence only when `C_Secrets.ShouldAurasBeSecret` explicitly returns false. In secret mode a missing aura remains UNKNOWN.
+- Added `KordRotation/Core/AuraEvidence.lua`, Sonah-derived own `UNIT_SPELLCAST_SUCCEEDED` tracker for four hunter aspects; a recent observed cast supplies bounded *positive* evidence while aura fields are hidden. Another aspect cast, world entering and death invalidate the record. **No gameplay cast/automation action is invoked**.
+- TOC loads the new shared core file into both variants. Added standalone Lua mock scenarios for confirmed own casts, aspect switch/reset, generic ID fallback, by-name present/absent. **Lua mocks and Forever client not executed on this commit.**
+- Limit: a previously unobserved aura in permanent secret mode remains UNKNOWN. Neither these reference implementations nor the live test demonstrate a reliable initial-negative lookup under that restriction. Never claim this is a guaranteed Aspect of the Hawk fix without the actual in-game recommendation test.
+
 ## 2026-11-22 — Reference-first implementation work begins (v14 101-row ledger)
 
 - Added `docs/rotation/V14_Reference_Implementation_Audit.md`: 101 individual v14 rows, selected API chains, lookup pointers into the six uploaded reference addons, and **SOURCE_CANDIDATE vs SOURCE_REVIEWED** flags. Indexing all 101 rows is **not** the same as having verified every reference implementation; incomplete rows remain explicitly marked.
