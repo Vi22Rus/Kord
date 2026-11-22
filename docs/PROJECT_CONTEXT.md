@@ -1,3 +1,10 @@
+## 2026-11-22 — Hunter melee range and Aspect of the Hawk (in-game logs 18264–18327)
+
+- **Root cause: distant Raptor Strike.** WoW Forever's next-swing `Raptor Strike` can answer `C_Spell.IsSpellInRange == true` outside melee distance. `GameState:ReadSignal("target.melee")` previously used `AbilityEligibility:Fact(2973,"inRange")` as proof of melee and incorrectly selected `melee_raptor`. Replace with the client’s independent `C_SwingTimer.IsTargetWithinSwingRange(0)` read (same principle as the bundled JustAC reference) and require same snapshot GUID before and after. A negative short-range interaction probe can disprove melee if supported; neither raw next-swing range nor an ambiguous positive interaction probe can establish five-yard reach.
+- **Aspect route:** Hunter Hawk/Monkey rules now declare `recommendationType="aspect"`; the visible `defensiveInCombatMain` checkbox actually controls their combat placement, and out-of-combat aspect recommendations use the Defensive frame. Previous untyped `buffs` fallback silently picked the legacy aura policy.
+- **Precombat upkeep:** a confirmed missing Hawk may be suggested in the separate Defensive window even while Cheetah/Pack is active; an unverified aura remains UNKNOWN, not assumed absent. Manual casts and actual learned/usable checks are preserved.
+- Lua regression: `tests/stage_02_08_v14_state.lua`, `tests/hunter_bm_leveling_contract.lua`, `tests/hunter_bm_aspect_switch.lua`, `tests/combat_aura_routing.lua`. WoW gameplay is not yet verified.
+
 ## 2026-11-22 — Aspect routing and post-cast rotation recovery (log timestamps 17974–18001)
 
 - Hunter aspect (`recommendationType="aspect"`) now follows the visible `defensiveInCombatMain` checkbox: checked + confirmed combat -> main; unchecked or outside combat -> Defensive. The legacy `buffsInCombatMain` setting must not override aspect placement.
