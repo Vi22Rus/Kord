@@ -14,14 +14,19 @@ function KR:Print(message)
 end
 
 local lifecycle = CreateFrame("Frame")
-lifecycle:RegisterEvent("ADDON_LOADED")
-lifecycle:RegisterEvent("PLAYER_LOGIN")
-lifecycle:RegisterEvent("TRAIT_CONFIG_UPDATED")
-lifecycle:RegisterEvent("PLAYER_TALENT_UPDATE")
-lifecycle:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
-lifecycle:RegisterEvent("PLAYER_LEVEL_UP")
-lifecycle:RegisterEvent("SPELLS_CHANGED")
-lifecycle:RegisterEvent("LEARNED_SPELL_IN_TAB")
+-- Never let an unsupported client event abort Init.lua before the UI and slash commands boot.
+-- WoW Forever event availability is authoritative at runtime.
+local startupEvents = {
+    "ADDON_LOADED", "PLAYER_LOGIN", "TRAIT_CONFIG_UPDATED",
+    "PLAYER_TALENT_UPDATE", "ACTIVE_TALENT_GROUP_CHANGED",
+    "PLAYER_LEVEL_UP", "SPELLS_CHANGED",
+}
+for _, event in ipairs(startupEvents) do
+    local ok = pcall(lifecycle.RegisterEvent, lifecycle, event)
+    if not ok and DEFAULT_CHAT_FRAME then
+        DEFAULT_CHAT_FRAME:AddMessage("|cffff8800[Kord Rotation]|r Unsupported startup event: "..event)
+    end
+end
 
 -- License notice (2/3): (c) 2026 Vi22Rus, all rights reserved; see root LICENSE.
 -- No license-file deletion checks: missing LICENSE does not change copyright or user rights.
@@ -78,10 +83,10 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
         if KR.db.showAtLogin then KR:ToggleWindow(true) end
     elseif event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE"
         or event == "ACTIVE_TALENT_GROUP_CHANGED" or event == "PLAYER_LEVEL_UP"
-        or event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
+        or event == "SPELLS_CHANGED" then
         if KR.db then
             if KR.BMLeveling and (event=="SPELLS_CHANGED"
-                or event=="LEARNED_SPELL_IN_TAB" or event=="PLAYER_LEVEL_UP") then
+                or event=="PLAYER_LEVEL_UP") then
                 KR.BMLeveling:Register()
             end
             KR:RefreshCharacter(event)
