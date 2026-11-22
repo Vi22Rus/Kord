@@ -89,3 +89,11 @@ DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVaria
 101 строка `Canonical_API_Matrix.md` продолжает логироваться независимо как **presence-only**. У одного API может быть несколько сценариев в матрице; их нельзя считать успешно исполненными по одному счётчику метода. Полная ротация по-прежнему оценивается через `RULE/SIGNAL/STAGE/BAR`, поэтому статусы 35 правил видны в той же записи.
 
 **Новые тестовые проверки добавлены, но не запускались**; последний пользовательский trace до этой версии по-прежнему демонстрировал `bm_rule_2=UNKNOWN/action_slot_unconfirmed`. Новая система помогает выявить причину, но **не утверждает, что сама исправила распознавание Hawk**. Код последних изменений SOURCE IMPLEMENTED, LOCAL LUA NOT RUN, CLIENT NOT RETESTED.
+
+## Reference-first fix: secret aura scans (2026-11-22)
+
+**Evidence from actual game recording:** `C_UnitAuras.GetUnitAuras` and `GetAuraDataByIndex` each failed with `api_call_failed` 903 times, `GetPlayerAuraBySpellID` returned `no_value` 903 times; aspect rule #2 became `condition_unknown` after `player.buff` was `aura_scan_unverified`.
+
+**Reference-backed implementation (not client-tested):** Sonah/JustAC/ForeverAuras confirm that these list APIs can be blocked while auras are secret. `GameState:ReadSignal` now tests `C_Secrets.ShouldAurasBeSecret` before forbidden enumeration fallback after an unsuccessful direct SpellID lookup. Secret mode returns `aura_hidden_by_client`; missing secrecy predicate while locked down returns `aura_secrecy_unverified`. Neither condition can prove a missing buff; the engine still fails closed. The intended effect is to stop thousands of denied calls, **not** to pretend Aspect of the Hawk is visible/absent. New Lua mock scenarios added, NOT RUN in this environment; CLIENT NOT RETESTED.
+
+**Source decision ledger:** `docs/rotation/V14_Reference_Implementation_Audit.md` tracks **all 101** v14 items individually, the indexed reference pointers and research status. This ledger is not yet a completed 101-method implementation audit; review states make the gap explicit.
