@@ -4,7 +4,7 @@ assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
 local S=KR.GameState
 local one=S:ReadItemCooldownObservation(5512)
 assert(one.status=="UNKNOWN" and one.itemID==5512)
-assert(one.reason=="item_cd_reader_unimplemented")
+assert(one.reason=="item_cd_api_missing")
 assert(one.source=="GameState.ItemCooldownObservation")
 assert(one.active==nil and one.remaining==nil)
 assert(one.enabled==nil and one.revision==nil)
