@@ -1,3 +1,10 @@
+## KR-20261123-120 — IT-02/2.6: canonical done/open checklist for previously merged work
+- Дата учёта: 2026-11-23; SHA: `git log --grep KR-20261123-120`. Этап 2, IT-02/2.6 P0; docs-only accountability fix, не новая реализация функции.
+- Причина: выполненные коммиты повторно назывались невыполненными, поскольку подробный журнал не содержал явной контрольной таблицы закрытых и открытых подзадач.
+- В `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` непосредственно после текста шага 2.6 записаны все 21 подтверждённая Git-работа (090, 093, 101–119) как `[x] DONE (CODE MERGED)` с прямой ссылкой на уникальный SHA; коммиты 103 и 111 особо помечены как документация/тест, не новая игровая логика. Отдельные `[ ]` содержат только оставшуюся Forever semantics, producer состояний, limited estimated-active contract и исполнение проверок.
+- В `REQUIREMENTS.md` добавлена прямая ссылка на единственный канонический реестр. Исторические разделы не удалены, общий статус 2.6 остаётся PARTIALLY IMPLEMENTED.
+- PASS: проверка наличия ссылок, маркеров и точных якорей исходного шага; публикация Git. NOT RUN: Lua 5.1/mock/full regression, manual GitHub Actions, WoW Forever; документальный коммит код не меняет.
+
 ## KR-20261122-119 — IT-02/2.6: require distinct health/mana family evidence for estimated shared potion cooldown
 - Дата/время: 2026-11-22 UTC (точное время Git commit). SHA по `git log --grep KR-20261122-119`. Этап 2/2.6 IT-02 P0, fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст и причина: `SharedCooldownConfidence` допускал групповой ESTIMATED по двум совпавшим item-specific cooldown внутри HEALTH_POTION, хотя межсемейная блокировка здоровья и маны не наблюдалась. Это исходниковый пробел, не подтверждённая игровая ошибка.

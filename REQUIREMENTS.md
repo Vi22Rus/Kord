@@ -5120,6 +5120,10 @@
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
 
+**Учёт завершённых подзадач IT-02/2.6 (KR-20261123-120):** канонические чекбоксы `[x] DONE (CODE MERGED)` для коммитов KR-20261122-090/093/101–119 и `[ ]` остатка добавлены в [раздел «Шаг 2.6» поэтапного плана](PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md). Уже реализованные чтение/каталог/атрибуция/корреляция/confidence/защиты/DevTools и потребитель `CONFIRMED_ACTIVE/CONFIRMED_READY` не считать незавершёнными. `DONE` обозначает подтверждённый Git-код; Lua 5.1, CI и WoW Forever остаются `NOT RUN`. Основной критерий 2.6 — `PARTIALLY IMPLEMENTED`, поскольку production-вывод подтверждённых групповых состояний и реальные правила Forever не завершены.
+
+
+
 **Реализация Kord — IT-02/2.6, KR-20261122-119 (2026-11-22, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - `KordRotation/Core/SharedCooldownGroupCatalog.lua:GetCandidateMembers` формирует source-only `candidateFamilyByItemID` для HEALTH_POTION и MANA_POTION и отклоняет одинаковый itemID в двух семьях. `KordRotation/Core/GameState.lua:ReadSharedItemCooldownMemberEvidence` защищённо сверяет отображение всех кандидатов и считает `alignedFamilyCount` у фактически совпавших с событием применения cooldown tuples.
 - `KordRotation/Core/SharedCooldownConfidence.lua:Evaluate` требует `alignedFamilyCount==2` для группового ESTIMATED: два таймера одной health-семьи не доказывают shared-potion lockout. Даже при cross-family ESTIMATED итоговые groupStatus, READY и remaining UNKNOWN до проверки правил Forever. Отсутствие/secret метки семейства fail-closed.
