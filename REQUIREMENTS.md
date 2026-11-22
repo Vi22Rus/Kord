@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet power and mood are input facts, not pet spell READY; only AbilityEligibility issues final readiness.**
+
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 pet existence/alive/visible/active are independent preconditions; final pet action READY stays with AbilityEligibility.**
 
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 is a policy-level count and cannot declare AoE heal READY; final cast/target eligibility remains AbilityEligibility.**
@@ -3579,6 +3581,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация PE-02:** **См. PE-02: PE-02 resource/health facts attach to confirmed petGUID, preserving correct pet actor threat identity across resummons.**
+
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 supplies confirmed owner-pet GUID/liveness for per-actor threat; pet existence or active state does not prove pet holds aggro.**
 
 **Архитектурная актуализация GR-02:** **См. GR-02: GR-02 role evidence comes from the canonical group roster and is not proof of threat ownership; tank identity and aggro remain distinct.**
@@ -3817,6 +3821,8 @@
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
 
+**Архитектурная актуализация PE-02:** **См. PE-02: PE-02 reuses validated health and typed-power observation patterns, but pet resource is independent of player/group member power.**
+
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 shares secret-safe life/health facts but distinguishes active controllable pet from group members and temporary summons.**
 
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 uses member health and life observations with explicit UNKNOWN; hidden health cannot be counted as injured or healthy.**
@@ -3987,6 +3993,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet health can inform pet-specific heal/revive recommendations; never count pet as a player member or infer critical HP from secret.**
+
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 extends the shared GroupCareCandidateObservation and HealPriorityPolicy with spell-specific AoE coverage; do not create another healing roster scan.**
 
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
@@ -4095,6 +4103,8 @@
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
 
+**Архитектурная актуализация PE-02:** **См. PE-02: PE-02 extends the same GUID/revision-bound PetObservation with independent health, power type/value and hunter happiness; never a second pet scanner.**
+
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
 
 #### Требование
@@ -4140,5 +4150,55 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже отслеживает pet exists/GUID/dead/health/target и события `UNIT_PET`/`PET_BAR_UPDATE`, но нет доказанного независимого `visible`, `active/actionable`, `controllable` и строгой pet capability readiness.
 
 **Архитектурные ссылки:** GR-01, GR-02, TH-01, TH-03, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
+
+#### Требование
+
+В рамках **одного PE-01 PetObservation** для подтверждённого `petGUID` независимо наблюдать: здоровье (`current/max/percent`), **фактический** тип ресурса `UnitPowerType("pet")` (focus/mana/другой), `current/max/percent` для именно этого типа, и **hunter-pet happiness** (`1=unhappy, 2=content, 3=happy` только при подтверждённой семантике Forever). Отдельные `status/source/reason/observedAt/revision` на каждый факт; `UNKNOWN` не является нулём, «несчастен» или «питомца нет». Не переносить `UnitPowerType("player")` на питомца; не считать каждый pet охотничьим и не выводить настроение по здоровью/лояльности. Pet mood и loyalty — разные механики. Pet GUID/revision обязателен для защиты от переноса здоровья, power и happiness старого питомца на нового. Для temporary guardians без `pet` token эти показатели не выдумывать.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:11–12,16,250–265`: разрешены `UnitHealth/Max/Percent`, `UnitPowerType/Power/PowerMax/PowerPercent`; процентные API допускают `pet` с проверкой curve/powerType и secret-safe результатом. `GetPetHappiness`/`C_PetInfo.GetPetHappiness` в проверенном allowlist не подтверждены.
+- `KordRotation/Core/GameState.lua:65–74,108–124,184–197`: `unitSnapshot("pet")` уже получает validated health, GUID и dead. Но `playerPower` в `:81–94` читает `UnitPowerType/Power/PowerMax` **только для player**, и `pet.power` в snapshot нет; hunter happiness не читается.
+- `KordRotation/Core/RotationConditions.lua:15–18`: `pet.health.percent` уже есть; `pet.power.type/current/percent` и `pet.happiness` не подтверждены.
+- `KordRotation/Core/EventBus.lua:24–26,36–38,46`: `UNIT_PET`, `PET_BAR_UPDATE`, `UNIT_DISPLAYPOWER`, `UNIT_MAXPOWER`, `UNIT_POWER_UPDATE`, `UNIT_POWER_FREQUENT` существуют; unit filter допускает pet. Отдельная `UNIT_HAPPINESS` инвалидация и GUID-scoped power/mood revision не подтверждены.
+- `PE-01` фиксирует единый pet identity/active provider; PE-02 должен **расширять его**, а не создавать собственный pet reader/heartbeat.
+
+#### Сравнение семи референсов (проверены предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:1188–1194` реализует `Units.PetHappiness()` через `GetPetHappiness` и `Secret.CallNumber` с nil при отсутствии API; комментарий `:1189` указывает `UNIT_HAPPINESS` как сигнал обновления. `Sonah/Core/Molecules/Conditions.lua:696–703` задаёт `petHappinessBelow(n)`, а `Sonah/Classes/Hunter.lua:159` рекомендует Feed Pet при happiness ниже 3 вне боя. Перенять classic-only mood semantics и secret-safe отсутствие значения; не считать наличие `GetPetHappiness` гарантированным.
+2. **JustAC:** `JustAC/DebugCommands.lua:7774,7840–7841,8248,8326,8336–8337` диагностирует `UNIT_HAPPINESS`, `C_PetInfo.GetPetHappiness`, `UnitHealth("pet")`, `UnitPowerType("pet")`, `UnitPower("pet",0)`. `JustAC/UI/UIHealthBar.lua:575,634–638` отмечает secret health in combat, который UI StatusBar может показывать, но обычный Lua не вправе разыменовывать. Перенять отдельные power type/mood API probes и диагностические тесты, **не** трактовать UI secret как числовой факт для rotation engine.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:10173–10176` имеет базовый `HasPet` через exists/dead, `ForeverAuras/Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua:239–244` обновляет pet bar на `PET_BAR_UPDATE`. В проверенных Lua не подтверждён общий numeric pet focus/mana/happiness provider; не выводить его из UI aura tracking.
+4. **MaxDps:** `MaxDps_Hunter/Specialization/Classic/BeastMastery.lua:150`, `.../Cata/BeastMastery.lua:300` и другие hunter profiles читают `UnitHealth("pet")`; в проверенных Lua нет подтверждённого универсального pet happiness reader. Перенять использование реального pet health, но не прямые небезопасные числовые сравнения при secret.
+5. **ForeverRotation:** в проверенных Lua не подтверждены общий pet power-type/happiness provider и per-pet numeric vitals observation. Не подменять отсутствие подтверждения выводом, что API Forever отсутствует.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:312–314` реализует базовый `HasPet`, но в проверенных Lua не подтверждены pet power/happiness observations. Базовое существование не является доказательством доступности числовых ресурсов.
+7. **RotationMaster:** `RotationMaster/Platform/edition_state.lua:90` реализует `GetPetHappinessObservation`, `RotationMaster/Conditions/edition_state.lua:58–99` регистрирует `PET_HAPPINESS` с per-evaluation cache и edition-gate, `RotationMaster/Core/condition_support.lua:329,711` требует поддержку `GetPetHappiness` только в соответствующих изданиях. Перенять **универсальный edition-gated, reason-rich, cached mood provider**; не копировать условие как отдельный class-only scanner.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Выбрать единый PE-01 `PetObservation`, расширенный `PetVitalsObservation` и `PetHappinessObservation` как логические поля того же snapshot; Kord GameState/GameAPI — numeric validation, RotationMaster — edition-gated secret-safe mood provider, Sonah — classic happiness thresholds и hunter upkeep, JustAC — API probe/диагностика.** Pet health использует существующий `cleanHealth("pet")`; pet power определяется **сначала** `UnitPowerType("pet")`, затем `UnitPower/Max("pet", confirmedType)`, native `UnitPowerPercent` только с валидированной Forever curve и type. Max=0/secret/nil не объявлять «0 focus» или «0 mana»; `powerType=UNKNOWN` блокирует типозависимые решения. Happiness читается **только если** hunter + confirmed controlled pet + API supported + edition feature exists; проверить отдельно `GetPetHappiness` и `C_PetInfo.GetPetHappiness` на Forever и диапазон 1..3; если оба отсутствуют, `UNKNOWN(happiness_api_unavailable)`, а не «доволен». `UNIT_HAPPINESS` инвалидирует только mood revision, `UNIT_POWER_*` — pet power, `UNIT_HEALTH` — pet health, `UNIT_PET("player")`/petGUID change — **все** pet facts. `PET_BAR_UPDATE` обновляет capability и при необходимости identity; events использовать после клиентской проверки. Lazy `Needs.petVitals`/`Needs.petHappiness`, per-evaluation memo, без дополнительных scans. Feed Pet reminder — отдельная политика по confirmed unhappy/content, out-of-combat, pet alive/active и доступной еде; **не** выводить READY заклинания из mood. Итоговый ability READY — общий `AbilityEligibility`.
+
+#### Требуемые изменения
+
+1. Расширить PE-01 `PetObservation` полями health, `powerType/current/max/percent`, `happiness`, независимыми statuses, provenance, petGUID/revision, без второго pet scanner.
+2. Проверить на Forever `UnitHealth/Max/Percent("pet")`, `UnitPowerType/Power/PowerMax/PowerPercent("pet")`, secret/nil, focus/mana semantics, zero max, numeric bounds.
+3. Проверить `GetPetHappiness`, `C_PetInfo.GetPetHappiness`, `UNIT_HAPPINESS`, supported editions, return range 1..3 и поведение при non-hunter/absent/dead pet.
+4. Добавить в GameAPI только подтверждённый mood API; реализовать edition-gated `PetHappinessObservation` с `UNKNOWN` и без class-based mood inference.
+5. Расширить GameState/RotationConditions typed pet power и mood с lazy `Needs`, не переносить player power type и не использовать secret как число.
+6. EventBus per-pet health/power/happiness revisions, `UNIT_PET` owner GUID invalidation, pet swap and resummon, coalescing и bounded evaluation.
+7. Согласовать pet heal, Mend Pet, Feed Pet, revive и pet ability costs с общим PE-01/PE-02; финальное READY через AbilityEligibility.
+8. DevTools-only диагностика: `pet_health_secret`, `pet_health_invalid`, `pet_power_type_unknown`, `pet_power_secret`, `pet_power_max_zero`, `pet_happiness_api_unavailable`, `pet_happiness_secret`, `pet_happiness_out_of_range`, `pet_happiness_not_applicable`, `pet_vitals_guid_changed`, `pet_mood_changed`.
+9. Тесты: hunter pet happy/content/unhappy, Feed Pet OOC vs combat, warlock pet without hunter happiness, no pet, dead pet, mounted/vehicle/inactive, focus/mana/other power, powerType change, zero max, secret numeric with native percent, API missing, edition disabled, rapid `UNIT_HAPPINESS` and power events, GUID swap/resummon, stale memo, owner mismatch, no duplicate scans/protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже наблюдает здоровье питомца и допускает health percent, но pet-specific typed power/focus/mana и hunter happiness не реализованы как подтверждённые общие факты.
+
+**Архитектурные ссылки:** PE-01, GR-02, GR-05, SP-14, TH-01. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
