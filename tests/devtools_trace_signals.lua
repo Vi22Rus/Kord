@@ -77,6 +77,17 @@ _G.KordRotationCoreObservation.Target=function()
  return {liveStatus="READY",liveExists=true,
   snapshotStatus="READY",snapshotExists=true}
 end
+_G.KordRotationCoreObservation.Audit=function()
+ return {status="READY",module="bm_leveling",ruleCount=2,rules={
+  {priority=1,status="UNKNOWN",reason="condition_unknown",signals={
+   {name="target.debuff",status="UNKNOWN",
+      reason="aura_scan_unavailable"},
+  }},
+  {priority=2,status="READY",reason="none",
+   signals={{name="target.melee",status="READY",reason="none"}},
+   checks={{name="gcd",status="READY",reason="none"}}},
+ }}
+end
 local beforeDetails=#D.entries
 eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
  arcaneR4Reason="action_slot_unconfirmed",
@@ -97,6 +108,13 @@ for i=beforeDetails+1,#D.entries do
  matches[entry.reason]=entry.status
 end
 eq(matches.arcane_rank_4_rule,"UNKNOWN","rank four recorded")
+eq(matches.bm_profile_bm_leveling,"READY","selected BM module recorded")
+eq(matches.bm_rule_1,"UNKNOWN","first full-profile rule recorded")
+eq(matches.bm_rule_2,"READY","later full-profile rule recorded")
+eq(matches.bm_signal_1_target_debuff,"UNKNOWN","missing debuff signal logged")
+eq(matches.bm_signal_2_target_melee,"READY","range signal logged")
+eq(matches.bm_stage_2_gcd,"READY","per-rule GCD check recorded")
+eq(matches.bm_stage_1_range,"UNAVAILABLE","unvisited check explicit")
 eq(matches.arcane_rank_4_bar_failure,"UNKNOWN","scanner subreason logged")
 eq(matches.arcane_check_cast,"UNKNOWN","cast observation recorded")
 eq(matches.arcane_check_usability,"READY","usable stage recorded")
