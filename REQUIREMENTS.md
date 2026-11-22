@@ -1568,6 +1568,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация TH-02:** **См. TH-02: TH-02 threat-drop recommendation still requires common AbilityEligibility; risk policy cannot issue final READY.**
+
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 interrupt recommendation is a candidate until common AbilityEligibility confirms the current addressed target and spell constraints; no second READY gate.**
 
 
@@ -2640,6 +2642,8 @@
 
 ### TG-05 — Цель в бою, цель цели (агро на мне / на питомце / на другом)
 
+**Архитектурная актуализация TH-02:** **См. TH-02: TH-02 risk uses the canonical TH-01 observation, not target-of-target or threat status alone as a quantitative pull threshold.**
+
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 is the canonical per-enemy/per-actor threat observation; target-of-target is corroborating evidence, never a substitute for threat-table ownership.**
 
 
@@ -3462,6 +3466,8 @@
 
 ### EN-08 — Бюджет: чтение nameplates не чаще заданного интервала, без постоянного сканирования
 
+**Архитектурная актуализация TH-02:** **См. TH-02: TH-02 reuses the shared enemy snapshot/budget; no extra nameplate enumeration for risk assessment.**
+
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 reuses the shared budgeted enemy snapshot and lazy per-actor reads; threat queries do not trigger independent full plate enumeration.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target selection and cast tracking reuse the EN-08 refresh budget; interrupt urgency does not authorize unbounded nameplate enumeration.**
@@ -3523,6 +3529,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация TH-02:** **См. TH-02: TH-02 consumes TH-01 per-actor/per-enemy detailed threat evidence; risk prediction and DPS stop policy must not become a second threat reader.**
+
 **Раздел: 7. Угроза и агро. Приоритет: P1.**
 
 #### Требование
@@ -3568,5 +3576,59 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже читает уровень угрозы игрока на текущем target и имеет GUID guards, но нет доказанного универсального actor-specific per-enemy threat/aggro ownership provider для игрока, питомца и танка.
 
 **Архитектурные ссылки:** TG-05, EN-02, EN-03, EN-08, PL-07, SP-14. Обратные архитектурные ссылки в TG-05, EN-02, EN-03 и EN-08 добавлены в том же коммите; PL-07/SP-14 используют существующие общие контракты без замены их механизмов.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### TH-02 — Риск срыва агро (для DPS): нужно ли уменьшить угрозу или остановиться
+
+**Раздел: 7. Угроза и агро. Приоритет: P2.**
+
+#### Требование
+
+Определять **риск скорого перехвата агро DPS-персонажем** на конкретном подтверждённом `enemyGUID` и рекомендовать одно из: `CONTINUE_DPS`, `REDUCE_THREAT`, `PAUSE_DPS`, `UNKNOWN` с доказательствами, причиной, временем наблюдения и confidence. Это **политика рекомендаций**, а не управление игровым персонажем: никакого автоматического `StopAttack`, `StopCasting`, переключения цели или использования способности. Риск «скоро сорву агро» отличать от TH-01 «уже держу агро». Проверять относительную угрозу игрока и фактического текущего держателя агро, `threatPercent` как процент порога срыва и `rawThreatPercent` как долю угрозы лидера **только если эти поля действительно доступны и семантика подтверждена на клиенте**. Не объявлять отсутствие угрозы по nil/secret; не трактовать status 1 как доказанный процент или ETA.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:15`: `UnitThreatSituation` и `UnitDetailedThreatSituation` разрешены в read-only allowlist; это не доказывает наличие валидных численных процентов на Forever.
+- `KordRotation/Core/GameState.lua:148–152`: для текущей цели читается только `UnitThreatSituation("player","target")`, проверяется целочисленный статус 0..3. Проценты угрозы, raw threat и скорость роста угрозы не собираются.
+- `KordRotation/Core/GameState.lua:392–405`: `player.hasAggro`/`target.targetsPlayer` привязаны к текущему target с GUID guard; это факт агро/target-of-target, не прогноз срыва.
+- `KordRotation/Core/RotationConditions.lua:21,55`: `target.threat` и `target.targetsPlayer` присутствуют, но нет общего `ThreatRiskObservation` и политики `REDUCE_THREAT/PAUSE_DPS`.
+- `KordRotation/Core/AbilityEligibility.lua:187–239,267–278`: общая проверка способности/цели существует, но политика threat reduction не встроена в отдельный канонический риск-провайдер.
+- `KordRotation/Core/EventBus.lua:91–120`: есть coalescing/heartbeat, но нет подтверждённой bounded per-GUID history threat-rate и revision для оценки времени до перехвата.
+
+#### Сравнение семи референсов (Lua ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:1316–1323` читает threat status secret-safe; `Sonah/Classes/Hunter.lua:173–177`, `Classes/Priest.lua:190`, `Classes/Rogue.lua:209`, `Classes/Druid.lua:411` рекомендуют Feign Death/Fade/Feint/Cower при агро; `Sonah/Core/Organisms/Engine.lua:40,186–193,1266–1274` поддерживает отключение threat-drop рекомендаций. Перенять отделение общей угрозы от классовых способностей и пользовательскую политику; это реакция на уже возникшее агро, не доказанный прогноз срыва по проценту.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:79–100` обходит nameplate tokens, проверяет `UnitThreatSituation("player",u)` и ограничивает пересчёт `0.25 s`; `JustAC/DebugCommands.lua:3164–3165,8058` исследует threat API. Перенять bounded observations, но не считать наличие записи в таблице угрозы процентом до перехвата и не создавать новый scanner.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:97–100,8298–8307` защищённо получает `isTanking,status,threatpct,rawthreatpct,threatvalue`, проверяет secret и numeric fields; `Locales/enUS.lua:1556–1557` отдельно описывает raw процент от текущей угрозы танка и процент порога срыва. Это лучший референс **доказательных количественных входных данных**, но его UI-trigger не является готовой политикой остановки DPS; secret/невалидные поля нельзя подменять оценкой.
+4. **MaxDps:** `MaxDps/Helper.lua:2235` использует наличие `UnitThreatSituation` для обнаружения врагов; `MaxDps_Druid/Specialization/Classic/Feral.lua:141` и `.../Mop/Feral.lua:168` ограничивают классовые действия по threat status. Перенять возможность подавления рискованных приоритетов через профиль, но не копировать классовый reader или retail/Cata/MoP семантику как общий Forever-контракт.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Signals.lua:79` включает Feign Death среди низкоприоритетных defensive signals; в проверенных Lua нет подтверждённой общей количественной оценки threat-percent/threshold для DPS. Само наличие защитной способности не доказывает threat-risk estimator.
+6. **RotationGuide:** `RotationGuide/Data/Hunter.lua:76` содержит Feign Death с group flag; в проверенных Lua нет подтверждённого универсального процента угрозы и решения о паузе DPS. Классовая запись способности не заменяет наблюдение риска.
+7. **RotationMaster:** `RotationMaster/Conditions/combat.lua:561–591` использует `Platform.GetUnitThreatObservation` через per-pass cache с `nil,reason`; `:647–651,741–745` прямо описывает `higher threat than tank` как сигнал уменьшить угрозу или прекратить DPS/лечение. `RotationMaster/Libs/ThreatClassic-1.0/ThreatClassic-1.0.lua:1623–1635,1654–1693` вычисляет detailed threat и пороги срыва через модель `1.1/1.3` при известных условиях. Перенять tri-state condition/policy и явное описание действия; **не переносить** вычислительные коэффициенты/библиотеку как доказанную механику Forever без отдельной валидации версии, дальности, threat tables и secret API.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Расширение единого TH-01 `ThreatObservation(enemyGUID,actorGUID)` полями detailed threat по модели ForeverAuras + lazy UNKNOWN-safe condition RotationMaster + отдельная общеклассовая `ThreatRiskPolicy` и class-data выбора threat-drop по Sonah.** Не создавать второй `ThreatScanner` или собственную альтернативную threat table. `ThreatRiskObservation` — производная функция от TH-01, а не новый API-reader. Если клиент достоверно возвращает `threatPercent` (процент **порога перехвата**, не raw доля танка), сравнивать с **настраиваемыми** порогами `warnPercent` и `pausePercent` (валидировать `0 < warnPercent < pausePercent <= 100`); значения по умолчанию выбрать после игрового замера, не выдумывать. При status 2/3 («уже танкует») это отдельное `AGGRO_ALREADY_LOST`/urgent mitigation, не прогноз будущего перехвата. При доступном только status 0/1 не делать численного прогноза: `UNKNOWN(risk_percent_unavailable)` или документированная грубая policy без ложного ETA. Скорость изменения угрозы/ETA допускается только по bounded сравнимой GUID-keyed истории, а при нестабильности — UNKNOWN. На нескольких врагах оценивать риски отдельно и агрегировать только по подтверждённым данным; отсутствие видимости не означает безопасный AoE.
+
+Выбор рекомендации: при подтверждённом повышенном риске `REDUCE_THREAT` — предложить доступную классовую способность снижения угрозы через общую `AbilityEligibility`; при критическом риске или отсутствии подходящего действия — `PAUSE_DPS` как **информационная рекомендация**. `CONTINUE_DPS` только при достаточной свежести и доказанно низком риске в выбранном охвате; UNKNOWN не равен SAFE. Режимы solo/group, роль игрока, PvP, таунт/смена танка, иммунитет/резист threat drop и конкретная механика spell должны быть учтены данными профиля. Не путать «уменьшить угрозу» с защитной способностью, которая не снижает threat на данном клиенте.
+
+#### Требуемые изменения
+
+1. Использовать единый TH-01 per-GUID/per-actor `ThreatObservation` и EN-03 identity, без дополнительного threat reader и nameplate scanner.
+2. Валидировать `UnitDetailedThreatSituation` на Forever: порядок возвращаемых полей, isTanking, threatPercent vs rawThreatPercent, secret, nil и 0; при отсутствии данных не моделировать точный процент.
+3. Ввести производный `ThreatRiskObservation(enemyGUID,playerGUID)`: risk status, percent-to-pull если plain, trend/ETA только при достаточной истории, confidence, reason, observedAt.
+4. Разделить `SAFE/AT_RISK/CRITICAL/ALREADY_TANKING/UNKNOWN` и policy `CONTINUE_DPS/REDUCE_THREAT/PAUSE_DPS/UNKNOWN`; угрозу игрока, питомца и танка не смешивать.
+5. Настраиваемые пороги warning/pause с безопасной валидацией, сохранением и шестиязычными UI подсказками; числовые defaults согласовать по клиентским замерам.
+6. Использовать общий `AbilityEligibility` для Feign Death/Fade/Feint/Cower/других подтверждённых способностей, с class-data/SpellID и проверкой фактической механики; отсутствие способности не блокирует информационную PAUSE рекомендацию.
+7. Ленивая оценка по `Needs`, per-pass cache, bounded threat history, EN-08 refresh budget; invalidation по target/GUID, combat, roster, pet, threat updates и bounded heartbeat при подтверждённых событиях.
+8. Диагностика DevTools: `threat_risk_percent_unknown`, `threat_risk_secret`, `threat_risk_stale`, `threat_risk_threshold_warning`, `threat_risk_threshold_critical`, `threat_risk_already_tanking`, `threat_risk_multi_enemy_partial`, `threat_drop_unavailable`, `threat_pause_recommended`.
+9. Тесты: 0/1/many enemies, player vs pet vs tank, solo/group/PvP, percent below/at/above both thresholds, rawPercent not percent-to-pull, status 0/1/2/3, nil/secret, missing tank, taunt/aggro transfer, melee/ranged unknown, threat reset/resist, stale GUID, partial nameplates, cooldown/no threat-drop ability, equal evaluations, rapid threat increase, pause recommendation never issues protected action.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord читает только threat status игрока на текущем target; достоверной количественной оценки риска срыва агро, политики уменьшения угрозы/паузы DPS и её multi-enemy охвата пока нет.
+
+**Архитектурные ссылки:** TH-01, TG-05, EN-03, EN-08, SP-14. Обратные архитектурные ссылки добавлены в эти ранее записанные требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
