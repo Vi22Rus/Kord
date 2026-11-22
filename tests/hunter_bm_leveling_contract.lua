@@ -35,10 +35,10 @@ eq(p.Rules[1].spell,"Feign","defensive opener")
 eq(p.Rules[2].spell,"AspectHawk","aspect next")
 eq(p.Rules[3].spell,"AspectMonkey","early aspect fallback")
 eq(p.Rules[2].category,"buffs","Hawk classified as maintenance buff")
-eq(p.Rules[2].recommendationType,nil,
- "Hawk requires no name-specific routing annotation")
-eq(p.Rules[3].recommendationType,nil,
- "Monkey requires no name-specific routing annotation")
+eq(p.Rules[2].recommendationType,"aspect",
+ "Hawk explicitly follows Defensive placement policy")
+eq(p.Rules[3].recommendationType,"aspect",
+ "Monkey explicitly follows Defensive placement policy")
 eq(p.Rules[6].recommendationType,"utility",
  "Mend Pet explicitly excluded from maintenance channel")
 eq(p.Rules[7].recommendationType,"debuff",
