@@ -1626,3 +1626,49 @@
 7. Тесты: Heroic Strike/Cleave/Raptor Strike/Maul всех подтверждённых рангов; нажата кнопка до удара; очередь погашена ударом/отменена; повторное нажатие; смена цели/стойки; override; обычный `IsCurrentSpell` не next-swing; secret API; отсутствие swing timer; переход в бой и выход.
 
 **Изменения кода:** не выполнялись; внесён аудит CA-02.
+
+
+### CA-03 — Последнее успешное, неудавшееся, прерванное заклинание игрока
+
+**Приоритет: P1.**
+
+#### Требование
+
+Хранить **три независимых последних события** для игрока: `lastSucceeded`, `lastFailed`, `lastInterrupted`, с `spellID`, `castGUID` (если подтверждён), `observedAt`, `event`, `reason` (если доступна), `status/source`. Различать **успех события UNIT_SPELLCAST_SUCCEEDED** и подтверждённое попадание/эффект заклинания; это не одно и то же. Не смешивать `UNIT_SPELLCAST_INTERRUPTED` (каст этого unit прерван) с тем, что игрок **успешно прервал чужой каст**. Не считать `UNIT_SPELLCAST_STOP` доказательством успеха или неудачи. Сохранять каждый тип независимо; неизвестный spellID/secret — `UNKNOWN`, не подставлять предыдущее имя.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 27–30, 86–88: `UNIT_SPELLCAST_SUCCEEDED/FAILED/INTERRUPTED` уже направляются в канал `cast`, но обработчик лишь увеличивает ревизию; payload с spellID/castGUID/reason не сохраняется.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 159–172: хранит текущий факт каста/канала, но не последние результаты трёх типов.
+- [`KordRotation/Core/RotationEngine.lua`](KordRotation/Core/RotationEngine.lua): рекомендация spellID и журнал решений не равны фактическому успешному касту.
+- [`KordRotationDevTools/Trace.lua`](KordRotationDevTools/Trace.lua), строки 9–42: собирает категории событий только для player, сознательно не пишет spellID/name; [`KordRotationDevTools/Recorder.lua`](KordRotationDevTools/Recorder.lua), строки 30–31: диагностика событий без истории идентичностей заклинаний. Нельзя выдавать DevTools-лог за контракт ротационного движка.
+
+#### Семь референсов (фактически проверены локальные ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua:23–24, 1027–1061` ведёт `lastCast` по имени при `UNIT_SPELLCAST_SUCCEEDED`, поддерживает семейства и время; отдельные `lastFailed/lastInterrupted` в этом механизме не подтверждены.
+2. **JustAC** — `JustAC/BlizzardAPI/CooldownTracking.lua:277–309` хранит `lastCast` и `lastGcdCast`, `NoteOwnCast` нормализует base/rank, `WasLastCast` сравнивает семейства; отдельная тройка результатов не подтверждена.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua:2531,2810` читает `GetSpellLastCast`; `Prototypes.lua:3670–3671` слушает FAILED/SUCCEEDED для триггеров. Универсальная единая тройка `lastSucceeded/lastFailed/lastInterrupted` в проверенных местах не подтверждена.
+4. **MaxDps** — `MaxDps/Modules/Profiler.lua:11–16, 50–62` подписывается на SUCCEEDED/INTERRUPTED/FAILED/START, но `SpellEvent` складывает их spellID в один словарь без различения исхода; **не копировать как историю результатов**.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:907–914` ведёт `lastCast[name]` и время успешного каста; `Announce.lua:3–4` отдельно коррелирует успешный собственный interrupt-спелл с INTERRUPTED на цели — это другая семантика. Полная тройка последних собственных исходов не подтверждена.
+6. **RotationGuide** — `RotationGuide/Core/Init.lua:145,166–167` подписывается на SUCCEEDED игрока и вызывает `State.OnCast`; в проверенном обработчике нет отдельных failed/interrupted last records.
+7. **RotationMaster** — `RotationMaster/Platform/memory.lua:4–31` сохраняет подтверждённые собственные SUCCEEDED для памяти аур/кулдаунов с защитой от secret; в этом модуле нет общего хранения трёх исходов. Модель защищённого event payload полезна.
+
+#### Сравнение и рекомендация
+
+**Основа — Sonah + JustAC + защищённая event-обработка RotationMaster**, встроить в общий `EventBus`/`GameState` Kord. От Sonah — last-success timestamp; от JustAC — нормализация rank/base для запросов `lastCast`, но **сохранить raw effective spellID отдельно** (SP-02/SP-11); от RotationMaster — безопасная обработка секретных полей. Три независимых outcome records — новая общеклассовая функция Kord, ни один из семи проверенных референсов не подтверждён как готовая полная реализация. `CastOutcomeObservation` — логический контракт, **не требование отдельного Lua-файла**.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** События доступны, но идентичность/исход последнего заклинания каждого типа не сохраняются в ротационном ядре.
+
+#### Требуемые изменения
+
+1. В общем `EventBus` добавить защищённую передачу только подтверждённых player event payload или отдельный типизированный consumer; существующие revision/invalidation не ломать. Проверять сигнатуру каждого события на Forever и фильтр `unit=="player"`.
+2. В существующем `GameState` реализовать независимые `lastSucceeded`, `lastFailed`, `lastInterrupted`: `rawSpellID`, `baseSpellID` (только проверенная связь), `castGUID`, `observedAt`, `event`, `reason`, `status/source`.
+3. Для channel events отдельно проверить семантику `CHANNEL_STOP` и успех канала; не объявлять завершение канала успешным SUCCEEDED без соответствующего подтверждения.
+4. Не превращать отсутствующий/секретный ID в известный по старому состоянию. Для `FAILED` сохранять причину только если её действительно даёт безопасный API/event; `INTERRUPTED` не приписывать автоматически противнику.
+5. Предоставить ленивые запросы `lastCast.succeeded`, `lastCast.failed`, `lastCast.interrupted` с `Needs`, независимым возрастом и статусом; **никогда не считать отсутствие истории доказательством, что игрок ничего не кастовал до загрузки аддона**.
+6. Не смешивать очередь следующего удара CA-02, текущий cast CA-01, последнюю рекомендацию ротации и последнее фактическое событие.
+7. Тесты: успешный каст, ошибка/промах, interrupt собственного каста, отмена, канал, отсутствие события, secret ID/GUID/reason, смена цели, одинаковый spellID при разных исходах, base/rank/override, повторная загрузка, logout/login, DevTools не раскрывает secret.
+
+**Изменения кода:** не выполнялись; внесён аудит CA-03.
