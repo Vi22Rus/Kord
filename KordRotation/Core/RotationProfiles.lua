@@ -177,9 +177,10 @@ local function validate(profile,classToken,specIndex)
   if rule.mode~=nil and rule.mode~="any" and rule.mode~="single"
       and rule.mode~="aoe" then return false,"invalid_rule_mode" end
   if rule.onUnknown=="skip" then
-   -- Defensive/cooldown actions are not optional improvements by default.
-   if rule.category=="defensive" or rule.category=="cooldowns"
-       or rule.category=="interrupts" then return false,"skip_not_approved" end
+   -- Never skip unknown interrupts. Optional defensive/cooldown *conditions*
+   -- may be skipped only with an explicit audited SkipExceptions record.
+   -- Eligibility UNKNOWN is never skipped by RotationEngine.
+   if rule.category=="interrupts" then return false,"skip_not_approved" end
    usedSkip[rule.id]=true
   end
  end
