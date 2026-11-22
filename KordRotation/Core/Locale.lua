@@ -3755,6 +3755,43 @@ for locale,values in pairs(combatAuraTranslations) do
  end
 end
 
+-- The aura lane is live; other defensive categories remain pending.
+local defensiveAuraNotice={
+ enUS={"Defensive / aura recommendations",
+   "Verified missing aspects and auras are now recommended here. Other defensive skills are not yet implemented.",
+   "Show the Defensive window for verified aura recommendations. Other defensive abilities remain pending.",
+   "Restrict the Defensive window to combat. Turn this off to see out-of-combat aspect upkeep."},
+ ruRU={"Defensive / рекомендации аур",
+   "Здесь отображаются подтверждённые рекомендации недостающих аспектов и аур. Остальные защитные способности пока не реализованы.",
+   "Показывать окно Defensive для подтверждённых рекомендаций аур. Другие защитные способности пока не подключены.",
+   "Показывать Defensive только в бою. Отключите, чтобы видеть аспекты и ауры до боя."},
+ deDE={"Defensive / Aura-Empfehlungen",
+   "Bestätigte fehlende Aspekte und Auren werden hier empfohlen. Andere defensive Fähigkeiten sind noch nicht implementiert.",
+   "Defensive für bestätigte Aura-Empfehlungen anzeigen. Andere Fähigkeiten sind noch nicht aktiv.",
+   "Defensive nur im Kampf anzeigen. Deaktivieren für Aspekte vor dem Kampf."},
+ frFR={"Defensive / recommandations d'auras",
+   "Les aspects et auras manquants vérifiés sont recommandés ici. Les autres capacités défensives ne sont pas encore actives.",
+   "Afficher Defensive pour les recommandations d'auras vérifiées. Autres capacités à venir.",
+   "Afficher Defensive uniquement en combat. Désactiver pour voir les aspects avant le combat."},
+ esES={"Defensive / recomendaciones de auras",
+   "Aquí se recomiendan los aspectos y auras ausentes verificados. Las demás habilidades defensivas aún no están implementadas.",
+   "Mostrar Defensive para recomendaciones verificadas de auras. Otras habilidades pendientes.",
+   "Mostrar Defensive solo durante el combate. Desactivar para ver aspectos antes del combate."},
+ ptBR={"Defensive / recomendações de auras",
+   "Aspectos e auras ausentes confirmados são recomendados aqui. Outras habilidades defensivas ainda não foram implementadas.",
+   "Mostrar Defensive para recomendações verificadas de auras. Outras habilidades ainda pendentes.",
+   "Mostrar Defensive apenas em combate. Desative para ver aspectos antes do combate."}
+}
+for locale,v in pairs(defensiveAuraNotice) do
+ local t=translations[locale]
+ if t then
+  t.IND_DEFENSIVE_TITLE=v[1]
+  t.IND_DEFENSIVE_PENDING=v[2]
+  t.TIP_IND_DEFENSIVE_ENABLE=v[3]
+  t.TIP_IND_DEFENSIVE_COMBAT=v[4]
+ end
+end
+
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.
 -- Do not silently overwrite client locale: it is determined via GetLocale().
 local locale = type(GetLocale) == "function" and GetLocale() or "enUS"
