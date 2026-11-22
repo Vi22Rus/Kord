@@ -7,8 +7,8 @@ KR.IndicatorSettings = KR.IndicatorSettings or {}
 local M = KR.IndicatorSettings
 local defaults = {
     actionHighlight=false, highlightStyle="border", highlightStrength=70,
-    highlightCount="first", defensiveEnabled=false, defensiveSlots=2,
-    defensiveSize=52, defensiveAlpha=100, defensiveCombatOnly=true,
+    highlightCount="first", defensiveEnabled=true, defensiveSlots=2,
+    defensiveSize=52, defensiveAlpha=100, defensiveCombatOnly=false,
     interruptEnabled=false, interruptSpellID=0, interruptSize=52,
     interruptSound=false, interruptText=true, audioEnabled=false,
     audioImportant=false, audioDefensive=false, audioInterrupt=false,
