@@ -1719,3 +1719,48 @@
 7. Диагностика `target_cast_hidden`, `target_cast_time_unknown`, `target_cast_interruptible_unknown`, `target_guid_changed`; тесты cast/channel, hidden ID/name/flag, смена цели, обновление таймера, target absent/dead, каст прерываемый, но player interrupt unavailable, и повторный interrupt после завершения.
 
 **Изменения кода:** не выполнялись; внесён аудит CA-04.
+
+
+### CA-05 — Окно «когда можно двигаться без потери каста»
+
+**Приоритет: P2.**
+
+#### Требование и граница достоверности
+
+Определять, есть ли **подтверждённое безопасное окно начала движения**, при котором текущий каст/канал не будет потерян. Не смешивать три разных понятия: `castRemainingSeconds` (время до конца), `spellQueueWindow` (возможность заранее отправить следующее заклинание) и `safeToMoveWithoutCastLoss` (гарантия отсутствия потери текущего каста). Малое оставшееся время, задержка сети или клиентская «красная зона» кастбара **не доказывают** безопасное движение. Для каналов раннее движение может потерять последний тик, а для instant/cast-while-moving правила иные. Без подтверждённого механизма сервера/клиента вернуть `UNKNOWN`, не показывать ложный зелёный сигнал.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 129–130: `IsPlayerMoving` наблюдается; строки 159–172: `castingSnapshot` хранит факт каста/канала, **не хранит endTime/remaining** (CA-01).
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 240–255: `cast="idle"` блокирует новую рекомендацию во время каста; не оценивает момент безопасного движения.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9, 14, 17: разрешены `GetTime`, `IsPlayerMoving`, `UnitCastingInfo`, `UnitChannelInfo`; `GetNetStats`/настройка `SpellQueueWindow` как проверенный источник отсутствуют.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 27–30: события начала/конца/срыва каста есть; нет самостоятельной подтверждённой модели movement-safe window.
+
+#### Семь референсов (проверены локальные Lua ZIP)
+
+1. **Sonah** — `Core/Molecules/Conditions.lua:400–410` содержит оценку latency в контексте DoT/тик-тайминга, но **не доказанный** safe-to-move window для текущего каста.
+2. **JustAC** — `KeyPressDetector.lua:253` упоминает 30 Hz/33 ms задержку опроса, `SpellDB.lua:1675` — latency бинда; это не серверное подтверждение безопасного движения. Универсальный safe-movement reader не обнаружен.
+3. **ForeverAuras** — `GenericTrigger.lua:4833–4876` `WatchForCastLatency/GetCastLatency` измеряет разницу между `CURRENT_SPELL_CAST_CHANGED` и cast start/channel start; `Prototypes.lua:9209–9211` отдаёт cast latency в UI. **Наиболее близкий референс для оценки задержки, но не доказательство safe-to-move**.
+4. **MaxDps** — в проверенном поиске по cast latency, slidecast, safe move и spell queue не обнаружен подтверждённый safe-movement контракт.
+5. **ForeverRotation** — в проверенном поиске по тем же механизмам не обнаружен подтверждённый safe-movement контракт.
+6. **RotationGuide** — в проверенном поиске не обнаружен подтверждённый safe-movement контракт.
+7. **RotationMaster** — `Platform/casting.lua:20–49` защищённо вычисляет remaining и duration; `Libs/ThreatClassic-1.0/ThreatClassModuleCore.lua:1296,1314` читает `GetNetStats` для оценки угрозы, **не для безопасного движения**. Полного safe-movement контракта не подтверждено.
+
+#### Сравнение и рекомендация
+
+**Основа — RotationMaster (надёжный remaining) + ForeverAuras (оценка cast latency), встроить в Kord CA-01.** Нельзя переносить UI-индикатор latency как доказательство безопасного движения. Предлагаемый общеклассовый логический контракт `CastMovementWindowObservation` (не обязательный новый файл): `castRemainingSeconds`, `latencyEstimateSeconds` (только при валидной измеренной выборке), `safeToMoveWithoutCastLoss`, `windowStart`, `confidence/status/reason/source`. По умолчанию `safeToMoveWithoutCastLoss=UNKNOWN` при отсутствии достоверного подтверждения. Не выдавать P2 эвристику за P0 гарантию.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО — ТРЕБУЕТСЯ ИССЛЕДОВАНИЕ ВОЗМОЖНОСТИ ДОСТОВЕРНОГО НАБЛЮДЕНИЯ (P2).** Доступны только исходные примитивы движения и каста, не безопасное окно.
+
+#### Требуемые изменения
+
+1. Сначала завершить CA-01: безопасные `castStart/end/remaining`, различение cast/channel/empower, событие задержки/обновления, время на том же clock.
+2. Исследовать на WoW Forever поведение окончания каста при начале движения, отдельно обычный каст, канал, instant, cast-while-moving и способности с проком; документировать, что реально доказуемо, а что лишь вероятностная эвристика.
+3. При наличии измеряемой задержки использовать событийный подход ForeverAuras с защищённой проверкой timestamp, ограничением выборки и отсутствием гарантии. Не приравнивать `GetNetStats`, `SpellQueueWindow`, latency castbar и ping к моменту подтверждения сервером.
+4. Раздельно возвращать `remaining`, `estimatedLatency`, `safeToMove`; если нельзя доказать безопасное окно, `safeToMove=UNKNOWN`, даже когда remaining меньше ping. Не рекомендовать начать движение по неподтверждённой оценке.
+5. Не автоматизировать движение/отмену; read-only. Инвалидация при cast/channel start/stop/delayed/update, движении, смене формы/прока/ауры, secret time.
+6. Диагностика `safe_window_unverified`, `latency_estimate_only`, `channel_tick_loss_unknown`, `cast_time_unknown`; тесты на разных задержках, pushback, конце каста, потерянных channel ticks, касте на ходу, мгновенных способностях и тайных значениях.
+
+**Изменения кода:** не выполнялись; внесён аудит CA-05.
