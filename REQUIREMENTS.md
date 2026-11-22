@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-01:** **См. PE-01: PE-01 pet existence/alive/visible/active are independent preconditions; final pet action READY stays with AbilityEligibility.**
+
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 is a policy-level count and cannot declare AoE heal READY; final cast/target eligibility remains AbilityEligibility.**
 
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 candidate prioritization cannot issue READY; final heal/battle-res/out-of-combat-res eligibility remains in AbilityEligibility.**
@@ -3577,6 +3579,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация PE-01:** **См. PE-01: PE-01 supplies confirmed owner-pet GUID/liveness for per-actor threat; pet existence or active state does not prove pet holds aggro.**
+
 **Архитектурная актуализация GR-02:** **См. GR-02: GR-02 role evidence comes from the canonical group roster and is not proof of threat ownership; tank identity and aggro remain distinct.**
 
 **Архитектурная актуализация GR-01:** **См. GR-01: GR-01 shared roster/role index supplies actor aliases for tank threat observation; membership or assigned role does not prove aggro.**
@@ -3692,6 +3696,8 @@
 
 ### TH-03 — Таунт и способности танка: готовы, нужны ли, цель вне агро
 
+**Архитектурная актуализация PE-01:** **См. PE-01: PE-01 pet active/controllable state gates pet taunt/Growl recommendation separately from cooldown and threat necessity.**
+
 **Архитектурная актуализация GR-02:** **См. GR-02: GR-02 role observations can gate tank-only recommendations but never alone prove taunt necessity or readiness.**
 
 **Раздел: 7. Угроза и агро. Приоритет: P2.**
@@ -3747,6 +3753,8 @@
 
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
+
+**Архитектурная актуализация PE-01:** **См. PE-01: PE-01 separates owner pet from party/raid member roster: pet GUID must not be counted as a player member; optional allied pets require explicit policy.**
 
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 consumes the canonical roster and per-spell range observation; a member in caster range is not proof of being in the AoE impact footprint.**
 
@@ -3808,6 +3816,8 @@
 
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
+
+**Архитектурная актуализация PE-01:** **См. PE-01: PE-01 shares secret-safe life/health facts but distinguishes active controllable pet from group members and temporary summons.**
 
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 uses member health and life observations with explicit UNKNOWN; hidden health cannot be counted as injured or healthy.**
 
@@ -4079,5 +4089,56 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Kord имеет health/range APIs для отдельных units, но нет реализованного roster-wide injured count, spell-specific AoE impact geometry и проверяемого count целей в радиусе. Простое число раненых в группе **не удовлетворяет** формулировке GR-06.
 
 **Архитектурные ссылки:** GR-01, GR-02, GR-05, SP-08, SP-14, TG-09. Обратные ссылки внесены в эти предыдущие задачи в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### PE-01 — Питомец существует, жив, в зоне видимости, активен
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
+
+#### Требование
+
+Для собственного `pet` предоставить **независимые** доказательные состояния `exists`, `alive/dead/ghost`, `visible`, `active/actionable`, `controllable` (если клиент подтверждает), `petGUID`, `ownerGUID`, `observedAt`, `source`, `reason`, `revision`. `UnitExists("pet")` **не означает** «жив», «виден» или «активен»: после спешивания/смены транспорта pet unit может кратковременно существовать, но не быть доступным для лечения/команд. `UnitIsVisible` не является доказательством line-of-sight, `pet alive` не доказывает pet action ready. Временные guardians, totems, swarm/несколько призванных существ и чужие питомцы — **не** синоним единственного `pet` unit token; расширять отдельным наблюдением только при подтверждённом client API и GUID/owner evidence. Secret/nil/ошибка API — `UNKNOWN`, не ложное false/true. Не выдумывать наличие питомца из класса/заклинания призыва, не выполнять protected pet actions.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10–13,18`: allowlist включает `UnitGUID`, `UnitExists`, `UnitIsDeadOrGhost`, `UnitHealth/Max`, `IsMounted`; `UnitIsVisible`, `UnitIsConnected`, `HasPetUI`, `PetHasActionBar`, `UnitHasVehicleUI` в проверенном allowlist не подтверждены. Новые вызовы — только после Forever API validation.
+- `KordRotation/Core/GameState.lua:108–124,184–197,242`: общий `unitSnapshot("pet")` уже содержит existence, GUID, dead и health; `pettarget`/отношение к `target` проверяются только при подтверждённом существовании. Нет отдельного pet visibility/active/controllable контракта; `player.mounted` читается `:128`, но не связан с pet actionability.
+- `KordRotation/Core/RotationConditions.lua:15–18`: условия `pet.exists`, `pet.dead`, `pet.health.percent`, `pet.attackingTarget` есть, но `pet.visible`/`pet.active`/`pet.controllable` не подтверждены.
+- `KordRotation/Core/EventBus.lua:23–24,35–36,46`: `UNIT_PET` и `PET_BAR_UPDATE` инвалидируют pet state, unit events допускают pet/pettarget. Проверить owner-token semantics и актуализацию при mount/vehicle/zone changes.
+- `KordRotation/Core/AbilityEligibility.lua`: существующие проверки spell eligibility не являются доказательством готовности **команды питомца**; final READY для pet action требует отдельной валидации pet actionbar/способности через общий gate.
+
+#### Сравнение семи референсов (проверены все предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:573–592` поддерживает отдельные player/pet health observations и **сбрасывает pet estimator при `UNIT_PET`** (`player` owner), чтобы не перенести старые данные на нового питомца. Перенять GUID/revision invalidation и раздельную pet health evidence; оценку здоровья не объявлять фактом alive/active.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:553–570` прямо отличает `UnitExists("pet")` от `HasActionablePet()`: проверяет mounted, vehicle UI и валидный maxHP, чтобы не рекомендовать лечение исчезнувшего pet; `JustAC/RedundancyFilter.lua:1082–1095` отдельно проверяет dead, но **fail-open на secret (assume alive)**. Перенять идею отдельного actionable gate, **не** переносить fail-open: Kord возвращает UNKNOWN.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:10173–10176` содержит `HasPet = UnitExists('pet') and not UnitIsDead('pet')`; `ForeverAuras/BlizzardAuraDisplay.lua:4626–4631` и `GenericTrigger.lua:4275` обрабатывают `UNIT_PET` с unit=`player`, а `Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua:223,239–244` следит за pet bar. Перенять событийную инвалидизацию, но `HasPet` недостаточно для visibility/actionable/controllable.
+4. **MaxDps:** `MaxDps/Helper.lua:2527–2534` для pet spell требует `UnitExists("pet")`, проверяет pet action slots через `GetPetActionInfo`, usability и cooldown; `MaxDps_Hunter/Specialization/Cata/BeastMastery.lua:178` использует pet existence для Kill Command. Перенять отдельную **pet spell/actionbar capability** проверку; spell usability не доказывает pet visibility, alive или owner GUID.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Interrupts.lua:17` явно отмечает `Spell Lock` как pet-bar spell, который **не обрабатывается**; в проверенных Lua не подтверждён общий pet exists/alive/visible/actionable provider. Не выдавать отсутствие такого провайдера за отсутствие всех pet spell references.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:312–314` реализует `HasPet() = Clean(UnitExists("pet")) and not Clean(UnitIsDead("pet"))`. Перенять только базовую existence+death композицию; `Clean(nil)`/secret и отсутствие visibility/actionability не должны превращаться в доказанное «питомца нет».
+7. **RotationMaster:** `RotationMaster/main.lua:5947–5958` правильно трактует `UNIT_PET` как событие **владельца player**, обновляет pet spells, auto-switch и evaluation; `RotationMaster/Libs/ThreatClassic-1.0/ThreatClassic-1.0.lua:877–886` сбрасывает pet threat module при исчезновении и пересоздаёт при появлении; `RotationMaster/main.lua:581,594` подписан на `UNIT_PET`/`PET_BAR_UPDATE`. Перенять owner-scoped event handling, pet identity/revision invalidation и обновление capability; не копировать threat-module lifecycle как независимый pet scanner.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Основа — существующий `GameState.pet` + JustAC `actionable` как отдельное состояние + RotationMaster owner-scoped `UNIT_PET`/pet spell refresh + Sonah GUID-scoped reset + ForeverAuras pet-bar invalidation.** Ввести единый логический `PetObservation(ownerGUID,petGUID)` поверх GameAPI/GameState, не отдельный scanner. Состояния: `exists` подтверждается `UnitExists("pet")`; `alive` — только `UnitIsDeadOrGhost("pet")` при confirmed exists; `visible` — только валидированным `UnitIsVisible("pet")`, не через наличие `pettarget`/range; `active/actionable` — конъюнкция **доказанных** условий (exists, alive, owner identity, не dismissed/stale, pet UI/actionbar/vehicle/mount constraints только если проверены клиентом). Если actionability нельзя доказать, `UNKNOWN(pet_actionability_unverified)`; не объявлять pet absent. `controllable` отдельно от `active`: guardians могут существовать без pet bar. Смена `petGUID` немедленно инвалидирует aura/health/target/abilities/threat memo; `UNIT_PET("player")` обновляет owner-scoped pet revision, `PET_BAR_UPDATE` — pet capability revision. `PLAYER_ENTERING_WORLD`, mount/vehicle/zone и подтверждённые pet events — coalesced invalidation. Проверить, может ли Forever надёжно читать `UnitIsVisible` и pet UI APIs, не копировать retail-специфичные assumptions. `pet.exists=false` допускается только при доказанном UnitExists=false; pet active UNKNOWN не означает отсутствие pet. `AbilityEligibility` — единственный final READY для pet spells; пет-команды не рекомендовать по одной лишь видимости/живости. Различать summonable temporary units и controlled pet, не считать totems в `pet` без подтверждённой семантики.
+
+#### Требуемые изменения
+
+1. Расширить существующий `GameState.pet` единым `PetObservation` с независимыми `exists/alive/visible/active/controllable`, petGUID/ownerGUID, source, reason и revision; не создавать новый pet scanner.
+2. Проверить на Forever `UnitExists`, `UnitGUID`, `UnitIsDeadOrGhost`, `UnitIsVisible`, `HasPetUI`, `GetPetActionInfo`, `UnitHasVehicleUI`, `IsMounted`, `PET_BAR_UPDATE`, secret/nil и временные особенности mount/vehicle.
+3. Добавить в GameAPI allowlist только подтверждённые вызовы; отдельные statuses `UNKNOWN` для visible/actionable/controllable, без fail-open.
+4. EventBus: owner-scoped `UNIT_PET("player")`, `PET_BAR_UPDATE`, pet health/death/target/identity revisions, entering world/mount/vehicle invalidation по подтверждённым событиям.
+5. Общий pet capability/ability gate по pet actionbar, known rank, cooldown, usability, target/range; final READY остаётся AbilityEligibility, не в профиле/провайдере.
+6. Согласовать TH-01/TH-03 pet actor threat, GR-01/GR-02 roster distinction и будущие pet-heal/pet-revive профили с единым pet GUID, без дублирования.
+7. Lazy `Needs.pet`, per-evaluation memo и GUID guard, bounded refresh; не переносить старый health/auras/ability state на нового питомца.
+8. DevTools-only диагностика: `pet_exists_unknown`, `pet_guid_changed`, `pet_dead_unknown`, `pet_visible_unknown`, `pet_actionability_unverified`, `pet_inactive_confirmed`, `pet_controllability_unknown`, `pet_actionbar_unavailable`, `pet_mount_stale_unit`, `pet_vehicle_state_unknown`, `pet_owner_mismatch`.
+9. Тесты: pet absent/present/dead/ghost, visible vs out-of-view, active vs inactive, mount/dismount transient UnitExists, vehicle, pet dismissed, resummon new GUID, same pet alias recycled, pet UI absent, actionbar missing, guardian/totem/summoned swarm, secret/nil API, hunter/warlock pet, mage elemental, pet revive/heal, threat attribution, cooldown, rapid UNIT_PET/PET_BAR_UPDATE, stale revision, no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже отслеживает pet exists/GUID/dead/health/target и события `UNIT_PET`/`PET_BAR_UPDATE`, но нет доказанного независимого `visible`, `active/actionable`, `controllable` и строгой pet capability readiness.
+
+**Архитектурные ссылки:** GR-01, GR-02, TH-01, TH-03, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
