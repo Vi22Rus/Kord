@@ -42,9 +42,10 @@ function C:Evaluate(evidence)
  if x.useCorrelation=="ESTIMATED"
      and x.propagationEvidence=="ALIGNED_CANDIDATES"
      and count(x.alignedCandidateCount) and x.alignedCandidateCount>=2
-     and x.alignedCandidateCount<=a
-     and x.divergentActiveCount==0
-     and x.inactiveCandidateCount==0 and i==0 then
+     and x.alignedCandidateCount==a
+     and count(x.divergentActiveCount) and x.divergentActiveCount==0
+     and count(x.inactiveCandidateCount) and x.inactiveCandidateCount==i
+     and i==0 then
    out.groupLockoutConfidence="ESTIMATED"
    out.reason="item_cd_group_estimated"
  elseif x.propagationEvidence=="MIXED_CANDIDATES" then

@@ -31,6 +31,15 @@ wrong.alignedCandidateCount=1
 assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")
 wrong.alignedCandidateCount=33
 assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")
+wrong=evidence(3,0,16,"ESTIMATED","ALIGNED_CANDIDATES")
+wrong.alignedCandidateCount=2 -- third active tuple is not aligned
+assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")
+wrong=evidence(2,0,17,"ESTIMATED","ALIGNED_CANDIDATES")
+wrong.divergentActiveCount="SECRET"
+assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")
+wrong=evidence(2,0,17,"ESTIMATED","ALIGNED_CANDIDATES")
+wrong.inactiveCandidateCount=1 -- contradicts aggregate inactive count
+assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")
 wrong.alignedCandidateCount=2
 wrong.divergentActiveCount=1
 assert(C:Evaluate(wrong).groupLockoutConfidence=="UNKNOWN")

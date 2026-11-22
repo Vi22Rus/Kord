@@ -1,3 +1,12 @@
+## KR-20261122-109 — IT-02/2.6: fail-closed counter consistency for shared cooldown confidence
+- Дата/время: 2026-11-22 UTC (точное время Git commit); коммит: `git log --grep KR-20261122-109`. Тип: fix/test/docs, IT-02 P0, этап 2/2.6, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: оценка `ESTIMATED` могла появиться при двух совпавших таймерах и третьем активном несовпавшем кандидате; достаточность счетчиков по всем известным активным членам не проверялась. Это выявлено при анализе исходников; в WoW Forever не воспроизводилось.
+- Причина: проверка `alignedCandidateCount<=knownActiveCount` вместо полного равенства и отсутствие строгой согласованности divergent/inactive счетчиков.
+- Изменения: `KordRotation/Core/SharedCooldownConfidence.lua`, `C:Evaluate` требует равенства aligned и active, целочисленных нулевых divergent и равенства inactive счетчика aggregate. `tests/shared_item_cooldown_confidence_mock.lua` добавляет 3 отрицательных случая (unmatched third active, secret divergent, contradictory inactive). Нет WoW API, protected actions, групповых READY или groupRemaining.
+- Проверки: PASS — статическая проверка точного patch, согласованность source/test/doc и Git tree; NOT RUN — Lua 5.1/mock/full regression (в среде нет интерпретатора), GitHub Actions (manual-only по проекту), WoW Forever (нет клиента). Пользовательский тест NOT RUN.
+- Выдано тестировщику: включить в итоговую IT-02 матрицу третий несогласованный активный item, secret/inconsistent counters; промежуточная установка не требуется. Риски: реальная Forever potion shared-group semantics не подтверждена; group CONFIRMED/READY остаётся UNKNOWN.
+- Документы: REQUIREMENTS.md и поэтапный план обновлены в этом же коммите; связи KR-20261122-108, IT-01, IT-02/2.5–2.10, IT-03/04. Следующий шаг: клиентское подтверждение group semantics и независимая реализация следующих доступных пунктов.
+
 ## KR-20261122-108 — IT-02/2.6: explicit three-layer cooldown confidence contract
 - Дата: 2026-11-22 UTC (полное время Git commit); SHA: `git log --grep KR-20261122-108`. IT-02 P0, этап 2/2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: существующие use-correlation и propagation evidence не имели канонического контракта уверенности и смешивали описание индивидуальных cooldown и групповой гипотезы. Источник: KR-20261122-104–107 и требования IT-02, клиентского бага нет.
