@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-03:** **См. PE-03: PE-03 observations may gate pet attack or stance recommendations but cannot issue final READY or execute protected pet commands.**
+
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet power and mood are input facts, not pet spell READY; only AbilityEligibility issues final readiness.**
 
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 pet existence/alive/visible/active are independent preconditions; final pet action READY stays with AbilityEligibility.**
@@ -3581,6 +3583,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация PE-03:** **См. PE-03: PE-03 pet target/attack activity is not proof of pet threat or actual aggro; TH-01 remains the canonical threat observation.**
+
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 resource/health facts attach to confirmed petGUID, preserving correct pet actor threat identity across resummons.**
 
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 supplies confirmed owner-pet GUID/liveness for per-actor threat; pet existence or active state does not prove pet holds aggro.**
@@ -3699,6 +3703,8 @@
 
 
 ### TH-03 — Таунт и способности танка: готовы, нужны ли, цель вне агро
+
+**Архитектурная актуализация PE-03:** **См. PE-03: PE-03 defensive/aggressive/passive stance does not prove Growl/taunt is needed or ready; preserve common taunt eligibility.**
 
 **Архитектурная актуализация PE-01:** **См. PE-01: PE-01 pet active/controllable state gates pet taunt/Growl recommendation separately from cooldown and threat necessity.**
 
@@ -4103,6 +4109,8 @@
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
 
+**Архитектурная актуализация PE-03:** **См. PE-03: PE-03 extends the same canonical PetObservation with pet target GUID, observed attack activity and pet stance; no independent pet scanner.**
+
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 extends the same GUID/revision-bound PetObservation with independent health, power type/value and hunter happiness; never a second pet scanner.**
 
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
@@ -4155,6 +4163,8 @@
 
 ### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
 
+**Архитектурная актуализация PE-03:** **См. PE-03: PE-03 shares petGUID and revision invalidation with pet health/power/mood, but pet stance is not a resource or happiness fact.**
+
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
 
 #### Требование
@@ -4200,5 +4210,55 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord уже наблюдает здоровье питомца и допускает health percent, но pet-specific typed power/focus/mana и hunter happiness не реализованы как подтверждённые общие факты.
 
 **Архитектурные ссылки:** PE-01, GR-02, GR-05, SP-14, TH-01. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### PE-03 — Что атакует питомец, режим (атака, защита, пассив)
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
+
+#### Требование
+
+Для **того же подтверждённого `petGUID` из PE-01** независимо наблюдать `petTargetGUID` (на кого направлен `pettarget`), `isAttacking` (есть ли **доказанная** текущая атака), `attackingPlayerTarget` (сравнение двух подтверждённых GUID), `stance` (`AGGRESSIVE/DEFENSIVE/PASSIVE/ASSIST/UNKNOWN` с сохранением различий клиента), `stanceSource`, `observedAt`, `reason`, `revision`. **Наличие `pettarget` не доказывает, что питомец атакует**, `PET_ATTACK_START` без подтверждённого stop не доказывает непрерывную атаку, а `UnitAffectingCombat("pet")` не доказывает, что питомец бьёт конкретного моба. Режим поведения и команда `/petattack` — разные сущности. Временные guardians/totems без управляемой панели не получают выдуманный режим `PASSIVE`. Никаких защищённых `PetAttack`, `PetPassiveMode`, `PetDefensiveMode`, target switching или макросов от движка.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10`: разрешены `UnitGUID`, `UnitIsUnit`; `GetPetActionInfo`, `NUM_PET_ACTION_SLOTS`, `UnitAffectingCombat` для pet, pet stance API требуют отдельной проверки semantics и allowlist (общий `UnitAffectingCombat` уже разрешён). Наличие API в клиенте не доказывает, что Kord его читает.
+- `KordRotation/Core/GameState.lua:184–197`: при подтверждённом `pet.exists` читает `UnitExists("pettarget")`, затем `UnitIsUnit("pettarget","target")` как `pet.attackingTarget`. **Текущее имя поля семантически слишком сильное:** это совпадение целей, не подтверждённый факт атаки. GUID `pettarget` и stance отдельно не сохраняются.
+- `KordRotation/Core/RotationConditions.lua:15–18`: есть `pet.attackingTarget`, но нет `pet.targetGUID`, `pet.isAttacking`, `pet.stance` и явных источников UNKNOWN.
+- `KordRotation/Core/EventBus.lua:24,36,46`: `UNIT_PET`/`PET_BAR_UPDATE` инвалидируют pet; `UNIT_TARGET("pet")`, `PET_ATTACK_START/STOP`, pet mode changes и per-GUID revisions как отдельные каналы не подтверждены.
+- `PE-01`/`PE-02` задают единый pet identity/vitals contract; новый режим/цель должны расширить **его же**, а не вводить независимое наблюдение.
+
+#### Сравнение семи референсов (проверены все предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Macros.lua:220,246,277,292` содержит **явные** `/petattack` в макросах Shadow Bolt, Hunter's Mark и Intimidation; `Sonah/Core/Organisms/SelfTest.lua:325` перечисляет `/petattack` и `/petpassive` среди защищённых команд. Это доказывает **командную**, а не наблюдательную семантику. Перенять строгое разделение read-only engine и защищённых пользовательских команд; не копировать макросы как автоматическое управление питомцем.
+2. **JustAC:** `JustAC/DebugCommands.lua:7774` регистрирует `PET_ATTACK_START` для диагностики; `:8333` сравнивает `UnitIsUnit("pettarget","target")`. Перенять event-based evidence и сравнение текущей цели; **не** объявлять совпадение целей доказанной атакой или активным stance.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:10353–10382` читает `GetPetActionInfo(index)`, ищет **активную** mode-кнопку `PET_MODE_AGGRESSIVE`, `PET_MODE_ASSIST`, `PET_MODE_DEFENSIVEASSIST`, `PET_MODE_DEFENSIVE`, `PET_MODE_PASSIVE`; `ForeverAuras/Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua:225–247` отдельно обходит pet action slots, а `ForeverAuras/SecretAuraTrigger.lua:155–157` инвалидирует `pettarget` на `UNIT_TARGET("pet")` и `UNIT_PET("player")`. **Основной проверенный источник для pet stance и событийной актуализации.** Сохранить различие Assist и DefensiveAssist, а не молча сводить их к классическому «атака».
+4. **MaxDps:** `MaxDps/Helper.lua:2527–2534,2582–2583` читает `GetPetActionInfo` для **способностей** питомца, `MaxDps/Buttons.lua:419,432` связывает pet action slot и spellID. Перенять общий pet-bar adapter из PE-01, но spell slot не доказывает stance, пока не проверен `isToken/isActive`.
+5. **ForeverRotation:** в проверенных Lua не подтверждены универсальные pet target attack/stance observations. Не выводить наличие режима из pet spell references.
+6. **RotationGuide:** в проверенных Lua не подтверждены универсальные pet target attack/stance observations; `HasPet` в `RotationGuide/Core/State.lua:312–314` определяет только existence/death. Не приравнивать наличие питомца к его атаке.
+7. **RotationMaster:** `RotationMaster/Libs/ThreatClassic-1.0/ThreatClassModuleCore.lua:1059–1065` обрабатывает `PET_ATTACK_START/STOP` для threat lifecycle, причём комментарий `:1042` предупреждает, что `PET_ATTACK_STOP` **не всегда приходит**; `RotationMaster/buttons.lua:1823–1831` оборачивает `GetPetActionInfo` через `pcall` и проверку наличия API. Перенять cautious attack-event evidence, secret/error-safe pet action reads и revision; **не** считать threat lifecycle точным pet attack-state oracle.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Основа — PE-01 `PetObservation` + ForeverAuras активная pet stance button и `UNIT_TARGET("pet")` + JustAC pet-target comparison + RotationMaster осторожные `PET_ATTACK_START/STOP` и pet action API guards + существующий Kord GameState.** Добавить логические поля `PetTargetObservation`, `PetAttackActivityObservation`, `PetStanceObservation` в **тот же petGUID-scoped snapshot**, без второго scanner. Для target: читать `UnitExists("pettarget")`, `UnitGUID("pettarget")`, после чтения подтверждать, что petGUID и target GUID не сменились; `attackingPlayerTarget` переименовать/сопроводить корректной семантикой `petTargetMatchesPlayerTarget` и отдельно хранить `isAttacking`. Для атаки: использовать `PET_ATTACK_START/STOP` только как **событийное свидетельство** с TTL/revision; при пропущенном STOP, смене цели, потере pet или неоднозначном combat вернуть `UNKNOWN(attack_state_unverified)`, а не устойчивый true. `UnitAffectingCombat("pet")` — отдельный combat факт, не равен attack-on-GUID. Для stance: читать только confirmed active mode tokens из `GetPetActionInfo`, хранить raw token и нормализованное значение; не угадывать при missing/secret/нескольких active mode buttons. Проверить реальные mode token names и events на Forever, включая `PET_BAR_UPDATE` и возможный `PET_BAR_UPDATE_USABLE`; режим `ASSIST` может быть самостоятельным и не должен автоматически теряться. Смена petGUID/owner, `UNIT_PET("player")`, `UNIT_TARGET("pet")`, mode/bar events и confirmed attack events инвалидируют соответствующие revisions. Lazy `Needs.petTarget/petStance`, per-pass memo, bounded action-slot scan **только при необходимости**, без постоянного polling. Никаких protected pet mode commands; итоговый pet action READY остаётся у `AbilityEligibility`.
+
+#### Требуемые изменения
+
+1. Расширить PE-01/PE-02 **тот же** PetObservation полями `petTargetGUID`, `petTargetMatchesPlayerTarget`, `isAttacking`, `stance/rawToken`, независимыми statuses/reasons/revisions.
+2. Исправить/уточнить семантику `pet.attackingTarget` в GameState/RotationConditions: фактически это `pettarget == target`, не подтверждённая атака; обеспечить совместимость профилей.
+3. Проверить на Forever `GetPetActionInfo`, `NUM_PET_ACTION_SLOTS`, `PET_MODE_*`, `isActive`, secret/nil, `UNIT_TARGET("pet")`, `PET_ATTACK_START/STOP`, `PET_BAR_UPDATE` и особенности отсутствия STOP.
+4. Ввести общий secret-safe pet actionbar/mode adapter с active-token validation и явным `UNKNOWN`; переиспользовать PE-01 pet capability, не создавать новый actionbar scanner.
+5. Реализовать GUID-safe `PetTargetObservation` и отдельный `PetAttackActivityObservation`; событие attack start не является вечным доказательством атаки конкретного GUID.
+6. EventBus: pet target/mode/attack revisions, owner-scoped `UNIT_PET`, petGUID reset, TTL для событий и coalescing; не сканировать action slots на каждом кадре.
+7. Согласовать pet threat TH-01/TH-03 и AbilityEligibility SP-14; passive mode может влиять на policy рекомендации, но не доказывает cooldown/готовность команды.
+8. DevTools-only диагностика: `pet_target_guid_unknown`, `pet_target_changed`, `pet_target_matches_player`, `pet_attack_state_unknown`, `pet_attack_stop_missing`, `pet_stance_unknown`, `pet_stance_token_unverified`, `pet_stance_changed`, `pet_actionbar_secret`, `pet_mode_multiple_active`, `pet_guid_changed`.
+9. Тесты: pet absent/dead/inactive, no pettarget, pettarget equals/differs from player target, target GUID recycled, pet attacking mob A while player targets B, target present but idle, combat without attack, attack start with missing stop, stance aggressive/defensive/passive/assist/defensive-assist, no mode button, multiple active, secret/nil API, missing pet actionbar, pet resummon/GUID change, owner UNIT_PET, rapid target changes, stale event, protected commands never invoked.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord умеет проверять наличие `pettarget` и совпадение с `target`, но не определяет надёжно факт атаки и активный режим поведения питомца.
+
+**Архитектурные ссылки:** PE-01, PE-02, TH-01, TH-03, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
