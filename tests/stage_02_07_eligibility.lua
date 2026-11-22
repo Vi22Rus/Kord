@@ -394,7 +394,8 @@ KR.ActionBarScanner.FindSpell=function()
  return {status="UNKNOWN",reason="button_action_info_unconfirmed"}
 end
 local barFailure=eval()
-eq(barFailure.reason,"action_slot_unconfirmed","public reason stays stable")
+eq(barFailure.status,"READY","action bar uncertainty cannot suppress a learned usable spell")
+eq(barFailure.reason,nil,"bar uncertainty does not become eligibility refusal")
 eq(barFailure.barReason,"button_action_info_unconfirmed",
  "specific scanner cause attached to core diagnostic")
 KR.ActionBarScanner.FindSpell=originalFind
