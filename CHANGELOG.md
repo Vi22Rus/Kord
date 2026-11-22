@@ -1,3 +1,11 @@
+## KR-20261122-047 — test: correct ItemFamilyCatalog mock safe-value contract for IT-01/1.5
+- Дата: 2026-11-22 UTC (точное время по Git). SHA: `git log --grep KR-20261122-047`. Тип test/fix, IT-01/1.5 P0; продолжение KR-20261122-046.
+- Контекст: при статической повторной проверке нового mock-теста обнаружено несоответствие `KR.GameAPI:IsSafeValue` каталогу: заглушка разрешала number/string, но `ItemFamilyCatalog:ReplaceFamily` проверяет и table для списка пользовательских itemID. До исправления первая операция `setFamily` возвращала бы UNKNOWN; это дефект тестового стенда, не доказанный игровой дефект.
+- Исправлено: `tests/inventory_family_count_mock.lua` — безопасные таблицы в синтетическом GameAPI теперь разрешены, как в проверенном mock-тесте `tests/item_family_catalog_mock.lua`; никаких изменений production Lua/архитектуры или данных не сделано.
+- Проверки: PASS — проверка согласованности объявления mock IsSafeValue с проверкой `normalize(items)` и текущим catalog mock; NOT RUN — Lua 5.1/execution, GitHub Actions по ручному правилу, игровой Forever. В рамках статического аудита нет фактического runtime PASS.
+- Для тестировщика: сценарии полного/частичного family count остаются в едином IT-01 QA; установка в игре не требуется до завершения этапа.
+- Итог: тестовая фикстура исправлена; статус IT-01/1.5 SOURCE IMPLEMENTED / CLIENT NOT RUN; следующий пункт IT-01/1.6, связанные KR-20261122-045/046.
+
 ## KR-20261122-046 — IT-01/1.5: fail-closed family count over unique item IDs
 - Дата: 2026-11-22 UTC (точный timestamp по Git). Коммит по `git log --grep KR-20261122-046`. IT-01 этап 1 шаг 1.5, P0, InventoryObservation/ItemFamilyCatalog. Тип feature/test.
 ### Контекст и причина

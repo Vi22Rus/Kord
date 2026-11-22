@@ -1,7 +1,7 @@
 -- IT-01/1.5: family count, partial observations, dedup, revisions.
 -- Source/mock test only. No WoW client and no protected gameplay actions.
 local KR={GameAPI={IsSafeValue=function(_,value)
-    return type(value)=="number" or type(value)=="string"
+    return type(value)=="number" or type(value)=="string" or type(value)=="table"
 end}}
 assert(loadfile("KordRotation/Core/ItemFamilyCatalog.lua"))("KordRotation",KR)
 assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
