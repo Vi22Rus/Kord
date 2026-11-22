@@ -160,6 +160,23 @@ function D:ObserveDetails(diagnosis,force,summary)
         add("CHECK",diag.firstStatus,"priority_1_rule",diag.firstReason)
         add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
             diag.arcaneR4Reason)
+        if diag.arcaneR4BarReason~=nil then
+            add("CHECK",diag.arcaneR4Status,
+                "arcane_rank_4_bar_failure",diag.arcaneR4BarReason)
+        end
+        local checks=diag.arcaneR4Checks
+        local allowed={cast=true,usability=true,charges=true,
+            cooldown=true,gcd=true,range=true}
+        if D:Safe(checks) and type(checks)=="table"
+            and #checks<=6 then
+            for _,check in ipairs(checks) do
+                if D:Safe(check) and type(check)=="table"
+                    and D:Safe(check.name) and allowed[check.name] then
+                    add("CHECK",check.status,
+                        "arcane_check_"..check.name,check.reason)
+                end
+            end
+        end
     end
     local core=summary or self:ReadCore()
     if core then
