@@ -444,10 +444,22 @@ function A:EvaluateItem(id,options)
     if not itemSafe(options) or type(options)~="table" then
         return itemResult("UNKNOWN","item_options_unverified",id)
     end
-    local target=itemField(options,"target")
-    local combat=itemField(options,"combat")
-    local minLevel=itemField(options,"minLevel")
-    local snapshot=itemField(options,"stateSnapshot")
+    -- Policy fields must not silently collapse a protected value into
+    -- the optional nil default (especially minLevel/stateSnapshot).
+    local function policyField(name)
+        local ok,value=pcall(function() return options[name] end)
+        if not ok or (value~=nil and not itemSafe(value)) then
+            return nil,false
+        end
+        return value,true
+    end
+    local target,okTarget=policyField("target")
+    local combat,okCombat=policyField("combat")
+    local minLevel,okLevel=policyField("minLevel")
+    local snapshot,okSnapshot=policyField("stateSnapshot")
+    if not okTarget or not okCombat or not okLevel or not okSnapshot then
+        return itemResult("UNKNOWN","item_policy_protected",id)
+    end
     if target~="none" and target~="self"
         and target~="enemy" and target~="friendly" then
         return itemResult("UNKNOWN","item_target_policy_required",id)

@@ -1,3 +1,11 @@
+## KR-20261122-068 — fix: preserve secret policy input UNKNOWN in ITEM gate
+- Дата/время: 2026-11-22 UTC (точные Git-дата и SHA по `git log --grep KR-20261122-068`). Тип: fix/test/docs, IT-01/1.8 P0.
+- Контекст: при review первого исходного implementation установлено, что itemField скрывал неподтверждённый `minLevel` и `stateSnapshot` как nil, делая их необязательными, что могло бы снять необходимое ограничение. Это исходная логическая ошибка, игровое воспроизведение НЕ ПОДТВЕРЖДЕНО.
+- Исправление: `AbilityEligibility.lua:EvaluateItem` использует отдельный guarded `policyField` и boolean result для `target/combat/minLevel/stateSnapshot`; unsafe/read exception возвращает UNKNOWN `item_policy_protected`, не defaults. Сохранена в остальном логика ITEM и неизменён spell Evaluate. `tests/inventory_item_eligibility_mock.lua` — конкретные negative assertions по protected minLevel/snapshot.
+- Доказательство: новые статические source branches и mock assertions соответствуют правилу fail-closed. PASS — статическое сопоставление; NOT RUN — Lua 5.1/mock runtime, regression, GitHub Actions (manual-only), WoW Forever. Не заявляем защищённые runtime values проверенными в Forever.
+- API: новых WoW API нет. Ссылки: IT-01/1.8, IT-02/IT-03, AC-02, KR-20261122-067. Изменены AbilityEligibility.lua, inventory_item_eligibility_mock.lua, REQUIREMENTS.md, phased plan, CHANGELOG.md.
+- Тестировщику: добавить секретные optional policy fields к итоговому IT-01 QA; промежуточная установка не требуется. Следующий пункт 1.9 после проверки реализации шага 1.8.
+
 ## KR-20261122-067 — IT-01/1.8: fail-closed typed item eligibility gate
 - Дата: 2026-11-22 (точное время Git коммита), стадия 1, шаг 1.8, IT-01 P0. Коммит SHA: `git log --grep KR-20261122-067`. Тип: feat/test/docs.
 - Задача/контекст: item count, реализованный на 1.1–1.7, не должен превращаться в ITEM ready или spell action. До работы `AbilityEligibility` проверял только spellID; общий item eligibility отсутствовал. Это архитектурный пробел, а не доказанный баг игрового клиента.

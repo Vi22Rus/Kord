@@ -80,5 +80,6 @@ assert(run().reason=="item_cooldown_provider_missing")
 KR.GameState.ReadItemCooldownObservation=original
 assert(A:EvaluateItem("SECRET",policy).reason=="invalid_item_id")
 assert(A:EvaluateItem(5512,"SECRET").reason=="item_options_unverified")
-assert(A:EvaluateItem(5512,{target="self",combat="any",minLevel="SECRET"}).status=="UNKNOWN")
+assert(A:EvaluateItem(5512,{target="self",combat="any",minLevel="SECRET"}).reason=="item_policy_protected")
+assert(A:EvaluateItem(5512,{target="self",combat="any",stateSnapshot="SECRET"}).reason=="item_policy_protected")
 print("inventory_item_eligibility_mock PASS")

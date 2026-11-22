@@ -5027,6 +5027,8 @@
 - **Незавершённое:** реализация фактических IT-02 cooldown/shared cooldown и IT-03 usability restrictions, подтверждение API client, AC-02 typed action recommendation, edge/error regression. Связанные: IT-01–IT-04, AC-02, SP-14, PE-05, GR-05. Никакого CLAIM TESTED.
 
 
+**Уточнение KR-20261122-068 (2026-11-22):** static review обнаружил, что protected `minLevel/stateSnapshot` в `EvaluateItem` могли превращаться в nil и ошибочно трактоваться как необязательные аргументы. Введён `policyField` с отдельным `ok` для каждого поля: secret/read error ⇒ UNKNOWN `item_policy_protected`, а допустимое отсутствие необязательного поля сохраняется. Дополнены mock assertions. Статическая проверка PASS; Lua/mock/CI/Forever NOT RUN. Коммит: `git log --grep KR-20261122-068`.
+
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
