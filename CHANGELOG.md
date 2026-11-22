@@ -1,3 +1,11 @@
+## 2026-11-22 — Correct Defensive ability recommendation routing
+
+- Corrected the Advanced checkbox: `defensiveInCombatMain` now controls **defensive abilities** (category `defensive`), NOT buffs/auras.
+- Checked: during confirmed combat, eligible Defensive spells appear in the **main recommendation frame**. Unchecked: they appear only in the separate **Defensive** frame. Outside combat: separate Defensive frame.
+- Defensive ability routing has independent six-language text/tooltips and Lua regression tests. The old `buffsInCombatMain` option remains a distinct legacy aura preference and must not be confused with this checkbox.
+- Separate window enable/disable only gates the separate Defensive view; it does not block an otherwise eligible defensive spell being routed to the main frame.
+- Checked/unchecked routing validated with Lua mock CI; no claim of in-game verification.
+
 ## 2026-11-22 — Runtime API/eligibility integration driven by Rotation Master reference
 
 - Reviewed reference runtime modules for auras, spell cooldowns, range applicability, secret-value gates, condition evaluation, revisions and plan lifetimes. Architecture mapping and remaining limitations: `docs/engine/RotationMaster_Runtime_Adoption.md`.
