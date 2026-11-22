@@ -62,6 +62,7 @@ KR.GameAPI={
    return r(targetGUID)
   end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
+  if name=="C_Spell.SpellHasRange" then return r(true) end
   if name=="C_Spell.GetSpellCooldown" then
    if id==29515 and missingGcdField then return r({isOnGCD=true}) end
    return r({isActive=id==29515 and gcdActive or active,isOnGCD=false})
@@ -113,7 +114,11 @@ eq(KR.AbilityEligibility:Evaluate(101,{
 eq(KR.AbilityEligibility:Evaluate(101,{
  target="enemy",cast="idle",chargesRequired=true,minLevel=secretPolicy}).reason,
  "policy_protected","secret level policy rejected before math")
-slot=false;eq(eval().status,"UNKNOWN","slot");slot=true
+slot=false
+eq(eval().status,"READY","unbound spell remains eligible")
+eq(eval().barReason,"action_slot_unconfirmed",
+ "unbound action is a binding diagnostic, not rotation eligibility")
+slot=true
 noPower=true;eq(eval().reason,"insufficient_resources");noPower=false
 usable=false;eq(eval().reason,"spell_unusable");usable=true
 chargeCount=0;eq(eval().reason,"no_charges");chargeCount=1
