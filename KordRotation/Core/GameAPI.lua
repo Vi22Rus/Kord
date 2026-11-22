@@ -13,7 +13,7 @@ local allowed = {
     UnitExists=true, UnitIsDeadOrGhost=true, UnitIsPlayer=true, UnitAffectingCombat=true,
     IsPlayerMoving=true, IsInGroup=true, IsInRaid=true, IsInInstance=true,
     GetInstanceInfo=true, UnitThreatSituation=true, UnitDetailedThreatSituation=true,
-    UnitCanAttack=true, UnitPower=true, UnitPowerMax=true,
+    UnitCanAttack=true, UnitClassification=true, UnitPower=true, UnitPowerMax=true,
     UnitCastingInfo=true, UnitChannelInfo=true, UnitAura=true,
     InCombatLockdown=true, IsMounted=true,
     GetNumSpellTabs=true, GetSpellTabInfo=true,
