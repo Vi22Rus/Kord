@@ -37,6 +37,9 @@ local function readValues(_,name,id)
     if mode=="struct" then
         return {status="READY",value={{startTime=90,duration=30,isEnabled=true}}}
     end
+    if mode=="struct_read_fault" then
+        return {status="READY",value={{startTime=90,duration=30,isEnabled=true}}}
+    end
     return {status="READY",value={90,30,1}}
 end
 local api={
@@ -44,10 +47,12 @@ local api={
     ReadValues=readValues,
     Read=function(_,name,kind)
         assert(name=="GetTime" and kind=="number")
+        if mode=="clock_throw" then error("synthetic clock adapter failure") end
         if mode=="clock_unknown" then return {status="UNKNOWN"} end
         return {status="READY",value=now}
     end,
     ReadField=function(_,record,key)
+        if mode=="struct_read_fault" then error("synthetic protected field") end
         if record[key]==nil then return {status="UNKNOWN"} end
         return {status="READY",value=record[key]}
     end
@@ -82,7 +87,7 @@ assert(expired.status=="READY" and expired.active==false and expired.remaining==
 local structured=observe("struct")
 assert(structured.status=="READY" and structured.remaining==20)
 for _,selected in ipairs({"secret","broken","invalid","disabled","bad_enabled","future",
-        "clock_unknown","mixed_zero_start","mixed_zero_duration"}) do
+        "clock_unknown","clock_throw","struct_read_fault","mixed_zero_start","mixed_zero_duration"}) do
     local got=observe(selected)
     assert(got.status=="UNKNOWN" and got.active==nil and got.remaining==nil,
         selected.." must remain UNKNOWN")

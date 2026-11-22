@@ -1127,10 +1127,16 @@ function S:ReadItemCooldownObservation(itemID)
                     and "item_cd_secret" or "item_cd_invalid_tuple"
                 return result
             end
-            local fields,reason=itemCooldownTuple(api,raw)
+            -- Structured cooldown values may contain protected/secret fields.
+            -- Normalize under pcall; any access fault stays UNKNOWN.
+            local normalized,fields,reason=pcall(itemCooldownTuple,api,raw)
+            if not normalized then
+                result.reason="item_cd_secret"
+                return result
+            end
             if not fields then result.reason=reason return result end
-            local clock=api:Read("GetTime","number")
-            if not clock or clock.status~="READY"
+            local clockOK,clock=pcall(api.Read,api,"GetTime","number")
+            if not clockOK or type(clock)~="table" or clock.status~="READY"
                 or not finite(clock.value,0) then
                 result.reason="item_cd_remaining_unknown"
                 return result

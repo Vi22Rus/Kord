@@ -1,3 +1,14 @@
+## KR-20261122-100 — IT-02/2.3: fail-closed structured cooldown and clock adapter errors
+- Дата/время: 2026-11-22 (UTC; точная дата Git commit); коммит: `git log --grep KR-20261122-100`.
+- ID/этап: IT-02 P0, этап 2, шаг 2.3; тип fix/test; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: `ReadItemCooldownObservation` вызывал `itemCooldownTuple` и `GameAPI:Read("GetTime")` без локального pcall. Неожиданный exception mock-адаптера или защищённого вложенного поля прерывал вызов вместо формализованного UNKNOWN. Это исходниковый риск, не подтверждённый игровой дефект.
+- Код: `KordRotation/Core/GameState.lua` — защищённые вызовы нормализатора и часов; ошибка нормализации даёт `item_cd_secret`, ошибка часов — `item_cd_remaining_unknown`; fallback при ошибке не включается, READY не создаётся.
+- Тесты: `tests/item_cooldown_adapter_mock.lua` — synthetic `struct_read_fault` и `clock_throw`; сохранены исходные кейсы валидного и ошибочного tuple.
+- API/референс: только существующие `GameAPI.ReadValues`, `ReadField`, `Read("GetTime")`; новых WoW API нет; семантика и клиентская совместимость по IT-02 не подтверждены.
+- Проверки: PASS — JS source anchor/invariant check при подготовке атомарного Git tree; NOT RUN — Lua 5.1 execution/mock/full regression (локальная GitHub среда без Lua runner), GitHub Actions (manual-only), WoW Forever (клиент недоступен).
+- Выдано тестировщику: добавить к общей IT-02 приёмке ошибки внутреннего structured-field и GetTime adapter; установка промежуточного шага не требуется.
+- Остаток: IT-02/2.6 групповая корреляция, полный локальный regression, реальная игра; синхронизация гигантских документов REQUIREMENTS/поэтапного плана при доступной безопасной записи. Связи: KR-20261122-099, IT-02/2.3, IT-02/2.10.
+
 ## KR-20261122-099 — IT-02/2.3: mixed-zero cooldown tuple fails closed
 - Дата/время: 2026-11-22 UTC, точные timestamp и SHA по Git: `git log --grep KR-20261122-099`.
 - ID: IT-02 P0, этап 2 шаг 2.3, тип fix/test/docs, статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
