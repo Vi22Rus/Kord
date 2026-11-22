@@ -5118,6 +5118,14 @@
 
 7. EventBus item cooldown revision по `BAG_UPDATE_COOLDOWN`, bag/actionbar/item-use/combat/zone events, coalescing и bounded refresh; не дублировать IT-01 bag scanner.
 
+**Реализация Kord — уточнение IT-02/2.7, KR-20261122-096 (2026-11-22, PARTIALLY IMPLEMENTED / TEST NOT RUN).**
+- `KordRotation/Core/EventBus.lua`: `E:Tick` раз в 2 секунды делает только `InvalidateItemCooldown("item_cd_periodic_refresh")` при наличии подписчиков `itemCooldown`, без чтения GameAPI и без bag scanner. Обычное событие сбрасывает таймер; `BAG_UPDATE_COOLDOWN` теперь использует тот же `InvalidateItemCooldown`, избегая параллельных путей обновления ревизии.
+- `KordRotation/Core/GameState.lua`: канал `itemCooldown` добавлен к подпискам `S:Initialize`, поэтому snapshot invalidation совместима с общей схемой dirty/revisions.
+- `tests/item_cooldown_revision_mock.lua`: no listeners → no refresh, граница 2s, coalescing, reset после события и отсутствие двойной ревизии.
+- Проверки: PASS — статическая проверка патча и публикации source. NOT RUN — Lua 5.1 execution, mock/full regression, GitHub Actions (manual), WoW Forever. Новых WoW API нет; механизм не доказывает получение сигнала от Forever и не делает READY.
+- Осталось: itemID + bagRevision + groupCatalogRevision-aware caching/TTL (без false ready), source-specific attribution, игровые и regression проверки. Шаг частичный.
+
+
 **Реализация Kord — IT-02/2.7 (2026-11-22, P0, PARTIALLY IMPLEMENTED / TEST NOT RUN).**
 - `KordRotation/Core/EventBus.lua`: `GetItemCooldownRevision`, `InvalidateItemCooldown`, `RequestItemCooldownRefresh`; optional `BAG_UPDATE_COOLDOWN`, bag/actionbar/cast/combat/zone invalidations без item attribution или дополнительного bag scanner. `Tick/Flush` сохраняет coalescing 0.20s.
 - `KordRotation/Core/GameState.lua`: `ReadItemCooldownObservation` сверяет cooldown revision до/после чтения и не выдаёт READY при изменении; валидированная ревизия привязана к ответу.

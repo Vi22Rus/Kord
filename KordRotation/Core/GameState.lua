@@ -7,7 +7,7 @@ local S = KR.GameState
 
 local watched = {
     "identity", "target", "combat", "health", "resources", "cast",
-    "talents", "heartbeat", "auras", "cooldowns", "pet",
+    "talents", "heartbeat", "auras", "cooldowns", "itemCooldown", "pet",
 }
 local function finite(number, minimum)
     return type(number) == "number" and number == number

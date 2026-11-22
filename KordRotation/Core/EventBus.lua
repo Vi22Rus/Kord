@@ -141,6 +141,8 @@ end
 function E:InvalidateItemCooldown(reason)
     self.itemCooldownRevision=(self.itemCooldownRevision or 0)+1
     self.itemCooldownLastReason=type(reason)=="string" and reason or "item_cd_invalidation"
+    -- A real invalidation restarts the bounded refresh window.
+    self.itemCooldownRefreshElapsed=0
     self:MarkDirty("itemCooldown")
     return self.itemCooldownRevision
 end
@@ -155,7 +157,7 @@ function E:HandleEvent(event, unit)
         local bagID=(event=="BAG_UPDATE" or event=="BAG_CONTAINER_UPDATE")
             and unit or nil
         self:InvalidateInventory(bagID,event)
-    else
+    elseif channel~="itemCooldown" then
         self:MarkDirty(channel)
     end
     -- Optional cooldown event and conservative independent invalidations.
@@ -166,13 +168,7 @@ function E:HandleEvent(event, unit)
         or event=="PLAYER_REGEN_ENABLED" or event=="PLAYER_REGEN_DISABLED"
         or event=="PLAYER_ENTERING_WORLD"
         or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_NEW_AREA" then
-        if event=="BAG_UPDATE_COOLDOWN" then
-            -- MarkDirty above already coalesced this event.
-            self.itemCooldownRevision=(self.itemCooldownRevision or 0)+1
-            self.itemCooldownLastReason=event
-        else
-            self:InvalidateItemCooldown(event)
-        end
+        self:InvalidateItemCooldown(event)
     end
     return true
 end
@@ -202,6 +198,18 @@ function E:Tick(elapsed)
     local dt=deltaValue(elapsed)
     self.accumulator=(self.accumulator or 0)+dt
     self.heartbeat=(self.heartbeat or 0)+dt
+    -- IT-02/2.7: a bounded wake-up for clients missing bag cooldown events.
+    -- This only changes an observation revision; no API or inventory scan.
+    -- Without a listener there is no work and no invented evidence.
+    local listeners=self.listeners and self.listeners.itemCooldown
+    if listeners and next(listeners) then
+        self.itemCooldownRefreshElapsed=(self.itemCooldownRefreshElapsed or 0)+dt
+        if self.itemCooldownRefreshElapsed>=2 then
+            self:InvalidateItemCooldown("item_cd_periodic_refresh")
+        end
+    else
+        self.itemCooldownRefreshElapsed=0
+    end
     -- Heartbeat is a low-frequency invalidation, not a fabricated game snapshot.
     if self.heartbeat >= 2 then
         self.heartbeat=self.heartbeat % 2

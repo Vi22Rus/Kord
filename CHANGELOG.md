@@ -1,3 +1,13 @@
+## KR-20261122-096 — IT-02/2.7: bounded cooldown refresh without item scanning
+- Дата/время: 2026-11-22 UTC; точное время Git history. SHA: `git log --grep KR-20261122-096`.
+- Этап/ID: IT-02 P0, этап 2 шаг 2.7; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: `EventBus` пересчитывал item cooldown revisions только по событиям. При потере `BAG_UPDATE_COOLDOWN` не было регулярного сигнала для переоценки, несмотря на предусмотренный bounded refresh. Это подтверждено исходным кодом, не клиентский баг.
+- Изменения: `EventBus:Tick` сигнализирует `itemCooldown` с интервалом 2s только при наличии подписчиков, без игровых запросов, сбрасывая таймер после события. `HandleEvent` унифицирован с `InvalidateItemCooldown`, предотвращает повторный `MarkDirty` для `BAG_UPDATE_COOLDOWN`. `GameState` подписан на `itemCooldown`. `tests/item_cooldown_revision_mock.lua` расширен на порог, отсутствие слушателя и возобновление после события. `REQUIREMENTS.md` и план отражают partial status.
+- API/референсы: новых WoW API нет; канонический EventBus и IT-02 reference catalog. Периодическое событие не подтверждает реальный cooldown/использование и не подразумевает READY. Архитектура двух аддонов сохранена.
+- Проверки: PASS — статическая проверка точных ветвей, тестов и атомарного состава коммита; NOT RUN — Lua 5.1 syntax/mock execution/full regression, GitHub Actions (manual-only), WoW Forever (клиент недоступен). Запуск Lua 5.4 не заявляется как Lua 5.1.
+- Для тестировщика: накопить тесты missed event, repeated cooldown storm, threshold 2s, reset after real event, no listener/background scan, no false READY.
+- Остаток: полноценная кэш-валидация, item-use attribution, group confidence, игровой QA; IT-02/2.7 PARTIALLY IMPLEMENTED. Связи IT-01/02/03, KR-20261122-092/093/095.
+
 ## KR-20261122-095 — IT-02/2.10: integration mock for cooldown revisions and lazy conditions
 - Дата/время: 2026-11-22 UTC, точный SHA/time — Git log по KR-20261122-095.
 - Этап 2/2.10, IT-02 P0, type test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
