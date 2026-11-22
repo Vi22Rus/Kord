@@ -1,629 +1,608 @@
-# 4. Порядок и зависимости
+# 4. Зависимости контрактов
 
-Без прямого указания: порядок в файле не указан.
+Граф: «контракт → зависит от». Простая обратная ссылка без слов зависимости не задаёт направление.
 
-## PR-PR-01
+Контрактов 147, выведенных рёбер 42.
 
-порядок в файле не указан
+## ActionButtonPresentationObservation
 
-## PR-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ActionLockObservation
 
-## PR-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AmmoEquipmentProvider
 
-## PR-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AoEControlSafetyObservation
 
-## PR-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AoEHealGeometryPolicy
 
-## PR-06
+- **AoEHealGeometryPolicy → GroupRosterObservation**: из карточки [GR-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4196) (ссылка на [GR-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3888)): «1. Переиспользовать GR-01 roster/GUID/range, GR-02 health/life, GR-05 care candidates и SP-08/14 common spell eligibility; запретить отдельный AoE-heal roster scanner.»
 
-порядок в файле не указан
+## AoEPolicyObservation
 
-## PR-07
+- **AoEPolicyObservation → TargetRangeObservation**: из карточки [EN-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3455) (ссылка на [EN-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3153)): «3. Использовать один deduplicated GUID count EN-01/EN-03, не nameplate raw count.»
 
-порядок в файле не указан
+## AuraCancellationObservation
 
-## PL-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AuraPresenceObservation
 
-## PL-02
+- **AuraPresenceObservation → GroupRosterObservation**: из карточки [GR-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4070) (ссылка на [GR-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3888)): «1. Переиспользовать GR-01 roster, GR-02 life/connectivity, GR-03 общий aura reader, SP-01/02 spell identity/ranks и SP-08/14 friendly eligibility; не создавать параллельный обход группы.»
 
-порядок в файле не указан
+## AutoAttackNeedPolicy
 
-## PL-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AutoAttackStateProvider
 
-## PL-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## AutoShotClipWindowObservation
 
-## PL-05
+- **AutoShotClipWindowObservation → PlayerAutoAttackObservation**: из карточки [SW-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4735) (ссылка на [SW-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4623)): «2. Переиспользовать SW-01 Auto Shot active и SW-02 ranged remaining с подтверждённым phase confidence; неизвестный/устаревший timer — UNKNOWN.»
 
-порядок в файле не указан
+## BandageNeedAndSafetyObservation
 
-## PL-06
+- **BandageNeedAndSafetyObservation → ItemFamilySelectionObservation**: из карточки [IT-08](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5340) (ссылка на [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080)): «5. Реиспользовать health threshold/deficit с branchable semantics и IT-04 best usable tier, IT-01 count, IT-02 cooldown, IT-03 target/level/zone/combat.»
+- **BandageNeedAndSafetyObservation → HealPriorityPolicy**: из карточки [IT-08](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5340) (ссылка на [GR-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4125)): «6. Реиспользовать GR-05 healing target и TH-01 incoming threat; recent damage только из validated GUID combat-log evidence, без гарантии будущего.»
 
-порядок в файле не указан
+## BandagePolicy
 
-## PL-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## BandageRiskObservation
 
-## PL-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## BuffDurationObservation
 
-## PL-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## CastDisruptionProvider
 
-## PL-10
+зависимость в файле не указана.
 
-порядок в файле не указан
+## CastObservation
 
-## PL-11
+- **CastObservation → PetObservation**: из карточки [PE-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4497) (ссылка на [PE-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4251)): «1. Переиспользовать PE-01 petGUID, PE-02 health, PE-04 spell/cooldown, общий cast/aura reader; **не создавать** отдельный pet scanner или cooldown provider.»
 
-порядок в файле не указан
+## CCBreakerCatalog
 
-## PL-12
+- **CCBreakerCatalog → PlayerControlObservation**: из карточки [CC-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5772) (ссылка на [CC-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5706)): «**Архитектурная актуализация CC-03:** для root/snare и решения об освобождении использовать общий `PlayerControlObservation` CC-01 и `ControlBreakSelection` CC-02; CC-03 добавляет отдельную политику необходимости снятия замедления/обездвиживания, а не второй LoC reader или breaker catalog (см. CC-03).»
 
-порядок в файле не указан
+## ComboPointStateProvider
 
-## PL-13
+- **ComboPointStateProvider → WeaponEnchantRefreshPolicy**: из карточки [CL-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9267) (ссылка на [IT-10](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5454)): «5. Подключить MH/OH poisons через общий WeaponEnchantProvider **IT-10**, включая remaining/charges/inventory.»
 
-порядок в файле не указан
+## ConsumableBuffMaintenanceObservation
 
-## SP-01
+- **ConsumableBuffMaintenanceObservation → ItemFamilySelectionObservation**: из карточки [IT-07](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5276) (ссылка на [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080)): «6. Реиспользовать IT-04 best usable tier, IT-01 count, IT-02 item cooldown, IT-03 combat/level/zone/target; не считать REFRESH итоговым READY.»
 
-порядок в файле не указан
+## ConsumableBuffPolicy
 
-## SP-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ControlBreakRiskObservation
 
-## SP-03
+- **ControlBreakRiskObservation → AuraPresenceObservation**: из карточки [TG-07](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L2869) (ссылка на [AU-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L2021)): «1. Повторно использовать AU-01/AU-05 aura reader, AU-02 duration и targetGUID TG-01; не создавать второй scanner.»
 
-порядок в файле не указан
+## CooldownGroupProvider
 
-## SP-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## CooldownObservation
 
-## SP-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## CrowdControlStateProvider
 
-## SP-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## CurseFamilyProvider
 
-## SP-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## DemonPetObservation
 
-## SP-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## DispelStateProvider
 
-## SP-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## DisplayVisibilityPolicy
 
-## SP-10
+зависимость в файле не указана.
 
-порядок в файле не указан
+## DotCoverageObservation
 
-## SP-11
+зависимость в файле не указана.
 
-порядок в файле не указан
+## DruidFormPolicy
 
-## SP-12
+зависимость в файле не указана.
 
-порядок в файле не указан
+## EnemyCastObservation
 
-## SP-13
+зависимость в файле не указана.
 
-порядок в файле не указан
+## EnemyProximityObservation
 
-## SP-14
+зависимость в файле не указана.
 
-порядок в файле не указан
+## EnemySchoolLockoutObservation
 
-## CA-01
+- **EnemySchoolLockoutObservation → InterruptOpportunityObservation**: из карточки [CC-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5949) (ссылка на [CC-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5889)): «6. Добавить `RotationConditions` `target.schoolLocked(schoolMask)`, `target.schoolLockoutRemaining`, `Needs.enemySchoolLockout`; использовать для контекста CC-04, не подменять `target.castInterruptible`.»
 
-порядок в файле не указан
+## EquipmentObservation
 
-## CA-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ExclusiveAuraModeProvider
 
-## CA-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## FearControlObservation
 
-## CA-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## FormStanceObservation
 
-## CA-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## FormStateProvider
 
-## AU-01
+- **FormStateProvider → SpellFamilyCatalog**: из карточки [CL-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9376) (ссылка на [CL-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9039)): «8. Использовать общий `friendly_dead` из CL-02 для Resurrection, не менять live-friendly healing gate.»
 
-порядок в файле не указан
+## FriendlyUnitSelectionProvider
 
-## AU-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GCDObservation
 
-## AU-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GetAuraDataByIndex
 
-## AU-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GroupAoEHealCoverageObservation
 
-## AU-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GroupCareCandidateObservation
 
-## AU-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GroupMemberRoleObservation
 
-## AU-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GroupMemberVitalsObservation
 
-## AU-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## GroupRosterObservation
 
-## TG-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## HealEligibilityProvider
 
-## TG-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## HealPriorityPolicy
 
-## TG-03
+- **HealPriorityPolicy → GroupRosterObservation**: из карточки [GR-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4125) (ссылка на [GR-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3888)): «1. Переиспользовать GR-01 GUID-keyed roster и GR-02 health/life/role; один общий candidate index для heal/res, без дополнительного полного сканера группы.»
 
-порядок в файле не указан
+## HoTCoverageObservation
 
-## TG-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## HunterRangeObservation
 
-## TG-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InterruptAbilityCatalog
 
-## TG-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InterruptCandidateObservation
 
-## TG-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InterruptOpportunityObservation
 
-## TG-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InterruptStateProvider
 
-## TG-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InventoryObservation
 
-## TG-10
+зависимость в файле не указана.
 
-порядок в файле не указан
+## InventoryReadAdapter
 
-## TG-11
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemCooldownAdapter
 
-## EN-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemCooldownObservation
 
-## EN-02
+- **ItemCooldownObservation → InventoryObservation**: из карточки [IT-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4932) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «**Один логический `ItemCooldownObservation` + `SharedItemCooldownObservation` поверх IT-01 `InventoryObservation`/`ItemFamilyCatalog` и единого EventBus.** `ItemCooldownAdapter` — read-only `C_Item.GetItemCooldown`, fallback `C_Container.GetItemCooldown` и legacy **только** после Forever API probe; `C_Item.GetItemSpell` — дополнительная проверка item use-spell identity, не замена itemID. Нормализовать `enabled` (bool/0/1), проверять secret/finite/start/duration/clock. `active=true` при подтверждённом cooldown с положительным remaining; `active=false` только при валидированном нуле; и»
 
-порядок в файле не указан
+## ItemFamilyCatalog
 
-## EN-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemFamilySelectionObservation
 
-## EN-04
+- **ItemFamilySelectionObservation → InventoryObservation**: из карточки [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «4. Переиспользовать IT-01 bag count и UNKNOWN semantics, dedup itemIDs, один snapshot и bounded lazy candidate evaluation.»
+- **ItemFamilySelectionObservation → ItemUseEligibilityObservation**: из карточки [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080) (ссылка на [IT-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5005)): «5. Переиспользовать IT-03 item required level, usability, combat, target, zone; high-tier blocked по уровню -> lower-tier fallback, high-tier unknown -> UNKNOWN.»
+- **ItemFamilySelectionObservation → ItemCooldownObservation**: из карточки [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080) (ссылка на [IT-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4932)): «6. Переиспользовать IT-02 per-item/shared potion cooldown; group lockout запрещает fallback на lower-tier potion.»
 
-порядок в файле не указан
+## ItemMetadataAdapter
 
-## EN-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemRestrictionCatalog
 
-## EN-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemTargetAdapter
 
-## EN-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemUsabilityAdapter
 
-## EN-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ItemUseEligibilityObservation
 
-## TH-01
+- **ItemUseEligibilityObservation → InventoryObservation**: из карточки [IT-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5005) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «7. Переиспользовать IT-01 bag count и IT-02 item/shared cooldown; различать in-combat, lockdown, once-per-combat, shared potion lockout, GCD и target usability.»
 
-порядок в файле не указан
+## LifeTapSafetyPolicy
 
-## TH-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## MeleeSwingQueueProvider
 
-## TH-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## MovementImpairmentRemovalPolicy
 
-## GR-01
+- **MovementImpairmentRemovalPolicy → PlayerControlObservation**: из карточки [CC-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5834) (ссылка на [CC-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5706)): «Ввести **`MovementImpairmentRemovalPolicy`** поверх **единого** `PlayerControlObservation` (CC-01) и `ControlBreakSelection` (CC-02). Сначала установить, что именно действует: `ROOT`, `SNARE` или оба; при отсутствии достоверного LoC API и неизвестной aura mapping не утверждать `FALSE`. Отдельно определить `movementNeeded` по уже имеющимся проверенным сигналам движка (расстояние до цели/нужна позиция, маршрут отступления, опасная зона только при наличии достоверного источника, ручной приоритет PvP). **Не выдумывать универсальный детектор опасной зоны или направление движения**, если с»
 
-порядок в файле не указан
+## MovementObservation
 
-## GR-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## MultiDotCandidateObservation
 
-## GR-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## NextSwingEmpowerObservation
 
-## GR-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## NextSwingNeedPolicy
 
-## GR-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## NextSwingSpellCatalog
 
-## GR-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ObservedEnemyIndex
 
-## PE-01
+- **ObservedEnemyIndex → TargetRangeObservation**: из карточки [EN-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3226) (ссылка на [TG-09](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L2981)): «Выход: `confirmedEngagedCount` (нижняя граница), `possibleEngagedCount` (верхняя граница **среди наблюдаемых**), `observedHostileCount`, `coverage`, `status/reason`; точное `enemy.engagedWithGroupCount=READY(n)` только при доказанной полноте источников и классификации. При неполном охвате `UNKNOWN`, не `READY(0)`. Отдельные запросы `engagedWithGroupCount` и `engagedWithGroupWithinRadius(N)` не смешивать; второй переиспользует TG-09 интервальную дальность EN-01. Все проверки ленивые по `Needs.enemyGroupCount`; нет защищённых действий.»
 
-порядок в файле не указан
+## OOMObservation
 
-## PE-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## OutOfCombatRecoveryObservation
 
-## PE-03
+- **OutOfCombatRecoveryObservation → ResourceConsumableNeedObservation**: из карточки [IT-09](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5397) (ссылка на [IT-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5212)): «3. Реиспользовать IT-06 health/mana branchable thresholds и OOC mode; не принимать secret percent или UI-only curve за условие Lua.»
+- **OutOfCombatRecoveryObservation → ItemFamilySelectionObservation**: из карточки [IT-09](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5397) (ссылка на [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080)): «5. Реиспользовать IT-04 ranked item selection и IT-03 item usability, учитывая дефицит ресурсов, restore amount, class/powerType, level и conserve policy.»
+- **OutOfCombatRecoveryObservation → PetObservation**: из карточки [IT-09](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5397) (ссылка на [PE-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4313)): «6. Реиспользовать PE-02 pet happiness и PE-01 pet identity, проверить на Forever `GetPetFoodTypes`/pet diet/food compatibility/level; без второго pet reader.»
 
-порядок в файле не указан
+## PetActionCooldownObservation
 
-## PE-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetActionUsabilityObservation
 
-## PE-05
+- **PetActionUsabilityObservation → PetObservation**: из карточки [PE-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4431) (ссылка на [PE-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4251)): «1. Переиспользовать **один** pet actionbar adapter PE-01/PE-03, расширить slot record PE-04 полями cooldown, usable, autocastAllowed/enabled, command token, status/reason; не дублировать сканирование.»
 
-порядок в файле не указан
+## PetAttackActivityObservation
 
-## PE-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetAutocastObservation
 
-## SW-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetCareNeedPolicy
 
-## SW-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetCareTimingObservation
 
-## SW-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetCommandProvider
 
-## SW-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetFeedingNeedObservation
 
-## IT-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetFeedingPolicy
 
-## IT-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetHappinessObservation
 
-## IT-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetObservation
 
-## IT-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetStanceObservation
 
-## IT-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetStateProvider
 
-## IT-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetTargetObservation
 
-## IT-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PetVitalsObservation
 
-## IT-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PlayerAutoAttackObservation
 
-## IT-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PlayerCastObservation
 
-## IT-10
+зависимость в файле не указана.
 
-порядок в файле не указан
+## PlayerControlObservation
 
-## IT-11
+зависимость в файле не указана.
 
-**Архитектурные связи и ретроактивные ссылки**
+## PlayerResourceObservation
 
-- **IT-01:** универсальный `InventoryObservation` и `ItemFamilyCatalog` — никакого отдельного scanner реагентов/боеприпасов.
-- **IT-03:** `RequiredMaterialsObservation` — одна из проверок пригодности, а не конкурент `AbilityEligibility`.
-- **IT-12:** on-use item, которому нужны компоненты, использует IT-11; обратная ссылка внесена в существующую запись IT-12.
-- **IT-02/IT-04/IT-05/IT-06/IT-07/IT-08/IT-09/IT-10:** пересечение только в общем item-provider, если оно есть; не объявлять их специфические политики заменёнными IT-11.
-- **Документальный блокер:** полный исторический реестр IT-01–IT-10 пока не восстановлен в текущем корневом файле. Обратные ссылки непосредственно в исходных IT-01/IT-03 пока не внесены, не считать задачу ретроактивной связности закрытой.
+зависимость в файле не указана.
 
-**Вердикт:** универсальная способность `RequiredMaterialsObservation` требуется (P1); реализация не подтверждена. Только документация.
+## PlayerSwingObservation
 
-## IT-12
+зависимость в файле не указана.
 
-**Обязательная ретроактивная связность**
+## RangeObservation
 
-> **Архитектурное уточнение → [IT-11](#it-11--реагенты-боеприпасы-символы-хватает-ли--p1):** IT-12 проверяет расходуемые обязательные компоненты через универсальный RequiredMaterials IT-11, без отдельного сканера реагентов или боеприпасов. Не считать наличие on-use эффекта доказательством достаточности материалов.
+зависимость в файле не указана.
 
-> **Архитектурное уточнение → [IT-13](#it-13--экстренное-спасение-камень-зелье-щит-порог-hp-смерть-цели-рядом--p1):** IT-12 не создаёт отдельную систему экстренного использования активируемых предметов. Общая проверка кулдауна/пригодности остаётся здесь, а пороги HP, признаки угрозы и приоритет спасения определяются универсальной политикой EmergencyDecision из IT-13. Не строить независимый emergency-trinket evaluator.
+## RecentlyBandagedAuraCatalog
 
-- **IT-02:** общий cooldown предметов должен обслуживать и аксессуары IT-12; не создавать второй счётчик/кэш cooldown для trinkets. **Обратная ссылка из IT-02 на IT-12 обязательна в месте хранения исходного IT-02.**
-- **IT-03:** общий item eligibility должен обслуживать on-use предметы IT-12; не создавать независимый eligibility engine. **Обратная ссылка из IT-03 на IT-12 обязательна.**
-- **IT-11:** обязательные реагенты активируемого предмета проверять через RequiredMaterials IT-11, не повторять подсчёт в IT-12. Это использование существующего контракта, не замена IT-11; обратная ссылка нужна, только если прежний текст IT-11 предлагал отдельный on-use механизм.
-- **IT-10:** проверка ядов/пропиток относится к применению расходуемых предметов, но IT-12 не заменяет проверку времени их действия; не добавлять ложную ссылку.
-- **Проверка всех остальных IT-01–IT-11:** требуется по их полным исходным текстам; краткие названия в чате не доказывают наличие конкретной заменяемой реализации.
+зависимость в файле не указана.
 
-**Ограничение фиксации:** в корневом `REQUIREMENTS.md` на момент аудита не было полных записей IT-01–IT-11, поэтому не выдавать этот раздел за обновление их исходных текстов. До последовательной реализации IT-02 и IT-03 необходимо перенести их полные записи в единый реестр и внести указанные обратные ссылки прямо в эти записи; иначе требование ретроактивной связности остаётся незакрытым.
+## RecoveryConsumablePolicy
 
-## IT-13
+зависимость в файле не указана.
 
-**3. Зависимости и обратные ссылки (ВСЕ предыдущие пункты)**
+## RequiredMaterialsObservation
 
-- **IT-02/IT-03:** cooldown и пригодность предметов остаются в общем item provider; emergency не создаёт свой item cooldown или eligibility. В полных текстах IT-02/IT-03 нужны обратные ссылки на IT-13, **если** они предписывают отдельный emergency механизм.
-- **IT-04:** выбор лучшего доступного зелья здоровья остаётся общим; IT-13 задаёт лишь порог/приоритет экстренного использования. Если IT-04 предлагал отдельный emergency threshold evaluator, заменить его общим `EmergencyDecision` и поставить обратную ссылку на IT-13.
-- **IT-05:** наличие/создание камня здоровья и камня души остаётся предметной логикой; IT-13 отвечает только за использование лечебного камня при опасности. Камень души не считать аналогом камня здоровья. Обратная ссылка на IT-13 нужна в исходном IT-05 при наличии отдельной emergency политики.
-- **IT-06/IT-07/IT-08/IT-09/IT-10/IT-11:** проверить полные тексты на дублирование порогов/предметных проверок; не объявлять автоматическую замену там, где предметная задача независима.
-- **IT-12:** уже существующая отдельная запись обновлена выше: общая on-use пригодность в IT-12, экстренная политика — в IT-13. Это **реальная обратная ссылка в существующей старой записи**, а не обещание.
-- **Все прочие старые пункты:** проверить на универсальный health threshold/defensive decision механизм и добавить обратную ссылку при подтверждённом пересечении.
+- **RequiredMaterialsObservation → InventoryObservation**: из карточки [IT-11](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5509) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «**Реагенты:** отдельно стоимость предмета, число единиц, специальные class resources и charges; наличие компонента в сумках проверять через **IT-01**, не собственным сканером. **Боеприпасы:** проверить необходимость для конкретной атаки, тип дальнобойного оружия, допустимый тип/слот, фактическую доступность и требуемое количество; при версии клиента без ammo mechanic вернуть NOT_REQUIRED лишь после достоверного определения capability. **Символы:** отличать установленные пассивные модификаторы от действительно обязательных для способности условий; не считать glyph самостоятельным расх»
 
-**Незакрытый документальный долг:** полные IT-01–IT-11 отсутствуют в текущем корневом реестре; без них нельзя достоверно изменить их исходные абзацы. Указанные выше связи — требования к ретроактивной миграции, **не утверждение об уже внесённых обратных ссылках**. Не приступать к последовательной реализации затронутых старых задач до устранения этого долга.
+## ResourceConsumableNeedObservation
 
-## IT-14
+- **ResourceConsumableNeedObservation → InventoryObservation**: из карточки [IT-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5212) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «5. Реиспользовать IT-01 `MANA_POTION` и другие **проверенные** resource item families, без Retail-only IDs и дублирования каталога.»
+- **ResourceConsumableNeedObservation → ItemFamilySelectionObservation**: из карточки [IT-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5212) (ссылка на [IT-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5080)): «6. Реиспользовать IT-04 highest usable tier, IT-02 item/shared potion cooldown и IT-03 combat/level/zone/target eligibility; не предлагать другую potion при shared lockout.»
 
-порядок в файле не указан
+## ResourceConsumablePolicy
 
-## CC-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ResourceReservePolicy
 
-## CC-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ResourceTickProvider
 
-## CC-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ResurrectionCandidatePolicy
 
-## CC-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ResurrectionStateProvider
 
-## CC-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SealJudgementStateProvider
 
-## AC-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SelfResurrectionStateProvider
 
-## AC-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SharedCooldownGroupCatalog
 
-## AC-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SharedItemCooldownObservation
 
-## AC-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ShotInteractionPolicy
 
-## AC-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SoulShardObservation
 
-## AC-06
+- **SoulShardObservation → InventoryObservation**: из карточки [CL-08](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9713) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «2. Реализовать `SoulShardObservation` поверх IT-01/IT-05: validated `C_Item.GetItemCount`/legacy, bag revisions, reserved/current/available, pending creation arrival; не использовать `or 0` при secret и не считать каст фактом получения shard.»
 
-порядок в файле не указан
+## SpatialObservation
 
-## AC-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SpellFamilyCatalog
 
-## DA-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SpellKnowledgeObservation
 
-## DA-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SpellRangeProvider
 
-## DA-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SpellRequirementsObservation
 
-## DA-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## StanceStateProvider
 
-## DA-05
+- **StanceStateProvider → FormStanceObservation**: из карточки [CL-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L8925) (ссылка на [AC-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L6305)): «| Стойки | Battle Stance, Defensive Stance, Berserker Stance; Stance Mastery (если применимо к клиенту) | current stance index/token, learned/available, change permitted, combat, retained rage, GCD/cooldown, form events | `STANCE_OR_FORM` через AC-05; после смены повторная оценка, без предположения мгновенной готовности |»
 
-порядок в файле не указан
+## StatObservation
 
-## DA-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## StealthStateProvider
 
-## DA-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## StoneFamilyCatalog
 
-## DA-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## StoneLifecyclePolicy
 
-## UI-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SummonedEntityObservation
 
-## UI-02
+- **SummonedEntityObservation → AoEHealGeometryPolicy**: из карточки [PE-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4568) (ссылка на [GR-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4196)): «6. Переиспользовать GR-06 spatial coverage contract для spell-specific summon-to-target effect radius, отдельно от cast range/guardian attack reach; без координат/ауры — UNKNOWN.»
 
-порядок в файле не указан
+## SummoningRitualObservation
 
-## UI-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SwingEventAdapter
 
-## UI-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## SwingSpeedAdapter
 
-## UI-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## TalentObservation
 
-## UI-06
+зависимость в файле не указана.
 
-порядок в файле не указан
+## TargetHealthProvider
 
-## UI-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## TargetRangeObservation
 
-## UI-08
+зависимость в файле не указана.
 
-порядок в файле не указан
+## TargetSuggestionPolicy
 
-## QA-01
+- **TargetSuggestionPolicy → TargetRangeObservation**: из карточки [AC-04](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L6235) (ссылка на [EN-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3153)): «2. Реализовать `TargetSuggestionPolicy/Eligibility` поверх EN-01–EN-06, без отдельного сканирования nameplates/GUID и без автоматической смены цели.»
 
-порядок в файле не указан
+## TargetSwitchCandidateObservation
 
-## QA-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## TauntNeedObservation
 
-## QA-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ThreatObservation
 
-## QA-04
+- **ThreatObservation → TargetRangeObservation**: из карточки [TH-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3701) (ссылка на [EN-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3153)): «5. Переиспользовать EN-01/02/03/08 индекс врагов и bounded refresh; отдельное чтение threat по `Needs` с per-pass memo, без полного nameplate scan при каждом запросе.»
 
-порядок в файле не указан
+## ThreatRiskObservation
 
-## QA-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## ThreatRiskPolicy
 
-## QA-06
+- **ThreatRiskPolicy → ThreatObservation**: из карточки [TH-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3770) (ссылка на [TH-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L3701)): «1. Использовать единый TH-01 per-GUID/per-actor `ThreatObservation` и EN-03 identity, без дополнительного threat reader и nameplate scanner.»
 
-порядок в файле не указан
+## TotemStateProvider
 
-## QA-07
+- **TotemStateProvider → ExclusiveAuraModeProvider**: из карточки [CL-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9492) (ссылка на [CL-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9152)): «4. Подключить shock shared CD через **существующую запланированную общую задачу CL-03 CooldownGroupProvider**; никакого отдельного shaman cooldown таймера.»
+- **TotemStateProvider → WeaponEnchantRefreshPolicy**: из карточки [CL-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9492) (ссылка на [IT-10](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5454)): «5. Подключить imbues через **IT-10 WeaponEnchantProvider** и per-hand equipment eligibility.»
+- **TotemStateProvider → SpellFamilyCatalog**: из карточки [CL-06](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9492) (ссылка на [CL-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L9039)): «7. Подключить Ancestral Spirit через **CL-02/CL-05 friendly_dead**, не изменять live-only healing gate.»
 
-порядок в файле не указан
+## TTDObservation
 
-## CL-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## UnitHealthObservation
 
-## CL-02
+зависимость в файле не указана.
 
-порядок в файле не указан
+## UnitIdentityIndex
 
-## CL-03
+зависимость в файле не указана.
 
-порядок в файле не указан
+## V14Registry
 
-## CL-04
+зависимость в файле не указана.
 
-порядок в файле не указан
+## WaitDecisionPolicy
 
-## CL-05
+зависимость в файле не указана.
 
-порядок в файле не указан
+## WarlockStoneObservation
 
-## CL-06
+- **WarlockStoneObservation → InventoryObservation**: из карточки [IT-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5155) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «4. Реиспользовать IT-01 bag count и IT-04 best owned tier; неизвестное наличие -> UNKNOWN, не CREATE.»
+- **WarlockStoneObservation → ItemCooldownObservation**: из карточки [IT-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5155) (ссылка на [IT-02](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4932)): «5. Реиспользовать IT-02 item/shared cooldown и **отдельный** spell cooldown создания; не принимать фиксированный 120s как универсальный факт.»
+- **WarlockStoneObservation → ItemUseEligibilityObservation**: из карточки [IT-05](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5155) (ссылка на [IT-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5005)): «6. Реиспользовать IT-03 item use combat/target/zone/level; отдельно Soulstone friendly-target and applied-aura observation.»
 
-порядок в файле не указан
+## WeaponEnchantProvider
 
-## CL-07
+зависимость в файле не указана.
 
-порядок в файле не указан
+## WeaponEnchantRefreshPolicy
 
-## CL-08
+- **WeaponEnchantRefreshPolicy → InventoryObservation**: из карточки [IT-10](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5454) (ссылка на [IT-01](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L4852)): «5. Реиспользовать IT-01 count, IT-02 cooldown, IT-03 usability/level/combat/weapon compatibility, IT-04 best tier; spell class imbue проверять через spellbook, не требовать item.»
+- **WeaponEnchantRefreshPolicy → ItemUseEligibilityObservation**: из карточки [IT-10](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5454) (ссылка на [IT-03](https://github.com/Vi22Rus/Kord/blob/main/REQUIREMENTS.md#L5005)): «- `KordRotation/Core/AbilityEligibility.lua`: spell-centric final gate, нет отдельной item/weapon compatibility eligibility; использовать общую итоговую READY архитектуру IT-03/SP-14.»
 
-порядок в файле не указан
+## WeaponEquipmentObservation
 
-## CL-09
+зависимость в файле не указана.
 
-порядок в файле не указан
+## WorldContextObservation
 
-## NO-01
+зависимость в файле не указана.
 
-порядок в файле не указан
+## Циклы
 
-## NO-02
-
-порядок в файле не указан
-
-## NO-03
-
-порядок в файле не указан
-
-## NO-04
-
-порядок в файле не указан
-
-## NO-05
-
-порядок в файле не указан
-
-## NO-06
-
-порядок в файле не указан
-
+не обнаружены
