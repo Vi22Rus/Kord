@@ -1264,6 +1264,8 @@
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 uses actual memberGUID and spellID for heal/resurrection range; no assumed generic range.**
+
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 uses per-member, per-spell range via GR-01 and common SP-08 adapter; no generic 40-yard assumption.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 friendly dispel range is checked for actual member GUID and specific learned spellID via the common range adapter.**
@@ -1581,6 +1583,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 candidate prioritization cannot issue READY; final heal/battle-res/out-of-combat-res eligibility remains in AbilityEligibility.**
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 identifies missing-buff candidates but only common AbilityEligibility can declare final READY for a friendly buff.**
 
@@ -3738,6 +3742,8 @@
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
 
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 healing/resurrection candidates consume the canonical GUID-keyed roster and member addressability, never a second group scanner.**
+
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 missing-buff detection consumes canonical GUID-keyed roster and per-member spell range; no second group scanner.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 dispel candidates consume the canonical GUID-keyed roster, validated aliases, member visibility/coverage and per-spell range; never create a second party/raid scan.**
@@ -3795,6 +3801,8 @@
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
 
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 uses GR-02 independent health, life, resource and role facts; priority must not infer a numeric deficit from UNKNOWN health.**
+
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 uses canonical member life/connected/role evidence only for target applicability; never infers buff absence from a missing health or role observation.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 consumes canonical member health/life/role evidence for triage, not a duplicate member observation; debuff presence is independent of role.**
@@ -3850,6 +3858,8 @@
 
 ### GR-03 — Дебаффы, которые можно рассеять, у кого они
 
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 healing triage may consume GR-03 confirmed removable debuffs, but dispel and healing recommendations remain distinct.**
+
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 shares the same generic per-member aura observation and revision as GR-03; HELPFUL and HARMFUL filters and positive/negative evidence remain separate.**
 
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
@@ -3904,6 +3914,8 @@
 
 ### GR-04 — Отсутствующие групповые баффы (кого баффать)
 
+**Архитектурная актуализация GR-05:** **См. GR-05: GR-05 shares roster, aura and candidate dedup with GR-04; resurrection, healing and buffing have independent eligibility/policy.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
 
 #### Требование
@@ -3949,5 +3961,58 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord читает отдельные player/target aura facts, но не имеет подтверждённого общего memberGUID-based group-buff coverage, family equivalence и адресной рекомендации «кого баффать».
 
 **Архитектурные ссылки:** GR-01, GR-02, GR-03, SP-01, SP-02, SP-08, SP-14. Обратные ссылки внесены в перечисленные предыдущие задачи в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
+
+**Раздел: 8. Группа и рейд. Приоритет: P2.**
+
+#### Требование
+
+На едином GR-01 roster определять отдельно: **кандидатов на лечение** (`memberGUID`, подтверждённое здоровье/дефицит, срочность, роль, входящий урон/дебаффы лишь при доказанных данных) и **кандидатов на воскрешение** (подтверждённо мёртв/призрак, возможность обычного внебоевого resurrection или battle resurrection, конкретный spellID и адресуемый unit). Приоритет — не просто минимальный процент HP: учитывать абсолютный дефицит, доступность цели, роль и контекст боя, но **не выдумывать** TTD, входящий урон или скрытое здоровье. `UNKNOWN` по здоровью не означает ни «здоров», ни «критический». Живой с неизвестным HP не становится целью heal по фиктивному порогу; мёртвый не попадает в обычный список healing. `UnitIsDeadOrGhost` true не доказывает, что конкретная способность resurrection доступна в бою. Никакого автоматического выбора цели, кастов или обхода protected API.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10–13,26,36,234–265`: разрешены `UnitGUID`, `UnitHealth/Max/Percent`, `UnitIsDeadOrGhost`, `IsSpellInRange`, `C_Spell.IsSpellInRange`; secret health обрабатывается без принудительного преобразования в проценты.
+- `KordRotation/Core/GameState.lua:65–74,108–124`: `cleanHealth(unit)` валидирует current/max/percent, `unitSnapshot` содержит GUID/dead, но roster-wide health/role/priority selector нет.
+- `KordRotation/Core/RotationConditions.lua:11,17`: условия здоровья есть для player/pet, не для произвольного `partyN/raidN` и не для выбора приоритетного участника.
+- `KordRotation/Core/AbilityEligibility.lua:187–239,224–232`: текущая friendly target/range проверка привязана к `target`; универсального memberGUID-based heal/resurrection eligibility нет.
+- `GR-01` и `GR-02` зафиксированы как будущие общие roster/vitals контракты; их реализации пока не подтверждены. Нельзя выдавать отсутствие общего selector за отсутствие базового API.
+
+#### Сравнение семи референсов (фактические Lua ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/HealTarget.lua:1–15` определяет приоритет выбора `mouseover > friendly target > smart lowest ally / tank > player`, использует `GroupUnits/HealthPercent/Healable/Connected/IsTank` и явно предупреждает, что **здоровье союзников в бою на Forever бывает secret**; групповой estimator по `UNIT_COMBAT` является эвристикой, а fallback на танка допускает только maintenance HoT/shield, не пороговый экстренный хил. `Sonah/Classes/Druid.lua:66–67` содержит Rebirth и внебоевой Revive; `:159–162` различает hidden health и maintenance. Перенять приоритет адресуемой ручной цели, раздельную политику maintenance/emergency и безопасный fallback; **не переносить estimator как достоверный HP/TTD**.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:693–712` проверяет `UnitHealthPercent` с `pcall` и nil для недоступных процентов; `:773–774` исключает dead units при оценке friendly; `JustAC/Data/SpellCategories.lua:156–220,531–539` разделяет healing и resurrection spell categories, включая Resurrection/Revive/Mass Resurrection. Перенять отдельные категории и secret-safe health boundary; каталожный SpellID сам по себе не доказывает изученность/боевую пригодность на Forever.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua:349,384,558` имеет health/deficit/percent predicates и native `UnitHealthPercent` curve; `ForeverAuras/BlizzardAuraDisplay.lua:2644` проверяет `UnitIsDeadOrGhost` через `pcall`; `ForeverAuras/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:233–234,324` содержит resurrection spell-based range checks. Перенять независимые life/health/range facts; UI health condition и library range не дают готовый приоритет лечения и не доказывают LOS.
+4. **MaxDps:** `MaxDps/Buttons.lua:1133,1141–1146` использует native health percent/dead checks; `MaxDps/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:217–218,308` перечисляет Rebirth/Revive/Resurrection для проверки дальности. Перенять per-spell range classification; player-only UI checks не являются roster-wide heal target selector.
+5. **ForeverRotation:** `ForeverRotation/Display.lua:203,227–228` получает `UnitHealthPercent` для player/target через protected `pcall`/curve; в проверенных Lua нет подтверждённого общего roster-wide heal/resurrection selector. Не объявлять target-only процент готовой групповой triage.
+6. **RotationGuide:** `RotationGuide/Core/Display.lua:203` показывает `UnitHealthPercent("player",true,HealCurve())`; `RotationGuide/Data/Hunter.lua:18` содержит `Revive Pet` (воскрешение питомца, не игрока). В проверенных Lua нет подтверждённого общего member resurrection selector; **pet resurrection не смешивать с group resurrection**.
+7. **RotationMaster:** `RotationMaster/Conditions/unit_states.lua:47–65` реализует общий `DEAD` через `Platform.GetUnitStateObservation` и per-evaluation cache с проверкой отсутствующего unit; `RotationMaster/Platform/group_units.lua:3–26` даёт общий resolver ролей/участников с `nil,reason`; `RotationMaster/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:218–219` содержит resurrection range spell references. Перенять единый role/unit resolver, tri-state dead и lazy memo, дополнить доказательным выбором приоритета Kord.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Основа — GR-01 roster + GR-02 member vitals/role + RotationMaster role/unit/dead observations + Sonah приоритет ручного friendly target и честное разделение emergency/maintenance + JustAC раздельные heal/resurrection spell categories.** Общий логический `GroupCareCandidateObservation(memberGUID)` предоставляет независимые `life`, `healthDeficit`, `healthPercent`, `role`, `incomingDamageEvidence` (только если доказано), `manualTargetPreference`, `range`, `observedAt`, `reason`. Производные `HealPriorityPolicy` и `ResurrectionCandidatePolicy` используют один snapshot, не создают отдельные сканеры. Приоритет лечения — **детерминированная конфигурируемая политика по достоверным фактам**, не фиктивный точный медицинский/игровой прогноз: emergency threshold по подтверждённому HP, затем подтверждённый дефицит, назначенная роль/ручной выбор и доступность; пороги и веса — настройки с шестиязычными подсказками после измерений. При неизвестном HP — `UNKNOWN(health_unreadable)` либо явно обозначенная maintenance рекомендация по подтверждённым условиям, **без заявления о срочном лечении**. Не выводить точный процент из эвристики `UNIT_COMBAT`; если когда-либо вводится estimator, маркировать `ESTIMATED` и никогда не использовать как доказанный порог.
+
+Для воскрешения отдельный список **подтверждённо мёртвых** и допустимые варианты: вне боя `RESURRECT_OOC`, в бою `BATTLE_RES`, массовое воскрешение `MASS_RES`, питомец `PET_REVIVE` как отдельная категория. Не считать отсутствие подтверждённой боевой механики spell признаком доступного battle res; проверять клиент, learned rank, cooldown, ресурсы, реагенты, диапазон, адресуемость, возможные encounter/instance ограничения и доступность цели. Учитывать duplicate pending resurrection только при подтверждённых cast/aura событиях; без доказательств возвращать UNKNOWN. При нескольких мёртвых роль может повышать приоритет, но не заменяет проверку возможности воскрешения. Для текущего неадресуемого ally давать лишь рекомендацию ручного выбора цели. Финальное `READY` — только `AbilityEligibility`.
+
+#### Требуемые изменения
+
+1. Переиспользовать GR-01 GUID-keyed roster и GR-02 health/life/role; один общий candidate index для heal/res, без дополнительного полного сканера группы.
+2. Валидировать на Forever `UnitHealth/Max/Percent`, `UnitIsDeadOrGhost`, role, secret/curve, party/raid alias и клиентские healing/resurrection spell IDs/ranks.
+3. Реализовать `GroupCareCandidateObservation` с независимыми statuses и источниками, не смешивать unknown health, dead, disconnected, out of range и non-healable.
+4. Ввести `HealPriorityPolicy` с ручным target preference, role/health evidence, emergency vs maintenance, стабильным tie-break по GUID, hysteresis для предотвращения прыгающего выбора.
+5. Ввести `ResurrectionCandidatePolicy` с раздельными OOC/battle/mass/pet modes, проверенной пригодностью, исключением живых и запретом выводить battle-res из общего названия «воскрешение».
+6. Применять per-member/per-spell range GR-01/SP-08, class/role/learned-rank, cooldown/GCD/resources/target policy; окончательный READY только через AbilityEligibility.
+7. Lazy `Needs.groupCare`, per-pass memo, bounded 40-member refresh, roster/health/death/role/cast revisions, события после подтверждения клиентом; без постоянного polling в OnUpdate.
+8. DevTools-only диагностика: `heal_health_unknown`, `heal_priority_candidate`, `heal_priority_hysteresis`, `heal_manual_target_override`, `heal_maintenance_only`, `res_dead_unknown`, `res_candidate_confirmed`, `res_battle_mode_unverified`, `res_spell_unlearned`, `res_target_unaddressable`, `res_pending_unknown`, `group_care_coverage_partial`.
+9. Тесты: solo/party/raid 40, several injured, role priority vs critical HP, manual mouseover/target, health secret in combat, unknown HP, disconnected, dead/ghost vs alive, role unknown, equal HP and tie-break, target changes, no ping-pong, one/many dead, battle vs OOC res, mass res, pet revive not member, spell unavailable/cooldown/reagent, range unknown/LOS, pending res, GUID recycled, stale roster, event burst, no protected action.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord имеет базовые health/dead/eligibility facts, но не общий per-member heal priority, отдельную resurrection policy и гарантированное покрытие группы/рейда.
+
+**Архитектурные ссылки:** GR-01, GR-02, GR-03, GR-04, SP-08, SP-14. Обратные ссылки внесены в эти предыдущие требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
