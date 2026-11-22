@@ -9,6 +9,8 @@ local categories={damage=true,cooldowns=true,buffs=true,racial=true,
  trinkets=true,consumables=true,defensive=true,interrupts=true,movement=true}
 local targets={enemy=true,friendly=true,self=true,none=true}
 local casts={idle=true,allow=true}
+-- Explicit semantic classification: not every spell in 'buffs' is an aura.
+local recommendationTypes={aura=true}
 local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true}
 local function finite(n)
  return type(n)=="number" and n==n and n~=math.huge and n~=-math.huge
@@ -125,6 +127,8 @@ local function validate(profile,classToken,specIndex)
       or not nonempty(rule.reason,128)
       or not categories[rule.category]
       or not targets[rule.target] or not casts[rule.cast]
+      or (rule.recommendationType~=nil and
+          not recommendationTypes[rule.recommendationType])
       or type(rule.chargesRequired)~="boolean"
       or (rule.enabled~=nil and type(rule.enabled)~="boolean") then
    return false,"invalid_rules"
