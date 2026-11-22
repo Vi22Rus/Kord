@@ -448,6 +448,9 @@ function S:ReadSignal(field,spellID,snapshot)
                 local help=api:ReadField(generic.value,"isHelpful","boolean")
                 if sid.status=="READY" and sid.value==spellID
                     and help.status=="READY" and help.value==true then
+                    if KR.AuraCooldownViewer then
+                        KR.AuraCooldownViewer:Observe(spellID,true)
+                    end
                     return {status="READY",value=true,
                         source="GameState.ReadSignal.aura_unit_id"}
                 end
@@ -481,6 +484,9 @@ function S:ReadSignal(field,spellID,snapshot)
                 local kind=api:ReadField(byName.value,flag,"boolean")
                 if spell.status=="READY" and spell.value==spellID
                     and kind.status=="READY" and kind.value==true then
+                    if unit=="player" and KR.AuraCooldownViewer then
+                        KR.AuraCooldownViewer:Observe(spellID,true)
+                    end
                     return {status="READY",value=true,
                         source="GameState.ReadSignal.aura_name"}
                 end
@@ -498,9 +504,24 @@ function S:ReadSignal(field,spellID,snapshot)
                             return unknown("aura_target_changed")
                         end
                     end
+                    if unit=="player" and KR.AuraCooldownViewer then
+                        KR.AuraCooldownViewer:Observe(spellID,false)
+                    end
                     return {status="READY",value=false,
                         source="GameState.ReadSignal.aura_name"}
                 end
+            end
+        end
+        -- Rotation Master Platform/cooldown_viewer.lua: Blizzard's
+        -- Cooldown Manager exposes a plain tracked presence bit even when
+        -- auraInstanceID is secret. This is a read-only fallback, no
+        -- custom protected aura scan and no guessed raw secret value.
+        if KR.AuraCooldownViewer and
+            type(KR.AuraCooldownViewer.GetPresence)=="function" then
+            local present=KR.AuraCooldownViewer:GetPresence(spellID,unit)
+            if type(present)=="boolean" then
+                return {status="READY",value=present,
+                    source="AuraCooldownViewer"}
             end
         end
         -- Sonah Auras.lua tracks positive self-cast aspects when the live
@@ -519,6 +540,15 @@ function S:ReadSignal(field,spellID,snapshot)
         -- proof of absence. Never call the denied batch/index APIs.
         local secrecy=api:Read("C_Secrets.ShouldAurasBeSecret","boolean")
         if secrecy.status=="READY" and secrecy.value==true then
+            -- Rotation Master Core/aura_conditions.lua lastRead fallback:
+            -- keep an explicitly observed clean absence. Unlike RM's
+            -- implicit initial absence, an unobserved hidden aura is
+            -- still UNKNOWN in the Kord v14 strict evidence contract.
+            if unit=="player" and KR.AuraCooldownViewer and
+                KR.AuraCooldownViewer:GetObserved(spellID)==false then
+                return {status="READY",value=false,
+                    source="AuraCooldownViewer.last_read_absent"}
+            end
             return unknown("aura_hidden_by_client")
         end
         -- Sonah Secret.RestrictionsActive falls back to combat lockdown
@@ -654,6 +684,9 @@ function S:ReadSignal(field,spellID,snapshot)
         if current.status~="READY" or current.value~=targetGUID then
             return unknown("aura_target_changed")
         end
+    end
+    if unit=="player" and KR.AuraCooldownViewer then
+        KR.AuraCooldownViewer:Observe(spellID,true)
     end
     return {status="READY",value=true,source="GameState.ReadSignal"}
 end
