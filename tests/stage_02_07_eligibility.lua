@@ -12,6 +12,7 @@ local missingChargeCount=false
 local missingChargeMax=false
 local nilUsability=false
 local nilRange=false
+local noRange=false
 local protectedUsability=false
 local playerLevel=40
 local levelAvailable=true
@@ -62,7 +63,7 @@ KR.GameAPI={
    return r(targetGUID)
   end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
-  if name=="C_Spell.SpellHasRange" then return r(true) end
+  if name=="C_Spell.SpellHasRange" then return r(not noRange) end
   if name=="C_Spell.GetSpellCooldown" then
    if id==29515 and missingGcdField then return r({isOnGCD=true}) end
    return r({isActive=id==29515 and gcdActive or active,isOnGCD=false})
@@ -144,6 +145,9 @@ nilUsability=true;eq(eval().status,"UNKNOWN","nil usability remains unknown")
 nilUsability=false
 protectedUsability=true;eq(eval().status,"UNKNOWN","secret usability remains unknown")
 protectedUsability=false
+noRange=true
+eq(eval().status,"READY","spell without range is still eligible")
+noRange=false
 nilRange=true;eq(eval().status,"UNKNOWN","nil range remains unknown")
 eq(eval().reason,"range_unavailable","nil range never means in range")
 nilRange=false
