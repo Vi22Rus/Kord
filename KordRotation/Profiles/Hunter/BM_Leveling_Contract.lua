@@ -468,15 +468,38 @@ local function resolveSpells(entries)
  local spells={}
  for _,row in ipairs(spec) do spells[row[1]]=row[3] end
  if type(entries)~="table" then return spells end
- -- Use verified player spellbook entries, not requested training levels.
- -- Exact English names are a best-effort fallback when localization differs;
- -- Arcane and Hawk additionally have exact numeric rank maps below.
+ -- Resolve localized spell names using the same protected-aware GameAPI
+ -- as SpellCatalogue; English labels in the design source are not WoW locale IDs.
+ local names={}
+ local api=KR.GameAPI
+ for _,row in ipairs(spec) do
+  local name=row[2]
+  if api and type(api.ReadValues)=="function" then
+   local ok,r=pcall(api.ReadValues,api,"GetSpellInfo",row[3])
+   if ok and type(r)=="table" and r.status=="READY"
+      and type(r.value)=="table" and type(r.value[1])=="string"
+      and api:IsSafeValue(r.value[1]) and r.value[1]~="" then
+    name=r.value[1]
+   end
+  end
+  if name==row[2] and api and type(api.Read)=="function"
+      and type(api.ReadField)=="function" then
+   local ok,r=pcall(api.Read,api,"C_Spell.GetSpellInfo",
+       "table",row[3])
+   if ok and type(r)=="table" and r.status=="READY" then
+    local v=api:ReadField(r.value,"name","string")
+    if v and v.status=="READY" and type(v.value)=="string"
+        and v.value~="" then name=v.value end
+   end
+  end
+  names[row[1]]=name
+ end
  local ranked={}
  for _,entry in ipairs(entries) do
   if type(entry)=="table" and type(entry.name)=="string"
       and type(entry.id)=="number" and entry.known==true then
    for _,row in ipairs(spec) do
-    if entry.name==row[2] then
+    if entry.name==names[row[1]] then
      local old=ranked[row[1]]
      local rank=type(entry.rankNumber)=="number" and entry.rankNumber or 0
      if not old or rank>old.rank then
