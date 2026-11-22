@@ -317,6 +317,7 @@ function API:DrainDiagnosticTrace()
     end
     local overflow=self.traceOverflow or 0
     self.traceEntries={}
+    self.traceIndex={}
     self.traceCount=0
     self.traceOverflow=0
     return {active=true,entries=entries,overflow=overflow}
