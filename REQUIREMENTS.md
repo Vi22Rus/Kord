@@ -1560,6 +1560,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация EN-04:** **См. EN-04: AoE CC-preservation is a recommendation-policy gate, distinct from physical spell eligibility.**
+
+
 **Архитектурная актуализация TG-11:** **См. TG-11: AbilityEligibility needs a verified recipient unit token and GUID; focus/mouseover targeting is not proved by current target eligibility.**
 
 
@@ -2156,6 +2159,9 @@
 ### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
 
 
+**Архитектурная актуализация EN-04:** **См. EN-04: multi-target aura index supplies per-GUID CC aura observations; no separate AoE aura scanner.**
+
+
 **Архитектурная актуализация EN-03:** **См. EN-03: multi-target aura GUID index shares identity and alias lifecycle with enemy observations, avoiding independent conflicting deduplication.**
 
 
@@ -2721,6 +2727,9 @@
 ### TG-07 — Состояние контроля цели: превращена, заморожена, оглушена, в страхе, и сломается ли от урона
 
 
+**Архитектурная актуализация EN-04:** **См. EN-04: break-on-damage control policy is reused for each nearby GUID; add AoE-specific risk without a second CC classifier.**
+
+
 **Архитектурная актуализация TG-08:** **См. TG-08: fear-induced running is a CC observation; movement and fear mechanics must be distinguished, sharing aura evidence.**
 
 **Раздел: 5. Цель. Приоритет: P1.**
@@ -2826,6 +2835,9 @@
 
 
 ### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
+
+
+**Архитектурная актуализация EN-04:** **См. EN-04: interval distance-to-player cannot by itself prove target-centered AoE overlap; use verified geometry and spell footprint.**
 
 
 **Архитектурная актуализация EN-01:** **См. EN-01: enemy radius membership must reuse the canonical interval range provider, not infer exact distance from a nameplate.**
@@ -2987,6 +2999,9 @@
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
 
+**Архитектурная актуализация EN-04:** **См. EN-04: reuse one observed enemy index for controlled enemies; visible plates do not guarantee complete AoE coverage.**
+
+
 **Архитектурная актуализация EN-03:** **См. EN-03: canonical GUID-based UnitIdentityIndex deduplicates target/focus/mouseover/nameplate and other sources before radius counting; unknown GUID never treated as distinct enemy.**
 
 
@@ -3099,6 +3114,9 @@
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
 
+
+**Архитектурная актуализация EN-04:** **См. EN-04: deduplicate controlled target aliases by canonical GUID before computing AoE collision risk.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
 #### Требование
@@ -3148,5 +3166,60 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** В Kord есть локальные GUID guards и `UnitIsUnit`, но нет единого cross-source identity/deduplication contract.
 
 **Архитектурные ссылки:** EN-01, EN-02, TG-01, TG-11, AU-06. Обратные ссылки добавлены в каждую затронутую старую задачу.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Требование
+
+`AoEControlSafetyObservation(abilityID, origin, observedEnemyIndex)` должен выдавать `SAFE/UNSAFE/UNKNOWN` с `reason`, `evidence`, `targetGUIDs`, `observedAt`. `SAFE` разрешён только при доказанной безопасности относительно проверяемых эффектов и достаточной полноте источников; `UNSAFE` — если есть подтверждённая контролируемая цель, на которую способность может нанести разрушающий контроль урон. Если нельзя подтвердить геометрию, полноту видимых врагов, механику break-on-damage или маршрут атаки, вернуть `UNKNOWN`, а не оптимистическое SAFE. `aoe.safe` — политика рекомендации, не физическая возможность каста.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationConditions.lua:56` перечисляет `aoe.safe` среди условий, но это не доказательство реализованного AoE safety provider.
+- `KordRotation/Core/GameState.lua:440–764` читает `target.debuff` по конкретному spellID и защищает GUID текущей цели; не выполняет multi-enemy breakable-CC scan.
+- `KordRotation/Core/GameAPI.lua:56` allowlist `C_NamePlate.GetNamePlates` не гарантирует наличие полного списка врагов.
+- `KordRotation/Core/AbilityEligibility.lua:187–238` проверяет spell range относительно target, но не пересечение AoE с соседними контролируемыми врагами.
+- EN-01/02/03 — общий GUID-index, TG-07 — CC/break policy, AU-06 — multi-target aura observations, TG-09 — интервальная дальность; их повторно использовать, не создавать параллельный scanner.
+
+#### Семь референсов — проверенные механизмы
+
+1. **Sonah** — `Classes/Rogue.lua:152` прямо отмечает, что нельзя бить Gouge/Blind-controlled target; `Classes/Mage.lua:91` содержит семейство Polymorph. Пример защиты CC, но не универсальный AoE footprint detector.
+2. **JustAC** — `SpellDB.lua:25,51` хранит каталог CC spellIDs; `JustAC.lua:2103` определяет CC spell. Каталог CC — основа классификации, но не доказательство геометрии AoE.
+3. **ForeverAuras** — `Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:257` содержит Polymorph range probe; аурный reader применим для подтверждения CC. Spell range не определяет попадание AoE в соседнюю цель.
+4. **MaxDps** — `MaxDps/SpellData.lua:3343` содержит Polymorph; `MaxDps_Priest/Specialization/TWW/Holy.lua:83` различает полезность CC. Не подтверждён универсальный AoE-break-safe provider.
+5. **ForeverRotation** — `CC.lua:1–2` предлагает type-limited CC (Polymorph, Hibernate и др.), но не подтверждает универсальную проверку пересечения AoE с breakable CC.
+6. **RotationGuide** — в проверенных Lua прямой универсальный AoE CC collision detector не обнаружен.
+7. **RotationMaster** — `Libs/LibClassicDurations/classAbilities.lua:923,975` описывает Freezing Trap и Polymorph; `Libs/LibClassicDurations/diminishingReturns.lua:63,103` содержит их категории CC. DR не является доказательством break-on-damage или AoE попадания.
+
+#### Каноническая архитектура
+
+**Не создавать новый CC scanner, nameplate scanner, GUID index или отдельный AoE engine.** Использовать один `UnitIdentityIndex` EN-03, `ObservedEnemyIndex` EN-01/02, `TargetControlObservation(unitGUID)` TG-07, `AuraPresenceObservation` AU-01/06 и `TargetRangeObservation` TG-09. Добавить только логический производный `AoEControlSafetyObservation` в общий pipeline условий.
+
+Каталог свойств способностей задаёт `effectGeometry` (self-centered, target-centered, ground-targeted, cone, chain, cleave, periodic/pet splash), `radius/angle` только при подтверждённых значениях, `damageBreakPotential`, `targetingMode`, `provenance`. Радиус от игрока нельзя выдавать за радиус вокруг текущей цели; расстояния игрок→A и игрок→B не определяют A→B. Без проверенной относительной геометрии и без полного охвата nameplates нельзя доказывать `SAFE`. Если confirmed breakable CC пересекается с проверенным AoE footprint — `UNSAFE`; если overlap возможен, но не подтверждён — `UNKNOWN`. При нескольких контролях учитывать конкретную механику каждого и возможность его разрушения прямым/периодическим/питомцем уроном.
+
+Декларативное `aoe.safe` должно быть `READY(true)` только при доказанной безопасности, `READY(false)` при доказанном риске, `UNKNOWN` иначе. Ротация обязана различать «не рекомендовать AoE из-за политики сохранения CC» и «физически нельзя применить способность». Критические исключения должны быть явными в профиле, не скрытыми.
+
+#### Требуемые изменения
+
+1. Согласовать общие каталоги CC/rank-family TG-07 и AoE spell footprints с проверенными Forever spell IDs, не копировать retail assumptions.
+2. По EN-03 GUID объединять target/focus/mouseover/nameplate aliases и предотвращать двойной учёт контролируемого врага.
+3. По AU-01/06 проверять breakable CC на каждом доступном враге; отсутствие видимой ауры при secret не доказывает отсутствия контроля.
+4. Проверять источник/центр/радиус/форму AoE: self, target, ground, cone, chain, cleave, DoT, pet splash; UNKNOWN при неподтверждённой геометрии.
+5. Разделять подтверждённое пересечение, возможное пересечение и подтверждённое отсутствие пересечения; радиусы до игрока не дают расстояния между врагами.
+6. Учитывать неполное покрытие nameplates и потенциально скрытые цели; SAFE нельзя выводить из пустого видимого списка.
+7. Ленивый `Needs.aoeSafety`, EventBus invalidation при aura/nameplate/target/unit movement, bounded cache по abilityID+targetGUID+revision.
+8. Диагностика `aoe_cc_breakable_confirmed`, `aoe_geometry_unknown`, `aoe_overlap_unknown`, `aoe_cc_aura_secret`, `aoe_nameplate_coverage_partial`, `aoe_target_changed`.
+9. Тесты: Polymorph/Freezing Trap рядом с AoE центром, Gouge/Blind, неразрушаемый stun, AoE от игрока/цели, cone/chain/ground, разные GUID alias, DoT, pet splash, hidden plate, secret aura, moving target, CC expires, spell footprint unknown.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Есть название `aoe.safe` и чтение отдельного дебаффа, но нет достоверного AoE CC-preservation provider.
+
+**Архитектурные ссылки:** TG-07, EN-01, EN-03, TG-09, AU-06, SP-14. Обратные ссылки добавлены в старые задачи.
 
 **Изменения Lua:** отсутствуют. Только документация.
