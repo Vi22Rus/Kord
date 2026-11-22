@@ -5,8 +5,19 @@
 local _,KR=...
 KR.AuraEvidence=KR.AuraEvidence or {}
 local T=KR.AuraEvidence
-local persistent={[13165]=true,[13163]=true,[5118]=true,[13159]=true}
-local MAX_AGE=3600 -- Sonah persistent-aspect bounded projection (seconds)
+-- Sonah/Classes/Hunter.lua: travel aspect consumed by a combat aspect.
+-- Families include learned ranks; the cast spellID and aura spellID may differ.
+local families={
+ [13165]="hawk",[14318]="hawk",[14319]="hawk",[14320]="hawk",
+ [14321]="hawk",[14322]="hawk",[25296]="hawk",
+ [13163]="monkey",
+ [5118]="cheetah",[13159]="pack",
+ [13161]="beast",[1299445]="beast",[1299446]="beast",[1299447]="beast",
+ [20043]="wild",[20190]="wild"
+}
+local travel={cheetah=true,pack=true}
+local MAX_AGE=3600
+local LIVE_TRAVEL_MAX_AGE=120
 local function safe(v)
  local api=KR.GameAPI
  return api and type(api.IsSafeValue)=="function" and api:IsSafeValue(v)
@@ -17,28 +28,55 @@ local function clock()
  local now=api:Read("GetTime","number")
  return now.status=="READY" and now.value or nil
 end
+local function remembered(self,family,window)
+ local t=clock()
+ local stamp=self.seen and self.seen[family]
+ if not t or not stamp or t<stamp.t or t-stamp.t>window then return false end
+ return true
+end
 function T:ObserveCast(unit,id)
- if unit~="player" or not safe(id) or type(id)~="number"
-     or not persistent[id] then return end
+ if unit~="player" or not safe(id) or type(id)~="number" then return end
+ local family=families[id]
+ if not family then return end
+ local t=clock()
+ if not t then return end
+ -- Sonah C.consumed: a successfully cast combat aspect consumes an
+ -- earlier observed Cheetah/Pack, including when auras become secret.
+ self.seen={[family]={t=t,source="own_cast"}}
+ if KR.EventBus then KR.EventBus:MarkDirty("auras") end
+end
+function T:ObserveLive(id)
+ if not safe(id) or type(id)~="number" then return end
+ local family=families[id]
+ if not travel[family] then return end
  local t=clock()
  if not t then return end
  self.seen=self.seen or {}
- -- Aspects are mutually exclusive. Another observed successful aspect
- -- invalidates the older positive record, but does not by itself prove
- -- any other specific aura is absent.
- for key in pairs(persistent) do self.seen[key]=nil end
- self.seen[id]=t
- if KR.EventBus then KR.EventBus:MarkDirty("auras") end
+ -- Only store a positive, ID-verified observation, not a nil lookup.
+ -- Do not erase a more recent own combat-aspect cast with a stale read.
+ for key in pairs(self.seen) do
+  if not travel[key] then return end
+ end
+ self.seen={[family]={t=t,source="verified_live"}}
 end
 function T:Read(id)
- if not persistent[id] then return nil end
+ local family=families[id]
+ if not family or not remembered(self,family,MAX_AGE) then return nil end
+ return {status="READY",value=true,source="AuraEvidence.own_or_live_positive"}
+end
+function T:ReadTravel()
  local now=clock()
- local stamped=self.seen and self.seen[id]
- if not stamped or not now or now<stamped or now-stamped>MAX_AGE then
-     return nil
+ if not now then return nil end
+ for family in pairs(travel) do
+  local rec=self.seen and self.seen[family]
+  local window=rec and rec.source=="verified_live"
+      and LIVE_TRAVEL_MAX_AGE or MAX_AGE
+  if remembered(self,family,window) then
+   return {status="READY",value=true,
+       source="AuraEvidence.travel_not_consumed"}
+  end
  end
- -- Positive cast observation, not a claim of an exact live aura duration.
- return {status="READY",value=true,source="AuraEvidence.own_cast"}
+ return nil
 end
 function T:Reset()
  self.seen={}
