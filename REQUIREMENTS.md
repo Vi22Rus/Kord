@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 extends the universal aura reader to player/friendly harmful auras, remaining, periodic damage and source-confidence; do not duplicate scanner.**
+
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 must reuse universal aura presence/remaining observation and its secret-safe UNKNOWN, not introduce a parallel aura scanner.**
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 checks actually learned group buff spell families/ranks through canonical spellbook evidence; a reference catalog is not proof of known spells.**
@@ -1587,6 +1589,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 bandage need/risk is advisory; only AbilityEligibility grants final READY and UNKNOWN cannot be promoted to safe.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 is an advisory buff-need observation; canonical AbilityEligibility remains sole final READY gate.**
 
@@ -3631,6 +3635,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 can consume TH-01 incoming threat observations as risk evidence, but no threat snapshot proves the next damage tick or a safe channel.**
+
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet action identity and cast availability do not establish pet aggro; pet actor identity comes from PE-01/TH-01.**
 
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 pet target/attack activity is not proof of pet threat or actual aggro; TH-01 remains the canonical threat observation.**
@@ -4052,6 +4058,8 @@
 
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
+
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 bandage targeting/healing need reuses GR-05 group care priority and must not assume a group member is in item range.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 soulstone use on friendly/dead targets depends on group-care targeting and resurrection policy; creation is not application.**
 
@@ -4763,6 +4771,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-01 bandage family and bag-only counts, not another inventory scanner.**
+
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses the IT-01 inventory and versioned item family catalog; extend its itemID-to-buffSpellID mappings, never add another bag scanner.**
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 consumes IT-01 typed mana/resource consumable family and bag counts; no duplicate inventory scanner.**
@@ -4827,6 +4837,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-02 item cooldown; Recently Bandaged aura lockout is a distinct effect, not inferred from item cooldown.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses item/shared cooldown observations; buff remaining time is not item cooldown remaining time.**
 
@@ -4894,6 +4906,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-03 combat/target/level/zone/range item usability, with an additional bandage channel-risk gate.**
+
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 delegates combat/level/zone/target item use restrictions to IT-03; a missing buff does not prove item usable.**
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 delegates in-combat/out-of-combat item usability and zone/level/target restrictions to IT-03; combat context is not itself an item-use permission.**
@@ -4957,6 +4971,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-04 highest usable bandage tier selection, subject to healing need and no overheal policy.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses IT-04 ranked usable family selection but must additionally compare active buff tier, category and compatibility before replacement.**
 
@@ -5133,6 +5149,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-07 — Зелья усиления и эликсиры: нужно ли обновить, остаток действия
 
+**Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses universal aura presence/duration observation, not a separate debuff timer scanner; hostile DoTs and Recently Bandaged differ from positive consumable buffs.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
 
 #### Требование
@@ -5186,5 +5204,60 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩЕГО AURA API — ДОРАБОТАТЬ (P1).** Kord имеет aura presence и event invalidation, но не имеет подтверждённого универсального consumable buff catalog/remaining reader/refresh policy и compatibility checks.
 
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-06, SP-01, SP-14, GR-04. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-08 — Бинты: необходимость и вероятность успешного применения («Недавно перевязан», DoT, яд)
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P2.**
+
+#### Требование
+
+Для семейства `BANDAGE` определить `needBandage`, `bestUsableBandageItemID`, `recentlyBandaged=TRUE/FALSE/UNKNOWN`, `periodicDamageRisk=CONFIRMED/POSSIBLE/NONE_CONFIRMED/UNKNOWN`, `incomingDamageRisk`, `channelInProgress`, `targetEligibility`, `decision=RECOMMEND/SUPPRESS/WAIT/UNKNOWN`, `reason/source/revisions`. **Не путать**: наличие дебафа «Недавно перевязан» (жёсткий запрет повторного лечения при подтверждённом применении правила), активный DoT/яд/кровотечение (риск прерывания, но не всегда гарантированное прерывание), реальный входящий урон/агро и возможное прерывание канала; разные причины и разные политики. Учитывать здоровье и ожидаемый объём лечения, целевой unit (self/friendly), ограничения по дистанции/уровню/зоне/бою, предмет в сумке, cooldown, активный cast/channel, пользовательский `healthThresholdPct`, `minMissingHealth`, `allowInCombat`, `avoidAnyPeriodicDamage`, `allowRiskyBandage` (по умолчанию false), `preferSelf`. Если данные аур/урона скрыты, `UNKNOWN` не равен «безопасно». Не обещать, что бинт «сработает» при неизвестных событиях будущего урона. Это read-only рекомендация, не автоматическое применение.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:11,17,44–50,247–254`: есть health/aura/channel read-only APIs и guarded `UnitHealthPercent`; нет подтверждённого bandage item adapter.
+- `KordRotation/Core/GameState.lua:64–72,116–121,162–163,287–289,440–462`: health и cast/channel snapshot, `player.buff`/`target.debuff` aura presence; **нет** общего `player.debuff`/friendly harmful aura + periodic damage classification + Recently Bandaged duration и risk assessment.
+- `KordRotation/Core/RotationConditions.lua:11,66–67`: player health percent и lazy aura IDs имеются; `bandage.need`/`bandage.safe` отсутствуют.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_AURA` и health events уже есть, но item/bag cooldown и combat-log incoming-damage risk revisions не подтверждены.
+- **IT-01–IT-04, SP-01, GR-05, TH-01** определяют общие источники. IT-08 не создаёт второй aura scanner, item scanner или health provider.
+
+#### Сравнение семи референсов (проверенные Lua из ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Items.lua:84–94,112–117` предоставляет count/usable item primitives; `Sonah/Core/Atoms/Auras.lua:715–720` различает absent/unknown/remaining; в проверенных местах нет подтверждённого полного bandage safety gate с Recently Bandaged и DoT ticks. Перенять tri-state aura и item readiness, не считать usable item доказательством безопасного канала.
+2. **JustAC:** `JustAC/Data/Forever/Consumables.lua:3–16` разделяет consumable categories, `JustAC/BlizzardAPI/StateHelpers.lua:692–717` учитывает secret-aware percent; в проверенных местах нет подтверждённого общего bandage safety evaluator. Перенять клиентскую типизацию consumables/health, не считать отсутствие записей доказательством отсутствия бинтов в игре.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:7010–7033` предоставляет item count, `ForeverAuras/GenericTrigger.lua:3715–3730` item cooldown, `ForeverAuras/SecretAuraConditions.lua:382–404` secret-aware aura remaining UI; в проверенных местах нет единой bandage safe-to-channel policy. Перенять guarded aura duration, не использовать UI-only duration для Lua-решения.
+4. **MaxDps:** `MaxDps/Helper.lua:2768–2780` проверяет item usable, `:1871–1885` item cooldown; в проверенных местах нет подтверждённого общего Recently Bandaged/DoT channel risk decision. Не переносить обычную spell usability на бинты.
+5. **ForeverRotation:** в проверенных Lua нет подтверждённого универсального bandage risk provider. Combat rotation и heal priority не являются доказательством безопасности бинта.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого универсального bandage risk provider. Не считать low health единственным достаточным условием.
+7. **RotationMaster:** `RotationMaster/Platform/items.lua:337–344,484–505,550–558` даёт item count/usable/range, `RotationMaster/Core/item_sets.lua:120–181` ordered family selection, `RotationMaster/Conditions/buffs.lua:150–184` aura remaining с UNKNOWN. **Основной универсальный substrate** для inventory/eligibility/auras; полного bandage DoT risk policy в проверенных местах не подтверждено.
+
+#### Выбранный путь Kord
+
+**Один `BandageNeedAndSafetyObservation` + `BandagePolicy` поверх IT-01 inventory/catalog, IT-02 item cooldown, IT-03 item eligibility, IT-04 family selector, общего health snapshot, SP-01 aura provider, GR-05 target selection и TH-01 threat.** Не создавать отдельный scanner бинтов, дебафов, DoT или здоровья. Расширить **тот же IT-01 ItemFamilyCatalog**: `BANDAGE` itemIDs, `tierOrder`, `requiredPlayerLevel`, `healingAmount`, `channelDuration`, `clientEdition`, `source/verificationStatus`; классические/Forever варианты и spell effects проверять на клиенте, не выводить эффект по itemID. `RecentlyBandagedAuraCatalog` — логическая категория в **общем aura spell catalog SP-01**, с проверенными ID и вариантами Forever; не искать только по локализованной строке «Недавно перевязан». Проверять `recentlyBandaged` именно на **предполагаемой цели лечения**, не только на player; для self/player target использовать canonical GUID dedup. `UnitAura` positive/negative classification и `C_UnitAuras` secret-safe, nil не считать отсутствием без доказанной полноты чтения. Отдельно проверять `periodicDamageAuraObservation`: debuff school/type, periodic damage behavior, poison/bleed/magic и source только из подтверждённого catalog или combat-log evidence; **не каждый яд наносит периодический урон** и не каждый harmful aura прерывает bandage. Если DoT active и `avoidAnyPeriodicDamage`, SUPPRESS; если нет подтверждённого DoT, но данные неполные — UNKNOWN, не SAFE.
+
+`BandageRiskObservation` агрегирует `periodicDamageRisk`, `incomingDamageRisk`, `targetHasAggro`, `recentDamageObserved`, `channelInProgress`, `combatState`, `riskWindowSeconds`. Угроза/агро — косвенный сигнал, не предсказание гарантированного попадания; recent damage от `COMBAT_LOG_EVENT_UNFILTERED` — только если разрешён, читаем и корректно сопоставлен по GUID, иначе UNKNOWN. Не использовать secret combat-log payload для Lua сравнения. `safeToBandage=CONFIRMED_SAFE` возможно лишь при достаточной полноте **наблюдаемых** фактов (нет блокирующего дебафа, нет подтверждённого DoT/текущего урона, нет явной угрозы прерывания), и даже это **не гарантия будущего**. `riskUnknown` по умолчанию подавляет рискованную рекомендацию, `allowRiskyBandage` — явный пользовательский override **только risk policy**, не обход hard restriction/AbilityEligibility.
+
+Порог здоровья `healthThresholdPct` и `minMissingHealth` требуют branchable typed health; secret percent UI-only не использовать для Lua-ветвления (см. IT-06). `needBandage` только при подтверждённой нужде и доступном целевом юните, IT-04 выбирает лучший подтверждённо применимый бинт, IT-02/03 подтверждают item readiness, `recentlyBandaged=false` и risk policy допускает канал; финальный READY выдаёт только AbilityEligibility. Низкое здоровье при UNKNOWN aura не разрешает бинт. В бою и вне боя отдельные политики: OOC может быть предпочтительнее food/heal, in combat допускается только при явной настройке и подтверждённой пригодности. Не начинать новый bandage при уже активном channel/cast; отслеживать событие прерывания/успеха для диагностики, не создавать таймеров без evidence. Lazy `Needs.items.bandageSafety`, memo по targetGUID/health/aura/item/bag/combat/target/threat revisions; event-driven bounded updates.
+
+#### Требуемые изменения
+
+1. Ввести `BandageNeedAndSafetyObservation`/`BandagePolicy` с need, hard-block, periodic risk, channel risk и tri-state.
+2. Расширить IT-01 `ItemFamilyCatalog` verified BANDAGE tiers/level/healing/channel/Forever IDs; не создавать новый scanner.
+3. Расширить SP-01 общий aura provider для `player/friendly harmful auras`, Recently Bandaged IDs и secret-safe remaining; не дублировать ауры.
+4. Разделить `RecentlyBandaged` hard block и DoT/poison/bleed **risk**, подтверждать тип периодического урона, не считать любой яд DoT.
+5. Реиспользовать health threshold/deficit с branchable semantics и IT-04 best usable tier, IT-01 count, IT-02 cooldown, IT-03 target/level/zone/combat.
+6. Реиспользовать GR-05 healing target и TH-01 incoming threat; recent damage только из validated GUID combat-log evidence, без гарантии будущего.
+7. Ввести отдельные in-combat/OOC policies, `avoidAnyPeriodicDamage`, `allowRiskyBandage`, `minMissingHealth`, `healthThresholdPct`, suppress already channeling.
+8. EventBus UNIT_AURA/health/combat/item/bag/target/threat/channel revisions, lazy `Needs.items.bandageSafety`, per-evaluation memo.
+9. DevTools-only диагностика: `bandage_recently_bandaged`, `bandage_recently_bandaged_unknown`, `bandage_dot_confirmed`, `bandage_dot_classification_unknown`, `bandage_poison_non_dot`, `bandage_incoming_damage_risk`, `bandage_risk_unknown`, `bandage_health_threshold_unknown`, `bandage_channel_active`, `bandage_target_unknown`, `bandage_item_unavailable`, `bandage_ready_confirmed`.
+10. Тесты: self/friendly targets, Recently Bandaged present/absent/secret, remaining duration, DoT/bleed/poison with and without periodic damage, multiple debuffs, incomplete aura scan, target under attack/no aggro/recent damage/unknown threat, player combat/OOC, health 0/threshold±1/100 and secret, max heal vs missing HP, item absent/secret, tier fallback, item cooldown, channel active/interrupted/completed, target dead/out-of-range, no false SAFE/READY/protected item use.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ HEALTH/AURA/CAST API — ДОРАБОТАТЬ (P2).** Kord имеет health, aura и cast primitives, но нет подтверждённой bandage family eligibility, Recently Bandaged target debuff, periodic-damage risk и safe-channel policy.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-07, SP-01, SP-14, GR-05, TH-01. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
