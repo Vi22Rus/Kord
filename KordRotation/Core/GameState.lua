@@ -1264,8 +1264,18 @@ function S:ReadSharedItemCooldownObservation(groupID)
         if useOK and type(observed)=="table" then
             local valid,accepted,observedAt=pcall(function()
                 return api:IsSafeValue(observed)
+                    and observed.status=="UNKNOWN"
+                    and api:IsSafeValue(observed.groupStatus)
+                    and observed.groupStatus=="UNKNOWN"
                     and observed.reason=="item_cd_use_attribution_estimated"
                     and observed.confidence=="ESTIMATED"
+                    -- Public attribution must require the same authentic
+                    -- player-event provenance as the member evidence reader.
+                    and api:IsSafeValue(observed.source)
+                    and observed.source=="UNIT_SPELLCAST_SUCCEEDED"
+                    and inventorySafeID(observed.candidateItemID,"item")
+                    and api:IsSafeValue(observed.familyRevision)
+                    and observed.familyRevision==KR.ItemFamilyCatalog:GetRevision()
                     and api:IsSafeValue(observed.observedAt)
                     and finite(observed.observedAt,0),observed.observedAt
             end)

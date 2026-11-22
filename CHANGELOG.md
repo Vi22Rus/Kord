@@ -1,3 +1,12 @@
+## KR-20261123-122 — IT-02/2.6: reject forged public item-use attribution
+- Дата/время: 2026-11-23 UTC (точное по Git); SHA: `git log --grep KR-20261123-122`. Этап 2/2.6 IT-02 P0; fix/test; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: публичный `GameState:ReadSharedItemCooldownObservation` принимал `useAttribution=ESTIMATED` от недостоверного `ReadObservedItemUse` без проверки источника, тогда как `ReadSharedItemCooldownMemberEvidence` уже требовал событие игрока. Причина доказана сравнением двух ветвей GameState; игровой баг не заявляется.
+- Изменения: `KordRotation/Core/GameState.lua` — public атрибуция требует `status/groupStatus=UNKNOWN`, подтверждённый `UNIT_SPELLCAST_SUCCEEDED`, валидный itemID и совпадающую ревизию каталога; неподтверждённые значения не публикуются. `tests/shared_item_cooldown_member_evidence_mock.lua` — отрицательный сценарий подменённого источника в public reader. Никаких новых API, сканеров, group READY, group remaining нет. Исходные ограничения `UNKNOWN` сохранены.
+- Референс: реальный Kord `ReadSharedItemCooldownMemberEvidence` и `ReadObservedItemUse`; источники WoW API не расширялись. Ссылки: IT-02/2.6, KR-20261122-116, KR-20261123-120.
+- Проверки: PASS — однозначная подстановка, статическая сверка consumer/source guard, наличие regression assertion, атомарная Git tree публикация. NOT RUN — Lua 5.1 mock/full regression (интерпретатор отсутствует), manual GitHub Actions, WoW Forever (клиент недоступен).
+- Тестировщику: при итоговом QA проверить genuine/forged source и запрет false-ready; промежуточная установка не нужна.
+- Осталось: Forever group semantics, безопасный group-state producer и итоговые проверки. Статус 2.6 остаётся PARTIALLY IMPLEMENTED. Канонический реестр закрытых и открытых пунктов — раздел шага 2.6 поэтапного плана; этот исправленный defect не переоткрывает ранее выполненные пункты.
+
 ## KR-20261123-121 — автономная реализация утверждённого плана: специальное исключение в AGENTS.md
 - Дата/время: 2026-11-23 UTC (точное время по Git); SHA: `git log --grep KR-20261123-121`.
 - Этап: организационное разрешение перед следующим кодовым пунктом; тип: docs; статус: IMPLEMENTED / CLIENT NOT RUN.
