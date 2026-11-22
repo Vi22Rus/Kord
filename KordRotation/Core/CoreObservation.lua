@@ -427,6 +427,24 @@ _G.KordRotationCoreObservation = {
         if not ok then return {liveStatus="UNKNOWN",snapshotStatus="UNKNOWN"} end
         return result
     end,
+    BeginAPITrace=function()
+        local ok,enabled=pcall(O.BeginAPITrace,O)
+        return ok and enabled==true
+    end,
+    EndAPITrace=function()
+        local ok,disabled=pcall(O.EndAPITrace,O)
+        return ok and disabled==true
+    end,
+    APITrace=function()
+        local ok,result=pcall(O.ReadAPITrace,O)
+        if not ok then return {active=false,entries={},overflow=0} end
+        return result
+    end,
+    APIMethodNames=function()
+        local ok,result=pcall(O.ReadAPIMethodNames,O)
+        if not ok then return {} end
+        return result
+    end,
     Probe=function(_,name)
         -- Existing GameAPI returns presence-only results (NOT client proof).
         if not safe(name) or type(name)~="string" or #name<1 or #name>80
