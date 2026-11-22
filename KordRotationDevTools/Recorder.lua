@@ -67,6 +67,18 @@ local fixedRefusals={
     condition_unknown_skipped=true,
 }
 for code in pairs(fixedRefusals) do reasons[code]=true end
+local scannerFailures={
+    button_not_visible=true,button_slot_unconfirmed=true,
+    button_action_unconfirmed=true,button_action_info_unconfirmed=true,
+    button_action_not_spell=true,button_spell_id_unconfirmed=true,
+    button_mapping_changed=true,button_revalidation_unknown=true,
+}
+for code in pairs(scannerFailures) do reasons[code]=true end
+local eligibilityStages={"cast","usability","charges","cooldown","gcd","range"}
+reasons.arcane_rank_4_bar_failure=true
+for _,name in ipairs(eligibilityStages) do
+    reasons["arcane_check_"..name]=true
+end
 -- Only bounded scalar diagnostics can be exported. No user strings,
 -- frame objects, spell IDs, slot IDs or names are accepted.
 local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
