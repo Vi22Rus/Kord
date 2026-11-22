@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 time estimates and pet care need are observations, not final READY; only AbilityEligibility authorizes recommendation readiness.**
+
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet-slot cooldown/usability/autocast are input facts; final ability READY stays with AbilityEligibility, protected pet commands never execute.**
 
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 observations may gate pet attack or stance recommendations but cannot issue final READY or execute protected pet commands.**
@@ -4005,6 +4007,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 pet resurrection is distinct from GR-05 resurrection of group members and must not enter group dead-member selection.**
+
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet health can inform pet-specific heal/revive recommendations; never count pet as a player member or infer critical HP from secret.**
 
 **Архитектурная актуализация GR-06:** **См. GR-06: GR-06 extends the shared GroupCareCandidateObservation and HealPriorityPolicy with spell-specific AoE coverage; do not create another healing roster scan.**
@@ -4115,6 +4119,8 @@
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 uses PE-01 confirmed petGUID, life and active status; disappearance alone is not proof of completed Dismiss Pet or death.**
+
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 reuses PE-01 confirmed petGUID, active/controllable state and one pet actionbar adapter; no independent pet scanner.**
 
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 extends the same canonical PetObservation with pet target GUID, observed attack activity and pet stance; no independent pet scanner.**
@@ -4171,6 +4177,8 @@
 
 ### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 healing duration and recommendation use PE-02 confirmed pet health and resource facts; unknown health never becomes an emergency threshold.**
+
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet action costs depend on PE-02 typed pet power and GUID; unknown pet power must not become zero cost.**
 
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 shares petGUID and revision invalidation with pet health/power/mood, but pet stance is not a resource or happiness fact.**
@@ -4225,6 +4233,8 @@
 
 ### PE-03 — Что атакует питомец, режим (атака, защита, пассив)
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 dismiss/revive/heal timing is independent of PE-03 pet attack state and stance; shared petGUID revisions invalidate stale timing.**
+
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 shares the same GetPetActionInfo slot scan as PE-03 stance, preserving autocast and command tokens without a duplicate actionbar scan.**
 
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
@@ -4277,6 +4287,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация PE-05:** **См. PE-05: PE-05 reuses PE-04 spell/action cooldown and learned spell evidence but distinguishes cooldown, cast time, aura duration and postcast suppression.**
+
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
 
 #### Требование
@@ -4323,5 +4335,58 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые pet existence/target facts, общую spell cooldown проверку и событие PET_BAR_UPDATE, но не реализует подтверждённые pet-slot cooldown, autocast allowed/enabled и доступность команд как общий pet action observation.
 
 **Архитектурные ссылки:** PE-01, PE-02, PE-03, SP-14, TH-01, TH-03. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### PE-05 — Время отзыва, воскрешения, лечения питомца
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P2.**
+
+#### Требование и смысл «времени»
+
+Для подтверждённого `petGUID` и соответствующих изученных заклинаний (`Dismiss Pet`, `Revive Pet`, `Mend Pet`, а также применимые клиенту аналоги) различать **четыре разных величины**: (1) длительность текущего каста/канала и оставшееся время до завершения, (2) время с подтверждённого последнего применения/успешного завершения, (3) длительность активного эффекта лечения и его оставшееся время, (4) кулдаун/время до повторной доступности. «Время отзыва» трактовать как время операции `Dismiss Pet` и время с подтверждённого отзыва; **не** трактовать исчезновение `pet` как доказательство отзыва (может быть смерть, mount, vehicle, zoning). Для `Revive Pet` различать подтверждённую смерть, начало/завершение каста и фактическое появление нового `petGUID`. Для `Mend Pet` различать cast success, подтверждённый helpful HoT и duration/remaining, избегать повторной рекомендации при задержке aura. Никаких выдуманных фиксированных cast times, таймеров в отсутствие событий, автоматических protected действий. Не смешивать питомца с GR-05 воскрешением игроков.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:17,24,33,43`: `UnitCastingInfo`, `UnitChannelInfo`, `GetSpellInfo`, `C_Spell.GetSpellInfo`, `GetSpellCooldown` и `C_Spell.GetSpellCooldown` разрешены; нет доказанного универсального pet care timer observation.
+- `KordRotation/Core/GameState.lua:159–171,232–244`: `castingSnapshot("player")` фиксирует факт player cast/channel, комментарий прямо указывает, что **полный cast timing ещё отдельный контракт**; pet GUID/health доступны `:184–197`, но timer для dismiss/revive/mend отсутствует.
+- `KordRotation/Core/EventBus.lua:27–30,39–42`: есть START/STOP/INTERRUPTED/FAILED/SUCCEEDED и CHANNEL события; `UNIT_PET` `:24` и `UNIT_AURA` `:23`, но не подтверждена связка `spellID + castGUID + petGUID + auraInstanceID` для pet care и инвалидация таймеров.
+- `KordRotation/Core/AbilityEligibility.lua:72–100,240–254`: общий spell cooldown/cast gate существует, но не предоставляет duration/remaining для pet care и не доказывает, что heal/revive/dismiss нужен.
+- `PE-01`–`PE-04` документируют канонические pet identity, vitals, stance, pet ability facts; PE-05 использует **их же**, не вводит новый pet scanner или самостоятельный cooldown reader.
+
+#### Сравнение семи референсов (фактические файлы ZIP)
+
+1. **Sonah:** `Sonah/Classes/Hunter.lua:61–66` объявляет `DismissPet=2641`, `RevivePet=982`, семейство рангов `MendPet` и `duration=5`; `:155–160,181` раздельно рекомендует Revive при подтверждённой смерти, Call при отсутствии, Mend при HP-порогах с `C.notRecent(sp.MendPet,5)`; `:445–446` напоминает Dismiss при Lone Wolf. Перенять **разделение трёх потребностей и anti-repeat**, но duration=5 и spellIDs — лишь референс, должны проверяться на Forever, и `notRecent` не доказывает, что HoT действительно активен.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:553–570` различает `UnitExists("pet")` и actionable pet после mount/vehicle; `JustAC/Data/AssistedCombatOrder.lua:176,199` содержит Revive Pet 982, `JustAC/Data/SpellCooldowns.lua:19` хранит Mend Pet 136 с 10000 ms в каталоге. Перенять защиту от transient pet disappearance и раздельную каталогизацию; **не** использовать статическую запись cooldown как подтверждённое реальное оставшееся время.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua:4629,4644` и `ForeverAuras/BuffTrigger2.lua:2384,2545` обрабатывают `UNIT_PET`; `ForeverAuras/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:244` содержит Mend Pet range reference; `ForeverAuras/Prototypes.lua:10173–10176` проверяет pet existence/dead. Перенять aura/event/secret-safe observation для проверки фактического Mend effect; range и aura catalog не являются таймером завершения revive/dismiss.
+4. **MaxDps:** `MaxDps/SpellData.lua:8814,8842,8886` перечисляет Dismiss/Revive/Mend; `MaxDps_Hunter/Specialization/TWW/Beastmastery.lua:312–313` предлагает Mend при low pet HP и проверке cooldown. Перенять раздельный spell identity/cooldown и pet health policy; TWW-порог и клиентские cast times не переносить в Forever без проверки.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:143,413` читает `C_Spell.GetSpellInfo(id).castTime` через `pcall` для общей оценки времени применения, но в проверенных Lua нет подтверждённого отдельного pet-care dismiss/revive/mend timer. Перенять безопасное чтение **базового castTime**, не путать его с фактическим remaining у текущего каста.
+6. **RotationGuide:** `RotationGuide/Data/Hunter.lua:15–20` рекомендует Revive Pet 982 и Call Pet 883 вне боя при `noPet`, **не различая по одному этому флагу dead и dismissed**. В проверенных Lua нет подтверждённого таймера dismiss/revive/mend; перенять только напоминание с более строгим PE-01 life evidence.
+7. **RotationMaster:** `RotationMaster/Libs/LibClassicDurations/classAbilities.lua:933–935` задаёт Feed Pet effect 20s и Mend Pet family HoT 5s; `RotationMaster/Core/action_policy.lua:181` и `Core/forecast.lua:334` используют `castTime` в оценках, `RotationMaster/main.lua:5948–5958` обрабатывает owner-scoped `UNIT_PET`. Перенять семейство Mend aura и **разделение duration эффекта и времени каста**, общую pet revision; library duration не заменяет подтверждённый aura expiration.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Один логический `PetCareTimingObservation(petGUID,careActionFamily)` поверх PE-01/02/04, общего `CastObservation` GameState, `AuraObservation` GR-03/GR-04 и единого cooldown provider AbilityEligibility.** Отдельные поля `castDuration/remaining`, `lastStartedAt`, `lastSucceededAt`, `auraDuration/remaining`, `cooldownRemaining`, `petIdentityTransitionAt`, каждый со `status/source/reason/revision`; все времена в секундах после подтверждённого преобразования из клиентских миллисекунд, часы — единый валидированный monotonic `GetTime`. События `UNIT_SPELLCAST_START/STOP/SUCCEEDED/FAILED/INTERRUPTED` коррелировать по подтверждённым `spellID` и `castGUID` (если клиент даёт), при несопоставимости — UNKNOWN. `UnitCastingInfo("player")` / `UnitChannelInfo("player")` дают live remaining только при валидированных start/end и spell identity; `C_Spell.GetSpellInfo.castTime` — **базовая справка**, не текущий remaining. Для Mend: подтверждённая `HELPFUL` аура на `pet` и её expiration — авторитетный remaining; при secret aura — `UNKNOWN`, с ограниченным `postcast_grace` лишь для подавления дубликатов, а не ложного утверждения «бафф активен». Для Dismiss: подтверждённый success + PE-01 pet transition, но не один `UnitExists=false`; для Revive: подтверждённый dead pet + success + новая валидная identity/active observation. Если нет событий или petGUID сменился, stale timing сбрасывать, без обратного вычисления из одного health increase.
+
+Отдельная `PetCareNeedPolicy` выбирает `DISMISS/REVIVE/CALL/MEND/NO_ACTION/UNKNOWN`: Dismiss только при явной политике (например, подтверждённый талант Lone Wolf), Revive только при подтверждённой смерти, Call при доказанном отсутствии и применимости, Mend при доказанном HP threshold и отсутствии подтверждённого достаточного текущего HoT; при UNKNOWN не объявлять READY. Проверить клиентскую возможность лечения во время боя, cast interruption, range, learned highest rank, GCD/cooldown/resources и отсутствие двойных рекомендаций. Итоговый READY — только `AbilityEligibility`; без protected casts, dismiss и summon commands.
+
+#### Требуемые изменения
+
+1. Переиспользовать PE-01 petGUID, PE-02 health, PE-04 spell/cooldown, общий cast/aura reader; **не создавать** отдельный pet scanner или cooldown provider.
+2. Валидировать на Forever Dismiss/Revive/Mend spellIDs/ranks, `GetSpellInfo.castTime`, `UnitCastingInfo/UnitChannelInfo` start/end/castGUID, `UNIT_SPELLCAST_*`, aura expiration, `GetTime` и secret/nil.
+3. Ввести `PetCareTimingObservation` с независимыми cast, since-success, aura remaining, cooldown remaining, pet transition и явными UNKNOWN; не смешивать duration и cooldown.
+4. Реализовать событийную корреляцию castGUID/spellID/petGUID с проверкой identity до/после события; `UNIT_PET("player")` сбрасывает устаревшие записи.
+5. Для Mend Pet переиспользовать единый helpful aura reader и семейство applied auraIDs/ranks; postcast grace только для предотвращения повторной подсказки, не как доказательство активного HoT.
+6. Разделить Dismiss vs Revive vs Call по PE-01 confirmed alive/dead/absent/active, не считать mount/vehicle исчезновением после Dismiss.
+7. Разработать `PetCareNeedPolicy` с конфигурируемым порогом Mend и class/talent applicability, при UNKNOWN не выдумывать heal/death; финальный READY только AbilityEligibility.
+8. EventBus lazy `Needs.petCareTiming`, cast/aura/pet/cooldown revisions, bounded event history и per-evaluation memo; не запускать бесконечные таймеры/OnUpdate polling.
+9. DevTools-only диагностика: `pet_care_cast_timing_unknown`, `pet_care_cast_guid_mismatch`, `pet_care_last_success_unknown`, `pet_care_aura_secret`, `pet_care_mend_remaining_unknown`, `pet_care_postcast_grace`, `pet_care_cooldown_unknown`, `pet_care_dismiss_transition_unverified`, `pet_care_revive_transition_unverified`, `pet_care_pet_guid_changed`, `pet_care_need_unknown`.
+10. Тесты: Dismiss success/failed/interrupted, pet missing after mount/vehicle vs actual dismiss, Revive dead vs missing, new petGUID after revive, Call after dismiss, Mend active HoT/expired/secret, heal at threshold and near threshold, spell rank changes, cast time changes, no castGUID, cast start without success, cooldown vs aura duration, 5s anti-repeat, multiple rapid casts, pet resummon during cast, combat restrictions, insufficient mana, unavailable API, no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord имеет player cast/cooldown events, базовый pet health/life и API для spell information, но не подтверждён единый pet-care timing для Dismiss/Revive/Mend, live cast remaining, Mend aura remaining и доказательное различение pet transitions.
+
+**Архитектурные ссылки:** PE-01, PE-02, PE-03, PE-04, SP-14, GR-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
