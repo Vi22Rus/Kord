@@ -37,7 +37,11 @@ local function identity()
 end
 local function config(profile,saved)
  local cfg={}
- local options=type(saved)=="table" and saved.config or nil
+ local options=nil
+ if type(saved)=="table" then
+  local modules=saved.moduleConfigs
+  options=type(modules)=="table" and modules[profile.id] or saved.config
+ end
  if type(options)~="table" or not safe(options) then options={} end
  for _,def in ipairs(profile.Config) do
   local value=options[def.key]
