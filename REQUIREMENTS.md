@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet-slot cooldown/usability/autocast are input facts; final ability READY stays with AbilityEligibility, protected pet commands never execute.**
+
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 observations may gate pet attack or stance recommendations but cannot issue final READY or execute protected pet commands.**
 
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet power and mood are input facts, not pet spell READY; only AbilityEligibility issues final readiness.**
@@ -3583,6 +3585,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet action identity and cast availability do not establish pet aggro; pet actor identity comes from PE-01/TH-01.**
+
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 pet target/attack activity is not proof of pet threat or actual aggro; TH-01 remains the canonical threat observation.**
 
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 resource/health facts attach to confirmed petGUID, preserving correct pet actor threat identity across resummons.**
@@ -3703,6 +3707,8 @@
 
 
 ### TH-03 — Таунт и способности танка: готовы, нужны ли, цель вне агро
+
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 Growl/taunt autocast and cooldown must not be confused with threat need; TH-03 decides need from TH-01 evidence.**
 
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 defensive/aggressive/passive stance does not prove Growl/taunt is needed or ready; preserve common taunt eligibility.**
 
@@ -4109,6 +4115,8 @@
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
 
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 reuses PE-01 confirmed petGUID, active/controllable state and one pet actionbar adapter; no independent pet scanner.**
+
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 extends the same canonical PetObservation with pet target GUID, observed attack activity and pet stance; no independent pet scanner.**
 
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 extends the same GUID/revision-bound PetObservation with independent health, power type/value and hunter happiness; never a second pet scanner.**
@@ -4163,6 +4171,8 @@
 
 ### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
 
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet action costs depend on PE-02 typed pet power and GUID; unknown pet power must not become zero cost.**
+
 **Архитектурная актуализация PE-03:** **См. PE-03: PE-03 shares petGUID and revision invalidation with pet health/power/mood, but pet stance is not a resource or happiness fact.**
 
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
@@ -4215,6 +4225,8 @@
 
 ### PE-03 — Что атакует питомец, режим (атака, защита, пассив)
 
+**Архитектурная актуализация PE-04:** **См. PE-04: PE-04 shares the same GetPetActionInfo slot scan as PE-03 stance, preserving autocast and command tokens without a duplicate actionbar scan.**
+
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
 
 #### Требование
@@ -4260,5 +4272,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord умеет проверять наличие `pettarget` и совпадение с `target`, но не определяет надёжно факт атаки и активный режим поведения питомца.
 
 **Архитектурные ссылки:** PE-01, PE-02, TH-01, TH-03, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
+
+#### Требование
+
+Для подтверждённого управляемого `petGUID` из PE-01 предоставлять по **каждому реально существующему pet action slot** отдельные наблюдения: `slot`, `actionType` (`SPELL/COMMAND/STANCE/UNKNOWN`), `spellID`/name/rank (если подтверждены), `cooldownStart/duration/enabled`, `usable`, `autoCastAllowed`, `autoCastEnabled`, `isActive`, `commandToken`, `observedAt`, `status/source/reason`, `petGUID` и `actionbarRevision`. Различать **доступность команды на панели**, **текущий режим питомца** PE-03, **фактическое выполнение команды**, **готовность pet spell** и **включённый автокаст**. `autoCastAllowed=true` не означает `autoCastEnabled=true`; enabled autocast не означает, что способность прямо сейчас кастуется или готова. `GetSpellCooldown(spellID)` не заменяет проверенный `GetPetActionCooldown(slot)` без доказательства одинаковой семантики клиента. Отсутствующий API/slot, secret, нераспознанный token или смена petGUID — `UNKNOWN` либо подтверждённое `NOT_APPLICABLE`, не ложный READY. Никакого `PetAttack/PetFollow/PetPassiveMode/TogglePetAutocast` или других protected действий.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:24,33`: разрешены `GetSpellCooldown` и `C_Spell.GetSpellCooldown`, но в проверенном allowlist не подтверждены `GetPetActionInfo`, `GetPetActionCooldown`, `GetPetActionSlotUsable`, `GetPetActionBar` и pet autocast APIs. Расширять только после Forever validation.
+- `KordRotation/Core/GameState.lua:184–197`: `pet` содержит exists/GUID/dead/health и `pettarget`, но нет инвентаря pet action slots, pet spell cooldown или autocast.
+- `KordRotation/Core/AbilityEligibility.lua:72–100,351`: общий spellID cooldown gate есть; **pet action slot cooldown** и command/stance token readiness им не покрыты. `READY` должен остаться единственным итоговым решением Eligibility после расширения pet capability branch.
+- `KordRotation/Core/EventBus.lua:21–24`: есть spell cooldown события и `PET_BAR_UPDATE`, но не подтверждены отдельные `PET_BAR_UPDATE_COOLDOWN`/`PET_BAR_UPDATE_USABLE` и per-pet actionbar/cooldown/autocast revisions.
+- `PE-01`–`PE-03` уже требуют единого petGUID и общего pet-bar reader; PE-04 **добавляет поля к нему**, а не создаёт новый scanner.
+
+#### Сравнение семи референсов (Lua ZIP, проверенные места)
+
+1. **Sonah:** в проверенных Lua нет прямых вызовов `GetPetActionInfo`/`GetPetActionCooldown`/pet-autocast APIs; `Sonah/Core/Organisms/Macros.lua:220,246,277,292` использует `/petattack`, а `Sonah/Core/Organisms/SelfTest.lua:325` относит `/petattack` и `/petpassive` к защищённым пользовательским командам. Перенять **разделение read-only рекомендаций и пользовательских команд**, не копировать макросы как автодействия.
+2. **JustAC:** в проверенных Lua нет прямых `GetPetActionInfo`/`GetPetActionCooldown`/pet-autocast calls; `JustAC/DebugCommands.lua:7774` диагностирует `PET_ATTACK_START`, `:8333` проверяет pet-target. Это не подтверждает inventory/cooldown/autocast; перенять лишь осторожную событийную диагностику.
+3. **ForeverAuras:** `ForeverAuras/Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua:83,226` читает `GetPetActionInfo` и его поля `name,texture,isToken,isActive,autoCastAllowed,autoCastEnabled,spellID,checksRange,inRange`; `:239–247` пересобирает pet slot range на `PET_BAR_UPDATE`, `:292,321` читает slot range. `ForeverAuras/Prototypes.lua:10353–10382` определяет active stance token. Перенять **полный slot tuple, autocast и общее сканирование для PE-03/04**; spell range и cooldown — разные наблюдения.
+4. **MaxDps:** `MaxDps/Helper.lua:2527–2534,2582–2583` читает `GetPetActionInfo(slot)` для идентификации pet spellID; `MaxDps/Buttons.lua:419,432` связывает pet action slot с кнопкой. Перенять проверку slot -> spellID, но сам факт кнопки не означает usable/cooldown ready/autocast enabled.
+5. **ForeverRotation:** в проверенных Lua нет прямых pet action slot cooldown/autocast reader; `ForeverRotation/Rotations/Interrupts.lua:17` отдельно отмечает pet-bar Spell Lock как не обрабатываемую способность. Не объявлять её готовой по обычному spell cooldown.
+6. **RotationGuide:** в проверенных Lua не подтверждён универсальный pet action cooldown/autocast reader; `RotationGuide/Core/State.lua:312–314` подтверждает только `HasPet`. Не подменять наличие питомца наличием способности.
+7. **RotationMaster:** `RotationMaster/buttons.lua:1823–1831` читает pet action slot через `pcall(GetPetActionInfo,index)`, с проверкой API и spellID в седьмом поле; `:3109–3120` читает `GetPetActionCooldown(index)` (`start,duration,enabled`) и `GetPetActionSlotUsable(index)` через `pcall`. `RotationMaster/main.lua:594,2701,5918` подписывается на `PET_BAR_UPDATE` и refresh. Перенять **slot-based cooldown/usable adapter, guarded reads и событийную инвалидизацию**; дополнить autocast из ForeverAuras и общий PE-03 stance reader.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Один `PetActionbarObservation(petGUID,actionbarRevision)` внутри PE-01 PetObservation**: общий bounded slot scan `GetPetActionInfo` обеспечивает PE-03 режимы/команды и PE-04 spell/autocast; `PetActionCooldownObservation(petGUID,slot)` — guarded `GetPetActionCooldown` из RotationMaster, `PetActionUsabilityObservation` — guarded `GetPetActionSlotUsable` (если существует на Forever), `PetAutocastObservation` — `autoCastAllowed/autoCastEnabled` из ForeverAuras. Никакого второго pet actionbar scanner и никакого автоматического переключения autocast. Проверить на Forever фактические поля `GetPetActionInfo`, различия `isToken`, `spellID` vs rank, слоты `NUM_PET_ACTION_SLOTS`, специальные command tokens `PET_ACTION_ATTACK/FOLLOW/STAY` и `PET_MODE_*`, доступность cooldown/usability APIs и события. Команды моделировать **как read-only availability/active state**, а не как spellID: `PetAttack` не является заклинанием с обычным cooldown. Для pet spell readiness учитывать PE-01 active/controllable, PE-02 typed pet resource, learned pet action slot, usable, cooldown, range/target/LOS где подтверждены, и autocast как отдельную политику (ручная рекомендация не должна ошибочно дублировать активный автокаст). Не переносить `GetSpellCooldown` на pet slot без проверки. `UNKNOWN` в любом критичном факте запрещает объявлять `READY`; финальный gate — **AbilityEligibility**, не профиль. GUID change сбрасывает slot map, cooldown, autocast, stance; `PET_BAR_UPDATE` инвалидирует inventory и autocast; подтверждённые pet cooldown/usable events — соответствующие revisions, с bounded lazy `Needs.petActions` и per-pass memo. Pet mode/command recommendations только как информация, не protected actions.
+
+#### Требуемые изменения
+
+1. Переиспользовать **один** pet actionbar adapter PE-01/PE-03, расширить slot record PE-04 полями cooldown, usable, autocastAllowed/enabled, command token, status/reason; не дублировать сканирование.
+2. Проверить Forever API `GetPetActionInfo`, `GetPetActionCooldown`, `GetPetActionSlotUsable`, `NUM_PET_ACTION_SLOTS`, slot tuple, pet spellID/rank, isToken/isActive, secret/nil, отсутствующий pet bar.
+3. Добавить только подтверждённые pet APIs в GameAPI allowlist, безопасные `pcall`/validated outcome, различать `UNKNOWN`, `BLOCKED`, `NOT_APPLICABLE`.
+4. Разработать `PetActionCooldownObservation` по **slot**, не считать обычный `GetSpellCooldown` доказательством pet cooldown; учесть start/duration/enabled и источник времени.
+5. Разработать `PetAutocastObservation` по slot, различать allowed/enabled, обновлять на подтверждённых autocast/bar events, не переключать автоматически.
+6. Разделить spell, command и stance action types; командный availability не объявлять spell READY; не вызывать protected pet actions.
+7. Расширить общий AbilityEligibility pet spell branch с PE-01/02/03/04 фактами, ресурсом, range, cooldown и suppression duplicate autocast suggestions; один итоговый READY.
+8. EventBus petGUID/actionbar/cooldown/autocast revisions, owner `UNIT_PET`, `PET_BAR_UPDATE`, confirmed cooldown/usable/autocast events, lazy `Needs.petActions`, bounded scan и per-evaluation memo.
+9. DevTools-only диагностика: `pet_actionbar_unknown`, `pet_action_slot_missing`, `pet_action_spellid_unknown`, `pet_action_cooldown_unknown`, `pet_action_cooldown_active`, `pet_action_usable_unknown`, `pet_autocast_allowed_unknown`, `pet_autocast_enabled_unknown`, `pet_autocast_active`, `pet_command_token_unknown`, `pet_action_guid_changed`, `pet_action_duplicate_scan_suppressed`.
+10. Тесты: hunter/warlock pets, absent/dead/inactive/guardian, pet swap GUID, same spell different slot, rank mismatch, slot spell vs command vs stance, autocast allowed/enabled combinations, toggling autocast by user, cooldown active/ready/disabled, usable false/secret, missing cooldown API, actionbar changes, mode changes PE-03, pet resource low, pet range/target, pet spell in normal spellbook vs pet bar, missing `PET_BAR_UPDATE`/event burst, no per-frame scan, no protected commands.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые pet existence/target facts, общую spell cooldown проверку и событие PET_BAR_UPDATE, но не реализует подтверждённые pet-slot cooldown, autocast allowed/enabled и доступность команд как общий pet action observation.
+
+**Архитектурные ссылки:** PE-01, PE-02, PE-03, SP-14, TH-01, TH-03. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
