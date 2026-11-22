@@ -3438,6 +3438,8 @@
 
 **Ретроактивное уточнение EN-A10:** EN-A10 обязан исключать цели под ломаемым контролем из кандидатов на DoT, когда факт подтверждён; при неизвестном safety-факте — STOP. Исторический аудит сохранён.
 
+**Ретроактивное уточнение CL-07:** CL-07: Mage Polymorph, Frost Nova и Blizzard требуют общего EnemyCCSafetyProvider, чтобы не разбить breakable control AoE.
+
 ### EN-05 — Минимальное число целей для включения AoE — настройка
 
 **Архитектурная актуализация SW-04:** **См. SW-04: SW-04 Cleave AoE policy depends on EN-05 minimum confirmed target count; unknown nearby count cannot justify cleave.**
@@ -5126,6 +5128,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение CL-07:** CL-07: Conjure Food/Water и Mana Gem требуют общего ItemInventoryProvider с selection по rank/level/quantity, но не приравниваются к health potion family.
+
 ### IT-05 — Камни здоровья и камни души чернокнижника: наличие, кулдаун, необходимость создания
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 resource consumables and warlock stone creation are separate policies, sharing only IT-01–IT-04 and common class/resource context.**
@@ -5242,6 +5246,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-05, SP-14, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение CL-07:** CL-07: Mana Gem, Evocation и mana consumables используют общий ResourceStateProvider и item eligibility; conjured gem и spell не одно действие.
 
 ### IT-07 — Зелья усиления и эликсиры: нужно ли обновить, остаток действия
 
@@ -6585,6 +6591,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-05:** CL-05: Priest Needs и target/action policies только через versioned Profile_Contract; profile не читает WoW API.
 
 **Ретроактивное уточнение CL-06:** CL-06: Shaman Needs/Spells/Rules только через версионированный Profile_Contract, lazy providers, без прямых API в профилях.
+
+**Ретроактивное уточнение CL-07:** CL-07: Mage Needs/Actions/Spells — только versioned Profile_Contract и общий Eligibility; unresolved spell aliases не входят в исполняемый каталог.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8556,6 +8564,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-06:** CL-06: подтвердить WoW Forever totem slot/position/radius/expiry, shock shared cooldown, weapon enchant, dispel capabilities, Ancestral Spirit и Reincarnation mechanics; UNKNOWN при неподтверждённом API.
 
+**Ретроактивное уточнение CL-07:** CL-07: проверить клиентские названия «превосходство», «зачарование», «подкрепление маны», а также polymorph break rules, freeze, mana gem and conjure spells; не выдумывать spellIDs.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8792,6 +8802,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-06:** CL-06: Shaman scenario manifest обязателен для totem slots/expiry/range, shock shared CD, weapon imbue MH/OH, poison/disease dispel, Ancestral Spirit и Reincarnation.
 
+**Ретроактивное уточнение CL-07:** CL-07: добавить Mage scenarios mana reserve, armor/intellect coverage, Polymorph protection, freeze/root, conjure food/water, Mana Gem, Evocation и unresolved spell aliases.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -9013,6 +9025,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-06:** CL-06: Shaman cleanse и Ancestral Spirit должны переиспользовать DispelStateProvider, FriendlyUnitSelectionProvider и friendly_dead eligibility; Reincarnation — отдельная self-resurrection policy, не friendly_dead.
 
+**Ретроактивное уточнение CL-07:** CL-07: Mage Arcane Intellect/Brilliance используют общий FriendlyUnitSelectionProvider, AuraStateProvider и SpellFamilyCatalog для buff recipients, как Paladin blessings.
+
 ### CL-03 — Охотник: аспекты, ловушки, питомец, боеприпасы, автострельба, мёртвая зона, метка и имитация смерти
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это **требования к данным и действиям**, а не приоритеты BM/MM/SV ротаций. Для Leveling/60/PVE/PVP — только отдельные утверждённые профили. Никакого автоматического выполнения действий: аддон рекомендует и диагностирует.
@@ -9123,6 +9137,8 @@ CL-01 описывает **данные, условия и действия**, �
 **Ретроактивное уточнение CL-05:** CL-05: Priest wand Shoot и Hunter Auto Shot требуют общего типизированного AutoAttackStateProvider, но отдельной семантики wand/ranged и проверки остановки; swing timings не угадываются.
 
 **Ретроактивное уточнение CL-06:** CL-06: shared shock cooldown должен использовать тот же универсальный CooldownGroupProvider, что trap shared cooldown; не создавать отдельный таймер шоков.
+
+**Ретроактивное уточнение CL-07:** CL-07: Mage Polymorph/Freeze и Hunter trap используют общий CrowdControlStateProvider, EnemyCCSafetyProvider и AoE breakable CC gate; Conjure Food/Water используют общий ItemInventoryProvider.
 
 ### CL-04 — Разбойник: очки комбо, финишеры, скрытность, яды, энергия и такты, прерывания, уход и срыв каста
 
@@ -9339,6 +9355,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-06:** CL-06: Shaman party cleansing и resurrection используют общие friendly unit selection, dispel types и dead-target policies; не копировать Priest реализацию.
 
+**Ретроактивное уточнение CL-07:** CL-07: Mage Mana, Armor/Intellect и Evocation используют общие ResourceStateProvider, AuraStateProvider, FriendlyUnitSelectionProvider; Mage не создаёт собственный mana engine.
+
 ### CL-06 — Шаман: тотемы, шоки и общий кулдаун, усиления оружия, очищение и воскрешение
 
 **Раздел 18. Специфика классов (девять классов). Приоритет P0.** Требование описывает **выразимость данных, условий и действий**, не приоритеты Elemental/Enhancement/Restoration, Leveling/60/PVE/PVP. Отсутствующий Shaman-профиль не считать реализованным. Движок только рекомендует действия, не вызывает защищённые способности.
@@ -9441,3 +9459,114 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / SHAMAN-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Базовые cooldown, mana, auras, target, Eligibility существуют, но нет доказанного TotemStateProvider, shared shock group, imbue per-hand, group dispel, friendly_dead и Reincarnation contract. Shaman профили отсутствуют. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** CL-02, CL-03, CL-04, CL-05, IT-10, QA-07, QA-04, EN-A1.
+
+**Ретроактивное уточнение CL-07:** CL-07: Mage Freeze и Shaman Frost Shock требуют общей типизированной модели slow/root/CC, но не считать любое замедление заморозкой.
+
+### CL-07 — Маг: мана и порог, брони и интеллект, Polymorph/контроль, «превосходство», заморозка, «зачарование», создание еды и восстановление маны
+
+**Раздел 18. Специфика классов (девять классов). Приоритет P0.** Требование описывает способность движка выразить данные и действия Mage Arcane/Fire/Frost, Leveling/60/PVE/PVP, **не готовую ротацию**. Нет зарегистрированных Mage профилей; нельзя утверждать, что ротация реализована.
+
+#### Конкретные заклинания, игровые факты и условия
+
+| Механика | Способности / семейства (только при наличии в WoW Forever) | Нормативные проверки |
+|---|---|---|
+| Мана и пороги | Arcane Blast, Fireball, Frostbolt, Scorch, Blizzard, Arcane Explosion; Evocation | typed MANA current/max, cost by rank, reserve and configurable percentage threshold, GCD/cast/channel, target, TTD, resource restoration; unknown cost/reserve → STOP, не подставлять фиксированный процент |
+| Брони | Frost Armor, Ice Armor, Mage Armor, Molten Armor (если есть) | self aura ID/rank/source/remaining, mutually exclusive armor family, learned, mana, refresh threshold, change combat/OOC; не рекомендовать обновление, если aura подтверждённо активна и достаточна |
+| Интеллект и групповые баффы | Arcane Intellect, Arcane Brilliance | конкретный recipient player/party/raid, current buff/remaining/owner, spell rank, group variant/reagent if verified, scope, mana, range; self-only buffs не считать групповыми |
+| Полиморф и контроль | Polymorph (все изученные варианты), Counterspell, Frost Nova, Slow (если есть) | target hostile, CC aura ID/remaining/owner, breakable status, target immunity, boss/PvP rules, DR where applicable, current cast/channel and interruptibility; AoE не должно разбивать Polymorph без явной policy |
+| «Превосходство» | **НЕРАЗРЕШЁННЫЙ ТЕРМИН**: точное русское название, spellID, spell family и эффект не подтверждены | запрещено автоматически подменять на Arcane Power, Presence of Mind, Combustion или иной cooldown; добавить `catalog_alias_unresolved`, STOP для зависящего правила до проверки spellbook и уточнения смысла |
+| Заморозка | Frost Nova, Frostbite, Freeze (Water Elemental, если существует), Ice Lance/Shatter-related checks (если есть) | различать root/frozen/slow, aura source/remaining, target immune, proximity, pet command availability, cast restrictions; slow ≠ frozen; эффект Shatter зависит от подтверждённого состояния, не от догадки |
+| «Зачарование» | **НЕРАЗРЕШЁННЫЙ ТЕРМИН**: spell/item/enchant effect необходимо установить по WoW Forever | не выдумывать mage weapon enchant; если речь о создаваемых предметах — ItemCreationProvider, если об ауре — AuraStateProvider, если об equipment enchant — WeaponEnchantProvider из IT-10; до определения никакого фиктивного READY |
+| Призыв еды и воды | Conjure Food, Conjure Water, Ritual of Refreshment (если есть) | spell known/rank/level, mana, inventory quantity/stack, conjured item type, combat restrictions, bag space, group ritual prerequisites/reagents if present; создание предмета не равно использованию еды/воды |
+| Восстановление/«подкрепление» маны | Evocation, Conjure Mana Gem, Mana Ruby/Citrine/Jade/Agate и другие gem ranks по клиенту; Mana Shield (отдельно как **расходует**, а не восстанавливает ману) | Evocation channel/remaining/interrupt risk, mana threshold and reserve; gem exists/charges/CD/usable/inventory, conjure vs consume, rank/level, mana gained only if verified; Mana Shield — защитное действие с расходом ресурса, не источник восстановления. Точное значение термина «подкрепление маны» уточняется по каталогу |
+
+**Каталог и безопасность:** названия, ID, ранги, эффекты, cooldown и restrictions сверять с WoW Forever QA-04; retail/TBC/Wrath не являются доказательством. Для неразрешённых терминов «превосходство» и «зачарование» **не выбирать spellID наугад**. Восстановление маны допускает проверенные Evocation/Mana Gem, но не объявляет их синонимом «подкрепления». `UNKNOWN`/secret ≠ false/READY. Рекомендации read-only; автоматического каста нет.
+
+#### Аудит текущего Kord (main)
+
+- `KordRotation/Core/GameState.lua` получает `UnitPowerType/UnitPower/UnitPowerMax`, target/combat, aura evidence; нет доказанного Mage armor family, frozen-vs-slow, mana gem inventory и conjured item creation snapshot.
+- `KordRotation/Core/RotationConditions.lua` имеет `resources.percent`, `player.buff`, `target.debuff`, `spell.range` при объявленных Needs; нет typed `target.polymorphBreakable`, `target.frozen`, `mage.armorFamily`, `manaGem.usable`, `conjure.inventory`.
+- `KordRotation/Core/AbilityEligibility.lua` проверяет spellbook, cooldown, mana/usable, range/target/cast; не доказан end-to-end gate для CC safety, group buff recipient, conjure inventory/bag space, gem charges.
+- `KordRotation/Core/RotationProfiles.lua` ограничивает `Needs` значениями `auras/ranges/enemyCount/ttd/swing` и `target=enemy|friendly|self|none`; нет typed Mage-specific conditions, выбор party recipient не подтверждён.
+- `docs/rotation/Canonical_API_Matrix.md`: #6 mana, #10 range, #11 cooldown, #12/#13 auras, #17 group, #19/#20 spellbook/rank, #21 usability, #23 CC, #27/#28 duration, #53 resource cost. Это источники для QA-04, **не клиентский PASS**.
+- `docs/rotation/Profile_Registry.md`: Mage profiles отсутствуют, доступны только исторические Hunter PvE исходники. Никаких утверждений о MOCK/CLIENT PASS.
+
+#### Семь референсов: сопоставление перед реализацией
+
+| Референс | Что сверять | Граница доказательства |
+|---|---|---|
+| Sonah | Mage mana, Polymorph, armor/intellect, conjure logic | Не переносить чужую ротацию |
+| JustAC | Forever Mage spell family, CC and buff policy | Forever и SimC не тождественны |
+| ForeverAuras | Aura remaining, CC/frozen/armor state, secret-safe reads | Aura ≠ подтверждённый Shatter proc |
+| MaxDps | Mage spec conditions, mana cooldowns and spell ranks | Retail не подтверждает Forever |
+| ForeverRotation | Mage buffs, consumable and control signals | Signal не гарантирует item availability |
+| RotationGuide | Mage profile/condition examples and inventory | Требуются одинаковые snapshots |
+| RotationMaster | Mage condition/replay and mana forecasts | Forecast не является измерением ресурса |
+
+Это **план адресного сравнения** семи предоставленных ZIP, не утверждение о конкретных найденных Lua-функциях: полного построчного аудита архивов в этом проходе не было.
+
+#### Архитектура: переиспользуемые общие провайдеры
+
+1. **`ResourceStateProvider`** — MANA current/max, spell costs, reserve, percent threshold, verified regen; общий с CL-02/CL-05/CL-06.
+2. **`AuraStateProvider` + `ExclusiveAuraModeProvider`** — self armor family, intellect group buffs, remaining/source/owner, safe UNKNOWN; общий с CL-02 и CL-05.
+3. **`FriendlyUnitSelectionProvider`** — конкретные получатели Arcane Intellect/Brilliance, party/raid coverage, range, alive status; общий с CL-02.
+4. **`CrowdControlStateProvider` + `EnemyCCSafetyProvider`** — Polymorph, breakable CC, DR/immunity, AoE safety, target selection; общий с Hunter traps CL-03 и EN-04.
+5. **`RootFreezeStateProvider`** — typed `rooted/frozen/slowed`, source/remaining, immunity, target identity; общий для Frost Nova и других классов, не делать Mage-only frozen detector.
+6. **`ItemCreationProvider` + `ItemInventoryProvider`** — Conjure Food/Water/Mana Gem, bag capacity, quantity, charges, spell/item rank; общий с IT-04 и IT-06.
+7. **`ChannelStateProvider`** — Evocation channel/remaining, cancellation/interrupt risk, mana restore; общий с другими channeled spells.
+8. **`SpellFamilyCatalog`** — проверенные armor, intellect, polymorph, conjure and mana gem families; unresolved aliases помечать и не регистрировать как исполняемые.
+9. **`AbilityEligibility`** — единственный final READY для spells/items/CC/recipient/cost/range/cooldown, включая non-target conjure, с versioned Profile_Contract EN-A1, lazy Needs и `UNKNOWN→STOP`.
+
+#### QA-07: сценарные таблицы «состояние → ожидаемое действие» (NOT RUN)
+
+| ID | Состояние | Ожидаемое решение |
+|---|---|---|
+| `MAG-MANA-01` | mana ниже cost+reserve | BLOCKED |
+| `MAG-MANA-02` | mana cost UNKNOWN | STOP для зависимого правила |
+| `MAG-ARMOR-01` | нужная armor активна, срок достаточен | не обновлять |
+| `MAG-ARMOR-02` | armor family UNKNOWN | не переключать вслепую |
+| `MAG-INT-01` | ally lacks Arcane Intellect | выбрать именно ally |
+| `MAG-INT-02` | Arcane Brilliance требует отсутствующий reagent | BLOCKED при подтверждённом требовании |
+| `MAG-POLY-01` | target Polymorph active, AoE может разбить | не рекомендовать опасное AoE |
+| `MAG-POLY-02` | target CC immunity UNKNOWN | STOP для обязательного CC rule |
+| `MAG-POLY-03` | Polymorph remaining достаточен | не обновлять |
+| `MAG-POLY-04` | breakable CC рядом с Blizzard/Arcane Explosion | запретить unsafe AoE |
+| `MAG-SUPER-01` | «превосходство» не сопоставлено spellID | `catalog_alias_unresolved`, STOP |
+| `MAG-FREEZE-01` | target slowed, not frozen | не считать frozen |
+| `MAG-FREEZE-02` | frozen confirmed, spell eligible | применить профильное frozen-dependent правило |
+| `MAG-FREEZE-03` | frozen state UNKNOWN | STOP |
+| `MAG-ENCHANT-01` | «зачарование» не сопоставлено эффекту | `catalog_alias_unresolved`, STOP |
+| `MAG-CONJURE-01` | food absent, conjure eligible, bag space | Conjure Food по профилю |
+| `MAG-CONJURE-02` | conjured food exists enough | не создавать повторно |
+| `MAG-CONJURE-03` | inventory/bag space UNKNOWN | STOP для dependent rule |
+| `MAG-GEM-01` | gem exists, usable, mana below threshold | ITEM только после Eligibility |
+| `MAG-GEM-02` | gem absent, Conjure Mana Gem eligible | SPELL conjure, не ITEM consume |
+| `MAG-GEM-03` | gem charges/cooldown UNKNOWN | STOP |
+| `MAG-EVOC-01` | mana low, Evocation ready, channel safe | SPELL по профилю |
+| `MAG-EVOC-02` | Evocation channel active | не повторять cast и не клиппить |
+| `MAG-SHIELD-01` | Mana Shield active | учитывать расход маны, не восстановление |
+| `MAG-REVISION-01` | mana/CC/armor/inventory/party changed | invalidate stale snapshot |
+| `MAG-CHANNEL-01` | buff/food OOC vs combat DPS | channel routing согласно UI policy |
+
+Все кейсы требуют реальных `profileID`, spellID/rank, snapshot, expected action/status/reason/channel, provider read counts и evidence. Пока нет зарегистрированных Mage профилей, это **сценарная спецификация**, не готовое тестовое покрытие.
+
+#### Требуемые работы
+
+1. Сверить по WoW Forever spell/rank/family catalog и уточнить «превосходство», «зачарование», «подкрепление маны» без догадок.
+2. Подключить typed mana cost/reserve и configurable thresholds к ResourceStateProvider.
+3. Реализовать Mage armor exclusive family, intellect group coverage через общие Aura/FriendlyUnit providers.
+4. Подключить Polymorph и breakable CC к общему CrowdControl/EnemyCCSafetyProvider, EN-04.
+5. Реализовать RootFreezeStateProvider, не путать slow и frozen, подтвердить freeze/pet mechanics.
+6. Подключить Conjure Food/Water к общему ItemCreation/InventoryProvider, учитывать bags, rank, quantity.
+7. Подключить Conjure Mana Gem/consume к IT-06, различать SPELL и ITEM, проверять charges/cooldown.
+8. Подключить Evocation через ChannelStateProvider и mana recovery, Mana Shield через defensive/mana spend.
+9. Добавить 26 QA-07 сценариев, QA-06 purity, diagnostics, Lua 5.1 mocks и затем отдельную проверку в WoW Forever.
+10. Синхронизировать API/Test/Priority Matrix и Profile Registry при реализации, регрессия общих providers на Paladin/Hunter/Priest/Shaman; не запускать GitHub Actions автоматически.
+
+**Диагностика:** `mage_mana_reserve`, `mage_mana_cost_unknown`, `mage_armor_unknown`, `mage_intellect_recipient_unknown`, `mage_polymorph_break_risk`, `mage_polymorph_immunity_unknown`, `mage_frozen_unknown`, `mage_slow_not_frozen`, `mage_catalog_alias_unresolved`, `mage_conjure_inventory_unknown`, `mage_conjure_bag_full`, `mage_mana_gem_missing`, `mage_mana_gem_charges_unknown`, `mage_evocation_channel_active`, `mage_mana_shield_resource_spend`, `mage_snapshot_stale`.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / MAGE-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Есть ресурсы, target, aura, spell Eligibility; нет доказанного CC safety, frozen/root semantics, group buff recipient, conjure inventory и mana gem gates. «Превосходство» и «зачарование» остаются неразрешёнными терминами. Mage профилей нет. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** CL-02, CL-03, CL-05, CL-06, IT-04, IT-06, EN-04, QA-07, QA-04, EN-A1.

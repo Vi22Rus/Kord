@@ -1,3 +1,14 @@
+## KR-20261122-023 — аудит CL-07: Mage mana, armor/intellect, Polymorph, freeze, conjure and mana restore
+- Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-023`.
+- Тип: docs / CL-07 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
+- Контекст: Mage требует mana reserve, armor/intellect, Polymorph/CC safety, freeze, conjure food/water, Mana Gem/Evocation. Термины «превосходство» и «зачарование» неоднозначны и не могут быть привязаны к spellID наугад.
+- Причина: отсутствуют доказанные Mage CC/frozen, group recipient, conjure inventory и mana gem contracts; Mage профилей нет.
+- Решение: общие Resource/Aura/FriendlyUnit/CrowdControl/EnemyCCSafety/RootFreeze/ItemCreation/ItemInventory/ChannelState providers, 26 QA-07 scenarios, unresolved alias STOP.
+- Семь ZIP: перечислены направления сопоставления, полного построчного ZIP-аудита не было.
+- Ретроактивные ссылки: CL-02, CL-03, CL-05, CL-06, IT-04, IT-06, EN-04, QA-07, QA-04, EN-A1.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-07 документирован; реализация и клиентская проверка не выполнялись.
+
 ## KR-20261122-022 — аудит CL-06: Shaman totems, shock shared cooldown, weapon imbues, cleanse and resurrection
 - Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-022`.
 - Тип: docs / CL-06 / P0; `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
