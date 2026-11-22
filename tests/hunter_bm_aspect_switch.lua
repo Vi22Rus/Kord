@@ -46,7 +46,7 @@ local function eq(expected,description)
  assert(got==expected,description.." expected "..tostring(expected)
     .." got "..tostring(got))
 end
-eq(false,"out-of-combat Cheetah should be kept")
+eq(nil,"out-of-combat hidden Hawk remains unknown")
 state.combat=true
 eq(true,"in-combat Cheetah should recommend Hawk even with hidden aura")
 state.hawkMissing=false
@@ -66,7 +66,7 @@ state.hasTarget=false
 state.hawkMissing=true
 eq(true,"out of combat without target still recommends missing Hawk in Defensive")
 state.travel=true
-eq(false,"out of combat travel aspect is preserved without target")
+eq(true,"out of combat missing Hawk can be recommended in Defensive even with travel aspect")
 state.combat=true
 state.hawkMissing=true
 eq(true,"entering combat with Cheetah recommends Hawk")
