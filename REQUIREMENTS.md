@@ -5127,6 +5127,14 @@
 - **WoW API:** в данном подшаге отсутствуют новые вызовы. Задокументированные в IT-02 ссылки RotationMaster Platform/items.lua, JustAC StateHelpers.lua, ForeverAuras GenericTrigger.lua используются как ранее проверенный ориентир, первичные ZIP здесь повторно не открывались. Клиент Forever NOT VERIFIED.
 - **Проверки:** PASS — статическая сверка метода/типов и отсутствия side-effects; NOT RUN — Lua 5.1/mock, CI, WoW Forever. Коммит `KR-20261122-073` (SHA `git log --grep KR-20261122-073`). Оставшиеся 2.2–2.10, связи IT-01, IT-03, IT-04, AC-02.
 
+#### Реализация Kord — фактическое состояние (IT-02, этап 2, шаг 2.2, частично)
+- **ID/дата/приоритет/статус:** IT-02, 2026-11-22, P0, PARTIALLY IMPLEMENTED; не закрыты проверки сигнатур и работы Forever.
+- **Код:** `KordRotation/Core/GameAPI.lua`, таблица `allowed`; в общий read-only контракт добавлены `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown`. Существующие `API:Read`, `ReadTuple`, `ReadValues`, `Probe` и их guarded обработка nil/secret/finite сохранены. Исторические аудит/вердикт не менялись.
+- **Основание/API:** кандидаты и приоритет fallback прямо определены в IT-02; исходные указания RotationMaster/Platform/items.lua:211–255 и ForeverAuras/GenericTrigger.lua:3715–3730. Повторная проверка исходных ZIP и сигнатур, типов enabled, epoch/GetTime именно в Forever не выполнялась. Наличие в allowlist не означает verified compatibility.
+- **Доказательство:** кодовый коммит [424e1f9f73517d9a67ca86fb9d2ad4842f88b75a](https://github.com/Vi22Rus/Kord/commit/424e1f9f73517d9a67ca86fb9d2ad4842f88b75a); [файл зафиксированной ревизии](https://github.com/Vi22Rus/Kord/blob/424e1f9f73517d9a67ca86fb9d2ad4842f88b75a/KordRotation/Core/GameAPI.lua). История KR-20261122-074/075 в CHANGELOG; атомарность changelog у кодового коммита не соблюдена, исключение отмечено.
+- **Проверки:** PASS — статический просмотр allowlist и отсутствие новых action API; NOT RUN — Lua 5.1, mock, регрессия, ручной CI, WoW Forever. Никакого PASS игрового клиента нет.
+- **Осталось:** валидировать реальные возвращаемые значения и enabled (bool/0/1), секретные структуры, timing/epoch с GetTime и реализовать adapter/fallback шаг 2.3. Нет финального READY для item cooldown; связанные IT-01/IT-03/AC-02.
+
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
