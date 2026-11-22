@@ -147,6 +147,27 @@ eq(KR.GameState:ReadSignal("player.buff",12345).status,"UNKNOWN",
  "nil aura cannot prove absence")
 eq(KR.GameState:ReadSignal("target.debuff",12345,targetPresent).status,"UNKNOWN",
  "nil debuff cannot prove absence")
+-- Optional full AuraData enumeration can prove a missing buff/debuff if
+-- it reaches the ordinary nil terminator without protected fields.
+C_UnitAuras.GetAuraDataByIndex=function(unit,index,filter)
+ if index==1 then
+  return {spellId=1978,isHarmful=filter=="HARMFUL",
+      isHelpful=filter=="HELPFUL"}
+ end
+ return nil
+end
+local verifiedAbsent=KR.GameState:ReadSignal("target.debuff",12345,targetPresent)
+eq(verifiedAbsent.status,"READY","fully enumerated missing debuff proven")
+eq(verifiedAbsent.value,false,"missing debuff explicitly false")
+local absentBuff=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(absentBuff.status,"READY","fully enumerated missing buff proven")
+eq(absentBuff.value,false,"missing buff explicitly false")
+C_UnitAuras.GetAuraDataByIndex=function()
+ return {spellId="SECRET"}
+end
+eq(KR.GameState:ReadSignal("target.debuff",12345,targetPresent).status,
+ "UNKNOWN","protected aura scan stays unknown")
+C_UnitAuras.GetAuraDataByIndex=nil
 local beforeMissing=auraReads
 eq(KR.GameState:ReadSignal("target.debuff",1978,targetMissing).status,"UNKNOWN",
  "absent target cannot assert debuff")
