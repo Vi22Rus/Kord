@@ -268,4 +268,103 @@ function API:SupportedNames()
     table.sort(names)
     return names
 end
+-- Opt-in, scalar-only diagnostic counters. The consumer is the separate
+-- DevTools recorder; there is no logging or SavedVariables in production.
+-- Count every actual invocation of the read-only adapter, not just API presence.
+local traceMethods={
+    Read=true,ReadTuple=true,ReadValues=true,ReadField=true,
+    Probe=true,ReadHealthPercent=true,ReadPowerPercent=true,
+}
+local traceStatuses={READY=true,BLOCKED=true,UNKNOWN=true,
+    UNAVAILABLE=true,ERROR=true}
+local TRACE_LIMIT=2048
+local function traceToken(value,fallback)
+    if type(value)=="string" and #value>=1 and #value<=80
+        and string.match(value,"^[A-Za-z][A-Za-z0-9_.]*$") then
+        return value
+    end
+    return fallback
+end
+local function traceReason(value)
+    if type(value)=="string" and #value>=1 and #value<=64
+        and string.match(value,"^[a-z][a-z0-9_]*$") then
+        return value
+    end
+    return "reason_unavailable"
+end
+function API:BeginDiagnosticTrace()
+    self.traceActive=true
+    self.traceEntries={}
+    self.traceCount=0
+    self.traceOverflow=0
+    return true
+end
+function API:EndDiagnosticTrace()
+    self.traceActive=false
+    self.traceEntries=nil
+    self.traceCount=nil
+    self.traceOverflow=nil
+    return true
+end
+function API:DrainDiagnosticTrace()
+    if self.traceActive~=true then return {active=false,entries={}} end
+    local entries={}
+    for _,item in ipairs(self.traceEntries or {}) do
+        entries[#entries+1]={method=item.method,status=item.status,
+            reason=item.reason,count=item.count}
+    end
+    local overflow=self.traceOverflow or 0
+    self.traceEntries={}
+    self.traceCount=0
+    self.traceOverflow=0
+    return {active=true,entries=entries,overflow=overflow}
+end
+local function observe(self,name,result)
+    if self.traceActive~=true then return end
+    -- No API argument, game return value, spellID, target, player or key
+    -- ever reaches the diagnostic buffer.
+    local method=traceToken(name,"GameAPI.unsupported")
+    if not allowed[method] and string.sub(method,1,8)~="GameAPI." then
+        method="GameAPI.unsupported"
+    end
+    local status=type(result)=="table" and result.status
+    if not traceStatuses[status] then status="UNKNOWN" end
+    local why=type(result)=="table" and result.reason
+    why=traceReason(why)
+    if status=="READY" then why="none" end
+    local entries=self.traceEntries
+    if type(entries)~="table" then return end
+    for _,entry in ipairs(entries) do
+        if entry.method==method and entry.status==status
+            and entry.reason==why then
+            entry.count=math.min(entry.count+1,1000000000)
+            return
+        end
+    end
+    if #entries>=TRACE_LIMIT then
+        self.traceOverflow=(self.traceOverflow or 0)+1
+        return
+    end
+    entries[#entries+1]={method=method,status=status,reason=why,count=1}
+end
+for name in pairs(traceMethods) do
+    local original=API[name]
+    if type(original)=="function" then
+        API[name]=function(self,...)
+            -- ReadField key names may be user/game data. Its method
+            -- identity is fixed rather than derived from the key.
+            local methodName=name
+            if name=="Read" or name=="ReadTuple" or name=="ReadValues"
+                or name=="Probe" then
+                methodName=select(1,...)
+            else
+                methodName="GameAPI."..name
+            end
+            local result=original(self,...)
+            observe(self,methodName,result)
+            return result
+        end
+    end
+end
+
 -- Copyright notice: see repository LICENSE.
