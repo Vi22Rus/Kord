@@ -1,3 +1,15 @@
+## 2026-11-22 — Global combat aura routing and working Defensive aura lane
+
+- Added a **single account-wide checkbox** under **Advanced → General preferences**: `buffsInCombatMain` (default ON, SavedVariables at `KordRotationDB.buffsInCombatMain`). Changing it immediately refreshes the main and Defensive recommendation windows without a reload.
+- Extended the authored Kord Rotation profile contract with optional `recommendationType="aura"`. This is semantic metadata, not copied Rotation Master code and not a blanket redirect of the `buffs` category.
+- Marked Hunter BM Aspect of the Hawk, Aspect of the Monkey and Trueshot Aura (BM60) as offensive aura maintenance. Other pet, cooldown and defensive abilities remain under their existing rules.
+- Engine now independently evaluates two channels. **Out of combat** all designated auras go to Defensive; **in combat** they go to main if ON, otherwise Defensive. Non-aura damage rules remain eligible in main when OFF, no auratic double-display. Unsafe or unverified results remain UNKNOWN; all selection still goes through existing AbilityEligibility.
+- Converted the first Defensive preview slot to a **real verified aura recommendation** (the other slots do not invent a future queue). The global indicator preference now defaults to enabled and `defensiveCombatOnly` defaults false so out-of-combat aura maintenance is visible on new installs; previously saved per-user choices are respected.
+- Aspect maintenance no longer requires a hostile target before combat. Cheetah/Pack protection outside combat remains intact.
+- Added translated labels/tooltips in all six languages and replaced obsolete placeholder claims for Defensive aura slots.
+- Added `tests/combat_aura_routing.lua` and strengthened UI/aspect mocks; listed new regression in manual Lua 5.1 CI.
+- **Limitations:** This activates only specifically tagged aura recommendations, not all defensive or interrupt skills. Paladin gains this routing via future Paladin profile metadata; no Paladin rotation is currently registered. Real WoW Forever UI and live aura behavior still require user testing. CI is manual-only and was not executed in this change.
+
 ## 2026-11-22 — Adapt Rotation Master aura presence in Kord without replacing engine
 
 - Inspected Rotation Master `Platform/auras.lua`, `Core/aura_conditions.lua` and `Platform/cooldown_viewer.lua` (Preston A. Elder / PreZ). Source-derived strategy: targeted aura lookups first; Cooldown Manager tracked-item presence when raw aura details become secret; remember clean reads, never walk secret aura lists.
