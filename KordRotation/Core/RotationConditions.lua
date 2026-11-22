@@ -17,6 +17,7 @@ local direct={
  ["pet.health.percent"]={"pet","health","percent"},
  ["pet.attackingTarget"]={"pet","attackingTarget"},
  ["target.dead"]={"target","dead"},
+ ["target.classification"]={"target","classification"},
  ["target.threat"]={"target","threat"},
  ["context.instanceType"]={"context","instanceType"},
  ["player.mounted"]={"player","mounted"},
@@ -43,9 +44,23 @@ local function has(list,id)
  for _,value in ipairs(list) do if value==id then return true end end
  return false
 end
+local diagnosticSignals={
+ ["target.melee"]=true,["player.hasAggro"]=true,
+ ["player.travelAspect"]=true,["pet.mendActive"]=true,
+ ["trap.profitable"]=true,["need.distance"]=true,
+ ["target.wingClip"]=true,["mongoose.usable"]=true,
+ ["target.approaching"]=true,["target.slowed"]=true,
+ ["target.targetsPlayer"]=true,["target.willSurviveBurst"]=true,
+ ["intimidation.profitable"]=true,["aoe.safe"]=true,
+ ["volley.profitable"]=true,["multi.profitable"]=true,
+ ["hawk.count"]=true,["hawk.oldestRemaining"]=true,
+ ["target.dyingSoon"]=true,["aimed.profitable"]=true,
+ ["sting.profitable"]=true,["target.stingRemaining"]=true
+}
 local function declared(ctx,field,id)
  local needs=ctx.profile.Needs
  if direct[field] then return id==nil end
+ if diagnosticSignals[field] then return id==nil end
  if field=="target.debuff" or field=="player.buff" then
   return spellID(id) and has(needs.auras,id)
  end
