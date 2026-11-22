@@ -178,4 +178,38 @@ eq(methodExport:find("future_api_error",1,true)~=nil,true,
 eq(methodExport:find("Private Player Name",1,true),nil,
  "untrusted method never exported")
 
+-- Export pagination must retain every single event beyond the 32-KiB UI
+-- limit. Copy each page and verify no missing or duplicated sequence IDs.
+D.maxRecords=512
+D.maxSessions=12
+D.maxExport=1024
+D.settings.sessions={}
+eq(D:Start(),true,"paged journal start")
+for i=1,90 do
+ eq(D:Record("CHECK","UNKNOWN","bm_rule_2",nil,nil,
+  "action_slot_unconfirmed"),true,"paged record "..i)
+end
+eq(D:Stop(),true,"paged journal stop")
+local firstPage,firstIndex,totalPages=D:Export(1)
+eq(firstIndex,1,"first page index")
+eq(totalPages>1,true,"large journal generates multiple export pages")
+eq(firstPage:find("page=1/",1,true)~=nil,true,"explicit page label")
+local seen={}
+local countRecords=0
+for pg=1,totalPages do
+ local data,current,pages=D:Export(pg)
+ eq(current,pg,"pagination index")
+ eq(pages,totalPages,"stable page count")
+ eq(#data<=D.maxExport,true,"bounded UI export page")
+ for line in data:gmatch("[^\\n]+") do
+  local number=tonumber(line:match("^(%d+)\\t"))
+  if number then
+   eq(seen[number],nil,"unique exported sequence "..number)
+   seen[number]=true
+   countRecords=countRecords+1
+  end
+ end
+end
+eq(countRecords,90,"all 90 recorded events exported across pages")
+for i=1,90 do eq(seen[i],true,"export contains sequence "..i) end
 print("PASS DevTools recorder mock "..n.." assertions")
