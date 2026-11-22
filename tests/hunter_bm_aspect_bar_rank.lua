@@ -19,8 +19,8 @@ KR.SpellCatalogue={Read=function()
  }}
 end}
 assert(loadfile("KordRotation/Core/RotationProfiles.lua"))("KordRotation",KR)
-assert(loadfile("KordRotation/Profiles/Hunter/BM_Leveling_Contract.lua"))
- ("KordRotation",KR)
+local loadModule1=assert(loadfile("KordRotation/Profiles/Hunter/BM_Leveling_Contract.lua"))
+loadModule1("KordRotation",KR)
 local ok,reason=KR.BMLeveling:Register()
 assert(ok,reason)
 local function eq(expected,message)
