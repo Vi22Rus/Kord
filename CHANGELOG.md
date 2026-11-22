@@ -1,3 +1,14 @@
+## KR-20261122-018 — аудит CL-02: Paladin seals, blessings, hands, resurrection and dispels
+- Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-018`.
+- Тип: docs / CL-02 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`, без Lua/TOC/ZIP.
+- Контекст: паладин требует Seal→Judgement, ауры, Blessing recipient, Hand, Divine Shield, Consecration mana, Redemption dead-friendly, Poison/Disease dispel. Общие primitives не покрывают все эти семантики.
+- Причина: `AbilityEligibility` отвергает мёртвую цель в общей friendly policy; нет group recipient, dispel-type и seal transition contract; Paladin profiles отсутствуют.
+- Решение: универсальные AuraState, SealJudgementState, ExclusiveAuraMode, FriendlyUnitSelection, DispelState, ResourceState providers и typed `friendly_dead` eligibility; 22 QA-07 сценария.
+- Семь референсов перечислены как направления сверки; полного построчного ZIP-аудита не было.
+- Обратные ссылки: CL-01, AC-05, QA-07, EN-A1, QA-04, SP-01.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-02 специфицирован, реализация и клиентская проверка не выполнялись.
+
 ## KR-20261122-017 — аудит CL-01: Warrior class-specific data and actions
 - Дата: 2026-11-22; точное время/SHA доступны в GitHub commit `KR-20261122-017`.
 - Тип: docs / CL-01 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.

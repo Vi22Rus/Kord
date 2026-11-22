@@ -995,6 +995,8 @@
 
 **Ретроактивное уточнение CL-01:** CL-01: сведения о рангах и изученности warrior-способностей должны проходить общую проверку spellbook, без самостоятельных таблиц «изучено» внутри профиля.
 
+**Ретроактивное уточнение CL-02:** CL-02: ранги, наличие и семейства Seal/Judgement/Blessing/Hand/Cleanse/Purify/Redemption проверяются общим spellbook/catalog provider, а не именами или guessed IDs.
+
 ### SP-02 — Ранги: найти максимально выученный ранг по семейству ID
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 buff cast/aura family matching and maximum learned rank reuse SP-02; never treat a lower-rank or alternate applied aura as missing without validating equivalence.**
@@ -6324,6 +6326,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение CL-01:** CL-01: стойки воина должны реализовываться через общий STANCE_OR_FORM контракт, с проверкой смены стойки и сохранения ярости; не отдельным warrior-only переключателем.
 
+**Ретроактивное уточнение CL-02:** CL-02: паладинские ауры и печати требуют отдельной семантики переключения/поддержания; STANCE_OR_FORM не является автоматическим эквивалентом seal/aura.
+
 ### AC-06 — WAIT: ничего не нажимать, ждать (не клиппить автострельбу, копить ресурс)
 
 **Архитектурная актуализация EN-A2:** порядок `Rules` — нормативный приоритет; первое достоверно `READY` завершает оценку, последующие правила не вычисляются; `UNKNOWN` обязательного факта останавливает цепочку по AC-07, разрешённый `skip` — только по проверенному исключению (см. EN-A2).
@@ -6556,6 +6560,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-07:** QA-07 требует версионированный `scenarioID/profileID/profileVersion/contractVersion` для каждого профиля, включая draft/legacy с явным `NOT_RUN`; реестровая валидность не означает прохождение сценариев.
 
 **Ретроактивное уточнение CL-01:** CL-01: класс-специфические данные и условия Warrior должны объявляться через версионированные Needs/Spells; профили не читают API напрямую.
+
+**Ретроактивное уточнение CL-02:** CL-02: паладинские данные и действия объявляются через версионированный профильный контракт; никаких прямых Unit*/C_* API в профиле.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8517,6 +8523,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-07:** QA-07 помечает mock-сценарии с непроверенными WoW Forever API как MOCK ONLY/CLIENT UNVERIFIED; они не повышают `CLIENT PASS` v14.
 
+**Ретроактивное уточнение CL-02:** CL-02: проверить в WoW Forever API aura ownership, dispelName, dead friendly targeting, resurrection combat restrictions, seal consumption, blessing group scope; непроверенные факты остаются UNKNOWN.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8743,6 +8751,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-01:** CL-01: обязательный Warrior-specific scenario manifest для стоек, rage, queued-next-swing, shout, execute threshold, Charge/Intercept и interrupt, с точными expected actions только после утверждения данных.
 
+**Ретроактивное уточнение CL-02:** CL-02: отдельный Paladin scenario manifest обязателен для seal→Judgement→reseal, aura switch, blessing target, Hand conflicts, Divine Shield, Consecration mana reserve, dead-friendly resurrection, poison/disease dispel.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -8848,3 +8858,108 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / WARRIOR-SPECIFIC ПОДДЕРЖКА НЕ ДОКАЗАНА / P0.** Есть базовые ресурсы, Eligibility, условия и категории стойки/прерывания, но нет подтверждённых canonical providers для Warrior stance/rage reserve/melee queue и полного набора QA-07 сценариев. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Это спецификация, **не реализация**. Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** AC-05, AC-06, QA-07, SP-01, EN-A1.
+
+**Ретроактивное уточнение CL-02:** CL-02: StanceStateProvider/ауры паладина используют общий переключаемый режим состояния, но паладинская aura не считается warrior stance; общие AuraStateProvider, ResourceStateProvider и AbilityEligibility расширяются без дублирования.
+
+### CL-02 — Паладин: печати и суд, ауры, благословения, руки, Divine Shield, Consecration, воскрешение, снятие яда и болезни
+
+**Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к выразимости данных и действий, **не приоритеты ротации**. Для Holy/Protection/Retribution и Leveling/60/PVE/PVP действуют отдельные утверждённые профили; отсутствие профиля не разрешает придумывать его ротацию.
+
+#### Требование и конкретные способности
+
+| Семейство | Примеры способностей (не подтверждение наличия в конкретной версии WoW Forever) | Данные, условия, действие |
+|---|---|---|
+| Печати | Seal of Righteousness, Seal of Command, Seal of Wisdom, Seal of Light, Seal of Justice, Seal of the Crusader; Judgement / Judgement of Wisdom/Light/Justice | active seal ID/rank/duration/ownership, seal→Judgement compatibility, target hostile, spell learned, CD/GCD/mana/range, consumption/persistence semantics **только после проверки клиента**, последующая переоценка и reseal; не предполагать автоматическое поглощение печати |
+| Ауры | Devotion Aura, Retribution Aura, Concentration Aura, Resistance Auras, Crusader Aura (если есть в клиенте) | current active aura, learned, range/party context, toggle/replace policy, aura effect present/UNKNOWN; не путать с warrior stance или с печатью |
+| Благословения | Blessing of Might, Wisdom, Kings, Sanctuary, Salvation, Light; Greater Blessings (если доступны) | **кому**: player/party/raid/friendly target; class/role/context, recipient GUID-safe token, buff ID/rank, ownership, remaining, mutually exclusive family, group/class targeting and reagents if required; выбор благословения определяет профиль/настройка, не ядро |
+| Руки | Hand of Protection, Hand of Freedom, Hand of Sacrifice, Hand of Salvation; Blessing of Protection/Freedom/Sacrifice как возможные клиентские аналоги | отдельные spell IDs и aliases по фактической версии клиента, target friendly, aura/conflicts/Forbearance-like restrictions only when verified, threat/immunity, CD, duration, self vs ally; **не смешивать** Hand с Blessing только из-за названия |
+| Божественный щит | Divine Shield, Divine Protection | self-target, HP/danger, cooldown, resource, incompatible effects, debuffs, protection status, applicable Forbearance restrictions and threat consequences if confirmed; не выдумывать автоматическую приоритетность |
+| Освящение | Consecration | mana current/cost/reserve, combat, AoE enemies count, breakable CC nearby, positional radius, spell cooldown/GCD, rank, expected fight duration if reliable; при unknown mana/radius/CC не выдавать необоснованный READY |
+| Воскрешение | Redemption; иные resurrection spells только по проверенному каталогу | **dead friendly** target (не live-only), target selectable and in range, player OOC restrictions where confirmed, mana, reagents if any, cast time, combat, target already alive, unknown life state; отдельная `friendly_dead` eligibility policy |
+| Снятие яда/болезни | Purify, Cleanse (по реальному spellbook/rank) | конкретный `dispelName=Poison|Disease`, dispellable flag, player/party/raid friendly target, aura ownership and duration, range, cooldown/GCD/mana, priority among multiple recipients defined by profile; не обещать снятие Curse/Magic без подтверждённого заклинания и возможностей |
+
+**Нормативная граница:** клиентские spell IDs, ранги, механика расходования печати при Judgement, coexistence/overwrites благословений, ограничения рук/Forbearance, ауры, состав Greater Blessing и ограничения воскрешения должны быть внесены в проверенный каталог и QA-04. Не считать retail/TBC/Wrath поведением WoW Forever. Неподтверждённые игровые факты → `UNKNOWN` и безопасная остановка соответствующего обязательного правила; `nil` не равен «бафф отсутствует». Профиль не вызывает WoW API напрямую.
+
+#### Аудит текущего Kord (main)
+
+- `KordRotation/Core/GameState.lua` нормализует ресурсы через `UnitPowerType/UnitPower/UnitPowerMax` и фиксирует `target.assistable`, `target.dead`. Нет подтверждённой полноценной модели `party/raid` кандидатов для blessing/dispel и typed seal/judgement transitions.
+- `KordRotation/Core/RotationConditions.lua` поддерживает `player.buff` и `target.debuff` при `Needs.auras`, но не доказаны `sealState`, `blessingRecipient`, `dispelTypes`, `friendly_dead` и `groupTarget` в v1 контракте.
+- `KordRotation/Core/AbilityEligibility.lua` проверяет enemy/friendly и для target возвращает BLOCKED при `target.dead=true`; это **реальный архитектурный конфликт** с Redemption: требуется отдельная безопасная `friendly_dead` policy, не снятие проверки жизни для всех дружественных заклинаний.
+- `KordRotation/Core/RotationProfiles.lua` допускает `target=enemy|friendly|self|none`, категории `buff/aura`, но не подтверждает возможность выбрать участника группы, отдельные эффекты seal/judgement и resurrection. `Needs` ограничены `auras/ranges/enemyCount/ttd/swing`.
+- `docs/rotation/Canonical_API_Matrix.md` содержит #6 ресурсы, #10 range, #12/#13 ауры, #27/#28 duration, #35 лечение/диспел, #44 ownership, #53 power cost; это источники проверки, **не готовые paladin-specific контракты**.
+- `docs/rotation/Profile_Registry.md` содержит только Hunter PvE исходники; Paladin profiles не зарегистрированы. `docs/rotation/Test_Matrix.md` не является полным Paladin QA-07 oracle.
+
+#### Семь референсов: сравнительная матрица для реализации
+
+| Архив | Проверяемый архитектурный аспект | Ограничение |
+|---|---|---|
+| Sonah | Class-specific Paladin conditions, aura and dispel data | Нельзя переносить чужие приоритеты в CL-02 |
+| JustAC | Forever rotations, buff and defensive policies, friendly target support | SimC и Forever варианты требуют раздельного evidence |
+| ForeverAuras | Buff/debuff presence, expiration, secret aura access | Aura trigger не доказывает judgement seal consumption |
+| MaxDps | Paladin class rotations и общие spell usability/target checks | Retail mechanics не автоматически совпадают с Forever |
+| ForeverRotation | Buff signals, action choices, group support | Не считать signal подтверждённой возможностью dispel |
+| RotationGuide | API/state/engine и party-target representations | Сравнивать одинаковые snapshots и revisions |
+| RotationMaster | Condition support, scope, forecast и replay | Forecast не заменяет точное состояние seal/Judgement |
+
+Это архитектурная программа сопоставления по предоставленным семи ZIP, **не утверждение о конкретных найденных реализациях**: полного построчного аудита ZIP в данном проходе не было. Референсы не заменяют проверку QA-04 на WoW Forever.
+
+#### Выбранная архитектура
+
+1. **`AuraStateProvider`** — универсальные buff/debuff, source, duration, unknown/secret, обновление по revision; используется печатями, аурами, благословениями и руками. Класс-специфические **семейства эффектов** задаются проверенным `SpellFamilyCatalog`, не отдельными сканерами.
+2. **`SealJudgementStateProvider`** — typed seal ID/rank, compatible Judgement, verified consume/persist state, transition events; не считать Judgement всегда снимающим печать. При неизвестном результате применения — refresh snapshot/UNKNOWN, не угадывать.
+3. **`ExclusiveAuraModeProvider`** — общая модель взаимоисключающих режимов для паладинских аур, не приравнивая их к `STANCE_OR_FORM` в текущем контракте.
+4. **`FriendlyUnitSelectionProvider`** — безопасный список `player/target/focus/party/raid` только если подтверждены unit tokens и доступность API; recipient policy, dead/alive, assistable, range, party membership, group/class blessing. Никаких вымышленных GUID или выбора недоступной цели.
+5. **`DispelStateProvider`** — общий по классам provider типов `Poison/Disease/Magic/Curse` с per-spell allowed dispel types; паладинские Purify/Cleanse получают только подтверждённые возможности. Aura `UNKNOWN` не равна dispellable.
+6. **`ResourceStateProvider`** — typed MANA, current/cost/reserve, Consecration AoE gate, отдельные ресурсы для support/resurrection; не подменять порог маны произвольным фиксированным процентом.
+7. **`AbilityEligibility`** — единственный final READY; новые явно типизированные policies `friendly_dead`, `friendly_group`, `self`, `enemy`, плюс validated restrictions for combat/cast/target/range/reagent/effect conflict. Существующая `friendly` остаётся live-only, чтобы не сломать лечение и buffs.
+8. **`Profile_Contract`/QA-06** — новые `Needs` и target policies только через versioned schema, profiles pure, lazy reads и `UNKNOWN→STOP`. Общие провайдеры не должны создавать отдельный paladin engine.
+
+#### Сценарные таблицы QA-07 (спецификация, не PASS)
+
+| ID | Состояние | Ожидаемый результат |
+|---|---|---|
+| `PAL-SEAL-01` | нужная печать активна и не истекает | не обновлять без необходимости |
+| `PAL-SEAL-02` | seal state UNKNOWN | STOP для зависящего правила |
+| `PAL-JUDGE-01` | seal/Judgement compatible, target hostile, Eligibility READY | допустим Judgement; приоритет из профиля |
+| `PAL-JUDGE-02` | после Judgement неизвестно, сохранена ли печать | не угадывать reseal; повторное наблюдение |
+| `PAL-AURA-01` | нужная аура активна | не переключать повторно |
+| `PAL-AURA-02` | текущая аура UNKNOWN | не выдавать слепое переключение |
+| `PAL-BLESS-01` | благословение на player, но отсутствует на выбранном ally | оценивать именно ally, не player |
+| `PAL-BLESS-02` | цель вне группы/недоступна | BLOCKED либо UNKNOWN по фактическому наблюдению |
+| `PAL-BLESS-03` | конфликтующее благословение | учитывать verified family conflict |
+| `PAL-HAND-01` | Hand effect конфликтует с действующим ограничением | BLOCKED при подтверждённом конфликте |
+| `PAL-SHIELD-01` | Divine Shield unavailable/cooldown | BLOCKED; не ложный READY |
+| `PAL-CONSECRATE-01` | маны меньше cost+reserve | BLOCKED |
+| `PAL-CONSECRATE-02` | рядом breakable CC, AoE иначе eligible | не рекомендовать опасное AoE |
+| `PAL-CONSECRATE-03` | число целей или mana UNKNOWN | STOP для соответствующего правила |
+| `PAL-REZ-01` | dead friendly, OOC, spell eligible | `friendly_dead` разрешает Redemption |
+| `PAL-REZ-02` | alive friendly | Resurrection BLOCKED |
+| `PAL-REZ-03` | target life state UNKNOWN | STOP, не лечить и не воскрешать наугад |
+| `PAL-DISPEL-01` | ally имеет подтверждённый Poison | разрешённый dispel spell только после Eligibility |
+| `PAL-DISPEL-02` | ally имеет подтверждённый Disease | разрешённый dispel spell только после Eligibility |
+| `PAL-DISPEL-03` | debuff type UNKNOWN/secret | STOP, не утверждать очищаемость |
+| `PAL-DISPEL-04` | несколько союзников, один недоступен | выбор recipient по профилю, никаких выдуманных целей |
+| `PAL-REVISION-01` | смена цели, группы, ауры, seal или уровня | invalidate snapshot; никаких stale READY |
+
+Каждый case должен получить реальные spellID/rank, `profileID`, exact expected status/action/priority/channel/reason, provider read counts, evidence и отдельный статус `MOCK PASS`/`CLIENT PASS`. Пока Paladin-профилей нет, это **сценарная спецификация**, не покрытие готового профиля.
+
+#### Требуемые изменения
+
+1. Подтвердить Paladin spell/rank/family catalog по WoW Forever: seal, Judgement, aura, blessing, Hand, shield, Consecration, Redemption, Purify/Cleanse.
+2. Проверить seal→Judgement→reseal semantics и реализовать `SealJudgementStateProvider` с safe UNKNOWN.
+3. Подключить ауры через общий exclusive-mode contract, с отдельной семантикой от warrior stance.
+4. Реализовать `FriendlyUnitSelectionProvider` для player/party/raid, target life state и scope групповых благословений.
+5. Подключить Blessing/Hand через общий `AuraStateProvider` + `SpellFamilyCatalog`, с target, duration, ownership и конфликтами.
+6. Ввести `friendly_dead` eligibility для Redemption, не меняя safety-поведение существующей `friendly` policy.
+7. Реализовать `DispelStateProvider` с проверкой типа Poison/Disease и подтверждённых возможностей Purify/Cleanse.
+8. Добавить typed mana reserve и AoE/CC checks Consecration через общие Resource/EnemyCount/CC providers.
+9. Добавить Divine Shield defensive checks, cooldown, target=self, конфликтующие эффекты и безопасное UI routing.
+10. Добавить 22+ сценария QA-07, QA-06 purity gate, QA-05 differential при наличии legacy oracle; синхронизировать QA-04, Priority Matrix, Test Matrix, Registry; регрессия общих providers на Hunter/Warrior, без выдуманных CLIENT PASS.
+
+**Диагностика:** `paladin_seal_unknown`, `paladin_judgement_seal_incompatible`, `paladin_seal_transition_unconfirmed`, `paladin_aura_unknown`, `paladin_blessing_recipient_unknown`, `paladin_blessing_conflict`, `paladin_hand_conflict_unknown`, `paladin_shield_blocked`, `paladin_consecration_mana_reserve`, `paladin_consecration_cc_risk`, `paladin_resurrection_target_alive`, `paladin_resurrection_target_life_unknown`, `paladin_resurrection_combat_restricted`, `paladin_dispel_type_unknown`, `paladin_dispel_target_unavailable`, `paladin_revision_stale`. Не логировать secret payload.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / PALADIN-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Базовые ресурсы, target, aura, Eligibility существуют, но `friendly_dead`, выбор союзников, dispel-type, seal/Judgement transition, blessing recipient и полноценные paladin-specific QA-07 сценарии отсутствуют или не доказаны. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация, Lua/TOC/ZIP без изменений.
+
+**Ретроактивные ссылки:** CL-01, AC-05, QA-07, EN-A1, QA-04, SP-01.
