@@ -1047,21 +1047,105 @@ function S:ReadInventoryFamilyObservation(familyID)
     return result
 end
 
--- IT-02/2.1: typed, source-only cooldown contracts. Adapter in 2.2/2.3.
--- No inferred readiness from possession or an unrelated spell cooldown.
+-- IT-02/2.2-2.3: read-only item-specific cooldown observation.
+-- A valid item cooldown is NOT proof of usable item or shared group readiness.
+-- C_Container accepts bag/slot, not an itemID: never guess a slot identity.
 local function unknownItemCooldown(reason,source)
     return {status="UNKNOWN",reason=reason,source=source}
 end
+local function itemCooldownEnabled(value)
+    if value==true or value==1 then return true end
+    if value==false or value==0 then return false end
+    return nil
+end
+local function itemCooldownTuple(api,raw)
+    if type(raw)~="table" or raw.status~="READY" then
+        return nil,"item_cd_invalid_tuple"
+    end
+    local values=raw.value
+    if type(values)~="table" then return nil,"item_cd_invalid_tuple" end
+    local start,duration,enabled
+    if type(values[1])=="table" then
+        -- Some API revisions expose a structured cooldown result.
+        local data=values[1]
+        local a=api:ReadField(data,"startTime","number")
+        local b=api:ReadField(data,"duration","number")
+        local c=api:ReadField(data,"isEnabled")
+        if a.status~="READY" or b.status~="READY" or c.status~="READY" then
+            return nil,"item_cd_invalid_tuple"
+        end
+        start,duration,enabled=a.value,b.value,c.value
+    else
+        start,duration,enabled=values[1],values[2],values[3]
+    end
+    if not finite(start,0) or not finite(duration,0) then
+        return nil,"item_cd_invalid_tuple"
+    end
+    local usable=itemCooldownEnabled(enabled)
+    if usable==nil then return nil,"item_cd_invalid_tuple" end
+    if not usable then return nil,"item_cd_disabled" end
+    return {startTime=start,duration=duration,enabled=true}
+end
 
 function S:ReadItemCooldownObservation(itemID)
-    local result=unknownItemCooldown("item_cd_reader_unimplemented",
+    local result=unknownItemCooldown("item_cd_api_missing",
         "GameState.ItemCooldownObservation")
     if not inventorySafeID(itemID,"item") then
         result.reason="item_cd_id_unverified"
         return result
     end
     result.itemID=itemID
-    -- active, remaining, enabled, revision are nil until a proven read.
+    local api=KR.GameAPI
+    if not api or type(api.ReadValues)~="function"
+        or type(api.Read)~="function" then return result end
+    -- Only fallback if the first API is absent; secret, error, malformed
+    -- or disabled results must not become an invented READY via fallback.
+    local candidates={"C_Item.GetItemCooldown","GetItemCooldown"}
+    for _,name in ipairs(candidates) do
+        local ok,raw=pcall(api.ReadValues,api,name,itemID)
+        if not ok or type(raw)~="table" then
+            result.reason="item_cd_read_failed"
+            return result
+        end
+        if raw.status~="UNAVAILABLE" or raw.reason~="api_missing" then
+            result.source=name
+            if raw.status~="READY" then
+                result.reason=raw.reason=="protected_value"
+                    and "item_cd_secret" or "item_cd_invalid_tuple"
+                return result
+            end
+            local fields,reason=itemCooldownTuple(api,raw)
+            if not fields then result.reason=reason return result end
+            local clock=api:Read("GetTime","number")
+            if not clock or clock.status~="READY"
+                or not finite(clock.value,0) then
+                result.reason="item_cd_remaining_unknown"
+                return result
+            end
+            local now=clock.value
+            -- Discontinuous/foreign epoch: never turn it into READY.
+            if fields.startTime>now or not finite(fields.startTime+fields.duration,0) then
+                result.reason="item_cd_remaining_unknown"
+                return result
+            end
+            local remaining=math.max(0,fields.startTime+fields.duration-now)
+            if not finite(remaining,0) then
+                result.reason="item_cd_remaining_unknown"
+                return result
+            end
+            -- An individual zero does not clear shared potion lockout.
+            result.status="READY"
+            result.reason=nil
+            result.startTime=fields.startTime
+            result.duration=fields.duration
+            result.remaining=remaining
+            result.enabled=true
+            result.active=remaining>0
+            result.observedAt=now
+            -- Revision follows in IT-02/2.7; absent revision is not zero.
+            return result
+        end
+    end
     return result
 end
 
