@@ -60,11 +60,20 @@ function D:TraceStart()
     self.lastFirstReason=nil
     self.lastDetailKeys={}
     self.nextDetailedAt=nil
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)=="table" and type(bridge.BeginAPITrace)=="function" then
+        pcall(bridge.BeginAPITrace)
+    end
     self:ObserveTransition()
     return true
 end
 function D:TraceStop()
     if self.active then self:ObserveDetails(nil,true) end
+    self:DrainAPIMethods()
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)=="table" and type(bridge.EndAPITrace)=="function" then
+        pcall(bridge.EndAPITrace)
+    end
     local frame=self.traceFrame
     if frame then
         frame:SetScript("OnEvent",nil)
@@ -103,6 +112,50 @@ function D:ObserveTarget()
         return true
     end
     return false
+end
+-- Drain every actual read-only GameAPI invocation through the scalar
+-- bridge; group repeated (method,status,reason) tuples into counts.
+-- This is independent of the 101-row *presence-only* v14 census.
+function D:DrainAPIMethods()
+    if not self.active then return false end
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" or type(bridge.APITrace)~="function" then
+        return false
+    end
+    local ok,result=pcall(bridge.APITrace)
+    if not ok or type(result)~="table" or not self:Safe(result)
+        or type(result.entries)~="table" or not self:Safe(result.entries) then
+        self:Record("METHOD","UNKNOWN","method_trace_overflow")
+        return false
+    end
+    local ids={}
+    for _,row in ipairs(self.V14Registry or {}) do
+        if type(row.method)=="string" and ids[row.method]==nil then
+            ids[row.method]=row.id
+        end
+    end
+    for index,item in ipairs(result.entries) do
+        if index>2048 then
+            self:Record("METHOD","UNKNOWN","method_trace_overflow")
+            return false
+        end
+        if type(item)=="table" and self:Safe(item)
+            and self:Safe(item.method) and self:Safe(item.status)
+            and self:Safe(item.reason) and self:Safe(item.count)
+            and type(item.method)=="string" then
+            self:Record("METHOD",item.status,"method_call",
+                ids[item.method],nil,item.reason,
+                item.method,item.count)
+        else
+            self:Record("METHOD","UNKNOWN","method_trace_overflow")
+        end
+    end
+    if self:Safe(result.overflow) and
+        type(result.overflow)=="number" and result.overflow>0 then
+        self:Record("METHOD","UNKNOWN","method_trace_overflow",
+            nil,nil,result.overflow)
+    end
+    return true
 end
 -- A compact session journal instead of an ever-growing UI report.
 -- Sample at most once per two seconds (or immediately after target change),
@@ -151,6 +204,7 @@ function D:ObserveDetails(diagnosis,force,summary)
             self.lastDetailKeys[key]=signature
         end
     end
+    self:DrainAPIMethods()
     local diag=diagnosis or fetch("Diagnose")
     if diag then
         add("CHECK",diag.decisiveStatus,"engine_decisive_priority",
