@@ -32,6 +32,14 @@ eq(D.settings.sessions[1].final,false,"rotated part marked nonfinal")
 eq(D.settings.sessions[2].final,true,"stop saves final part")
 eq(D.settings.sessions[1].part,1,"first segment")
 eq(D.settings.sessions[2].part,2,"second segment")
+eq(D.settings.sessions[1].sessionID,D.settings.sessions[2].sessionID,
+ "rotated segments belong to the same recording")
+local savedReport=D:Export()
+local firstCount=0
+for _ in savedReport:gmatch("protected_value") do firstCount=firstCount+1 end
+eq(firstCount,1,"post-stop export does not duplicate persisted events")
+eq(D.settings.sessions[1].records[2].reason,"protected_value",
+ "full first segment retained in SavedVariables")
 eq(D:Start(),true,"new manual start")
 eq(#D.records,0,"new session has no history")
 eq(D:Stop(),true,"second stop")
