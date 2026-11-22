@@ -10,6 +10,9 @@ local showCount,refreshCount=0,0
 function D.ui.frame:Show() showCount=showCount+1 end
 function D:RefreshUI() refreshCount=refreshCount+1 end
 assert(loadfile("KordRotationDevTools/UI.lua"))("KordRotationDevTools",D)
+-- Isolate OpenUI's refresh contract; the production UI module defines its
+-- own RefreshUI which requires the full WoW widget hierarchy in game.
+D.RefreshUI=function() refreshCount=refreshCount+1 end
 eq(D:OpenUI(),true,"public OpenUI accepts available window")
 eq(showCount,1,"public OpenUI shows real window")
 eq(refreshCount,1,"public OpenUI refreshes status")
