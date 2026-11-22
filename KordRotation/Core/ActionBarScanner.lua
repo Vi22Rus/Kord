@@ -347,6 +347,41 @@ function S:FindSpell(id)
             end
         end
     end
+    -- WoW Forever can expose an action-button spell ID that is not an
+    -- explicit spellbook entry. Compare independently verified localized
+    -- spell names only to diagnose that mismatch, NEVER to accept a cast.
+    if not mismatch and candidates==0 and KR.GameAPI
+        and type(KR.GameAPI.ReadValues)=="function" then
+        local function localizedName(spell)
+            local result=KR.GameAPI:ReadValues("GetSpellInfo",spell)
+            local value=result and result.status=="READY"
+                and result.value and result.value[1]
+            if type(value)=="string" and value~=""
+                and KR.GameAPI:IsSafeValue(value) then return value end
+            local detail=KR.GameAPI:Read("C_Spell.GetSpellInfo","table",spell)
+            if detail and detail.status=="READY" then
+                local name=KR.GameAPI:ReadField(detail.value,"name","string")
+                if name.status=="READY" then return name.value end
+            end
+            return nil
+        end
+        local wanted=localizedName(id)
+        if wanted then
+            for _,entry in ipairs(self.entries or {}) do
+                if entry.spellID~=id then
+                    local same=localizedName(entry.spellID)
+                    if same==wanted then
+                        local live=inspect(entry.button,entry.source)
+                        if live and live.slot==entry.slot and
+                            live.spellID==entry.spellID then
+                            mismatch=true
+                            break
+                        end
+                    end
+                end
+            end
+        end
+    end
     return {status="UNKNOWN",
         reason=candidates>0 and (failureReason or "button_revalidation_unknown")
             or (mismatch and "visible_spell_rank_mismatch"
