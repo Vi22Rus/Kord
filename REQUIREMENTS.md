@@ -993,6 +993,8 @@
 
 **Ретроактивное уточнение EN-A8:** EN-A8: уровень не доказывает изученность ранга; выбор максимального подтверждённого ранга остаётся общим механизмом spellbook/eligibility. Исторический аудит сохранён.
 
+**Ретроактивное уточнение CL-01:** CL-01: сведения о рангах и изученности warrior-способностей должны проходить общую проверку spellbook, без самостоятельных таблиц «изучено» внутри профиля.
+
 ### SP-02 — Ранги: найти максимально выученный ранг по семейству ID
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 buff cast/aura family matching and maximum learned rank reuse SP-02; never treat a lower-rank or alternate applied aura as missing without validating equivalence.**
@@ -6320,6 +6322,7 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение CL-01:** CL-01: стойки воина должны реализовываться через общий STANCE_OR_FORM контракт, с проверкой смены стойки и сохранения ярости; не отдельным warrior-only переключателем.
 
 ### AC-06 — WAIT: ничего не нажимать, ждать (не клиппить автострельбу, копить ресурс)
 
@@ -6388,6 +6391,7 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение CL-01:** CL-01: очередь следующего удара Heroic Strike/Cleave не тождественна WAIT или swing-таймеру; отсутствие подтверждённого queue state приводит к UNKNOWN/STOP для зависящего правила.
 
 ### AC-07 — STOP: остановка рекомендаций при неизвестном ключевом факте
 
@@ -6550,6 +6554,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-06:** QA-06: статический контроль профилей проверяет исходники и замыкания `when` до допуска через реестр; runtime validation EN-A1 остаётся обязательной и не заменяет статическую проверку.
 
 **Ретроактивное уточнение QA-07:** QA-07 требует версионированный `scenarioID/profileID/profileVersion/contractVersion` для каждого профиля, включая draft/legacy с явным `NOT_RUN`; реестровая валидность не означает прохождение сценариев.
+
+**Ретроактивное уточнение CL-01:** CL-01: класс-специфические данные и условия Warrior должны объявляться через версионированные Needs/Spells; профили не читают API напрямую.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8734,3 +8740,111 @@ DevTools должен записывать **все достоверно сфо�
 **Архитектурные ссылки:** QA-03, QA-04, QA-05, QA-06, EN-A1, EN-A2, EN-A3, AC-07, DA-08, UI-01, `docs/rotation/Test_Matrix.md`, `Profile_Registry.md`, `Priority_Matrix.md`, `Profile_Contract.md`, `Ability_Catalogue.md`, `GameData_Contract.md`. **Ретроактивные уточнения добавлены в QA-03, QA-04, QA-05, QA-06, EN-A1, EN-A2, EN-A3, AC-07, DA-08, UI-01.**
 
 **Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение CL-01:** CL-01: обязательный Warrior-specific scenario manifest для стоек, rage, queued-next-swing, shout, execute threshold, Charge/Intercept и interrupt, с точными expected actions только после утверждения данных.
+
+### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
+
+**Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
+
+#### Требование и граница ответственности
+
+CL-01 описывает **данные, условия и действия**, необходимые профилям WARRIOR, но **не задаёт порядок ротации** и не создаёт автоматически Warrior-профили. Применяется к Arms/Fury/Protection, Leveling/60 и PVE/PVP только при наличии реально утверждённого отдельного профиля. Общие проверки остаются в `GameState`/`GameData`/`AbilityEligibility`, решение о приоритете — в профиле. Нельзя дублировать классовые игровые API в профилях. Если ключевой факт UNKNOWN или secret, не выдавать READY, не переключать стойку вслепую, не утверждать, что атака поставлена в очередь.
+
+#### Конкретные механики, заклинания и условия
+
+| Механика | Примеры Warcraft-способностей / сущностей | Обязательные наблюдения | Действие и fail-closed |
+|---|---|---|---|
+| Стойки | Battle Stance, Defensive Stance, Berserker Stance; Stance Mastery (если применимо к клиенту) | current stance index/token, learned/available, change permitted, combat, retained rage, GCD/cooldown, form events | `STANCE_OR_FORM` через AC-05; после смены повторная оценка, без предположения мгновенной готовности |
+| Ярость | Rage, стоимость Mortal Strike, Bloodthirst, Execute, Pummel и др. | `powerType=RAGE`, current/max, cost, reserved rage, usable/noPower, event revision | сравнение безопасных чисел; не считать rage по проценту маны, не выводить из анимации |
+| Следующий удар | Heroic Strike, Cleave | autoattack active, queued state конкретного spellID, следующий swing, target, range, rage/cost, combat | отдельная семантика `NEXT_SWING_QUEUE` как **расширение действия**, только после проверки API; не повторять queued spell и не считать обычным instant cast |
+| Крики | Battle Shout, Demoralizing Shout, Commanding Shout (только если подтверждён в версии клиента), Challenging Shout, Intimidating Shout | player/target aura, remaining duration, stacks/ownership where relevant, radius/target eligibility, GCD, rank | поддержка upkeep/refresh и control/taunt как разных категорий; не путать личный buff с debuff цели |
+| Добивание | Execute | target health percent, exact execute threshold from validated spell/client rules, spell learned, rage, stance, range, GCD | условие порога в профиле, окончательный READY только из Eligibility; нельзя жёстко принимать порог 20% без проверки версии |
+| Сближение | Charge, Intercept, Intervene (только если существует/подтверждён для клиента) | min/max spell range, target hostility/friendliness, combat state, stance, cooldown, rage, movement, path/LoS if API provides reliable evidence | отдельные eligibility policies по конкретному spellID; не рекомендовать Charge на 50 м или Intercept при неизвестной дистанции |
+| Прерывание | Pummel, Shield Bash; Shield Bash stance/equipment restrictions as verified | target casting/channeling, interruptibility, remaining cast time, target range, stance, weapon/shield requirement, cooldown, latency margin | рекомендовать только подтверждённое interrupt-capable действие; неизвестный cast/interruptible → STOP для обязательного правила |
+| Контекст защитных решений | Shield Block, Shield Wall, Last Stand, Taunt, Mocking Blow, Disarm (при наличии) | shield/equipment, stance, HP, threat, target type, cooldown, DR/immunity where confirmed | отдельные defensive/main правила; CL-01 не предписывает их приоритет |
+
+Названия способностей здесь — **кандидаты для каталога**, не утверждение их доступности, точного ранга, порога или API в WoW Forever. `NEXT_SWING_QUEUE` — проектируемое расширение, **не существующий AC-тип**; до отдельного утверждения контракта оно не должно проходить реестр как реализованное действие. `Rage` — отдельный ресурс; число должно быть проверено на тип, диапазон и актуальность.
+
+#### Аудит текущего Kord
+
+- `KordRotation/Core/GameState.lua`: есть нормализация `UnitPowerType`, `UnitPower`, `UnitPowerMax` и вычисление percent; **нет доказанного Warrior-specific контракта** резервирования ярости, смены стойки и состояния next-swing queue.
+- `KordRotation/Core/RotationProfiles.lua`: семантические категории `stance`, `interrupts`, разрешённые `Needs={auras,ranges,enemyCount,ttd,swing}`; **нет подтверждённой схемы** `stance/rageReserve/nextSwingQueue` и зарегистрированных Warrior-профилей.
+- `KordRotation/Core/RotationConditions.lua`: `Needs.swing` допускает `autoShot.swing`, относящееся к охотнику; **нельзя переносить** этот факт на warrior melee swing или queued Heroic Strike.
+- `KordRotation/Core/AbilityEligibility.lua`: общий gate проверяет cooldown, ресурс, цель/дистанцию, cast; не доказаны проверки warrior stance-specific queue, equipment/shield, minimum charge range и interruptibility в составе единого warrior policy.
+- `docs/rotation/Canonical_API_Matrix.md`: пункты #6 ресурс, #10 range, #15 cast, #22 interrupt, #24 autoattack, #34 stance, #42 execute HP уже задают источники/статусы проверки. Они не являются доказательством, что все warrior-specific semantics доступны в WoW Forever.
+- `docs/rotation/Profile_Registry.md`: перечислены только шесть Hunter PvE исходников; Warrior profiles отсутствуют. Не создавать фиктивные тестовые PASS.
+- `docs/rotation/Test_Matrix.md` и QA-07: нужны самостоятельные Warrior scenario cases, но существующие общие CORE/HUNTER строки не заменяют их.
+
+#### Семь предоставленных референсов: границы применимости
+
+| Референс | Что требуется исследовать при реализации CL-01 | Ограничение доказательства |
+|---|---|---|
+| Sonah | Warrior class rules, stance, rage, cast conditions и spells | Не копировать приоритеты вместо общих данных |
+| JustAC | BlizzardAPI state helpers, rotations, defensive и interrupt handling | Не считать SimC/Forever поведение одинаковым |
+| ForeverAuras | Aura/secret/cooldown triggers для криков и debuff | Trigger не подтверждает queue state |
+| MaxDps | Class-specific warrior modules, resource/next swing handling | Не переносить retail API без QA-04 |
+| ForeverRotation | Signals/Buffs, class rules и action queue | Состояние сигнала не равнозначно доказанному swing |
+| RotationGuide | State/API/Engine и возможные Warrior conditions | Не использовать вычисленное предположение как факт |
+| RotationMaster | Condition support, rotation scope, forecast/replay и Warrior priority | Forecast не должен подтверждать фактическую очередь |
+
+Это **план сопоставления референсных механизмов** с текущей архитектурой Kord; в данном проходе полная построчная инспекция семи ZIP **не проводилась**, поэтому наличие конкретных Warrior-функций в каждом референсе не утверждается.
+
+#### Выбранная архитектура
+
+**Универсальные провайдеры, без отдельного второго warrior-engine:**
+1. `StanceStateProvider` — canonical current stance, доступность, spell requirements, revision, проверка перехода; общая основа AC-05 и других классов.
+2. `ResourceStateProvider` — typed RAGE, current/max, costs, reserve policy и проверка freshness; переиспользуется другими классами для их типов ресурсов.
+3. `MeleeSwingQueueProvider` — состояние melee autoattack и **проверяемая** очередь next-swing action. Не использовать `autoShot.swing` Hunter; если API queue state не подтверждён, возвращать UNKNOWN. Таймер удара без источника не выдумывать.
+4. `AuraStateProvider` — player buffs, target debuffs, remaining, ownership и UNKNOWN, общий механизм для криков.
+5. `TargetHealthProvider` и `SpellRangeProvider` — точный HP%, min/max distance для конкретного Charge/Intercept/Execute; запрещён fallback «цель существует → дистанция подходит».
+6. `InterruptStateProvider` — cast/channel/interruptible, remaining, latency, stance/equipment; общий механизм для других классов.
+7. `AbilityEligibility` — единственный финальный gate READY, с валидированными spellID/rank, stance, cost, equipment, target, range, cast/GCD/cooldown.
+8. `Profile_Contract` — расширять `Needs` и `actionType` **только через версионированное изменение контракта**, не протаскивать произвольные поля в существующий v1.
+
+**Критические зависимости:** AC-05 (STANCE_OR_FORM), AC-06 (WAIT, не очередь), QA-04 (матрица API), QA-06 (pure profiles), QA-07 (scenario oracle), SP-01 (spellbook), EN-A1 (контракт), общие EN/TTD/range/auras/interrupt requirements. Если общий провайдер введён позднее, старые задачи должны ссылаться на него; здесь обратные ссылки добавляются сразу.
+
+#### Исполняемые сценарии QA-07 для Warrior (спецификация, не PASS)
+
+| ID | Состояние | Ожидаемый результат |
+|---|---|---|
+| `WAR-STANCE-01` | нужная стойка активна | не рекомендовать повторное переключение |
+| `WAR-STANCE-02` | стойка другая, смена разрешена и подтверждена | `STANCE_OR_FORM` только после Eligibility |
+| `WAR-STANCE-03` | текущая стойка UNKNOWN | STOP для правила, которому стойка обязательна |
+| `WAR-RAGE-01` | ярости меньше стоимости+резерва | BLOCKED, не ложный READY |
+| `WAR-RAGE-02` | тип ресурса UNKNOWN | STOP для rage-dependent правила |
+| `WAR-QUEUE-01` | Heroic Strike уже queued | не рекомендовать повторно queued action |
+| `WAR-QUEUE-02` | queue state UNKNOWN | STOP для обязательного queue rule |
+| `WAR-SHOUT-01` | нужный крик активен, время достаточно | не обновлять раньше утверждённого порога |
+| `WAR-SHOUT-02` | aura duration UNKNOWN | не считать бафф отсутствующим |
+| `WAR-EXECUTE-01` | HP цели на границе утверждённого порога | проверить обе стороны порога, включая exact boundary |
+| `WAR-CHARGE-01` | дистанция меньше min / в dead zone | Charge BLOCKED |
+| `WAR-CHARGE-02` | дистанция UNKNOWN | STOP, не предполагать range |
+| `WAR-INTERCEPT-01` | подходящая дистанция, неверная стойка | проверить смену стойки как отдельное действие, не выдать Intercept READY |
+| `WAR-INTERRUPT-01` | target cast interruptible, valid spell and range | READY только если все gates подтверждены |
+| `WAR-INTERRUPT-02` | cast interruptibility UNKNOWN | STOP для interrupt rule |
+| `WAR-INTERRUPT-03` | Shield Bash без обязательного экипирования | BLOCKED при подтверждённом требовании |
+| `WAR-REVISION-01` | после смены стойки/цели/талантов | новый snapshot, никаких stale READY |
+
+Для каждого сценария — `profileID`, версия, конкретный spellID, входы, expected action, reason, priority, channel, provider reads, evidence и `NOT_RUN` до реального теста. Символические сценарии не повышают coverage реального Warrior-профиля.
+
+#### Требуемые работы
+
+1. Составить реестр Warrior spells/ranks/stance restrictions и отметить каждое неподтверждённое условие по QA-04.
+2. Проверить доступные WoW Forever API стойки, rage, melee autoattack и queued-next-swing; зафиксировать подтверждённые/неподтверждённые методы и безопасные UNKNOWN.
+3. Реализовать `StanceStateProvider` и события инвалидации при смене стойки/спека/талантов.
+4. Расширить общий `ResourceStateProvider` typed rage/cost/reserve, без дублирования вычисления стоимости в профиле.
+5. Спроектировать и отдельно утвердить контракт next-swing queue; не включать неподтверждённый action type в текущий registry.
+6. Подключить крики через общий Aura provider, с ownership, remaining и unknown semantics.
+7. Уточнить target health threshold и spell-specific range policies для Execute, Charge и Intercept; без жёстко вшитых значений без evidence.
+8. Подключить interrupt через общий InterruptStateProvider, stance/equipment gate и Eligibility.
+9. Добавить 17+ Warrior сценариев в QA-07 с граничными состояниями и статическими checks QA-06.
+10. После реализации и подтверждения API — регрессия общих providers на Hunter и другие классы; отдельно MOCK PASS/CLIENT PASS, без запуска GitHub Actions до ручного финального этапа.
+
+**Диагностика:** `warrior_stance_unknown`, `warrior_stance_unavailable`, `warrior_stance_transition_pending`, `warrior_rage_unknown`, `warrior_rage_insufficient`, `warrior_rage_reserve`, `warrior_queue_state_unknown`, `warrior_next_swing_already_queued`, `warrior_shout_aura_unknown`, `warrior_execute_threshold_unknown`, `warrior_charge_range_unknown`, `warrior_charge_too_close`, `warrior_intercept_wrong_stance`, `warrior_interrupt_cast_unknown`, `warrior_interrupt_not_interruptible`, `warrior_interrupt_equipment_missing`, `warrior_revision_stale`. В логах не сохранять secret values.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / WARRIOR-SPECIFIC ПОДДЕРЖКА НЕ ДОКАЗАНА / P0.** Есть базовые ресурсы, Eligibility, условия и категории стойки/прерывания, но нет подтверждённых canonical providers для Warrior stance/rage reserve/melee queue и полного набора QA-07 сценариев. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Это спецификация, **не реализация**. Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** AC-05, AC-06, QA-07, SP-01, EN-A1.

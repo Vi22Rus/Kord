@@ -1,3 +1,14 @@
+## KR-20261122-017 — аудит CL-01: Warrior class-specific data and actions
+- Дата: 2026-11-22; точное время/SHA доступны в GitHub commit `KR-20261122-017`.
+- Тип: docs / CL-01 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
+- Контекст: девять классов требуют общего ядра и специфических данных; Warrior нуждается в стойках, ярости, next-swing queue, криках, Execute, Charge/Intercept, interrupt. Общие primitives есть, полнота Warrior не доказана.
+- Причина: нет подтверждённого Warrior-specific контракта queued melee attack, rage reserve, stance transitions, exact range/execute policies; Warrior профили отсутствуют в реестре.
+- Решение: универсальные StanceState/ResourceState/MeleeSwingQueue/AuraState/TargetHealth/SpellRange/InterruptState providers и единый AbilityEligibility, без второго warrior engine; 17+ QA-07 сценариев и fail-closed UNKNOWN.
+- Семь референсов перечислены как направления архитектурной сверки; полный построчный ZIP-аудит не проводился, наличие конкретных функций не утверждается.
+- Ретроактивные ссылки: AC-05, AC-06, QA-07, SP-01, EN-A1.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-01 специфицирован, реализация и клиентское подтверждение остаются отдельной работой.
+
 ## KR-20261122-016 — аудит QA-07: сценарные таблицы state → expected action по каждому профилю
 - Дата: 2026-11-22; точные Git timestamp/SHA — `git log --grep KR-20261122-016`.
 - Этап/тип: QA-07 / P0 / docs; изменены `REQUIREMENTS.md`, `CHANGELOG.md`, без изменений Lua, TOC, ZIP.
