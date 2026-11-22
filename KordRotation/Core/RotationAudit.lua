@@ -46,7 +46,10 @@ local function audit()
  end
  local identity=class.."_TREE_"..index
  local settings=KR.RotationSettings
- local saved,key=settings and settings:GetProfile(false)
+ local saved,key
+ if settings and type(settings.GetProfile)=="function" then
+  saved,key=settings:GetProfile(false)
+ end
  if key~=identity or not saved then
   return {status="UNKNOWN",reason="rotation_settings_unavailable",rules={}}
  end
