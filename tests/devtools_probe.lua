@@ -26,6 +26,29 @@ eq(result.present>0,true,"presence recorded")
 eq(result.present<101,true,"unverified rows not PASS")
 eq(result.evidence,"presence_only_not_client_pass","no client pass")
 eq(result.entries[1].matrix,1,"v14 numbering")
+-- A real opt-in session must emit one bounded row per v14 item, not
+-- one aggregate "API present" marker that obscures missing capabilities.
+local matrixRecords={}
+D.active=true
+D.Record=function(_,kind,st,why,matrix,elapsed,detail)
+ matrixRecords[#matrixRecords+1]={kind=kind,status=st,
+  reason=why,matrix=matrix,detail=detail}
+ return true
+end
+local traced=D:ProbeAll()
+D.active=false
+eq(#matrixRecords,101,"one persisted API assessment per v14 row")
+eq(traced.total,101,"complete traced matrix")
+for i,record in ipairs(matrixRecords) do
+ eq(record.kind,"API","matrix kind "..i)
+ eq(record.reason,"matrix_probe","matrix label "..i)
+ eq(record.matrix,i,"matrix ID "..i)
+ eq(type(record.detail),"string","bounded method result "..i)
+end
+eq(matrixRecords[1].status,"READY","known method presence")
+eq(matrixRecords[23].status,"UNKNOWN","unmapped composite remains unknown")
+eq(matrixRecords[23].detail,"no_single_safe_probe",
+ "unmapped matrix entries do not claim successful client calls")
 D.ReadCore=function() return {engineStatus="BLOCKED",
  engineReason="no_eligible_rule",profileStatus="READY",
  eligibilityReady=0,eligibilityBlocked=1,eligibilityUnknown=0} end
