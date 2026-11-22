@@ -1,7 +1,7 @@
 -- Kord Rotation DevTools (c) 2026 Vi22Rus; see root LICENSE.
 -- Explicit opt-in, bounded memory, no unknown input serialization.
 local _,D=...
-local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true,RULE=true,SIGNAL=true,STAGE=true}
+local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true,RULE=true,SIGNAL=true,STAGE=true,METHOD=true}
 local statuses={READY=true,BLOCKED=true,UNKNOWN=true,UNAVAILABLE=true,ERROR=true}
 local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     cooldown_unavailable=true,spellbook_unavailable=true,api_missing=true,
@@ -12,6 +12,7 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     snapshot_unavailable=true,manual_sample=true,game_state_unavailable=true,
     action_slot_unconfirmed=true,spell_visual_data_unverified=true,
     matrix_probe=true,no_single_safe_probe=true,unlisted_method=true,
+    method_call=true,method_trace_overflow=true,
     diagnostic_code_unmapped=true,diagnostic_code_invalid=true,
     diagnostic_detail_unmapped=true,
     core_bridge_missing=true,probe_failed=true,
@@ -141,6 +142,11 @@ for _,why in ipairs({
 -- Only bounded scalar diagnostics can be exported. No user strings,
 -- frame objects, spell IDs, slot IDs or names are accepted.
 local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
+  unsupported_contract=true,protected_or_invalid_table=true,
+  unsupported_key=true,field_access_failed=true,unexpected_type=true,
+  no_value=true,invalid_number=true,percentage_out_of_range=true,
+  curve_or_unit_unverified=true,curve_or_power_unverified=true,
+  presence_only_not_game_verified=true,reason_unavailable=true,
  rank_not_confirmed=true,find_spell_exception=true,scan_has_spells=true,
  no_confirmed_visible_slots=true,scan_unavailable=true,
  scanner_unavailable=true,unknown=true,none=true}
@@ -199,7 +205,7 @@ function D:SaveJournalPart(final)
         kept.records[i]={sequence=item.sequence,kind=item.kind,
             status=item.status,reason=item.reason,
             matrix=item.matrix,elapsed=item.elapsed,time=item.time,
-            detail=item.detail}
+            detail=item.detail,method=item.method,count=item.count}
     end
     table.insert(db.sessions,kept)
     local limit=type(self.maxSessions)=="number" and self.maxSessions or 8
@@ -229,6 +235,21 @@ function D:Start()
     self.session={matrix=self.matrix,version=self.version,
         started=self.started or 0,sessionID=self.journalID,
         records=self.records}
+    -- Only the main addon's static GameAPI allowlist is accepted as a
+    -- diagnostic method name; never persist arbitrary game/player strings.
+    self.apiTraceAllowed={}
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)=="table" and type(bridge.APIMethodNames)=="function" then
+        local ok,names=pcall(bridge.APIMethodNames)
+        if ok and type(names)=="table" and self:Safe(names) then
+            for _,name in ipairs(names) do
+                if self:Safe(name) and type(name)=="string"
+                    and #name<=80 and name:match("^[A-Za-z][A-Za-z0-9_.]*$") then
+                    self.apiTraceAllowed[name]=true
+                end
+            end
+        end
+    end
     if self.TraceStart then self:TraceStart() end
     -- Once per opt-in session, log one row for each canonical v14 API
     -- presence check. No combat API is executed by this census.
@@ -245,7 +266,7 @@ function D:Stop()
     self.session=nil
     return true
 end
-function D:Record(kind,status,reason,matrix,elapsed,detail)
+function D:Record(kind,status,reason,matrix,elapsed,detail,method,count)
     if not self.active then return false,"not_recording" end
     local current=now()
     if self.started and current and current-self.started>self.maxDuration then
@@ -275,6 +296,17 @@ function D:Record(kind,status,reason,matrix,elapsed,detail)
     local v14=int(matrix,1,101)
     local latency=int(elapsed,0,1000000)
     local cleanDetail=safeDetail(detail)
+    local cleanMethod
+    local cleanCount
+    if kind=="METHOD" then
+        if self:Safe(method) and type(method)=="string"
+            and self.apiTraceAllowed and self.apiTraceAllowed[method] then
+            cleanMethod=method
+        else
+            cleanMethod="GameAPI.unsupported"
+        end
+        cleanCount=int(count,1,1000000000) or 1
+    end
     -- A cooldown storm may be throttled, but distinct target, engine,
     -- profile and player-cast transitions are never lost to a global 50ms
     -- gate. The bounded maxRecords/maxDuration limits still apply.
@@ -286,7 +318,7 @@ function D:Record(kind,status,reason,matrix,elapsed,detail)
     self.sequence=self.sequence+1
     self.records[#self.records+1]={sequence=self.sequence,kind=kind,
         status=status,reason=reason,matrix=v14,elapsed=latency,time=current,
-        detail=cleanDetail}
+        detail=cleanDetail,method=cleanMethod,count=cleanCount}
     self.lastTick=current
     if kind=="EVENT" and reason=="spell_update_cooldown" then
         self.lastCooldownTick=current
@@ -329,7 +361,8 @@ function D:Export()
         for _,v in ipairs(list) do
             local line=table.concat({encode(v.sequence),encode(v.kind),
                 encode(v.status),encode(v.reason),encode(v.matrix),
-                encode(v.elapsed),encode(v.time),encode(v.detail)},"\t")
+                encode(v.elapsed),encode(v.time),encode(v.detail),
+                encode(v.method),encode(v.count)},"\t")
             if used+#line+1>self.maxExport then
                 full=true
                 break
