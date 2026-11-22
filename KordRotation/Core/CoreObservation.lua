@@ -493,6 +493,14 @@ function O:ReadAPIMethodNames()
         return {}
     end
     local names=api:SupportedNames()
+    -- Each presence-only probe is a distinct observation from a real
+    -- call of the corresponding game method.
+    local count=#names
+    for i=1,count do
+        names[#names+1]="GameAPI.Probe."..names[i]
+    end
+    names[#names+1]="GameAPI.ActionBarScanner.inspect"
+    names[#names+1]="GameAPI.ActionBarScanner.findspell"
     names[#names+1]="GameAPI.ReadField"
     names[#names+1]="GameAPI.ReadHealthPercent"
     names[#names+1]="GameAPI.ReadPowerPercent"
