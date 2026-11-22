@@ -553,3 +553,50 @@
 5. Тесты: соло на улице/в инстансе, группа вне инстанса, рейд, переход группы в рейд, разные сложности, вход/выход из инстанса, secret, отсутствующий API, неизвестный тип/ID, задержки событий.
 
 **Изменения кода:** не выполнялись; внесён аудит PL-07.
+
+
+## PL-08 — Движение игрока: стоит, идёт, падает, плывёт, транспорт, верхом
+
+**Приоритет: P0.**
+
+### Требование
+
+Различать независимые наблюдения `moving`, `falling`, `swimming`, `onTaxi`, `inVehicle`, `mounted` и вычисляемое `standing` только при достаточных подтверждениях. Эти признаки могут пересекаться: верхом можно стоять или двигаться, на транспорте можно находиться без собственного движения. Не превращать secret/отсутствие API в `false`; не считать `moving=false` доказательством стояния на земле. Скорость `GetUnitSpeed` и её оценка по событиям — разные по достоверности данные.
+
+### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 127–130: `player.mounted` читается через `IsMounted`, `player.moving` — через `IsPlayerMoving`; `falling`, `swimming`, `onTaxi`, `inVehicle`, `standing` отсутствуют.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 13–18: `IsPlayerMoving` и `IsMounted` есть в allowlist; `GetUnitSpeed`, `IsFalling`, `IsSwimming`, `UnitOnTaxi`, `UnitInVehicle` отсутствуют.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 8, 23: профилям доступны только `player.moving` и `player.mounted`.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua): нет отдельного отслеживания `PLAYER_STARTED_MOVING`/`PLAYER_STOPPED_MOVING` как подтверждённого событийного fallback для скорости.
+
+### Как реализовано в семи референсах (фактическая проверка локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Units.lua:1197–1210`: `GetUnitSpeed("player")` читается через `Secret.CallNumber`, при недоступности используется событийное наблюдение движения; `Units.lua:1155–1157`: `UnitOnTaxi("player")` через `Secret.CallBool`, неизвестное сводится к `false`; `Units.lua:1313`: `IsMounted` через `Secret.CallBool`. Это практический fallback, но сведение неизвестного к false для условий Kord не подходит. Специальных `IsFalling`/`IsSwimming` в проверенных Lua нет.
+2. **JustAC** — `JustAC/PrecombatEngine.lua:560–563`: перед рекомендациями проверяет `IsMounted`, `IsFlying`, `UnitOnTaxi`, `UnitInVehicle`; `DebugCommands.lua:8826–8838`: отдельно проверяет `IsPlayerMoving`; `MaintenanceTracker.lua:1316` предупреждает, что `GetUnitSpeed` может быть secret. Не обнаружено единого полноценного провайдера всех шести состояний.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua:4937–4957`: события/триггер `IsPlayerMoving` и `GetUnitSpeed`; `ForeverAuras/ForeverAuras.lua:2265–2268`: отдельно `IsMounted`, `UnitInVehicle`, `UnitOnTaxi`; `Prototypes.lua:10158–10182`: самостоятельные триггеры транспорта, верховой езды и движения. Универсальные триггеры не означают готовый единый снимок движения.
+4. **MaxDps** — `MaxDps/Buttons.lua:1333`: проверяет `IsMounted`; `MaxDps_Hunter/Specialization/Cata/BeastMastery.lua:137–143`: правила охотника непосредственно сравнивают `GetUnitSpeed("player")>0` для выбора заклинаний при движении. Прямое сравнение без secret-guard нельзя копировать в Kord.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:135–136`: `IsPlayerMoving()` вызывается через `pcall`, результат используется для `moving`-правил; в проверенном движке не обнаружено отдельных `falling/swimming/vehicle/mounted` провайдеров.
+6. **RotationGuide** — в проверенных Lua архива не обнаружены вызовы `IsPlayerMoving`, `GetUnitSpeed`, `IsFalling`, `IsSwimming`, `IsMounted`, `UnitOnTaxi`, `UnitInVehicle`; подтверждённой реализации PL-08 нет.
+7. **RotationMaster** — `RotationMaster/Platform/player_movement.lua:12–50`: специализированный адаптер `GetUnitSpeed("player")` с `pcall`, проверкой secret и `PLAYER_STARTED_MOVING`/`PLAYER_STOPPED_MOVING`; при недоступной скорости возвращает оценку `estimated=true`, а при недостатке данных — `nil,reason`. `Core/condition_support.lua:406–409`: отдельные `IsMounted`, `IsSwimming`, `IsFalling`, `IsFlying`; `Core/rotation_library.lua:1515`: транспорт `UnitInVehicle`. **Оценочную скорость нельзя считать точной**.
+
+### Моя рекомендация
+
+**Основа — RotationMaster**, прежде всего `Platform/player_movement.lua`: прямое безопасное наблюдение скорости плюс событийный fallback с маркировкой `estimated`, `nil+reason` при недостоверности. **Дополнение — JustAC и ForeverAuras**: независимые флаги `IsMounted`, `IsFlying`, `UnitOnTaxi`, `UnitInVehicle`, `IsSwimming`, `IsFalling`, не сводимые к единому флагу `moving`. Все вызовы адаптировать через единый `GameAPI`; неизвестные состояния сохранять как `UNKNOWN`. Не переносить прямые сравнения `GetUnitSpeed>0` из MaxDps и сведение неизвестного к `false` из Sonah. `standing` — только вычисляемый факт, не эквивалент `not moving`.
+
+### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — НЕОБХОДИМО ДОРАБОТАТЬ (P0).**
+
+Из шести требуемых категорий напрямую наблюдаются лишь движение и верховая езда; отдельной канонической модели остальных состояний нет.
+
+### Требуемые изменения
+
+1. Расширить allowlist `GameAPI` только подтверждёнными на WoW Forever `GetUnitSpeed`, `IsFalling`, `IsSwimming`, `UnitOnTaxi`, `UnitInVehicle` (при необходимости `IsFlying`/`UnitHasVehicleUI`); все значения проверять на secret, ошибки и типы.
+2. Создать `MovementObservation` с независимыми `moving`, `speed`, `falling`, `swimming`, `onTaxi`, `inVehicle`, `mounted`, `standing` и индивидуальными `status/reason/source/estimated`. Не подменять защищённую скорость оценкой без маркировки.
+3. Внедрить события `PLAYER_STARTED_MOVING`/`PLAYER_STOPPED_MOVING` с корректной инициализацией, инвалидацией и защитой от устаревшего наблюдения; оценку скорости не использовать там, где нужен точный порог.
+4. Согласовать приоритеты и пересечения: транспорт ≠ верховая езда, падение ≠ ходьба, плавание может сочетаться с движением, стояние требует дополнительных подтверждений.
+5. Добавить сигналы в `RotationConditions`, не допуская ложного `READY` при неизвестном обязательном признаке.
+6. Тесты: стояние, движение, падение, плавание, верхом стоя/двигаясь, такси, транспорт, смена состояний, secret-скорость, отсутствующий API, потеря/задержка событий, устаревший fallback.
+
+**Изменения кода:** не выполнялись; внесён аудит PL-08.
