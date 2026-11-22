@@ -1568,6 +1568,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 taunt availability must pass common AbilityEligibility including spell/range/form/cooldown; policy cannot issue READY.**
+
 **Архитектурная актуализация TH-02:** **См. TH-02: TH-02 threat-drop recommendation still requires common AbilityEligibility; risk policy cannot issue final READY.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 interrupt recommendation is a candidate until common AbilityEligibility confirms the current addressed target and spell constraints; no second READY gate.**
@@ -2642,6 +2644,8 @@
 
 ### TG-05 — Цель в бою, цель цели (агро на мне / на питомце / на другом)
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 lost-aggro evidence uses TH-01 and target-of-target only as corroboration, never assumes assigned tank always owns aggro.**
+
 **Архитектурная актуализация TH-02:** **См. TH-02: TH-02 risk uses the canonical TH-01 observation, not target-of-target or threat status alone as a quantitative pull threshold.**
 
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 is the canonical per-enemy/per-actor threat observation; target-of-target is corroborating evidence, never a substitute for threat-table ownership.**
@@ -3167,6 +3171,8 @@
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 uses canonical GUID identity and addressable aliases for enemy/tank/pet, with recycled-token invalidation.**
+
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 threat observations use the shared GUID identity index and validated actor/target aliases; no independent nameplate scanner.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 switch/cast candidates must use canonical GUID identity and alias validation; never choose by name or recycled token.**
@@ -3466,6 +3472,8 @@
 
 ### EN-08 — Бюджет: чтение nameplates не чаще заданного интервала, без постоянного сканирования
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 reuses the budgeted observed-enemy registry; tank targeting does not trigger its own nameplate enumeration.**
+
 **Архитектурная актуализация TH-02:** **См. TH-02: TH-02 reuses the shared enemy snapshot/budget; no extra nameplate enumeration for risk assessment.**
 
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 reuses the shared budgeted enemy snapshot and lazy per-actor reads; threat queries do not trigger independent full plate enumeration.**
@@ -3529,6 +3537,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 taunt necessity consumes canonical per-actor/per-enemy ThreatObservation, not a new threat reader; taunt readiness is separate from taunt necessity.**
+
 **Архитектурная актуализация TH-02:** **См. TH-02: TH-02 consumes TH-01 per-actor/per-enemy detailed threat evidence; risk prediction and DPS stop policy must not become a second threat reader.**
 
 **Раздел: 7. Угроза и агро. Приоритет: P1.**
@@ -3582,6 +3592,8 @@
 
 ### TH-02 — Риск срыва агро (для DPS): нужно ли уменьшить угрозу или остановиться
 
+**Архитектурная актуализация TH-03:** **См. TH-03: TH-03 tank reacquisition and TH-02 DPS risk share TH-01 facts but use distinct policies; a DPS threat warning does not automatically justify taunting.**
+
 **Раздел: 7. Угроза и агро. Приоритет: P2.**
 
 #### Требование
@@ -3630,5 +3642,59 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord читает только threat status игрока на текущем target; достоверной количественной оценки риска срыва агро, политики уменьшения угрозы/паузы DPS и её multi-enemy охвата пока нет.
 
 **Архитектурные ссылки:** TH-01, TG-05, EN-03, EN-08, SP-14. Обратные архитектурные ссылки добавлены в эти ранее записанные требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### TH-03 — Таунт и способности танка: готовы, нужны ли, цель вне агро
+
+**Раздел: 7. Угроза и агро. Приоритет: P2.**
+
+#### Требование
+
+Раздельно определять **готовность** конкретной танковой способности (таунт, массовый таунт, временное принуждение атаковать, защитная/угрозообразующая способность), **необходимость** её применения и **факт потери агро на конкретном enemyGUID**. `TauntNeedObservation(enemyGUID,tankGUID,spellID)` — производное решение из TH-01, а не второй threat scanner. Наличие cooldown-ready не означает необходимость; `UnitThreatSituation` 0/1, смена target-of-target, роль TANK, неизвестный `isTanking` и отсутствие enemy в threat table не являются по отдельности доказательством «таунт нужен». Отдельно учитывать ситуацию, когда враг не находится в зоне агро танка/не взаимодействует с группой: это не обязательно потеря ранее удерживаемой угрозы. `UNKNOWN` при неполных данных. Только рекомендации, без автоматического выбора цели/каста.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:15,24,33`: allowlist включает `UnitThreatSituation`, `UnitDetailedThreatSituation`, `GetSpellCooldown`, `C_Spell.GetSpellCooldown`; API разрешены, но не образуют готовую танковую policy.
+- `KordRotation/Core/GameState.lua:148–152`: player-vs-target threat status 0..3, нет отдельного per-enemy actor tank ownership и подтверждённой истории потери агро.
+- `KordRotation/Core/GameState.lua:392–436`: target-of-target/hasAggro с GUID guard применимы как косвенное подтверждение, но не доказательство, что танк раньше держал угрозу.
+- `KordRotation/Core/AbilityEligibility.lua:72–100,187–239,348–353`: общие cooldown/target/range проверки уже есть; конкретные формы, механика таунта, иммунитет и адресуемость цели должны быть проверены в общем Eligibility/данных способности.
+- `KordRotation/Core/RotationConditions.lua:21,55`: есть `target.threat` и `target.targetsPlayer`, но нет `TauntNeedObservation` и отдельного результата для `taunt.ready` против `taunt.needed`.
+- `KordRotation/Core/EventBus.lua:91–120`: coalescing/heartbeat есть; отдельной достоверной per-GUID taunt-loss history и канонического TH-01 actor threat provider в текущем коде не подтверждено.
+
+#### Сравнение семи референсов (Lua ZIP)
+
+1. **Sonah:** `Sonah/Classes/Druid.lua:224–225,439,472` ограничивает Growl подтверждённой танковой ролью/формой и `C.noAggro`, прямо предупреждая о недопустимом срыве босса у основного танка. `Sonah/Classes/Warrior.lua:563–564,599` использует Taunt, Mocking Blow и Challenging Shout с условиями боя/группы/noAggro и диапазона. Перенять **role+form+need gating** и классовые данные; `noAggro` не равно доказанной необходимости на конкретном GUID.
+2. **JustAC:** `JustAC/Data/SpellCategories.lua:517,524–528` каталогизирует Taunt, Dark Command, Growl, Hand of Reckoning; `JustAC/Data/SpellCooldowns.lua:20,43,59,83,243,263` содержит справочные cooldowns. Перенять SpellID-based каталог категорий и fallback метаданных, **не** объявлять табличный cooldown текущей готовностью и не переносить способности иных версий клиента без проверки.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:97–98,8300–8305` получает `isTanking/status/percent/rawPercent/value` из `UnitDetailedThreatSituation`; `ForeverAuras/SecretAuraRanks.lua:31,110,495,509,527` и `SpellNameData.lua:1712,1746` содержат идентификаторы таунтов/аналогов. Перенять detailed threat evidence и справочник ID, но UI-аура и spell-name table не подтверждают работоспособность конкретного таунта/его эффекта.
+4. **MaxDps:** `MaxDps/SpellData.lua:135,6807` и другие записи перечисляют Taunt/Growl; `MaxDps/Helper.lua:2235` использует `UnitThreatSituation` для enemy presence. Перенять разделение каталога способностей и наблюдения угрозы; универсальная доказательная `taunt-needed` policy в проверенных местах не подтверждена.
+5. **ForeverRotation:** в проверенных Lua нет подтверждённого общего taunt-specific readiness/necessity provider; не делать вывод об отсутствии во всех возможных версиях аддона. Использовать только доказанные механизмы других референсов.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого общего taunt-specific readiness/necessity provider; не подменять необходимость таунта наличием способности в профиле.
+7. **RotationMaster:** `RotationMaster/Libs/ThreatClassic-1.0/ClassModules/Classic/Warrior.lua:138–139,233`, `.../Druid.lua:63–64,133`, `.../Pet.lua:20` моделируют воздействие Taunt/Growl на threat table; `RotationMaster/Libs/ThreatClassic-1.0/ThreatClassic-1.0.lua:1623–1635` предоставляет detailed threat; `RotationMaster/Libs/LibClassicDurations/classAbilities.lua:437,524–526` содержит длительности taunt/forced-attack эффектов. Перенять различение **threat observation, taunt effect и времени действия**; не копировать модель угрозы/длительности/коэффициенты как доказанные для Forever без клиентской проверки и не вводить вторую симуляцию threat.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Основа — единый TH-01 `ThreatObservation` и общий `AbilityEligibility`, дополненные Sonah role/form/need gating и разделением taunt effect vs threat status по RotationMaster; справочные SpellID и свойства из JustAC/ForeverAuras использовать только после валидации на Forever.** Один производный `TankControlRecommendation(enemyGUID,tankGUID,abilityID)` возвращает отдельно `readiness` (результат общего Eligibility), `need` (`NEEDED/NOT_NEEDED/UNKNOWN`), `reason`, `targetGUID`, `effectKind` (`THREAT_EQUALIZE`, `FORCED_ATTACK`, `THREAT_GENERATION`, `DEFENSIVE` или UNKNOWN), `confidence`, `observedAt`. Названия — логические контракты, не требование создавать новые Lua-файлы. Таунт необходим только при подтверждённом контексте танка и фактическом враге, который должен быть возвращён под контроль танка: например, подтверждённый enemy атакует другого участника и это не запланированная смена танков. Не рекомендовать таунт на цели, которую уже контролирует назначенный танк, только из-за чужого высокого threat или отсутствия полной информации. Проверить immunity, DR, boss mechanics, taunt swap, PvP, pets, AoE radius, target addressability и range в рамках доступных доказательств; UNKNOWN не равен безопасному использованию.
+
+Для **«цель вне агро»** различать: (1) враг подтверждённо взаимодействует с группой, но не удерживается танком; (2) враг вне боя с группой; (3) coverage/threat неизвестны. Случай (2) не объявлять «потерянным агро» и не инициировать таунт автоматически. Случай (3) — `UNKNOWN`. Все данные ленивые, GUID-keyed, EN-08 budgeted. Если выбранная цель не текущий адресуемый target, показывать только подсказку ручного переключения по EN-07; окончательное `READY` остаётся у AbilityEligibility.
+
+#### Требуемые изменения
+
+1. Расширить TH-01 threat observation производной `TauntNeedObservation`, не создавать второй scanner/таблицу угрозы.
+2. Ввести общий `TankControlRecommendation` с независимыми `readiness` и `need`; не смешивать cooldown-ready с тактической необходимостью.
+3. Поддержать actor tank/pet/group roles и enemy GUID с доказанной идентичностью, текущим владельцем агро и историей transfer/taunt, отличать роль от фактического агро.
+4. Реестр танковых способностей по SpellID/effectKind, требованиям формы/стойки, target policy, range, cooldown, зарядам, GCD и подтверждённой клиентской механике; общий Eligibility — единственный final READY.
+5. Разделить taunt, forced attack, threat generation и defensive; не объявлять временное принуждение устойчивым переносом threat.
+6. Учитывать групповое взаимодействие EN-02, ручную смену цели EN-07, иммунитет, taunt-swap и неизвестные механики босса; не инициировать pull чужого врага.
+7. Общий GUID index EN-03, bounded enemy refresh EN-08, lazy Needs и per-evaluation memo; события threat/target/roster/pet/taunt и TTL инвалидируют по доказанным данным.
+8. DevTools-only диагностика: `taunt_need_unknown`, `taunt_ready_but_not_needed`, `taunt_needed_but_unavailable`, `taunt_target_not_engaged`, `taunt_target_unaddressable`, `taunt_tank_role_unknown`, `taunt_effect_unverified`, `taunt_immunity_unknown`, `taunt_swap_policy_unknown`, `taunt_guid_changed`.
+9. Тесты: tank holds aggro, tank loses aggro to DPS/healer/pet, enemy outside group combat, unknown threat, tank role missing, two tanks with planned swap, taunt immune/resist, taunt on cooldown, ready but unnecessary, form/stance wrong, forced attack without threat transfer, AoE taunt, ranged/unaddressable enemy, boss/PvP, 0/1/many enemies, recycled GUID, stale/secret data, manual switch and no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Общие cooldown/eligibility и player-target threat facts существуют, но нет доказанной actor-specific threat ownership, универсального решения о необходимости таунта, классификации taunt effects и разграничения «враг вне агро»/«агро потеряно».
+
+**Архитектурные ссылки:** TH-01, TH-02, TG-05, EN-02, EN-03, EN-07, EN-08, SP-14. Обратные ссылки добавлены в TH-01, TH-02, TG-05, EN-03, EN-08, SP-14; EN-02/EN-07 остаются потребителями существующих контрактов без их замены.
 
 **Изменения Lua:** отсутствуют. Только документация.
