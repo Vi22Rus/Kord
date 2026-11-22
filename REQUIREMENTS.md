@@ -1236,6 +1236,9 @@
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
 
+**Архитектурная актуализация TG-09:** **См. TG-09: range/deadzone shares one interval-based TargetRangeObservation; spell in-range and melee facts are constraints, not exact distances; do not build separate range scanners.**
+
+
 **Архитектурная актуализация TG-08:** **См. TG-08: target distance/melee/deadzone is not evidence of moving away; movement trend requires separate verified observations.**
 
 
@@ -1540,6 +1543,9 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+
+**Архитектурная актуализация TG-09:** **См. TG-09: per-spell range eligibility consumes shared range facts but remains spell-specific; never infer precise distance from a single spell check.**
 
 
 **Архитектурная актуализация TG-07:** **См. TG-07: target CC and damage-break rules reuse shared SpellRequirementsObservation/AbilityEligibility; no class-specific eligibility engine.**
@@ -2335,6 +2341,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-09:** **См. TG-09: distance bounds are bound to confirmed targetGUID; target existence/attackability is separate from distance.**
+
+
 **Архитектурная актуализация TG-08:** **См. TG-08: fleeing/movement observations are tied to the same targetGUID; range and attackability do not prove fleeing.**
 
 
@@ -2711,6 +2720,9 @@
 
 ### TG-08 — Бежит ли цель (Hamstring/Wing Clip etc нужен)
 
+
+**Архитектурная актуализация TG-09:** **См. TG-09: distance band is not proof of target movement or fleeing; reuse same range observation without inferring direction.**
+
 **Раздел: 5. Цель. Приоритет: P2.**
 
 #### Требование
@@ -2757,3 +2769,53 @@
 **Архитектурные ссылки:** TG-01 — targetGUID, TG-07 — fear/root, AU-01/AU-05 — slow auras, SP-08 — distance. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-08.
+
+
+### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
+
+**Раздел: 5. Цель. Приоритет: P0.**
+
+#### Требование
+
+`TargetRangeObservation(targetGUID)` возвращает **доказательный интервал** `minDistance/maxDistance` с явными `inclusive/exclusive` границами, `unit` (игровые ярды), `source`, `status/reason`, `observedAt`, а также `melee`, `in5to8`, `in8to30`, `beyond30` с независимыми READY(true/false)/UNKNOWN. Запрошенные пользователем границы 5/8/30 трактуются как игровые единицы API WoW (yards), а не физические метры без конверсии. Границы категорий формализовать без перекрытия: `melee` — отдельный факт (hitbox varies); `[5,8)`, `[8,30]`, `>30` — дистанционные полосы, **не** полная взаимоисключающая классификация с melee. При интервале, пересекающем порог, соответствующая категория UNKNOWN, а не выдуманная точка. В частности `CheckInteractDistance` не доказывает «ровно 5», а `IsSpellInRange` не доказывает «ровно 30».
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 302–348: `ReadSignal("target.melee")` уже проверяет `C_SwingTimer.IsTargetWithinSwingRange(0)` с targetGUID guard. `CheckInteractDistance("target",3)` используется лишь как **отрицательное** свидетельство: за пределами interact-distance не melee; положительное значение не доказывает melee. Это важное безопасное различие.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–238,448–499: проверяет `C_Spell.SpellHasRange` и `C_Spell.IsSpellInRange` либо legacy `IsSpellInRange`, с target identity guard для range fact. Это **spell-specific eligibility**, а не геометрическая дистанция.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 48,69–70,278–285: есть `target.melee` и `spell.range` по declared Needs, но нет общего интервального reader и `target.rangeBand`.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 19–20,26,36–37: allowlist для `CheckInteractDistance`, `C_SwingTimer.IsTargetWithinSwingRange`, `C_Spell.IsSpellInRange`, `C_Spell.SpellHasRange`. `LibRangeCheck` пока не подтверждён как общий Kord provider.
+- SP-08 уже обсуждает melee/deadzone и range; TG-09 **расширяет тот же механизм**, не вводит новый независимый сканер.
+
+#### Семь референсов (проверенные локальные Lua ZIP)
+
+1. **Sonah** — `Core/Molecules/Conditions.lua:970+` использует `Units.Near("target")` с `CheckInteractDistance` и spell bounds для приблизительного ближнего диапазона; unknown не считается доказательством близости.
+2. **JustAC** — `SpellQueue.lua:725+` разделяет подтверждённый melee spell range и иные range checks, `DebugCommands.lua:2349+` описывает spell path; хороший образец осторожного melee/ability split, но не полный геометрический 5–8–30 provider.
+3. **ForeverAuras** — `Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua` и `Prototypes.lua:31` дают spell-specific проверки; библиотечный spell range не превращается автоматически в точную дистанцию.
+4. **MaxDps** — `MaxDps_Mage/Specialization/TWW/Frost.lua:93,362` использует `LibRangeCheck-3.0:GetRange("target")`; подходящий интервальный источник, но retail module не доказывает доступность/secret-safe для Forever.
+5. **ForeverRotation** — `Engine.lua:262+` применяет `C_Spell.IsSpellInRange` для eligibility, не как точный диапазон.
+6. **RotationGuide** — `Core/State.lua:240–257` использует class-specific melee probe spell и fallback `CheckInteractDistance("target",3)`; положительный interact результат не гарантирует реальную melee геометрию.
+7. **RotationMaster** — `Platform/range.lua:165–178` сохраняет `LibRangeCheck` min/max bounds, не превращает границы в точное число, `Conditions/range.lua:5–23` возвращает UNKNOWN при интервале через melee порог, `Conditions/spatial.lua:49–53,558+` читает диапазоны через общую библиотеку. **Наиболее подходящий интервальный образец**, с проверкой реального Forever API.
+
+#### Рекомендация
+
+**Основа — существующий Kord SP-08/GameState/AbilityEligibility + RotationMaster Platform/range.lua + MaxDps LibRangeCheck (как подтверждение применимости интервального подхода) + Sonah secret-safe.** Один логический `TargetRangeObservation(targetGUID)` агрегирует разрешённые `LibRangeCheck` bounds, `CheckInteractDistance`, `C_SwingTimer.IsTargetWithinSwingRange` и проверенные spell probes, но хранит происхождение каждого ограничения и не выводит геометрию из неверно работающего spell range. Spell-specific `inRange` остаётся независимым фактом для `AbilityEligibility`. Если Forever даёт только melee true/false, остальные bands UNKNOWN. Отдельная hunter deadzone не должна навязываться всем классам.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Melee и spell range есть, доказательных диапазонов 5–8, 8–30, >30 нет.
+
+#### Требуемые изменения
+
+1. Проверить `LibRangeCheck-3.0` на Forever, включая возвращаемые bounds, secret/combat, погрешности и актуальность spell probes. Не считать наличие библиотеки доказательством корректной работы.
+2. Встроить интервальный reader в общий SP-08 `TargetRangeObservation` с targetGUID и source provenance; без параллельного range scanner.
+3. `melee` сохранять независимым фактом `C_SwingTimer.IsTargetWithinSwingRange(0)`; `CheckInteractDistance(3)==true` не доказывает melee.
+4. Вычислять band READY(true) только если весь подтверждённый интервал внутри полосы; READY(false) только если весь интервал вне полосы; иначе UNKNOWN. Согласовать open/closed границы и округление 5/8/30.
+5. Не приравнивать `C_Spell.IsSpellInRange` к числовому расстоянию; допускаются только подтверждённые ограничивающие probes, у которых реально известна геометрия/минимальная дистанция на Forever.
+6. Поддержать spell-specific deadzone и min/max range (особенно охотник), независимо от геометрического band; если нет данных о min range, не объявлять [5,8) deadzone для всех.
+7. Инвалидировать при targetGUID switch, relevant unit/range changes и heartbeat fallback, bounded TTL; range cache нельзя переиспользовать для другого target.
+8. Диагностика `range_interval_unavailable`, `range_interval_crosses_boundary`, `range_probe_unreliable`, `range_target_changed`, `range_secret`; тесты melee, 4.9,5,7.9,8,29.9,30,30.1, >40, moving target, giant hitbox, spell out-of-range despite geometric band, combat secret, target swap.
+
+**Архитектурные ссылки:** SP-08 — canonical range/deadzone; TG-01 — target identity; TG-08 — movement separate; SP-14 — spell requirements. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-09.
