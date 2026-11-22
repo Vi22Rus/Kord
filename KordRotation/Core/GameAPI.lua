@@ -367,8 +367,8 @@ for name in pairs(traceMethods) do
     local original=API[name]
     if type(original)=="function" then
         API[name]=function(self,...)
-            -- ReadField key names may be user/game data. Its method
-            -- identity is fixed rather than derived from the key.
+            -- Actual adapter method identity is normalized to safe
+            -- public API names; ReadField uses only verified key metadata.
             local methodName=name
             if name=="Read" or name=="ReadTuple" or name=="ReadValues" then
                 methodName=select(1,...)
