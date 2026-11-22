@@ -16,7 +16,9 @@ KR.BindingResolver={Resolve=function(_,id)
 end}
 local combat=false
 local auraKnown=false
+local snapshotReads=0
 KR.GameState={GetSnapshot=function()
+ snapshotReads=snapshotReads+1
  return {player={level={status="READY",value=30},
    combat={status="READY",value=combat}},
    target={}}
@@ -79,4 +81,11 @@ eq(S:GetFlag("buffsInCombatMain"),false,"one toggle across specs/classes")
 eq(S:SetFlag("buffsInCombatMain",true),true,"enable global promotion")
 eq(S:GetFlag("buffsInCombatMain"),true,"global save persists")
 eq(KR.db.buffsInCombatMain,true,"saved to root account db")
+KR.characterState={classToken="HUNTER",index=1,level=30}
+combat=true
+snapshotReads=0
+local pairMain,pairDefense=E:EvaluateBoth()
+eq(snapshotReads,1,"two channels share one fresh GameState snapshot")
+eq(spell(pairMain),13165,"shared snapshot main recommendation")
+eq(pairDefense.status,"BLOCKED","shared snapshot does not duplicate aura")
 print("PASS global combat aura routing and dual engine channels")
