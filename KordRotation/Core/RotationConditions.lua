@@ -93,7 +93,17 @@ local function value(ctx,field,id)
  if not safe(field) or type(field)~="string"
      or not declared(ctx,field,id) then return nil end
  local key=field..":"..(id and tostring(id) or "")
- if ctx.readDone[key] then return ctx.readCache[key] end
+ if ctx.readDone[key] then
+  local cached=ctx.readCache[key]
+  ctx.observations=ctx.observations or {}
+  if #ctx.observations<256 then
+   ctx.observations[#ctx.observations+1]={field=field,
+    status=cached~=nil and "READY" or "UNKNOWN",
+    reason=cached==nil and
+     ((ctx.reasonCache or {})[key] or "signal_unverified") or "none"}
+  end
+  return cached
+ end
  ctx.readDone[key]=true
  local answer=nil
  local failure=nil
@@ -119,6 +129,8 @@ local function value(ctx,field,id)
   end
  end
  ctx.readCache[key]=answer
+ ctx.reasonCache=ctx.reasonCache or {}
+ ctx.reasonCache[key]=failure
  ctx.observations=ctx.observations or {}
  if #ctx.observations<256 then
   ctx.observations[#ctx.observations+1]={field=field,
