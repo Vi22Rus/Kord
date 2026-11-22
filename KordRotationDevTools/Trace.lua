@@ -259,6 +259,14 @@ function D:ObserveDetails(diagnosis,force,summary)
         add("CHECK",diag.decisiveStatus,"engine_decisive_reason",
             diag.decisiveReason)
         add("CHECK",diag.firstStatus,"priority_1_rule",diag.firstReason)
+        if diag.defensiveStatus then
+            add("CHECK",diag.defensiveStatus,"defensive_engine_decision",
+                diag.defensiveReason)
+            add("CHECK",diag.defensiveRuleStatus,"defensive_rule_priority",
+                diag.defensivePriority)
+            add("CHECK",diag.defensiveRuleStatus,"defensive_rule_reason",
+                diag.defensiveRuleReason)
+        end
         -- The rank-4 fixed-position test belongs ONLY to the old pilot.
         -- For the full BM 1–59 module, use the generic RULE/SIGNAL/STAGE
         -- audit instead; its Arcane priority is no longer number five.
