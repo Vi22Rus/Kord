@@ -183,7 +183,8 @@ function KR.RotationDisplay:RefreshLayout()
             slot:Show()
         else slot:Hide() end
     end
-    -- Extra areas are TEST-only empty previews, not actual defensive recommendations.
+    -- Defense slots host a verified, independent aura recommendation.
+    -- Interrupt/resource placeholders remain test-only.
     local pref=KR.IndicatorSettings
     local testing=p.showPanel and p.testMode
     local hasDefense=p.showPanel and pref and pref:Get("defensiveEnabled")==true
@@ -375,9 +376,41 @@ function KR.RotationDisplay:Refresh(skipLayout)
                 if i<=(p.slotCount or 3) then slot:Show() end
             end
         end
-        -- Defense/interrupt slots remain fixed but EMPTY until supported
-        -- independent recommendation providers are implemented.
-        for _,slot in ipairs(self.defensePreview or {}) do slot:ClearDisplayData() end
+        -- Evaluate defensive independently so an UNKNOWN earlier DPS
+        -- condition cannot suppress verified aura upkeep. Never route
+        -- the same aura to main and defense in a single snapshot.
+        local pref=KR.IndicatorSettings
+        local defenseEnabled=p.showPanel and pref
+            and pref:Get("defensiveEnabled")==true
+        local defensiveOnlyCombat=pref
+            and pref:Get("defensiveCombatOnly")==true
+        local combat
+        if defensiveOnlyCombat then
+            combat=safeBoolean(UnitAffectingCombat,"player")
+        end
+        local defensiveItem
+        if defenseEnabled and (not defensiveOnlyCombat or combat==true)
+            and KR.RotationEngine
+            and type(KR.RotationEngine.EvaluateDefensive)=="function" then
+            local ok,defResult=pcall(KR.RotationEngine.EvaluateDefensive,
+                KR.RotationEngine)
+            if ok then
+                local checked,record=pcall(verifiedRecommendation,defResult)
+                if checked then defensiveItem=record end
+            end
+        end
+        local mainID=item and item.spellID
+        if defensiveItem and defensiveItem.spellID==mainID then
+            defensiveItem=nil
+        end
+        for i,slot in ipairs(self.defensePreview or {}) do
+            if i==1 and defensiveItem then
+                slot:SetDisplayData({texture=defensiveItem.texture,
+                    name=defensiveItem.name,keybind=defensiveItem.keybind})
+            else
+                slot:ClearDisplayData()
+            end
+        end
         if self.interruptPreview then self.interruptPreview:ClearDisplayData() end
     end
     -- In preview the marker explains synthetic icons; in live mode it must
