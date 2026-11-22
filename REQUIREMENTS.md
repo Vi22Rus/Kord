@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 resource reserve and queue status are candidate constraints; final READY only AbilityEligibility; unknown resource/queue cannot be treated as available.**
+
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 non-clipping window is a profile/policy constraint on candidates, not permission to override AbilityEligibility's final READY.**
 
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 timing is advisory input for next-swing and weaving policies, not spell READY; only AbilityEligibility issues final READY.**
@@ -3303,6 +3305,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 queued attack requires EN-04 breakable CC safety and target validation; a queued attack may still land after target changes.**
+
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 must retain EN-04 breakable CC and target safety even if an action fits the ranged shot window.**
 
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 autoattack recommendations must respect EN-04 breakable crowd-control safety; do not activate attack against protected targets.**
@@ -3368,6 +3372,8 @@
 
 
 ### EN-05 — Минимальное число целей для включения AoE — настройка
+
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 Cleave AoE policy depends on EN-05 minimum confirmed target count; unknown nearby count cannot justify cleave.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: automatic AoE threshold uses the EN-08 budgeted count snapshot; staleness/partial coverage cannot be silently treated as an exact count.**
 
@@ -4201,6 +4207,8 @@
 
 ### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 player resource reserve is separate from PE-02 pet typed resources; never borrow pet power values.**
+
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 healing duration and recommendation use PE-02 confirmed pet health and resource facts; unknown health never becomes an emergency threshold.**
 
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet action costs depend on PE-02 typed pet power and GUID; unknown pet power must not become zero cost.**
@@ -4486,6 +4494,8 @@
 
 ### SW-01 — Автоатака включена / выключена; автострельба и волшебная палочка
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 queued next-swing ability is not SW-01 autoattack on/off; reuse mode/target safety but never conflate IsCurrentSpell(queued ability) with Attack 6603.**
+
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 requires confirmed hunter Auto Shot active state and auto-switch policy from SW-01; an inactive/unknown repeat mode cannot be treated as a known upcoming shot.**
 
 **Архитектурная актуализация SW-02:** **См. SW-02: SW-02 extends SW-01's confirmed melee/Auto Shot/wand active-state observation with independent main-hand, off-hand and ranged remaining estimates; active does not prove timer.**
@@ -4541,6 +4551,8 @@
 
 ### SW-02 — Таймеры ударов: до следующего ближнего и дальнего удара
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 consumes SW-02 confirmed/estimated next melee swing window and hand identity; no second swing scanner and no claim of exact execution from predicted remaining.**
+
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 consumes SW-02 ranged swing remaining and its confidence/revision; never create a second ranged swing timer or convert ESTIMATED into confirmed timing.**
 
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P1.**
@@ -4594,6 +4606,8 @@
 
 ### SW-03 — Окно «не клиппить Auto Shot» для стрелка
 
+**Архитектурная актуализация SW-04:** **См. SW-04: SW-04 melee queued strike is independent of SW-03 Auto Shot clipping; hunter Raptor Strike may affect melee weaving, but never assume ranged phase resets.**
+
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P1.**
 
 #### Требование
@@ -4642,5 +4656,61 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** В Kord есть Auto Shot active read и начатый `Needs.swing` contract, но нет подтверждённого ranged phase timer, per-action reset/lock policy и вычисляемого non-clipping window.
 
 **Архитектурные ссылки:** SW-01, SW-02, SP-14, EN-04, PE-05, EN-07. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### SW-04 — Следующий удар усиливается способностью — запас
+
+**Раздел: 10. Автоатака и таймеры ударов. Приоритет: P2.**
+
+#### Требование
+
+Для семейства **on-next-melee-swing** (`Heroic Strike`, `Cleave`, `Maul`, `Raptor Strike` и только подтверждённых Forever-аналогов) определять (1) принадлежность spellID/изученного ранга к `NEXT_SWING`, (2) **уже поставлена ли способность в очередь**, (3) ожидаемый ближайший swing из SW-02 и его достоверность, (4) стоимость постановки/исполнения с учётом механики Forever, (5) **доступный запас ресурса сверх резерва для более приоритетных действий**, (6) безопасен ли выбор по цели, CC и AoE. `NextSwingEmpowerObservation(playerGUID,spellFamily,targetGUID)`: `queueState=QUEUED/NOT_QUEUED/UNKNOWN`, `queuedSpellID`, `swingRemaining`, `resourceType`, `currentResource`, `queuedCost`, `reservedResource`, `spareResource`, `reserveSatisfied=TRUE/FALSE/UNKNOWN`, `decision=RECOMMEND/SUPPRESS/UNKNOWN/NOT_APPLICABLE`, `status/source/reason/revision`. **Запас** означает ресурс после предполагаемой стоимости усиленного удара и необходимых ближайших приоритетных способностей, а не просто `IsSpellUsable`. Не выдумывать точные rage/mana/energy значения, если в бою они secret. Нельзя объявлять `NOT_QUEUED` при неизвестном `IsCurrentSpell`: иначе бесконечное повторение рекомендации скрывает настоящую ротацию. Нельзя объявлять `RECOMMEND` только из факта `SW-02.remaining < N`; таймер не доказывает доступность ресурса и безопасность очереди. Движок только рекомендует, **не ставит в очередь автоматически**.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:20,51–52,55`: разрешены `C_SwingTimer.IsTargetWithinSwingRange` (дистанция, не время), `C_Spell.IsCurrentSpell`, `C_Spell.IsAutoRepeatSpell`, `C_Spell.GetSpellPowerCost`. Но нет подтверждённого общего next-swing queue + resource reserve observation.
+- `KordRotation/Core/GameState.lua:303–335`: next-swing Raptor Strike обрабатывается как особый **melee range** случай; `:767–778` Auto Shot флаги не содержат очередь Heroic Strike/Cleave/Maul/Raptor Strike. Отдельный `NextSwingEmpowerObservation` отсутствует.
+- `KordRotation/Core/RotationConditions.lua:27,74`: базовый `resources.percent` и `Needs.swing` присутствуют, но `nextSwing.queued`, `nextSwing.spareResource`, `nextSwing.reserveSatisfied` как универсальные поля не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:10,183`: ресурсный gate может вернуть `insufficient_resources`, но **одна способность usable ≠ ресурс после оплаты + резерв следующей приоритетной**.
+- `KordRotation/Core/EventBus.lua:22,25–26,37–38`: `SPELL_UPDATE_USABLE`, `UNIT_POWER_*` есть; отсутствует подтверждённая revision очереди усиленного удара и привязка к SW-02 swing events.
+- `SW-01`–`SW-03` уже определяют player autoattack, swing phase и Auto Shot clipping; SW-04 использует **те же** данные, не создаёт дополнительный swing tracker.
+
+#### Сравнение семи референсов (локальные ZIP, проверенные Lua и строки)
+
+1. **Sonah:** `Sonah/Classes/Warrior.lua:155–158` подавляет Heroic Strike/Cleave, если один уже в очереди; `:160–183` задаёт `RAGE_TIERS` и `spareRage(n)`, включая запас для Mortal Strike/Bloodthirst/Whirlwind; `:291–298` использует `notQueued` и `spareRage` в Cleave/Heroic Strike. `Sonah/Core/Molecules/Conditions.lua:296–305` определяет `C.current` через IsCurrent, но **unknown трактует как false** — для Kord неприемлемо. `Sonah/Classes/Druid.lua:445–452` избегает повторного Maul, `Sonah/Classes/Hunter.lua:134–135,231–234` избегает повторного Raptor Strike. **Перенять resource-reserve policy и anti-repeat; исправить fail-open UNKNOWN.**
+2. **JustAC:** `JustAC/Data/Forever/Defaults.lua:414–444` содержит конкретный каталог NEXT_SWING по рангам Heroic Strike/Cleave/Raptor Strike/Maul; `JustAC/BlizzardAPI/StateHelpers.lua:410–426` определяет `IsMeleeSwingSpell` и предупреждает, что дальность next-swing spells может ложно показывать in-range на Forever; `JustAC/UI/UIRenderer.lua:2745–2755` проверяет `C_Spell.IsCurrentSpell(spellID)` и показывает очередь на swing bar. **Перенять Forever spell-family mapping, queued state и range guard**, но UI-отрисовка не является подтверждением ресурса или момента удара.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:10459` документирует current-or-queued семантику для Heroic Strike; `ForeverAuras/SecretAuraRanks.lua:39,125,497,505` перечисляет ранги Maul/Raptor Strike/Cleave/Heroic Strike; `ForeverAuras/Compatibility.lua:92` содержит `C_Spell.IsCurrentSpell` с legacy fallback. **Перенять проверку ranked family и safe current/queued API**, не считать факт очереди расходом ресурса или выполненным ударом.
+4. **MaxDps:** `MaxDps/SpellData.lua:98,6679,8278,8714` содержит Cleave/Maul family identity, `MaxDps/SecretHelper.lua:462` отдельно отмечает Raptor Strike 2973. В проверенных местах нет доказанного универсального next-swing resource reserve + queued-state provider. **Перенять только каталог spell identity**, не выводить из названия заклинания наличие резерва.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Signals.lua:59–62` предлагает Cleave/Heroic Strike при условном rage >60%, `ForeverRotation/Rotations/Warrior.lua:32–34,52–53` использует `minPower=60`, `ForeverRotation/Rotations/Druid.lua:60` рекомендует Maul при >35 rage, `ForeverRotation/Rotations/Hunter.lua:65` Raptor Strike. **Статический порог — профильная политика**, не доказательство наличия запаса в combat secret и не очередь.
+6. **RotationGuide:** `RotationGuide/Data/Warrior.lua:47–48,67–68,83–84` перечисляет Cleave/Heroic Strike, `RotationGuide/Data/Druid.lua:35` Maul, `RotationGuide/Data/Hunter.lua:31` Raptor Strike. В проверенных Lua не подтверждён универсальный queued-state/reserve provider; **список приоритетов не заменяет проверку очереди**.
+7. **RotationMaster:** `RotationMaster/Conditions/spell.lua:629–661` реализует `SPELL_ACTIVE` через `Platform.IsCurrentSpell`, сохраняет `nil,reason` для UNKNOWN и per-evaluation memo, `RotationMaster/Conditions/swing_timer.lua:33–56` сравнивает next swing по hand; `RotationMaster/Platform/swing_timer.lua:3,35–37` принимает Forever `PLAYER_SWING(duration,swingType)`. **Перенять tri-state queued observation + единый SW-02 timer**, но в проверенных местах не подтверждён общий `spareResource` алгоритм уровня Sonah.
+
+#### Выбранный путь Kord
+
+**Единый логический `NextSwingEmpowerObservation` поверх SW-01 `PlayerAutoAttackObservation`, SW-02 `PlayerSwingObservation`, общего `PlayerResourceObservation` и `AbilityEligibility`, с `NextSwingSpellCatalog` по семействам/рангам и `ResourceReservePolicy`.** Никакого второго swing scanner, class-specific queue observer или нового универсального resource provider. Для каждого изученного highest rank next-swing family проверять `C_Spell.IsCurrentSpell` через GameAPI secret-safe read; `true=QUEUED`, `false=NOT_QUEUED` **только при валидированной Forever семантике**, secret/nil `UNKNOWN`. Heroic Strike/Cleave взаимоисключающая queue family, но не объявлять Raptor Strike/Maul одинаковыми с warrior при непроверенной механике. Событие `PLAYER_SWING` может подтверждать расход очереди **лишь при подтверждённом совпадении spell/hand/target**, иначе сброс и повторная проверка IsCurrentSpell; событие само по себе не доказывает, что queued attack исполнился.
+
+`ResourceReservePolicy` — декларативная **профильная** политика приоритетных действий (например, warrior Mortal Strike/Bloodthirst/Whirlwind, druid bear survival, hunter mana needs), с отдельными `resourceType`, `prioritySpellFamily`, `requiredCost`, `reserveHorizon` и `minSpare`. Нельзя зашивать пороги Sonah/ForeverRotation как универсальные. Если ресурс доступен: `spare = current - validatedQueuedCost - validatedPriorityReserve`; `reserveSatisfied` только при доказанных типе/стоимостях и актуальности. Если rage secret: допускается отдельный **проверенный capability-based** сигнал Sonah (доступность защитной способности как нижняя граница ресурса), но **не** числовое `spareRage=30` и **не** доказательство суммы двух расходов; без доказательства совокупного бюджета `reserveSatisfied=UNKNOWN`. Учитывать момент списания queued cost (queue vs impact) только после Forever validation, refunds/failed attack, queued spell replacement, изменяющиеся затраты/таланты/формы и изменения ресурса между постановкой и swing.
+
+`NextSwingNeedPolicy` рекомендует только при `NOT_QUEUED`, доказанном запасе, нужном target/range, EN-04 CC safety, EN-05 AoE count для Cleave, применимой форме/оружии, достаточной фазе SW-02 (если требуется профилем), отсутствии более важной способности и итоговом `AbilityEligibility READY`. `UNKNOWN` не означает «нажать ещё раз»; не обходить финальный READY через `ignoreReady`. `Needs.nextSwingEmpower` лениво получает существующие observations и memo по revisions player/target/spellbook/resource/queue/swing, с event coalescing и bounded reads. Ни одного protected action.
+
+#### Требуемые изменения
+
+1. Ввести `NextSwingEmpowerObservation` и `NextSwingSpellCatalog` по изученным рангам, с явным `QUEUED/NOT_QUEUED/UNKNOWN`; не дублировать SW-02.
+2. Валидировать Forever `C_Spell.IsCurrentSpell` на Heroic Strike/Cleave/Maul/Raptor Strike, смену ранга/очереди и secret/nil; unknown никогда не означает not queued.
+3. Переиспользовать общий player resource reader, `C_Spell.GetSpellPowerCost`, typed resource и highest rank; проверить списание при queue vs impact, refunds, talents/forms.
+4. Ввести `ResourceReservePolicy` с приоритетными spell families, резервом и горизонтом; не использовать один универсальный порог rage/mana.
+5. При скрытом combat resource: проверенный capability-based lower-bound только как ограниченный факт, без ложного числового запаса или утверждения, что хватает на два действия.
+6. Реализовать `NextSwingNeedPolicy` с suppression уже queued, swing phase, target/range, EN-04 CC, EN-05 Cleave target count, form/weapon и AbilityEligibility.
+7. EventBus queue invalidation при resource/spellbook/target/weapon/form/swing/cast/zone и проверенном `PLAYER_SWING`; не считать swing event гарантией исполнения queued spell.
+8. RotationConditions `nextSwing.queued(spellFamily)`, `nextSwing.reserveSatisfied(spellFamily)`, `nextSwing.swingRemaining`, lazy `Needs.nextSwingEmpower`, per-evaluation memo.
+9. DevTools-only диагностика: `next_swing_queue_unknown`, `next_swing_queue_already_active`, `next_swing_spell_rank_unknown`, `next_swing_cost_unknown`, `next_swing_resource_secret`, `next_swing_reserve_unknown`, `next_swing_reserve_insufficient`, `next_swing_range_unverified`, `next_swing_cc_unsafe`, `next_swing_aoe_count_unknown`, `next_swing_execution_unconfirmed`, `next_swing_duplicate_suppressed`.
+10. Тесты: warrior HS/Cleave same queue, bear Maul, hunter Raptor Strike, low/high rage, hidden combat rage, resource type mismatch, reserved Mortal Strike/Bloodthirst, queued spell replacement, rank changes, talents/cost modifiers, cost at queue vs impact, missed/failed swing, weapon swap, target switch, out-of-range false-positive, CC breakable, Cleave one/two/unknown targets, pet spell not player queue, event out-of-order, queue secret, missing API, no duplicate recommendations/protected casts.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ API — ДОРАБОТАТЬ (P2).** Kord уже разрешает `C_Spell.IsCurrentSpell` и `C_Spell.GetSpellPowerCost`, имеет player resources и range logic, но **не подтверждены** универсальный next-swing queue state, ресурсный резерв после стоимости удара и suppression повторной рекомендации.
+
+**Архитектурные ссылки:** SW-01, SW-02, SW-03, SP-14, EN-04, EN-05, PE-02. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
