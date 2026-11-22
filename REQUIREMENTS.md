@@ -1340,3 +1340,50 @@
 7. Диагностика: объяснять `no_confirmed_visible_button`, `slot_mismatch`, `binding_not_verified`, `dynamic_routing_unverified`, `UNBOUND`; исключить утечки raw protected/secret данных.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-10.
+
+
+### SP-11 — Подмена заклинания (override, вторая форма кнопки)
+
+**Приоритет: P1.**
+
+#### Требование
+
+Определять актуальную подмену `baseSpellID → effectiveSpellID` для любого класса и способности, включая talent/proc/form/stance/vehicle/context overrides и «вторую форму» кнопки. Разделять **подмену ID заклинания**, **смену содержимого слота при paging/stance** и **изменение визуального представления кнопки**: они не эквивалентны. Проверять доступность именно текущего эффективного spellID, сохраняя связь с исходным ID профиля, актуальным слотом и клавишей. Не принимать совпадение имени за доказанную подмену. Secret/недоступный API → `UNKNOWN`, а не исходный ID как подтверждённый результат.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/SpellCatalogue.lua`](KordRotation/Core/SpellCatalogue.lua), строки 48–67, 150–175: каталогизирует отдельные spellID и ранги; нет карты базового и эффективного override ID.
+- [`KordRotation/Core/ActionBarScanner.lua`](KordRotation/Core/ActionBarScanner.lua), строки 105–127, 267–314, 324–397: сверяет текущий `GetActionInfo` со слотом и spellID, имеет диагностику несовпадения ранга/имени, но не подтверждает `GetOverrideSpell/GetBaseSpell` связь.
+- [`KordRotation/Core/BindingResolver.lua`](KordRotation/Core/BindingResolver.lua), строки 74–107, 202–240: учитывает динамическую маршрутизацию клавиши и неизвестные override bindings; **override клавиши не равен override spellID**. `Resolve` ищет проверенную кнопку по конкретному spellID.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 296–315: наличие слота отдельно от eligibility; не разрешает `base→effective` перед проверкой способности.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua): в проверенном allowlist нет `C_Spell.GetOverrideSpell`, `C_Spell.GetBaseSpell` или `FindSpellOverrideByID`. Подмена как типизированный факт отсутствует.
+
+#### Как делают семь референсов (проверены исходники локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua:217–229`: `ResolveId` берёт исходный spellID и через `Secret.CallNumber(C_Spell.GetOverrideSpell,id)` возвращает подтверждённый override; иначе исходный ID. Важно не переносить fallback как доказательство отсутствия override.
+2. **JustAC** — `JustAC/SpellDB.lua:2050–2065`: `FindSpellOverrideByID` подменяет ID в каталоге interrupt/CC перед проверкой `IsSpellAvailable`; `JustAC/ActionBarScanner.lua:456–457` связывает slot spell override с запрошенным ID. Есть практический мост между каталогом и кнопкой.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua:3946–3970`: `GetEffectiveSpellId(spellId,exactMatch,followoverride)` опционально следует `FindSpellOverrideByID`; `CooldownViewerTrigger.lua` сопоставляет `spellID/overrideSpellID`. Это явное разделение исходного и эффективного ID.
+4. **MaxDps** — `MaxDps/SecretHelper.lua:70–91`: `GetDisplaySpellID` читает `C_Spell.GetOverrideSpell`, исключает пассивные ID и применяет `PressedRank`; кэш сбрасывается при изменении `GetTime()`. `Buttons.lua:1250` дополнительно использует `FindSpellOverrideByID`. Секретные/непроверенные ID нельзя принимать без защиты.
+5. **ForeverRotation** — при поиске Lua по `GetOverrideSpell`, `FindSpellOverrideByID`, `overrideSpell` отдельного доказанного spell override resolver не обнаружено.
+6. **RotationGuide** — при таком же поиске Lua отдельного доказанного spell override resolver не обнаружено.
+7. **RotationMaster** — `RotationMaster/buttons.lua:1490–1611`: добавляет алиасы `GetBaseSpell/GetOverrideSpell` при сопоставлении кнопок, сохраняя единственную идентичность самой кнопки; `Platform/assisted_combat.lua:203–250` отдельно разбирает базовый/override ID. Это сильная модель для общей системы.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + Sonah + JustAC**: алиасы исходного/эффективного ID без дублирования кнопки (RotationMaster), secret-safe чтение override (Sonah), проверка фактического соответствия слота (JustAC). Из ForeverAuras взять явный `followOverride` и раздельные ID. Встроить универсальный логический контракт `SpellOverrideObservation` в существующие общие `SpellCatalogue`/`ActionBarScanner`/`AbilityEligibility`/`GameAPI` — **не создавать классовые модули или отдельный файл только ради имени контракта**.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord умеет проверять текущий ID в видимом слоте, но не устанавливает достоверную связь `baseSpellID→effectiveSpellID` и не интегрирует её в eligibility/бинды.
+
+#### Требуемые изменения
+
+1. Разрешить и проверить на WoW Forever `C_Spell.GetOverrideSpell`, `C_Spell.GetBaseSpell`, `FindSpellOverrideByID` через `GameAPI`, с независимыми `status/reason/source` и secret-safe валидацией. Не считать отсутствие API доказательством отсутствия подмены.
+2. Ввести общеклассовый `SpellOverrideObservation(baseSpellID)` как логический контракт: `baseSpellID`, `effectiveSpellID`, `isOverridden`, `overrideKind` (только если доказуем), `source`, `status`; избегать циклов и невалидных ID.
+3. В `ActionBarScanner` сопоставлять исходный и эффективный spellID через **проверенную** связь override и семейства рангов (SP-02), но не через простое совпадение имени. Подтверждать фактическую кнопку и слот перед отображением.
+4. В `BindingResolver` разрешать клавишу по фактически проверенной кнопке, а не по исходному spellID или предполагаемому alias; override binding/динамический paging проверять независимо.
+5. В `AbilityEligibility` проверять доступность именно эффективного ID, сохраняя исходный ID для профиля/диагностики; при `UNKNOWN` подмене не подменять его молча исходным ID и не выдавать ложный READY.
+6. Инвалидация по смене талантов, форм/стоек, аур/проков, spellbook, actionbar, смене страницы/цели и иным подтверждённым событиям Forever; не кэшировать динамический override на неопределённое время.
+7. Тесты: нет override, талант заменяет базовую способность, прок меняет кнопку, форма/стойка, paging без spell override, несколько алиасов, разные ранги, secret override ID, nil API, изменение ID во время боя, макросы, видимая кнопка с effective ID и исходный ID в профиле.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-11.
