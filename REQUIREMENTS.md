@@ -1222,3 +1222,50 @@
 7. Тесты: 50/30/близкая дистанция, движение к цели и от неё, melee only, ranged only, dead zone, `IsSpellInRange=true` далеко от melee, secret/nil range, `SpellHasRange=false`, смена цели между чтениями, нет оружия/боеприпасов, GCD и cooldown не искажают дистанцию.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-08.
+
+
+### SP-09 — Время каста, канал, мгновенное, влияет ли движение
+
+**Приоритет: P1.**
+
+#### Требование
+
+По spellID определять время обычного каста, мгновенность, канал/его длительность и возможность применения во время движения, **разделяя базовые метаданные и фактические условия сейчас** (талант, haste, прок, аура, форма). Отдельно наблюдать текущий cast/channel игрока с началом/окончанием, если доступно безопасно. Не выводить `instant=true` из недоступного `castTime` и не считать `castTime>0` доказательством запрета движения: возможны эффекты, разрешающие каст на ходу или делающие его мгновенным. Secret/неполные данные → `UNKNOWN`.
+
+#### Аудит Kord
+
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 14, 17, 24, 43: разрешены `IsPlayerMoving`, `UnitCastingInfo`, `UnitChannelInfo`, `GetSpellInfo`, `C_Spell.GetSpellInfo`. Не хватает специализированного типизированного провайдера cast-метаданных.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 129–130, 159–171: наблюдаются `player.moving` и текущие `cast/channel`, но `castingSnapshot` читает только строковое имя, а не start/end и channel ticks. Комментарий прямо откладывает полный cast timing до отдельного контракта.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 240–255: `castStatus(policy)` проверяет, занят ли игрок кастом/каналом, и возвращает `BLOCKED/already_casting` для политики `idle`. Не проверяет, является ли предлагаемый spell мгновенным или допустимым при движении.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строка 8: `player.moving` доступен как факт, но нет `spell.castTime`, `spell.isChanneled`, `spell.instant`, `spell.canCastWhileMoving`.
+- Связанные PL-08 (движение), PL-09 (форма), PL-13 (таланты), SP-06 (пригодность) не заменяют контракт метаданных конкретного spellID.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua` извлекает метаданные spell/cast и через отдельные атомы/условия наблюдает каст и движение; для secret значений использует защитные обёртки. Универсального доказательного `canCastWhileMoving` для всех талантных/проковых вариантов в проверенных местах не подтверждено.
+2. **JustAC** — `JustAC/BlizzardAPI/SpellQuery.lua` читает spell info, а `JustAC/CastTracking.lua` отслеживает текущие касты; логика перемещения и прерывания/очереди заклинаний разделена. Подтверждённого общего провайдера, определяющего для любого spellID текущую допустимость каста на ходу, нет.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua` и `Prototypes.lua` поддерживают касты/каналы с таймингом, движение и триггеры spell info; это универсальные наблюдения для триггеров, а не доказательство динамического `canCastWhileMoving` для всех заклинаний.
+4. **MaxDps** — `MaxDps/Helper.lua` читает `C_Spell.GetSpellInfo`/`GetSpellInfo` и использует cast-time в проверках; движение и instant-проки часто учитываются отдельно профилями. Нельзя переносить профильную эвристику как универсальный факт.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua` учитывает текущее произнесение и применимость заклинаний; общего проверенного контракта `castTime/channel/instant/moveAllowed` по каждому spellID в просмотренных местах не обнаружено.
+6. **RotationGuide** — `RotationGuide/Core/State.lua` получает состояние игрока и spell info для рекомендаций; универсального динамического `canCastWhileMoving` в проверенных местах не обнаружено.
+7. **RotationMaster** — `RotationMaster/Platform/spells.lua` и `Platform/casts.lua` отделяют платформенные spell metadata от текущего cast/channel; `Conditions/spell.lua` и смежные условия отделяют данные способности от решений профиля. Это наиболее подходящий образец архитектурного разделения, но эффект мгновенности/движения должен подтверждаться отдельно для Forever.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + ForeverAuras + Sonah.** Из RotationMaster — разделение spell metadata, текущего cast/channel и условий; из ForeverAuras — тайминг текущего cast/channel; из Sonah — защищённое чтение spell metadata. Ключевая собственная доработка — раздельные `baseCastTimeMs` и `effectiveCastTimeMs`, `isChanneled`, `channelDurationMs`, `canCastWhileMoving` с независимым `status/reason/source`. `effectiveInstant` подтверждать только из достоверного текущего источника; неизвестный эффект прока не считать отсутствующим.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Текущее состояние каста/канала и движение наблюдаются; время каста предлагаемой способности, динамическая мгновенность, канал и влияние движения не реализованы как самостоятельные типизированные факты.
+
+#### Требуемые изменения
+
+1. Добавить ленивый `SpellCastObservation(spellID)`: `baseCastTimeMs`, `effectiveCastTimeMs`, `isInstant`, `isChanneled`, `channelDurationMs`, `canCastWhileMoving`, каждое со своим статусом/источником.
+2. Через `GameAPI` проверить `C_Spell.GetSpellInfo`/`GetSpellInfo`, валидировать типы, единицы времени и secret. Нулевой castTime означает instant только при подтверждённом API-контракте.
+3. Отдельно расширить `PlayerCastObservation` для текущих `UnitCastingInfo`/`UnitChannelInfo` с безопасными start/end, spellID и статусом; не путать текущий канал с будущим channeled spell.
+4. Для движения использовать `player.moving` и только проверенные ограничения конкретного spellID/талантов/проков. При недоступности dynamic move-allowed → `UNKNOWN`, не жёсткий запрет.
+5. Добавить ленивые условия `spell.castTime`, `spell.instant`, `spell.channel`, `spell.castWhileMoving` через `Needs`; итоговый READY остаётся в `AbilityEligibility`.
+6. Инвалидация по каст-событиям, движению, ауре/проку, талантам и изменению заклинания; не кэшировать динамическую мгновенность как постоянную характеристику.
+7. Тесты: instant, обычный каст, канал, cast while moving, неподвижный каст на ходу, proc instant, haste, смена формы, secret timing, отсутствующий spell info, начало/конец/прерывание каста, spellID и имя текущего каста.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-09.
