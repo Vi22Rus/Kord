@@ -46,6 +46,7 @@ local function has(list,id)
 end
 local diagnosticSignals={
  ["target.melee"]=true,["player.hasAggro"]=true,
+ ["autoShot.active"]=true,
  ["player.travelAspect"]=true,["pet.mendActive"]=true,
  ["trap.profitable"]=true,["need.distance"]=true,
  ["target.wingClip"]=true,["mongoose.usable"]=true,
