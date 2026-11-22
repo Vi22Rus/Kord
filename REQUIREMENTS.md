@@ -7046,6 +7046,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-05:** DA-05: список nameplates/мультидот не должен вводить постоянный полный скан всех целей; только ограниченное наблюдение по запросу и событиям. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-06:** DA-06: UNIT_AURA/nameplate bursts агрегируются с сохранением identity/scope, не допуская смешивания данных разных целей. Исторический аудит сохранён.
+
 ### EN-A11 — Таблица допустимых исключений для skip с обоснованием и тестом
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P1.**
@@ -7172,6 +7174,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-05:** DA-05 уточняет: EventBus Tick/heartbeat только объединяет уведомления и инвалидирует, не запускает безусловное сканирование GameAPI. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-06:** DA-06 уточняет семантику burst/coalescing: revision повышается на каждое принятое событие, Flush объединяет уведомления, не скрывая stale state; reentrant events остаются на следующий Flush. Исторический аудит сохранён.
+
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7229,6 +7233,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение DA-04:** DA-04 измеряет пользу ленивого evaluation cache и долгого revision-aware cache; оптимизация не разрешает stale READY. Исторический аудит сохранён.
 
 **Ретроактивное уточнение DA-05:** DA-05: факты запрашиваются лениво с evaluation-scoped memoization; долгий кэш не оправдывает постоянное polling. Исторический аудит сохранён.
+
+**Ретроактивное уточнение DA-06:** DA-06: burst-инвалидация long-lived caches происходит по немедленной revision, а не по позднему callback; повторные оценки используют только свежие факты. Исторический аудит сохранён.
 
 ### DA-03 — Провайдеры данных подключаются через список Needs; без разрешения профиль данные не получит
 
@@ -7342,6 +7348,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-05:** DA-05: в бюджет оценки входят затраты GetSnapshot(force), lazy ReadSignal и bounded aura scans; отсутствие OnUpdate в Engine не доказывает отсутствие дорогостоящего polling в UI. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-06:** DA-06: замерять events/sec, coalescing ratio, callback duration и latency, но rate-limit WARN без изменения safety. Исторический аудит сохранён.
+
 ### DA-05 — Нет постоянного сканирования: данные читаются по запросу
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7391,5 +7399,59 @@ Burst — отдельная типизированная настройка п�
 **АРХИТЕКТУРНАЯ ОСНОВА РЕАЛИЗОВАНА, ПОЛНОЕ ПОКРЫТИЕ НЕ ДОКАЗАНО (P0):** EventBus не сканирует из OnUpdate, Conditions читают по запросу, Engine не создаёт polling loop. Но другие UI/модули, принудительный snapshot и частота Evaluate не прошли исчерпывающий аудит. Требуется доказательство отсутствия непрерывных тяжёлых сканирований во всём аддоне.
 
 **Архитектурные ссылки:** DA-01, DA-02, DA-03, DA-04, EN-A10, EventBus, RotationConditions, GameState, RotationEngine. Ретроактивные уточнения добавлены в DA-01, DA-02, DA-03, DA-04, EN-A10.
+
+**Изменения Lua:** отсутствуют. Только аудит и документация.
+
+**Ретроактивное уточнение DA-06:** DA-06: шторм событий не должен запускать непрерывные полные сканы аур/cooldowns; только demand-driven bounded reads. Исторический аудит сохранён.
+
+### DA-06 — Защита от «шторма» событий (кулдаун, ауры)
+
+**Раздел: 15. Данные, кэш, события, производительность. Приоритет: P1.**
+
+#### Требование
+
+Высокочастотные `UNIT_AURA`, `SPELL_UPDATE_COOLDOWN`, `ACTIONBAR_UPDATE_COOLDOWN`, `SPELL_UPDATE_CHARGES`, `SPELL_UPDATE_USABLE` и связанные события не должны вызывать N дорогостоящих пересчётов для N событий. Каждое принятое изменение немедленно увеличивает revision канала и инвалидирует кэши; доставка подписчикам объединяется по channel за окно. В пределах окна сохранять последнюю revision, count/first/last event timestamp для диагностики без раскрытия secret payload. При burst нельзя выдавать stale READY, терять критическое изменение цели/каста или откладывать обязательную safety-проверку; неизвестное состояние → UNKNOWN STOP. Никаких безусловных full scans в callback, ограничить работу подписчиков и предупреждения. Различать coalescing доставки, rate limiting UI и обработку критических событий.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/EventBus.lua:21–23`: cooldown/charge/usable события → `cooldowns`, UNIT_AURA → `auras`.
+- `EventBus.lua:34–48,85–89`: фильтр UNIT unit token и маршрутизация.
+- `EventBus.lua:59–66`: `MarkDirty` повышает revision при каждом принятом событии и сохраняет только последнюю pending revision.
+- `EventBus.lua:92–109`: `Flush` забирает pending, обнуляет его и вызывает каждого подписчика один раз на канал; `pcall` изолирует ошибки.
+- `EventBus.lua:112–126`: окно 0,20 с и heartbeat 2 с. `Flush` обнуляет pending до callback, поэтому `MarkDirty` из callback попадает в следующий batch.
+- `KordRotation/Core/GameState.lua:250–253,264–285`: snapshot фиксирует revisions и проверяет их при GetSnapshot; stale detection не обязана ждать Flush.
+- **Недостатки:** нет counters по burst/coalescing, latency, per-channel budget/priority, подтверждённого ограничения тяжёлых callback, stress tests; 0,20 с для критических обновлений нужно измерить. `pairs` не гарантирует межканальный порядок; логирование ошибок ограничено тремя первыми сообщениями, но не является метрикой шторма.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Comm.lua:10–14,30` использует coalescing и THROTTLE=30 для коммуникаций; переносим идею ограниченной доставки, **не** 30-секундную задержку для боевых событий.
+2. **JustAC:** `JustAC/ActionBarScanner.lua:1135–1138` предупреждает о возврате устаревших slot→hotkey данных через throttled fast path; ключевой отрицательный пример: throttling не должен разрешать stale READY.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:1032–1035` задаёт `rangeThrottles` 0,1 с для range checks; полезно ограничение дорогих запросов, но не переносить эту задержку на критическую пригодность.
+4. **MaxDps:** `MaxDps/Helper.lua:923–925` регистрирует UNIT_AURA, PLAYER_TARGET_CHANGED и LOADING_SCREEN_DISABLED; регистрация событий сама по себе не доказывает защиту от storm.
+5. **ForeverRotation:** `ForeverRotation/Display.lua:500–503` ограничивает interrupt sound до одного раза за 2 с; пример throttle некритичного побочного эффекта, не задержки самой рекомендации прерывания.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:131–134` регистрирует ADDON_LOADED/PLAYER_LOGIN/SPELLS_CHANGED; проверенный участок не доказывает coalescing.
+7. **RotationMaster:** `RotationMaster/Core/aura_sounds.lua:184–185` задаёт `throttleSeconds=1` для звукового уведомления; применим принцип ограничения побочных эффектов, но не боевых фактов.
+
+**Ограничение:** референсы демонстрируют разные виды throttle; ни один приведённый фрагмент не доказывает идентичную каноническую revisioned event bus. Ссылки на точные строки ZIP, отсутствие во всём архиве не утверждается.
+
+#### Выбранный путь Kord
+
+**Усилить существующий `EventBus`, не создавать StormManager или вторую шину.** Сохранять немедленный `MarkDirty` и coalesced `Flush`, добавить bounded per-channel burst counters и метрики задержки. Для критических каналов гарантировать немедленную видимость revision потребителям; latency уведомления отдельно измерять и при необходимости корректировать scheduler, не добавляя прямые дорогостоящие сканы в OnEvent. Потребитель с pending revision не может вернуть старый READY (DA-02). Определить явную политику per-channel criticality, приоритеты не должны создавать starvation. `Flush` snapshot-подписчиков или детерминированная семантика изменения подписок; reentrant MarkDirty остаётся pending. Для UI/звуков rate-limit без подавления фактов. Диагностику ограничивать и агрегировать. Если шторм продолжается бесконечно, выполнять bounded work и fail-closed при недостоверном состоянии.
+
+#### Требуемые изменения
+
+1. Добавить per-channel `acceptedCount`, `coalescedCount`, `flushCount`, `first/last event time`, `max pending age`, `callback cost` в bounded диагностике.
+2. Определить priority/latency contract для target/cast/interrupt-sensitive обновлений против aura/cooldown storms; без неподтверждённых числовых SLA до бенчмарка.
+3. Гарантировать revision-based invalidation до Flush и отсутствие stale READY в GameState/провайдерах/Engine.
+4. Установить bounded work подписчиков и правила reentrancy/subscribe/unsubscribe во время Flush; предотвращать starvation.
+5. Не запускать полный aura/cooldown scan на каждый event; читать факты по разрешённым Needs и DA-05.
+6. DevTools: burst size, channel, accepted/coalesced/delivered, oldest pending age, callback duration, WARN count, без secret payload.
+7. Тесты: 100/1000 UNIT_AURA в окне → 100/1000 revisions, одно уведомление; смешанный cooldown/aura burst; reentrant MarkDirty; error subscriber; slow subscriber; смена цели во время storm; бесконечный burst; latency/CPU на Forever, Lua 5.1; UNKNOWN→STOP и no stale READY.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО (P1):** базовая защита от storm через coalesced Flush и немедленные revisions есть. Метрики, bounded callbacks, критическая latency/priority политика и stress tests не подтверждены.
+
+**Архитектурные ссылки:** DA-01, DA-02, DA-04, DA-05, EN-A10, EventBus, GameState, RotationEngine. Ретроактивные уточнения добавлены в DA-01, DA-02, DA-04, DA-05, EN-A10.
 
 **Изменения Lua:** отсутствуют. Только аудит и документация.
