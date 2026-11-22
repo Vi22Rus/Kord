@@ -147,4 +147,38 @@ opts.testMode=true
 D:Refresh(true)
 eq(D.productionReady,false,"test mode is never production")
 eq(D.frame.visible,true,"test mode remains independent")
+-- Live Defensive now accepts ONLY independently verified aura recommendations.
+opts.testMode=false
+opts.showPanel=true
+active=true
+registered=true
+local defenseOn=true
+KR.IndicatorSettings.Get=function(_,key)
+ if key=="defensiveEnabled" then return defenseOn end
+ if key=="defensiveCombatOnly" then return false end
+ if key=="defensiveSlots" then return 2 end
+ if key=="defensiveSize" then return 52 end
+ return false
+end
+KR.RotationEngine.EvaluateDefensive=function()
+ return {status="READY",source="RotationEngine",channel="defensive",
+  queue={{spellID=13165,texture=13165,name="Aspect of the Hawk",
+   source="verified_profile",keybind="7",channel="defensive"}}}
+end
+engineResult=ready()
+D:Refresh()
+eq(D.defensiveReady,true,"independent defensive recommendation accepted")
+eq(D.defensePreview[1].data.name,"Aspect of the Hawk",
+ "aura appears in Defensive, not main")
+eq(D.slots[1].data.name,"Valid spell","DPS unaffected by defensive")
+eq(D.defensePreview[2].data,nil,"defensive never fabricates future icons")
+engineResult.queue[1].spellID=13165
+D:Refresh(true)
+eq(D.defensiveReady,false,"duplicate aura never appears twice")
+eq(D.defensePreview[1].data,nil,"duplicate aura defensive slot cleared")
+engineResult=ready()
+defenseOn=false
+D:Refresh(true)
+eq(D.defensiveReady,false,"disabled defensive does not force main icon")
+eq(D.defensePreview[1].data,nil,"disabled defensive clears aura")
 print("PASS 2.8.5 display mock: "..n.." assertions")
