@@ -1,3 +1,12 @@
+## 2026-11-22 — Defensive checkbox visibility and first-target Hawk troubleshooting
+
+- Log 18681: Hunter Hawk was READY in main and Defensive was empty while user reported main-in-combat checkbox unchecked. Previous DevTools logged only `aura_promotion`, the WRONG independent switch, so the log cannot establish persisted `defensiveInCombatMain` value.
+- Show `defensiveInCombatMain` in the Indicators > Defensive panel (where `defensiveCombatOnly` is also shown). They have DISTINCT effects: main-channel routing vs visibility of separate frame outside combat; both share the same saved `KR.db.defensiveInCombatMain` value with Advanced.
+- DevTools DISPLAY records `defensive_in_combat_main` and `defensive_preference_stored` separately from `aura_promotion`, so future journals prove whether a disabled preference was saved and read.
+- For verified missing Aspect of the Hawk, the out-of-combat rule does not require a target or a verified travel-aspect absence. Unknown Hawk aura remains UNKNOWN. Mock assertions cover precombat Hawk without target.
+- Log has repeated `UnitPower: protected_value`, `resources.percent: direct_field_unverified`, `target.ttd/trap.profitable: signal_provider_unimplemented`, and an inactive/active Auto Shot branch. These explain why later BM damage recommendations can be skipped; **do not** turn missing percent or range observations into false or READY.
+- Lua mocks are not proof of in-game behavior. In particular, the earlier log did not record the routing preference itself; adding audit visibility is diagnostic, not proof that a user's saved false value was overwritten.
+
 ## 2026-11-22 — Hunter melee range and Aspect of the Hawk (in-game logs 18264–18327)
 
 - **Root cause: distant Raptor Strike.** WoW Forever's next-swing `Raptor Strike` can answer `C_Spell.IsSpellInRange == true` outside melee distance. `GameState:ReadSignal("target.melee")` previously used `AbilityEligibility:Fact(2973,"inRange")` as proof of melee and incorrectly selected `melee_raptor`. Replace with the client’s independent `C_SwingTimer.IsTargetWithinSwingRange(0)` read (same principle as the bundled JustAC reference) and require same snapshot GUID before and after. A negative short-range interaction probe can disprove melee if supported; neither raw next-swing range nor an ambiguous positive interaction probe can establish five-yard reach.
