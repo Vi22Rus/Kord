@@ -170,8 +170,11 @@ local function run(channel,sharedSnapshot,sharedContext)
    category=overrides.category
   end
   local kind,maintenance=KR.RotationProfiles:RecommendationKind(rule,category)
-  if (maintenance and ((channel=="main")~=auraInMain))
-      or (not maintenance and channel=="defensive") then
+  -- Defensive actions have their own recommendation channel. Aura
+  -- promotion changes only maintenance spells, never actual defenses.
+  local defensiveAction=category=="defensive"
+  local routedDefensive=defensiveAction or (maintenance and not auraInMain)
+  if (channel=="defensive")~=routedDefensive then
    status,reason="BLOCKED","routed_to_other_channel"
   elseif rule.type~="SPELL" then
    status,reason="BLOCKED","unsupported_action"
@@ -181,8 +184,13 @@ local function run(channel,sharedSnapshot,sharedContext)
    if rule.enabled==false or
        (type(overrides)=="table" and overrides.enabled==false) then
     status,reason="BLOCKED","rule_disabled"
-   elseif type(saved.categories)~="table"
-       or saved.categories[category]~=true then
+   elseif category=="defensive" and
+       (not KR.IndicatorSettings or
+        KR.IndicatorSettings:Get("defensiveEnabled")~=true) then
+    status,reason="BLOCKED","defensive_disabled"
+   elseif category~="defensive" and
+       (type(saved.categories)~="table"
+        or saved.categories[category]~=true) then
     status,reason="BLOCKED","category_disabled"
    else
     -- A function is called only for this priority and gets no raw snapshot.
