@@ -385,6 +385,241 @@ function A:Evaluate(id,options)
     result.target=options.target
     return result
 end
+-- IT-01/1.8: ITEM eligibility is a separate, read-only branch.
+-- This is NOT Evaluate(spellID), not a second recommendation engine and
+-- does not issue item-use commands. Item cooldown/usability sources are
+-- supplied later by the shared IT-02/IT-03 GameState contracts.
+local function itemSafe(value)
+    local api=KR.GameAPI
+    if not api or type(api.IsSafeValue)~="function" then return false end
+    local ok,allowed=pcall(api.IsSafeValue,api,value)
+    return ok and allowed==true
+end
+
+local function itemField(record,key)
+    if type(record)~="table" or not itemSafe(record) then return nil end
+    local ok,value=pcall(function() return record[key] end)
+    if not ok or (value~=nil and not itemSafe(value)) then return nil end
+    return value
+end
+
+local function itemResult(status,reason,id,checks)
+    local result={actionType="ITEM",status=status,reason=reason,
+        source="AbilityEligibility",checks=checks or {}}
+    local ok,valid=pcall(validID,id)
+    if ok and valid then result.itemID=id end
+    -- No spellID: an item's use effect never becomes a SPELL action.
+    return result
+end
+
+local function itemRead(method,id,...)
+    local state=KR.GameState
+    if not state or type(state[method])~="function" then
+        return nil,"item_"..(method=="ReadInventoryItemObservation"
+            and "count" or method=="ReadItemCooldownObservation"
+            and "cooldown" or "usability").."_provider_missing"
+    end
+    local ok,record=pcall(state[method],state,id,...)
+    if not ok or type(record)~="table" or not itemSafe(record) then
+        return nil,"item_provider_error"
+    end
+    return record,nil
+end
+
+local function itemFact(record,name)
+    local fact=itemField(record,name)
+    if fact==true then return "READY" end
+    if fact==false then return "BLOCKED" end
+    return "UNKNOWN"
+end
+
+-- Typed candidate entry point for future AC-02 dispatch. The ordinary
+-- spell Evaluate remains untouched. A missing IT-02/IT-03 provider is
+-- UNKNOWN, never a presumed cooldown/usable READY.
+function A:EvaluateItem(id,options)
+    local okID,idValid=pcall(validID,id)
+    if not okID or not idValid then
+        return itemResult("UNKNOWN","invalid_item_id",nil)
+    end
+    if not itemSafe(options) or type(options)~="table" then
+        return itemResult("UNKNOWN","item_options_unverified",id)
+    end
+    local target=itemField(options,"target")
+    local combat=itemField(options,"combat")
+    local minLevel=itemField(options,"minLevel")
+    local snapshot=itemField(options,"stateSnapshot")
+    if target~="none" and target~="self"
+        and target~="enemy" and target~="friendly" then
+        return itemResult("UNKNOWN","item_target_policy_required",id)
+    end
+    if combat~="any" and combat~="in" and combat~="out" then
+        return itemResult("UNKNOWN","item_combat_policy_required",id)
+    end
+    if minLevel~=nil and (type(minLevel)~="number"
+        or minLevel~=minLevel or minLevel~=math.floor(minLevel)
+        or minLevel<1 or minLevel>100) then
+        return itemResult("UNKNOWN","item_level_policy_invalid",id)
+    end
+    if snapshot~=nil and type(snapshot)~="table" then
+        return itemResult("UNKNOWN","item_snapshot_unverified",id)
+    end
+
+    local checked={}
+    local function add(name,status,reason)
+        if #checked<8 then
+            checked[#checked+1]={name=name,status=status,reason=reason}
+        end
+    end
+    local function finish(status,reason)
+        return itemResult(status,reason,id,checked)
+    end
+
+    local owned,errorReason=itemRead("ReadInventoryItemObservation",id)
+    if not owned then
+        add("count","UNKNOWN",errorReason)
+        return finish("UNKNOWN",errorReason)
+    end
+    local ownedID=itemField(owned,"itemID")
+    local scope=itemField(owned,"inventoryScope")
+    local count=itemField(owned,"count")
+    local status=itemField(owned,"status")
+    if status~="READY" or ownedID~=id or scope~="BAGS_ONLY"
+        or type(count)~="number" or count~=count
+        or count<0 or count==math.huge or count~=math.floor(count) then
+        add("count","UNKNOWN","item_count_unverified")
+        return finish("UNKNOWN","item_count_unverified")
+    end
+    if count==0 then
+        add("count","BLOCKED","item_missing")
+        return finish("BLOCKED","item_missing")
+    end
+    add("count","READY")
+
+    if snapshot==nil then
+        local state=KR.GameState
+        if not state or type(state.GetSnapshot)~="function" then
+            return finish("UNKNOWN","item_snapshot_unavailable")
+        end
+        local ok,record=pcall(state.GetSnapshot,state)
+        if not ok or not itemSafe(record) or type(record)~="table" then
+            return finish("UNKNOWN","item_snapshot_unavailable")
+        end
+        snapshot=record
+    end
+    local player=itemField(snapshot,"player")
+    local exists=itemField(player,"exists")
+    local dead=itemField(player,"dead")
+    if itemField(exists,"status")~="READY"
+        or itemField(dead,"status")~="READY" then
+        return finish("UNKNOWN","item_player_unknown")
+    end
+    if itemField(exists,"value")~=true or itemField(dead,"value")~=false then
+        return finish("BLOCKED","item_player_unavailable")
+    end
+    local combatRecord=itemField(player,"combat")
+    if itemField(combatRecord,"status")~="READY"
+        or type(itemField(combatRecord,"value"))~="boolean" then
+        return finish("UNKNOWN","item_combat_unknown")
+    end
+    local inCombat=itemField(combatRecord,"value")
+    if (combat=="in" and not inCombat) or (combat=="out" and inCombat) then
+        return finish("BLOCKED","item_combat_policy_blocked")
+    end
+    if minLevel~=nil then
+        local level=itemField(player,"level")
+        local current=itemField(level,"value")
+        if itemField(level,"status")~="READY"
+            or type(current)~="number" or current~=current
+            or current<1 or current>100 or current~=math.floor(current) then
+            return finish("UNKNOWN","item_level_unknown")
+        end
+        if current<minLevel then return finish("BLOCKED","item_level_too_low") end
+    end
+    if target=="enemy" or target=="friendly" then
+        local obj=itemField(snapshot,"target")
+        local tExists=itemField(obj,"exists")
+        local tDead=itemField(obj,"dead")
+        local relation=itemField(obj,target=="enemy" and "attackable" or "assistable")
+        if itemField(tExists,"status")~="READY"
+            or itemField(tDead,"status")~="READY"
+            or itemField(relation,"status")~="READY" then
+            return finish("UNKNOWN","item_target_unknown")
+        end
+        if itemField(tExists,"value")==false or itemField(tDead,"value")==true
+            or itemField(relation,"value")==false then
+            return finish("BLOCKED","item_target_invalid")
+        end
+        if itemField(tExists,"value")~=true or itemField(tDead,"value")~=false
+            or itemField(relation,"value")~=true then
+            return finish("UNKNOWN","item_target_unknown")
+        end
+    end
+    add("context","READY")
+
+    -- IT-02 owns both the individual and shared item cooldown. The
+    -- sharedStatus evidence is mandatory: a clear individual cooldown
+    -- alone never proves readiness of a potion group.
+    local cd,cdError=itemRead("ReadItemCooldownObservation",id)
+    if not cd then
+        add("cooldown","UNKNOWN",cdError)
+        return finish("UNKNOWN",cdError)
+    end
+    if itemField(cd,"status")~="READY" or itemField(cd,"itemID")~=id then
+        add("cooldown","UNKNOWN","item_cooldown_unverified")
+        return finish("UNKNOWN","item_cooldown_unverified")
+    end
+    local active=itemField(cd,"active")
+    if active==true then
+        add("cooldown","BLOCKED","item_on_cooldown")
+        return finish("BLOCKED","item_on_cooldown")
+    end
+    if active~=false then
+        add("cooldown","UNKNOWN","item_cooldown_unverified")
+        return finish("UNKNOWN","item_cooldown_unverified")
+    end
+    local sharedStatus=itemField(cd,"sharedStatus")
+    if sharedStatus=="READY" and itemField(cd,"sharedActive")==true then
+        add("cooldown","BLOCKED","item_shared_cooldown")
+        return finish("BLOCKED","item_shared_cooldown")
+    end
+    if sharedStatus~="NOT_APPLICABLE"
+        and not (sharedStatus=="READY" and itemField(cd,"sharedActive")==false) then
+        add("cooldown","UNKNOWN","item_shared_cooldown_unverified")
+        return finish("UNKNOWN","item_shared_cooldown_unverified")
+    end
+    add("cooldown","READY")
+
+    -- IT-03 will supply these independent proofs, including zone and
+    -- target-specific restrictions. Inventory count is never usability.
+    local use,useError=itemRead("ReadItemUsabilityObservation",id,
+        {target=target,combat=combat,minLevel=minLevel,stateSnapshot=snapshot})
+    if not use then
+        add("usability","UNKNOWN",useError)
+        return finish("UNKNOWN",useError)
+    end
+    if itemField(use,"status")~="READY" or itemField(use,"itemID")~=id then
+        add("usability","UNKNOWN","item_usability_unverified")
+        return finish("UNKNOWN","item_usability_unverified")
+    end
+    local required={"usable","combatAllowed","levelAllowed",
+        "targetAllowed","zoneAllowed"}
+    local hasUnknown=false
+    for _,name in ipairs(required) do
+        local fact=itemFact(use,name)
+        if fact=="BLOCKED" then
+            add("usability","BLOCKED","item_"..name.."_blocked")
+            return finish("BLOCKED","item_"..name.."_blocked")
+        end
+        if fact=="UNKNOWN" then hasUnknown=true end
+    end
+    if hasUnknown then
+        add("usability","UNKNOWN","item_usability_partial")
+        return finish("UNKNOWN","item_usability_partial")
+    end
+    add("usability","READY")
+    return finish("READY",nil)
+end
+
 -- Profile Contract v1 facts are narrow observations, never a READY recommendation.
 -- Only a proven, ordinary boolean is exposed; missing/secret data stays UNKNOWN.
 function A:Fact(id,kind,options)

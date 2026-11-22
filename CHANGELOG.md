@@ -1,3 +1,13 @@
+## KR-20261122-067 — IT-01/1.8: fail-closed typed item eligibility gate
+- Дата: 2026-11-22 (точное время Git коммита), стадия 1, шаг 1.8, IT-01 P0. Коммит SHA: `git log --grep KR-20261122-067`. Тип: feat/test/docs.
+- Задача/контекст: item count, реализованный на 1.1–1.7, не должен превращаться в ITEM ready или spell action. До работы `AbilityEligibility` проверял только spellID; общий item eligibility отсутствовал. Это архитектурный пробел, а не доказанный баг игрового клиента.
+- Изменения: `KordRotation/Core/AbilityEligibility.lua` — новый метод `EvaluateItem` и локальные strict safe helpers; никакого изменения старого spell `Evaluate`. Подтверждённый BAGS_ONLY count, player/target/combat/minLevel, отдельные слоты cooldown+shared group и usability/zone gates. Missing IT-02/IT-03 providers => UNKNOWN, не READY; синтетический READY возможен только если все факты подтверждены.
+- Тесты: новый `tests/inventory_item_eligibility_mock.lua` после границы 19:38 Барнаул (NOT LEGACY). Сценарии count 0/UNKNOWN, shared CD, usable/zone, отсутствие providers, secret input. Документация `REQUIREMENTS.md` и поэтапный план дополнены фактической записью.
+- API/референсы: новых WoW API нет; только общий GameState reader. Применён разделённый подход IT-01/IT-02/IT-03 по задокументированным RotationMaster, JustAC, ForeverAuras; текущий доступ к первичным ZIP отсутствовал. Подтверждения игрового клиента НЕ заявляются.
+- PASS: статическая сверка вставки функции, отделения от SPELL, no protected use, веток fail-closed и наличия mock-case assertions. NOT RUN: исполнение Lua 5.1/mock, регрессия, GitHub Actions (manual-only) и WoW Forever.
+- Тестировщику: накопить item gate сценарии для итогового теста после реализации IT-02/IT-03. Не требовать установки/проверки клиента после этого подшага.
+- Фактический результат: **PARTIALLY IMPLEMENTED / CLIENT NOT RUN**; отсутствие ItemCooldown и ItemUsability провайдеров оставляет итоговый READY недостижимым в текущем runtime. AC-02 typed item recommendation не включён, существующий SPELL pipeline сохранён. Следующий IT-01/1.9; связи IT-01–IT-04, AC-02, NO-01, KR-20261122-056–065.
+
 ## KR-20261122-066 — docs: one-time LEGACY classification of pre-refactor tests
 - Дата/время: 2026-11-22 UTC (точные время и SHA по Git); коммит: `git log --grep KR-20261122-066`.
 - Тип: docs; задача: разовая маркировка тестов Kord Rotation по границе 2026-11-22 19:38 Барнаул / 12:38Z.
