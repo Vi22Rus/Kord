@@ -3755,6 +3755,30 @@ for locale,values in pairs(combatAuraTranslations) do
  end
 end
 
+-- Combat routing for defensive abilities is independent of aura maintenance.
+-- The setting changes recommendation placement, not spell execution.
+local defensiveCombatTranslations={
+ enUS={"Recommend Defensive abilities in main window during combat",
+  "On: defensive abilities are recommended in the main window during combat. Off: they are recommended only in the Defensive window. Outside combat: Defensive window. Does not cast spells."},
+ ruRU={"Рекомендовать защитные способности в основном окне во время боя",
+  "Включено: во время боя защитные способности рекомендуются в основном окне. Выключено: только в окне Defensive. Вне боя: Defensive. Не применяет заклинания."},
+ deDE={"Defensive Fähigkeiten im Kampf im Hauptfenster empfehlen",
+  "Aktiv: Defensive Fähigkeiten im Kampf im Hauptfenster empfehlen. Inaktiv: nur im Defensive-Fenster. Außerhalb des Kampfes: Defensive. Wirkt keine Zauber."},
+ frFR={"Recommander les capacités défensives dans la fenêtre principale en combat",
+  "Activé : capacités défensives dans la fenêtre principale pendant le combat. Désactivé : uniquement dans Defensive. Hors combat : Defensive. Ne lance aucun sort."},
+ esES={"Recomendar habilidades defensivas en la ventana principal durante el combate",
+  "Activado: habilidades defensivas en la ventana principal durante el combate. Desactivado: solo en Defensive. Fuera del combate: Defensive. No lanza hechizos."},
+ ptBR={"Recomendar habilidades defensivas na janela principal durante o combate",
+  "Ativado: habilidades defensivas na janela principal durante o combate. Desativado: somente em Defensive. Fora de combate: Defensive. Não lança feitiços."}
+}
+for locale,values in pairs(defensiveCombatTranslations) do
+ local t=translations[locale]
+ if t then
+  t.ROT_DEFENSIVE_IN_COMBAT_MAIN=values[1]
+  t.TIP_ROT_DEFENSIVE_IN_COMBAT_MAIN=values[2]
+ end
+end
+
 -- The aura lane is live; other defensive categories remain pending.
 local defensiveAuraNotice={
  enUS={"Defensive / aura recommendations",
