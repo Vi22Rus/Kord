@@ -129,6 +129,13 @@ local function eligibility(ctx,id,opts)
       and (record.reason==nil or
           (safe(record.reason) and type(record.reason)=="string")) then
    result={status=record.status,reason=record.reason}
+   -- Carry only known fixed-stage diagnostic fields within the core.
+   -- The public DevTools bridge will independently sanitize every field.
+   if type(record.barReason)=="string" and safe(record.barReason) then
+    result.barReason=record.barReason
+   end
+   if type(record.checks)=="table" and safe(record.checks)
+      and #record.checks<=6 then result.checks=record.checks end
   else result={status="UNKNOWN",reason="eligibility_unverified"} end
  end
  ctx.eligibilityCache[key]=result
