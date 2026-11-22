@@ -244,7 +244,10 @@ local function makeRules(spells,is60)
    if fighting==true then return true end
    return nil
   end
-  -- Unknown travel aura cannot justify cancelling it before combat.
+  -- A VERIFIED missing Hawk is sufficient for out-of-combat upkeep:
+  -- we need not wait for target selection or an unrelated travel-aura
+  -- probe. An unknown Hawk is still UNKNOWN; never assume absence.
+  if fighting==false and hawkMissing==true then return true end
   if travel~=false and fighting~=true then return nil end
   return hawkMissing
  end)
