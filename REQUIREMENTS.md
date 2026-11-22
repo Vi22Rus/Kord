@@ -1264,6 +1264,8 @@
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 distinguishes cast range, AoE impact radius, target-centred vs caster-centred geometry and chain bounce reach; a single IsSpellInRange is insufficient.**
+
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 uses actual memberGUID and spellID for heal/resurrection range; no assumed generic range.**
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 uses per-member, per-spell range via GR-01 and common SP-08 adapter; no generic 40-yard assumption.**
@@ -1583,6 +1585,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 is a policy-level count and cannot declare AoE heal READY; final cast/target eligibility remains AbilityEligibility.**
 
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 candidate prioritization cannot issue READY; final heal/battle-res/out-of-combat-res eligibility remains in AbilityEligibility.**
 
@@ -2899,6 +2903,8 @@
 
 ### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
 
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 may reuse confirmed distance evidence, but target distance bands and spell range cannot establish ally-to-ally cluster geometry.**
+
 **Архитектурная актуализация GR-01:** **См. GR-01: GR-01 spell range must be checked for the actual friendly unit and specific spellID; no fabricated distance or reuse of enemy target range.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 nearest is only a proven partial order from available range evidence, not fabricated exact meters; ability range is checked separately.**
@@ -3742,6 +3748,8 @@
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
 
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 consumes the canonical roster and per-spell range observation; a member in caster range is not proof of being in the AoE impact footprint.**
+
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 healing/resurrection candidates consume the canonical GUID-keyed roster and member addressability, never a second group scanner.**
 
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 missing-buff detection consumes canonical GUID-keyed roster and per-member spell range; no second group scanner.**
@@ -3800,6 +3808,8 @@
 
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
+
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 uses member health and life observations with explicit UNKNOWN; hidden health cannot be counted as injured or healthy.**
 
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 uses GR-02 independent health, life, resource and role facts; priority must not infer a numeric deficit from UNKNOWN health.**
 
@@ -3967,6 +3977,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация GR-06:** **См. GR-06: GR-06 extends the shared GroupCareCandidateObservation and HealPriorityPolicy with spell-specific AoE coverage; do not create another healing roster scan.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
 
 #### Требование
@@ -4014,5 +4026,58 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord имеет базовые health/dead/eligibility facts, но не общий per-member heal priority, отдельную resurrection policy и гарантированное покрытие группы/рейда.
 
 **Архитектурные ссылки:** GR-01, GR-02, GR-03, GR-04, SP-08, SP-14. Обратные ссылки внесены в эти предыдущие требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-06 — Число целей в группе в радиусе для AoE-лечения
+
+**Раздел: 8. Группа и рейд. Приоритет: P2.**
+
+#### Требование
+
+По каноническому GR-01 roster и GR-02/GR-05 health/care observations определять **сколько уникальных живых союзников** попадает в **реальную область воздействия конкретного AoE-heal spellID**, и отдельно сколько из них **доказанно нуждаются в лечении** по конфигурируемому порогу. Не смешивать: (а) дальность применения до выбранного союзника, (б) геометрию эффекта вокруг кастера/цели/земли, (в) цепные переходы между союзниками, (г) фактический radius, (д) здоровье ниже порога. `IsSpellInRange(spellID,unit)` не доказывает, что unit внутри AoE-радиуса. Без подтверждённых позиций/дистанций нельзя выдавать точный AoE hit count. Отдельно `confirmedCount`, `possibleCount` (только при обоснованном верхнем пределе), `unknownCount`, `coverage`, `confidence`, `reason`; при неполном roster/secret health/geometric uncertainty — `UNKNOWN`, а не ноль или точный count. Не считать питомцев членами группы по умолчанию; spell-specific правила могут включать их отдельно.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10–13,26,36,234–265`: `UnitGUID`, `UnitHealth/Max/Percent`, `UnitIsDeadOrGhost`, `IsSpellInRange` и `C_Spell.IsSpellInRange` доступны через read boundary, но API позиционного AoE cluster не подтверждён.
+- `KordRotation/Core/GameState.lua:65–74,108–124`: здоровье и GUID/dead обрабатываются для отдельных units; нет реализованного roster-wide AoE geometry index.
+- `KordRotation/Core/AbilityEligibility.lua:224–232,476–488`: range проверяется по конкретному spellID для `target`; это **cast range**, не число союзников в области эффекта и не проверка межсоюзных расстояний.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_HEALTH`/ `UNIT_MAXHEALTH` событийно инвалидируют health, но общий per-member revision и spatial observation GR-01/GR-02/GR-05 пока документальные задачи.
+- В `RotationConditions.lua` не подтверждён общий `group.aoeHealCount` с lazy `Needs` и provenance.
+
+#### Сравнение семи референсов (Lua ZIP, конкретные места)
+
+1. **Sonah:** `Sonah/Core/Molecules/Conditions.lua:746–762` реализует `groupBelow(n,count)` и `partyBelow(n,count)`; второй учитывает **подгруппу цели в рейде** (Prayer of Healing), но оба считают здоровье, **не геометрическую близость**. `Sonah/Classes/Druid.lua:528–540` предлагает Wild Growth/Tranquility при 2–3 раненых; `Sonah/Classes/Shaman.lua:532` Chain Heal по настраиваемому числу раненых. `Conditions.lua:803–811` обнаруживает скрытое здоровье союзников. Перенять пороги и subgroup semantics, **не** считать `groupBelow` доказанным AoE-in-radius.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:490–549` читает party low-count через `CombatAudioAlertManager.partyHealthInfo`, прямо ограничен **party1–4, без raid**; `JustAC/DefensiveEngine.lua:1359–1376` уточняет, что low-count говорит лишь «кому-то нужен хил», а не кому именно; `:1465–1496` использует low/urgent counts для emergency group heal с коротким удержанием. `JustAC/Data/SpellCategories.lua:265–295` каталогизирует AoE/chain heal spells. Перенять threshold/count signal и emergency hysteresis **только при проверенной клиентской доступности**, но **не** объявлять low-count числом целей в радиусе или возможностью читать секретное здоровье через сторонний UI.
+3. **ForeverAuras:** `ForeverAuras/SecretAuraRanks.lua:67,306,369` содержит Wild Growth, Prayer of Healing, Chain Heal; `ForeverAuras/SpellNameData.lua:559,2762,4338` связывает названия и ID. `ForeverAuras/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0.lua` предоставляет range-проверки, но не доказывает геометрию AoE. Перенять только подтверждённые spell identity/rank и client-safe range observations; не выводить count из названия или каталога.
+4. **MaxDps:** `MaxDps/SpellData.lua:1348–1351,6717,7634,8459` содержит Chain Heal, Healing Rain, Wild Growth, Prayer of Healing; `MaxDps/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0/LibRangeCheck-3.0.lua` имеет distance/range library. В проверенных местах нет доказанного универсального group AoE geometry count. Каталог способностей не доказывает текущую пространственную достижимость.
+5. **ForeverRotation:** в проверенных Lua нет подтверждённого общего AoE-heal injured-in-radius counter. Не заменять доказательство геометрии простым состоянием группы/цели.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого общего AoE-heal injured-in-radius counter. Не объявлять spell suggestion доказательством количества поражаемых союзников.
+7. **RotationMaster:** `RotationMaster/Platform/group_units.lua:3–26` разрешает group-role unit tokens с `nil,reason`; `RotationMaster/Platform/unit_health.lua:3–5,19–45` secret-safe возвращает unit health observation либо `nil,reason` и per-evaluation cache. `RotationMaster/Core/health_forecast_conditions.lua:3–8` запрещает считать скрытое здоровье доказанным числом. Перенять platform observation и unknown semantics; **универсальный точный AoE-cluster radius provider в проверенных Lua не подтверждён**.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Основа — единые GR-01/GR-02/GR-05 member observations + Sonah пороги и subgroup selection + RotationMaster secret-safe health observation + JustAC осторожный group low-count/hysteresis.** Добавить **производный** `GroupAoEHealCoverageObservation(spellID,anchorGUID/groundPoint,threshold)` поверх общего roster/care index, а не новый сканер. Spell-specific metadata после проверки Forever: `CASTER_CENTERED`, `TARGET_CENTERED`, `GROUND_TARGETED`, `SUBGROUP`, `CHAIN`, `SMART_TARGET`, `RAID_WIDE`; radius, maxTargets, bounce rules, caster/anchor policy и правила включения pets. Для `SUBGROUP` допускается точный счёт **подтверждённо раненых в допустимой подгруппе** только если механика не требует отдельной пространственной проверки; иначе UNKNOWN. Для `CASTER_CENTERED`/ `TARGET_CENTERED`/ `GROUND_TARGETED` нужен подтверждённый **member-to-anchor** distance/geometry provider, не `IsSpellInRange` до кастера. Для `CHAIN` нужен подтверждённый **pairwise** reach и правила прыжков; нельзя приравнивать к числу всех раненых в рейде. `SMART_TARGET` с непроверенной логикой выбора целей выдаёт только bounds/UNKNOWN, не точное попадание. Неподдерживаемые client APIs, secret coordinates, неточные range bands или неопределённый anchor — `UNKNOWN(aoe_geometry_unavailable)`. Никогда не выдавать `READY` способности на основании количества; итог — общий `AbilityEligibility`.
+
+Для решения о рекомендации использовать конфигурируемые `minInjuredTargets`, `injuryThreshold`, при необходимости `minConfirmedCoverage` и hysteresis; при count UNKNOWN запрещено заявлять «три союзника точно попадут». Возможен отдельный **явно обозначенный эвристический совет** по подтверждённому числу раненых в группе, но не выдавать его за условие точного AoE радиуса и не обходить UNKNOWN. Lazy `Needs.groupAoEHeal`, per-evaluation memo по `(rosterRevision,spellID,anchor,threshold)`, bounded checks, GUID dedup, event invalidation, без per-frame 40-member geometry scan. Никаких protected target/cast actions.
+
+#### Требуемые изменения
+
+1. Переиспользовать GR-01 roster/GUID/range, GR-02 health/life, GR-05 care candidates и SP-08/14 common spell eligibility; запретить отдельный AoE-heal roster scanner.
+2. Валидировать на Forever client APIs и механику каждого AoE-heal spellID/rank: anchor, radius, target cap, subgroup, chain bounce, smart selection, pet inclusion, line-of-sight и restrictions; не копировать retail constants.
+3. Ввести spell-specific `AoEHealGeometryPolicy` и `GroupAoEHealCoverageObservation` с раздельными count injured vs count eligible vs count geometrically confirmed, coverage/UNKNOWN.
+4. Разработать общую безопасную пространственную observation **только если** Forever позволяет получить проверяемые member-to-anchor/pairwise данные; при отсутствии источника оставлять geometry UNKNOWN, не выдумывать координаты.
+5. Реализовать subgroup/raid filtering, dedup player/party/raid aliases, death/ghost/disconnect exclusion, min/max targets и partial roster accounting.
+6. Конфигурируемые пороги `minInjuredTargets`/`injuryThreshold`, stable tie-break/hysteresis и запрет «точного count» на секретных данных; шесть языков UI/tooltip при появлении настроек.
+7. EventBus invalidation по roster/health/target/position только подтверждённым событиям, lazy Needs, per-pass memo, bounded refresh и reason-rich diagnostics.
+8. DevTools-only диагностика: `aoe_heal_geometry_unknown`, `aoe_heal_health_secret`, `aoe_heal_roster_partial`, `aoe_heal_anchor_unknown`, `aoe_heal_spell_policy_unverified`, `aoe_heal_subgroup_count`, `aoe_heal_chain_unverified`, `aoe_heal_confirmed_count`, `aoe_heal_min_targets_not_met`, `aoe_heal_heuristic_only`.
+9. Тесты: solo/party/raid40, 0/1/3/10 injured, mixed known/secret health, 2 injured near caster vs 3 far, near anchor vs far caster, subgroup Prayer of Healing, Chain Heal bounces, ground targeted, smart heal cap, raid-wide, dead/disconnected, pet inclusion, maxTargets, overlapping aliases, recycled GUID, stale/partial roster, unknown geometry, invalid spell rank, target/range/GCD/cooldown, repeated events, no unbounded scanning/protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Kord имеет health/range APIs для отдельных units, но нет реализованного roster-wide injured count, spell-specific AoE impact geometry и проверяемого count целей в радиусе. Простое число раненых в группе **не удовлетворяет** формулировке GR-06.
+
+**Архитектурные ссылки:** GR-01, GR-02, GR-05, SP-08, SP-14, TG-09. Обратные ссылки внесены в эти предыдущие задачи в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
