@@ -260,3 +260,19 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | Полный динамический вызов всех 101 составных сценариев | Не выдавать статистику presence за исполнение | NOT IMPLEMENTED / CLIENT NOT RUN |
 
 Данные source-level census идентифицируются по номеру утверждённой `Canonical_API_Matrix.md`; поиндексные результаты не означают, что вызов API был разрешён/выполнен в бою. Не менять статус CLIENT PASS без реального теста.
+
+## Generic GameAPI runtime logging — acceptance matrix (2026-11-22)
+
+| Case | Expected in saved journal | Status |
+|---|---|---|
+| All actual GameAPI read adapter calls | `METHOD method_call` per new (method,status,reason), `METHOD method_total` with final count at Stop | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Presence probe vs actual read | `GameAPI.Probe.UnitExists` separate from `UnitExists`; cannot mislabel presence as game success | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| New valid internal refusal code | Retained in METHOD detail automatically; no new Recorder allowlist entry | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| New static field key | `GameAPI.ReadField.<safeFieldKey>`; no value or player string | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Actionbar inspection / FindSpell | `GameAPI.ActionBarScanner.inspect` and `GameAPI.ActionBarScanner.findspell`, status and reason counters; legacy `bm_bar_N` preserved | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Stop after time limit | Final per-method counters still emitted while recorder is stopping | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Missing tracing bridge | Explicit `method_trace_unavailable`, not silent omission | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Export exceeds text limit | `truncated=1`, full retained segments remain in SavedVariables up to configured retention | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| In-session retention evicts segments | `evicted_parts>0` explicit; never claim complete archive when limited | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
+| Full 101 scenarios successfully executed in WoW | Must establish runtime scenarios individually; presence census does not prove this | NOT PROVEN / CLIENT NOT RUN |
+
