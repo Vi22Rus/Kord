@@ -254,7 +254,9 @@ function D:Export()
             chunks[#chunks+1]=part.records
         end
     end
-    chunks[#chunks+1]=self.records
+    -- After Stop, the final part already lives in sessions. Do not
+    -- double-export the same records from the retained in-memory list.
+    if self.active then chunks[#chunks+1]=self.records end
     local used=#table.concat(lines,"\n")
     local full=false
     for _,list in ipairs(chunks) do
