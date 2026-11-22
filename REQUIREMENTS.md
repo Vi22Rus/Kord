@@ -1851,6 +1851,8 @@
 
 **Изменения кода:** не выполнялись; внесён аудит AU-01.
 
+
+**Архитектурная актуализация AU-04:** **См. AU-04:** тип дебаффа/диспела и его снимаемость — дополнительные независимые факты того же общего `AuraPresenceObservation` из AU-01. Не создавать отдельный сканер аур для определения magic/poison/disease/curse/bleed; `canPlayerDispelNow` вычисляется отдельно из свойств способности, цели и eligibility.
 **Архитектурная актуализация AU-02:** **См. AU-02:** длительность, expiration/remaining и число стаков — дополнительные независимые поля **того же** универсального `AuraPresenceObservation(unit,spellID,filter)`. Не создавать второй aura lookup/таймер/сканер для AU-02; использовать единый unitGUID, фильтры, secret-safe чтение, кэш и инвалидацию AU-01. Отсутствие подтверждённого времени или числа стаков не отменяет достоверного присутствия ауры.
 
 
@@ -1900,3 +1902,51 @@
 **Архитектурная ссылка:** **AU-01** — единственный общий aura provider. SP-12 (реактивные aura procs), SP-14 (требуемые/запрещённые ауры), PL-09 (классовые ауры) используют тот же источник; отдельные механизмы длительности для них не создавать.
 
 **Изменения кода:** не выполнялись; внесён аудит AU-02 и актуализация AU-01.
+
+
+### AU-04 — Тип: магия, яд, болезнь, проклятие, кровотечение; можно ли снять
+
+**Приоритет: P1.**
+
+#### Требование
+
+Для уже найденной AU-01 ауры наблюдать **тип эффекта** (`dispelName`/`debuffType` как подтверждённое поле API) и отдельно **можно ли снять именно эту ауру**. Различать: `auraDispelType` (Magic/Poison/Disease/Curse/none/UNKNOWN), `isBleed` (отдельная классификация по подтверждённым данным; кровотечение **не стандартный dispel type**), `isDispellableByMechanic` (тип в принципе допускает снятие), `canPlayerDispelNow` (известная способность игрока, допустимая цель, диапазон, кулдаун, ресурсы, ограничения и иммунитеты). `dispelName=nil` не доказывает bleed, а `Magic` не гарантирует, что текущий персонаж может снять эффект. Для buff/hostile purge и debuff/friendly cleanse разные действия и правила.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 443–761: AU-01 spellID lookup возвращает presence и проверяет `spellId`/`isHarmful`, но не извлекает `dispelName`/`debuffType`, `isBleed` или dispellability. Часть lookup уже secret-safe, поэтому **не дублировать сканирование**.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 44–50 и `ReadField`: типизированное безопасное чтение полей AuraData возможно в существующем adapter; отсутствие/secret поле должно оставаться UNKNOWN.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua): нет `aura.dispelType`/`aura.isBleed`/`aura.canDispel`.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua): проверяет общую пригодность кандидата, но нет подтверждённой матрицы типов снимаемых эффектов и связи с конкретной аурой.
+
+#### Сравнение семи референсов (локальные ZIP)
+
+1. **Sonah** — `Core/Atoms/Auras.lua` предоставляет защищённый aura lookup и поля через `Secret`; в проверенных местах не подтверждён единый классификатор bleed + dispel + фактическая способность снять эффект.
+2. **JustAC** — `SpellDB.lua` содержит семейства защитных/очищающих заклинаний, `DefensiveEngine.lua` оценивает эффекты; полного общего `AuraDispelObservation` по spellID в проверенных местах не подтверждено.
+3. **ForeverAuras** — `BuffTrigger2.lua` и `Prototypes.lua` содержат фильтры по типу дебаффа и dispel-related условия; полезна общая модель `debuffType`, но UI-фильтр не равен `canPlayerDispelNow`.
+4. **MaxDps** — классовые ротации и aura helpers позволяют проверять наличие негативных эффектов; подтверждённой универсальной модели bleed/dispel и применимости снятия не найдено.
+5. **ForeverRotation** — `Engine.lua` и классовые ротации используют `GetAuraDataBySpellName`; проверки очищающих способностей встречаются в профилях, но универсального подтверждённого классификатора не обнаружено.
+6. **RotationGuide** — `Core/State.lua` предоставляет aura helpers; в проверенных местах нет подтверждённой универсальной связки dispel type + can dispel now.
+7. **RotationMaster** — `Platform/auras.lua` даёт типизированное чтение AuraData с защитой от secret, а условия аур могут опираться на `debuffType`; лучшая база для добавления поля типа к уже найденной ауре, но фактическая снимаемость остаётся отдельной проверкой.
+
+#### Сравнение и рекомендация
+
+**Основа — существующий AU-01 Kord + RotationMaster + ForeverAuras; проверенные классовые таблицы очищений — только данные, не новые классовые провайдеры.** Расширить **тот же** результат `AuraPresenceObservation` полями `dispelType` и `bleedClassification` с независимыми статусами. Отдельный общий логический `DispelEligibilityObservation(aura,spellID,targetGUID)` должен переиспользовать `AbilityEligibility` и declarative capabilities очищающей способности. Это вычисление другого вопроса, **не второй aura reader**. Все классы используют одну реализацию; spell-specific механики — в данных.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Защищённое нахождение ауры есть, но тип и возможность снятия не определяются.
+
+#### Требуемые изменения
+
+1. В AU-01/AU-02 provider после подтверждённого `spellId` читать `dispelName` (и `debuffType` только если подтверждено API клиента) из **того же AuraData** через `GameAPI.ReadField`. `nil`/secret → UNKNOWN; не выдумывать `none`.
+2. Типы `Magic/Poison/Disease/Curse` нормализовать по проверенному Forever API, сохраняя raw значение и статус. `Bleed` — **не** пятый стандартный тип диспела: классифицировать только по подтверждённой механике/каталогу; неизвестная аура → `isBleed=UNKNOWN`.
+3. Отделить `dispelType` от `dispelPossibleByMechanic` и `canPlayerDispelNow`. Даже подходящий тип не доказывает, что эффект можно снять конкретным spellID; immunities, target restrictions и protected значения → UNKNOWN/BLOCKED по доказательствам.
+4. Различать friendly cleanse, hostile purge/steal, self-only dispel, pet dispel; способности, снимающие несколько типов, и таланты/руны/ранги/override описывать декларативными данными, общая eligibility — единственная точка READY.
+5. Повторно использовать AU-01 `unitGUID+spellID+filter+caster`, AU-02 duration/stacks, SP-02 ranks, SP-11 overrides, SP-14 target/requirements; `Needs` ленивый, без массового скана группы каждый тик.
+6. Инвалидация `UNIT_AURA`, смены GUID, изучения способности/талантов, cooldown/resources и изменения protected state; диагностика `aura_dispel_type_unknown`, `bleed_unverified`, `dispel_eligibility_unknown`.
+7. Тесты: magic/poison/disease/curse, bleed, nil type, hostile purge vs friendly cleanse, self/pet/party/raid, неснимаемая magic-аура, несколько доступных dispel-способностей, отсутствие ресурсов/кулдаун, secret type, смена цели, rank/override, отсутствие разрешённого API.
+
+**Архитектурная ссылка:** AU-01 — общий reader, AU-02 — его duration/stacks, AU-04 — его dispel/bleed свойства; SP-14 и AbilityEligibility — проверка применимости способности. Не создавать отдельные aura scanners.
+
+**Изменения кода:** не выполнялись; внесён аудит AU-04 и сноска в AU-01.
