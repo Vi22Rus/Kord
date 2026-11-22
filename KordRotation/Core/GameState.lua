@@ -1256,6 +1256,15 @@ function S:ReadSharedItemCooldownObservation(groupID)
                 if checked and count then result.candidateCount=count end
             end
         end
+        -- Prepare a unique source-only spell map on demand; never in Tick.
+        if type(catalog.PrepareUseSpellIndex)=="function" then
+            pcall(catalog.PrepareUseSpellIndex,catalog,groupID)
+        end
+        local observed=self:ReadObservedItemUse(groupID)
+        if observed.reason=="item_cd_use_attribution_estimated" then
+            result.useAttribution="ESTIMATED"
+            result.useObservedAt=observed.observedAt
+        end
     elseif reason=="item_cd_group_unknown" then
         result.reason="item_cd_group_unknown"
     else
@@ -1403,6 +1412,68 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     result.inventoryRevision=before[2]
     result.familyRevision=before[3]
     return result
+end
+
+
+-- IT-02/2.6: successful PLAYER spellcast may match a UNIQUE item use-spell.
+-- Events have no itemID; store only bounded source-only observational evidence.
+-- This does not prove a shared cooldown or any group READY state.
+function S:ObserveSuccessfulItemUseSpell(spellID)
+    local catalog=KR.SharedCooldownGroupCatalog
+    if not catalog or type(catalog.FindObservedUseSpell)~="function" then
+        return false
+    end
+    local ok,match=pcall(catalog.FindObservedUseSpell,catalog,spellID)
+    local api=KR.GameAPI
+    local matchOK,verified=pcall(function()
+        return ok and type(match)=="table"
+            and api and api:IsSafeValue(match)
+            and match.reason=="item_cd_use_spell_source_match"
+            and match.groupID=="POTION_SHARED"
+            and inventorySafeID(match.itemID,"item")
+            and api:IsSafeValue(match.familyRevision)
+            and finite(match.familyRevision,1)
+            and match.familyRevision==math.floor(match.familyRevision)
+    end)
+    if not matchOK or not verified then return false end
+    local now=clock()
+    if not now then return false end
+    self.lastObservedItemUse={itemID=match.itemID,
+        groupID="POTION_SHARED",observedAt=now,
+        familyRevision=match.familyRevision,
+        source="UNIT_SPELLCAST_SUCCEEDED",confidence="ESTIMATED"}
+    return true
+end
+function S:ReadObservedItemUse(groupID)
+    local unknown={status="UNKNOWN",reason="item_cd_use_attribution_unknown"}
+    if groupID~="POTION_SHARED" then return unknown end
+    local evidence=self.lastObservedItemUse
+    if not evidence then return unknown end
+    local now=clock()
+    local families=KR.ItemFamilyCatalog
+    if not now or not families or type(families.GetRevision)~="function" then
+        return unknown
+    end
+    local ok,rev=pcall(families.GetRevision,families)
+    local valid,same=pcall(function()
+        return ok and finite(rev,1)
+            and KR.GameAPI and KR.GameAPI:IsSafeValue(evidence.familyRevision)
+            and rev==evidence.familyRevision
+            and finite(evidence.observedAt,0)
+            and now>=evidence.observedAt and now-evidence.observedAt<=180
+    end)
+    if not valid or not same then
+        self.lastObservedItemUse=nil
+        return unknown
+    end
+    return {status="UNKNOWN",groupStatus="UNKNOWN",
+        reason="item_cd_use_attribution_estimated",
+        candidateItemID=evidence.itemID,observedAt=evidence.observedAt,
+        confidence="ESTIMATED",source=evidence.source,
+        familyRevision=evidence.familyRevision}
+end
+function S:ClearObservedItemUse()
+    self.lastObservedItemUse=nil
 end
 
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.

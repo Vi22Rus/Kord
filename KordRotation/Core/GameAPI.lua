@@ -60,6 +60,7 @@ local allowed = {
     -- Exposing names does not assert their availability or return signature on Forever.
     -- Callers MUST validate tuple/struct fields, enabled flags, finite timing
     -- and secret values; missing API remains UNAVAILABLE/fail-closed.
+    ["C_Item.GetItemSpell"]=true, -- IT-02/2.6: source-backed item use-spell identity, read-only
     ["C_Item.GetItemCooldown"]=true,
     ["C_Container.GetItemCooldown"]=true,
     GetItemCooldown=true,

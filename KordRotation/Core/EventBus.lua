@@ -150,7 +150,7 @@ function E:RequestItemCooldownRefresh(reason)
     return self:InvalidateItemCooldown(reason or "explicit_item_cd_refresh")
 end
 
-function E:HandleEvent(event, unit)
+function E:HandleEvent(event, unit, castGUID, spellID)
     local channel=channels[event]
     if not channel or not relevant(event, unit) then return false end
     if channel=="inventory" then
@@ -162,6 +162,16 @@ function E:HandleEvent(event, unit)
     end
     -- Optional cooldown event and conservative independent invalidations.
     -- Neither a cast nor an inventory update establishes item identity.
+    -- JustAC Forever: UNIT_SPELLCAST_SUCCEEDED identifies a spell, NOT an
+    -- item. Only a previously prepared unique use-spell map may correlate it.
+    if event=="UNIT_SPELLCAST_SUCCEEDED" and unit=="player"
+        and KR.GameState and type(KR.GameState.ObserveSuccessfulItemUseSpell)=="function" then
+        pcall(KR.GameState.ObserveSuccessfulItemUseSpell,KR.GameState,spellID)
+    elseif (event=="PLAYER_REGEN_ENABLED" or event=="PLAYER_ENTERING_WORLD"
+        or event=="ZONE_CHANGED_NEW_AREA")
+        and KR.GameState and type(KR.GameState.ClearObservedItemUse)=="function" then
+        pcall(KR.GameState.ClearObservedItemUse,KR.GameState)
+    end
     if event=="BAG_UPDATE_COOLDOWN" or event=="BAG_UPDATE_DELAYED"
         or event=="BAG_UPDATE" or event=="ACTIONBAR_UPDATE_COOLDOWN"
         or event=="UNIT_SPELLCAST_SUCCEEDED"
@@ -237,8 +247,8 @@ function E:Initialize()
         end
         self.registered[event]=valid and pcall(frame.RegisterEvent, frame, event) or false
     end
-    frame:SetScript("OnEvent", function(_,event,unit)
-        E:HandleEvent(event,unit)
+    frame:SetScript("OnEvent", function(_,event,unit,castGUID,spellID)
+        E:HandleEvent(event,unit,castGUID,spellID)
     end)
     frame:SetScript("OnUpdate",function(_,elapsed) E:Tick(elapsed) end)
     self.frame=frame

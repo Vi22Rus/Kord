@@ -1,3 +1,13 @@
+## KR-20261122-105 — IT-02/2.6: source-backed use-spell attribution with fail-closed event evidence
+- Дата/время: 2026-11-22 UTC, точное время — Git commit; Git SHA `git log --grep KR-20261122-105`.
+- Этап/ID: 2.6 IT-02 P0, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: EventBus имел `UNIT_SPELLCAST_SUCCEEDED`, но выбрасывал spellID; GameState имел индивидуальные cooldown и candidate itemID без подтверждённой связи успешного каста и itemID. Исходниковый пробел, не подтверждённая ошибка клиента.
+- Решение: `GameAPI.lua` добавлен read-only `C_Item.GetItemSpell`. `SharedCooldownGroupCatalog.lua` созданы `PrepareUseSpellIndex` и `FindObservedUseSpell`: bounded 19 source-only кандидатов, полный индекс без коллизий, защищённые multi-return поля, защитная проверка ревизии. `EventBus.lua:HandleEvent` и OnEvent forwarding применяют spellID только для player; при выходе из боя/зоне/world очищают evidence. `GameState.lua` `ObserveSuccessfulItemUseSpell/ReadObservedItemUse/ClearObservedItemUse` сохраняют только transient estimated evidence, TTL<=180s, не делают shared group READY, а `ReadSharedItemCooldownObservation` запускает индекс лишь по demand.
+- Референс: фактический исходный JustAC `BlizzardAPI/StateHelpers.lua` метод `NoteDefensiveItemUse`, `C_Item.GetItemSpell(itemID)` (возвращает name,spellID), `UNIT_SPELLCAST_SUCCEEDED`; не перенесён fail-open `onCooldown=false`. Новых protected action API нет.
+- Тестовый файл: `tests/item_use_spell_attribution_mock.lua` с 33 source assertions, включая collision, unavailable, secret, player-only, TTL, change rev, no READY. Проверки PASS — исходниковые якоря, добавление файлов и Git publication; NOT RUN — Lua 5.1 runtime/mock, полная регрессия, GitHub Actions manual-only, WoW Forever (игра недоступна).
+- Документация: тот же коммит синхронизирует `REQUIREMENTS.md` и `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` без удаления исходных строк. Выдано тестировщику: добавить итоговый QA player vs other unit, ambiguity, TTL, client GetItemSpell signatures, real shared potion/healthstone exclusivity; не требуется промежуточная установка.
+- Ограничения: item use-spell совпадение в каталоге не доказывает использование предмета глобально, только ESTIMATED; фактические shared cooldown/ready и клиентский API NOT VERIFIED. Связи IT-01/02/03, KR-20261122-090/101/102/103/104.
+
 ## KR-20261122-104 — IT-02/2.6: bounded member cooldown evidence without false group readiness
 - Дата/время: 2026-11-22T15:51:56Z (UTC, время подготовки изменений); коммит: `git log --grep KR-20261122-104`, полный Git SHA из истории.
 - ID/этап/тип: IT-02 P0, этап 2 шаг 2.6; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

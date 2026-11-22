@@ -122,6 +122,89 @@ function C:GetCandidateMembers(groupID)
     return result
 end
 
+
+-- IT-02/2.6: on-demand mapping from the actual Forever reference signature:
+-- C_Item.GetItemSpell(itemID) -> spellName, spellID (JustAC StateHelpers).
+-- Only a COMPLETE, UNIQUE map may attribute an observed player spell.
+-- A mapping alone never proves an item was used or a group cooldown started.
+local useSpellIndex=nil
+local useSpellRevision=nil
+function C:PrepareUseSpellIndex(groupID)
+    local candidatesOK,candidates=pcall(self.GetCandidateMembers,self,groupID)
+    if not candidatesOK or type(candidates)~="table" then
+        return {status="UNKNOWN",reason="item_cd_use_spell_members_unverified"}
+    end
+    if candidates.status~="UNKNOWN"
+        or candidates.reason~="item_cd_use_attribution_unknown"
+        or type(candidates.candidateItemIDs)~="table" then
+        return {status="UNKNOWN",reason="item_cd_use_spell_members_unverified"}
+    end
+    local api=KR.GameAPI
+    if not api or type(api.ReadValues)~="function" then
+        return {status="UNKNOWN",reason="item_cd_use_spell_api_missing"}
+    end
+    local revision=candidates.familyRevision
+    local ids=candidates.candidateItemIDs
+    if useSpellIndex and useSpellRevision==revision then
+        return {status="UNKNOWN",reason="item_cd_use_spell_index_prepared",
+            mappedCount=#ids,verification="SOURCE_ONLY"}
+    end
+    useSpellIndex,useSpellRevision=nil,nil
+    local ok,index=pcall(function()
+        if not safe(revision) or type(revision)~="number" then return nil end
+        if #ids<1 or #ids>32 then return nil end
+        local mapping={}
+        for i=1,#ids do
+            local id=ids[i]
+            if not safe(id) or type(id)~="number" then return nil end
+            local read=api:ReadValues("C_Item.GetItemSpell",id)
+            if type(read)~="table" or not safe(read)
+                or read.status~="READY"
+                or type(read.value)~="table" or not safe(read.value) then
+                return nil
+            end
+            local name,spellID=read.value[1],read.value[2]
+            if not safe(name) or type(name)~="string" or name==""
+                or not safe(spellID) or type(spellID)~="number"
+                or spellID~=math.floor(spellID) or spellID<1
+                or spellID>99999999 then return nil end
+            if mapping[spellID] then return nil end -- collision: ambiguous
+            mapping[spellID]=id
+        end
+        if KR.ItemFamilyCatalog:GetRevision()~=revision then return nil end
+        return mapping
+    end)
+    if not ok or not index then
+        return {status="UNKNOWN",reason="item_cd_use_spell_mapping_unverified"}
+    end
+    useSpellIndex,useSpellRevision=index,revision
+    return {status="UNKNOWN",reason="item_cd_use_spell_index_prepared",
+        mappedCount=#ids,verification="SOURCE_ONLY"}
+end
+function C:FindObservedUseSpell(spellID)
+    if not safe(spellID) or type(spellID)~="number"
+        or spellID<1 or spellID>99999999
+        or spellID~=math.floor(spellID) then
+        return {status="UNKNOWN",reason="item_cd_use_spell_invalid"}
+    end
+    if not useSpellIndex or not KR.ItemFamilyCatalog
+        or type(KR.ItemFamilyCatalog.GetRevision)~="function" then
+        return {status="UNKNOWN",reason="item_cd_use_spell_index_missing"}
+    end
+    local ok,revision=pcall(KR.ItemFamilyCatalog.GetRevision,KR.ItemFamilyCatalog)
+    if not ok or not safe(revision) or revision~=useSpellRevision then
+        useSpellIndex,useSpellRevision=nil,nil
+        return {status="UNKNOWN",reason="item_cd_use_spell_index_stale"}
+    end
+    local itemID=useSpellIndex[spellID]
+    if not itemID then
+        return {status="UNKNOWN",reason="item_cd_use_spell_not_mapped"}
+    end
+    -- This is source-only identity attribution, not proof of use or lockout.
+    return {status="UNKNOWN",reason="item_cd_use_spell_source_match",
+        itemID=itemID,groupID="POTION_SHARED",familyRevision=revision}
+end
+
 function C:ListGroups()
     return {"POTION_SHARED"}
 end
