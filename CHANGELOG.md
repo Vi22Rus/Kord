@@ -1,3 +1,10 @@
+## 2026-11-22 — Aspect routing and post-cast rotation recovery (log timestamps 17974–18001)
+
+- Hunter aspect (`recommendationType="aspect"`) now follows the visible `defensiveInCombatMain` checkbox: checked + confirmed combat -> main; unchecked or outside combat -> Defensive. The legacy `buffsInCombatMain` setting must not override aspect placement.
+- After an aspect cast, the profile must evaluate subsequent actions. An unknown *condition* of an explicitly listed optional Hunter defensive trap or cooldown is recorded as `condition_unknown_skipped` and must not starve the rest of the rotation; this does not imply eligibility READY. `AbilityEligibility UNKNOWN` and errors remain fail-closed, and interrupt rules are never condition-skippable.
+- No target and truly unknown resource/range facts remain valid reasons for no combat suggestion; never fabricate combat facts.
+- Regression coverage: `tests/combat_aura_routing.lua`. CI mock success does not mean verified WoW gameplay.
+
 ## 2026-11-22 — Correct Defensive ability recommendation routing
 
 - Corrected the Advanced checkbox: `defensiveInCombatMain` now controls **defensive abilities** (category `defensive`), NOT buffs/auras.
