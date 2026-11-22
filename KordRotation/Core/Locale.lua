@@ -3789,7 +3789,20 @@ for locale,v in pairs(defensiveAuraNotice) do
   t.IND_DEFENSIVE_PENDING=v[2]
   t.TIP_IND_DEFENSIVE_ENABLE=v[3]
   t.TIP_IND_DEFENSIVE_COMBAT=v[4]
+  t.TIP_IND_DEFENSIVE_TITLE=v[3]
+  t.TIP_IND_DEFENSIVE_PENDING=v[2]
  end
+end
+local defensivePageStatus={
+ enUS="Verified aura recommendations are active. Other defensive and interrupt recommendations are not yet implemented.",
+ ruRU="Рекомендации подтверждённых аур работают. Остальные защитные способности и прерывания пока не реализованы.",
+ deDE="Bestätigte Aura-Empfehlungen sind aktiv. Weitere defensive Fähigkeiten und Unterbrechungen sind noch nicht implementiert.",
+ frFR="Les recommandations d'auras vérifiées sont actives. Les autres défensifs et interruptions ne sont pas encore implémentés.",
+ esES="Las recomendaciones de auras verificadas están activas. Otras defensas e interrupciones aún no están implementadas.",
+ ptBR="As recomendações de auras verificadas estão ativas. Outras defesas e interrupções ainda não foram implementadas."
+}
+for locale,value in pairs(defensivePageStatus) do
+ if translations[locale] then translations[locale].IND_NOT_ACTIVE=value end
 end
 
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.
