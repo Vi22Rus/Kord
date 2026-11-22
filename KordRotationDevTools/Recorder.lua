@@ -118,12 +118,40 @@ local function sanitizeReason(v)
     -- Never record arbitrary user data as a reason.
     return reasons[v] and v or "unknown"
 end
+-- Store each bounded journal segment as a scalar-only SavedVariables
+-- record. WoW itself flushes SavedVariables to disk on logout/reload;
+-- addons cannot create arbitrary files during gameplay.
+function D:SaveJournalPart(final)
+    if not self.session or type(self.records)~="table" then return false end
+    if #self.records==0 and not final then return false end
+    local db=self.settings
+    db.sessions=type(db.sessions)=="table" and db.sessions or {}
+    local kept={matrix=self.matrix,version=self.version,
+        started=self.session.started,stopped=now() or 0,
+        dropped=final and self.dropped or 0,
+        part=(self.journalPart or 0)+1,
+        final=final==true,records={}}
+    for i,item in ipairs(self.records) do
+        kept.records[i]={sequence=item.sequence,kind=item.kind,
+            status=item.status,reason=item.reason,
+            matrix=item.matrix,elapsed=item.elapsed,time=item.time,
+            detail=item.detail}
+    end
+    table.insert(db.sessions,kept)
+    local limit=type(self.maxSessions)=="number" and self.maxSessions or 8
+    while #db.sessions>limit do table.remove(db.sessions,1) end
+    self.settings=db
+    KordRotationDevToolsDB=db
+    self.journalPart=kept.part
+    return true
+end
 function D:Start()
     if self.active then return false,"already_recording" end
     self.active=true
     self.records={}
     self.sequence=0
     self.dropped=0
+    self.journalPart=0
     self.started=now()
     self.lastTick=nil
     self.lastCooldownTick=nil
@@ -138,24 +166,7 @@ function D:Stop()
     if self.TraceStop then self:TraceStop() end
     self.active=false
     self.stopping=false
-    if self.session then
-        self.session.dropped=self.dropped
-        self.session.stopped=now() or 0
-        -- Store a sanitized scalar-only bounded copy, never raw references.
-        local kept={matrix=self.matrix,version=self.version,
-            started=self.session.started,stopped=self.session.stopped,
-            dropped=self.dropped,records={}}
-        for i,item in ipairs(self.records) do
-            kept.records[i]={sequence=item.sequence,kind=item.kind,
-                status=item.status,reason=item.reason,
-                matrix=item.matrix,elapsed=item.elapsed,time=item.time,detail=item.detail}
-        end
-        local db=self.settings
-        db.sessions=type(db.sessions)=="table" and db.sessions or {}
-        table.insert(db.sessions,kept)
-        while #db.sessions>self.maxSessions do table.remove(db.sessions,1) end
-        KordRotationDevToolsDB=db
-    end
+    if self.session then self:SaveJournalPart(true) end
     self.session=nil
     return true
 end
@@ -168,8 +179,15 @@ function D:Record(kind,status,reason,matrix,elapsed,detail)
         return false,"session_limit"
     end
     if #self.records>=self.maxRecords then
-        self.dropped=self.dropped+1
-        return false,"buffer_full"
+        -- Rotate a completed segment into SavedVariables and keep recording.
+        -- Drop only when persistence is unavailable.
+        if self:SaveJournalPart(false) then
+            self.records={}
+            self.session.records=self.records
+        else
+            self.dropped=self.dropped+1
+            return false,"buffer_full"
+        end
     end
     if not D:Safe(kind) or not D:Safe(status) or not D:Safe(reason)
         or not D:Safe(matrix) or not D:Safe(elapsed) then
