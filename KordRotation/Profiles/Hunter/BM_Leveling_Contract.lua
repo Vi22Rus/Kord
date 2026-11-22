@@ -117,8 +117,13 @@ end
 local function mana(S,cfg,is60)
  local floor=is60 and {max=0,fast=10,balanced=25,economy=40}
     or {max=0,fast=15,balanced=30,economy=50}
+ local min=floor[cfg.mana]
+ if min==nil then min=30 end
+ -- Zero reserve imposes no minimum mana threshold: the later
+ -- AbilityEligibility usability/resources gate still decides readiness.
+ -- This must work when WoW Forever marks UnitPower secret.
+ if min==0 then return true end
  local pct=signal(S,"resources.percent")
- local min=floor[cfg.mana] or 30
  if type(pct)~="number" then return nil end
  return pct>=min
 end
