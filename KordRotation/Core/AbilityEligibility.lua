@@ -589,17 +589,21 @@ function A:EvaluateItem(id,options)
         add("cooldown","UNKNOWN","item_cooldown_unverified")
         return finish("UNKNOWN","item_cooldown_unverified")
     end
+    -- Individual cooldown and group lockout are separate proofs. A GCD,
+    -- use-spell cooldown, charge count or combat restriction is NOT a
+    -- substitute for either, and cannot be inferred from short duration.
     local sharedStatus=itemField(cd,"sharedStatus")
     if sharedStatus=="READY" and itemField(cd,"sharedActive")==true then
-        add("cooldown","BLOCKED","item_shared_cooldown")
+        add("sharedCooldown","BLOCKED","item_shared_cooldown")
         return finish("BLOCKED","item_shared_cooldown")
     end
     if sharedStatus~="NOT_APPLICABLE"
         and not (sharedStatus=="READY" and itemField(cd,"sharedActive")==false) then
-        add("cooldown","UNKNOWN","item_shared_cooldown_unverified")
+        add("sharedCooldown","UNKNOWN","item_shared_cooldown_unverified")
         return finish("UNKNOWN","item_shared_cooldown_unverified")
     end
     add("cooldown","READY")
+    add("sharedCooldown","READY")
 
     -- IT-03 will supply these independent proofs, including zone and
     -- target-specific restrictions. Inventory count is never usability.

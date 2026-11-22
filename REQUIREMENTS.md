@@ -5144,6 +5144,16 @@
 - **Проверки:** PASS — статическая сверка наличия guarded normalization, невозможности fallback при secret/disabled и исходников assertions. NOT RUN — Lua 5.1/mock execution, полный regression, ручной CI, WoW Forever. Нет заявления игровой совместимости.
 - **Ограничения:** это частичная реализация шага 2.3, до повторного подтверждения API и bag/slot fallback из 2.2–2.3; revision IT-02/2.7, GCD separation 2.4 и shared group 2.5–2.6 остаются. `active=false` означает только валидированный индивидуальный cooldown, не возможность использования предмета. Логирование в CHANGELOG коммитом KR-20261122-084; нарушение атомарности фиксировано отдельно.
 
+#### Реализация Kord — фактическое состояние (IT-02, этап 2, шаг 2.4, частично)
+- **ID/дата/статус:** IT-02, 2026-11-22, P0, PARTIALLY IMPLEMENTED / CLIENT NOT RUN. Исторический вердикт не менялся.
+- **Изменения:** в `KordRotation/Core/GameState.lua`, `S:ReadItemCooldownObservation`, результат с `status="READY"` помечается `cooldownScope="ITEM_SPECIFIC"`; независимые `gcdStatus/combatUseStatus/inventoryStatus/chargesStatus/usabilityStatus` всегда UNKNOWN, пока соответствующие отдельные доказательства не получены их собственными провайдерами. В `KordRotation/Core/AbilityEligibility.lua`, `A:EvaluateItem`, диагностика shared lockout отделена от индивидуального cooldown (`sharedCooldown` check). Существующее подтверждение item count и отдельный будущий `ReadItemUsabilityObservation` не заменяются cooldown-временем; фактический final READY остаётся в AbilityEligibility. Прямые игровые вызовы не добавлены.
+- **Тесты:** `tests/item_cooldown_adapter_mock.lua` проверяет, что успешное индивидуальное наблюдение не превращает GCD, боевые ограничения, наличие, заряды или usability в READY. Старые mock-наборы не отключены.
+- **API/основание:** только ранее включённые read-only `C_Item.GetItemCooldown`, `GetItemCooldown`, `GetTime`; раздел IT-02, задокументированные референсы RotationMaster/Platform/items.lua и ForeverAuras/GenericTrigger.lua. Первичные референсные архивы в этой итерации повторно не открывались, соответствие Forever NOT VERIFIED.
+- **Доказательства:** `KR-20261122-088` (SHA определяется по `git log --grep KR-20261122-088`), [GameState.lua](https://github.com/Vi22Rus/Kord/blob/main/KordRotation/Core/GameState.lua), [AbilityEligibility.lua](https://github.com/Vi22Rus/Kord/blob/main/KordRotation/Core/AbilityEligibility.lua); постоянные ссылки для ревизии составляются из SHA коммита.
+- **Проверки:** PASS — статическая проверка точных изменений и наличия assertions. NOT RUN — Lua 5.1, mock execution, общий regression, GitHub Actions (manual only), WoW Forever (нет клиента).
+- **Осталось:** подтвердить GCD именно для item-use и API cooldown signatures, закрыть 2.2–2.3 при наличии доказательств, реализовать 2.5–2.10. Это разделение фактов, а не итоговая готовность использовать предмет; связанные IT-01, IT-03, IT-04, AC-02.
+
+
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 

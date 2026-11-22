@@ -1141,6 +1141,15 @@ function S:ReadItemCooldownObservation(itemID)
             result.remaining=remaining
             result.enabled=true
             result.active=remaining>0
+            -- IT-02/2.4: READY is only itemID-specific cooldown evidence.
+            -- Never reuse it to imply a clear GCD, combat gate, bag count,
+            -- charges, or item usability. Separate providers own those facts.
+            result.cooldownScope="ITEM_SPECIFIC"
+            result.gcdStatus="UNKNOWN"
+            result.combatUseStatus="UNKNOWN"
+            result.inventoryStatus="UNKNOWN"
+            result.chargesStatus="UNKNOWN"
+            result.usabilityStatus="UNKNOWN"
             result.observedAt=now
             -- Revision follows in IT-02/2.7; absent revision is not zero.
             return result

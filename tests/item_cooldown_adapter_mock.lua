@@ -61,6 +61,12 @@ local active=observe("active")
 assert(active.status=="READY" and active.active==true)
 assert(active.remaining==20 and active.startTime==90 and active.duration==30)
 assert(active.enabled==true and active.revision==nil)
+-- Item-only READY must not launder unrelated gates into READY.
+assert(active.cooldownScope=="ITEM_SPECIFIC")
+for _,key in ipairs({"gcdStatus","combatUseStatus","inventoryStatus",
+        "chargesStatus","usabilityStatus"}) do
+    assert(active[key]=="UNKNOWN",key)
+end
 assert(active.source=="C_Item.GetItemCooldown" and #calls==1)
 local fallback=observe("fallback")
 assert(fallback.status=="READY" and fallback.remaining==20 and #calls==2)
