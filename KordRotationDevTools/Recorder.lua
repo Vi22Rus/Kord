@@ -128,6 +128,7 @@ function D:SaveJournalPart(final)
     db.sessions=type(db.sessions)=="table" and db.sessions or {}
     local kept={matrix=self.matrix,version=self.version,
         started=self.session.started,stopped=now() or 0,
+        sessionID=self.session.sessionID,
         dropped=final and self.dropped or 0,
         part=(self.journalPart or 0)+1,
         final=final==true,records={}}
@@ -152,11 +153,19 @@ function D:Start()
     self.sequence=0
     self.dropped=0
     self.journalPart=0
+    local nextID=type(self.settings.nextSessionID)=="number"
+        and self.settings.nextSessionID or 0
+    if nextID<0 or nextID>999999999 or nextID~=math.floor(nextID) then
+        nextID=0
+    end
+    self.journalID=nextID+1
+    self.settings.nextSessionID=self.journalID
     self.started=now()
     self.lastTick=nil
     self.lastCooldownTick=nil
     self.session={matrix=self.matrix,version=self.version,
-        started=self.started or 0,records=self.records}
+        started=self.started or 0,sessionID=self.journalID,
+        records=self.records}
     if self.TraceStart then self:TraceStart() end
     return true
 end
@@ -236,13 +245,31 @@ end
 function D:Export()
     -- Strict whitelist, never tostring unknown game payloads.
     local lines={"KordRotationDevTools\tmatrix="..self.matrix.."\tversion="..self.version}
-    local list=self.records
-    for _,v in ipairs(list) do
-        local line=table.concat({encode(v.sequence),encode(v.kind),
-            encode(v.status),encode(v.reason),encode(v.matrix),
-            encode(v.elapsed),encode(v.time),encode(v.detail)},"\t")
-        if #table.concat(lines,"\n")+#line+1>self.maxExport then break end
-        lines[#lines+1]=line
+    -- Manual export still includes retained segments from this recording.
+    -- The SavedVariables journal itself is not limited by maxExport.
+    local chunks={}
+    for _,part in ipairs(self.settings.sessions or {}) do
+        if type(part)=="table" and part.sessionID==self.journalID
+            and type(part.records)=="table" then
+            chunks[#chunks+1]=part.records
+        end
+    end
+    chunks[#chunks+1]=self.records
+    local used=#table.concat(lines,"\n")
+    local full=false
+    for _,list in ipairs(chunks) do
+        for _,v in ipairs(list) do
+            local line=table.concat({encode(v.sequence),encode(v.kind),
+                encode(v.status),encode(v.reason),encode(v.matrix),
+                encode(v.elapsed),encode(v.time),encode(v.detail)},"\t")
+            if used+#line+1>self.maxExport then
+                full=true
+                break
+            end
+            lines[#lines+1]=line
+            used=used+#line+1
+        end
+        if full then break end
     end
     lines[#lines+1]="dropped="..encode(self.dropped)
     return table.concat(lines,"\n")
