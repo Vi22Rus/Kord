@@ -5938,6 +5938,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
 
+**Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
+
+
 **Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
 
 
@@ -6062,6 +6065,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
 
+**Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
+
+
 **Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
 
 
@@ -6124,6 +6130,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 ### AC-04 — TARGET: смена цели (рекомендация, не действие)
 
+**Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
+
+
 **Раздел: 13. Типы действий, которые движок умеет рекомендовать. Приоритет: P2.**
 
 #### Требование
@@ -6174,5 +6183,62 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **НЕ РЕАЛИЗОВАНО КАК ТИП ИНФОРМАЦИОННОЙ РЕКОМЕНДАЦИИ — ДОБАВИТЬ (P2).** Требуется только подсказка пользователю, а не управление его целью.
 
 **Архитектурные ссылки:** AC-01–AC-03, EN-01–EN-06, CC-04, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки внесены в AC-01–AC-03, EN-03 и EN-04.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-05 — STANCE_OR_FORM: смена стойки, ауры, облика
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Приоритет: P1.**
+
+#### Требование
+
+Движок должен уметь **рекомендовать** переход в боевую стойку воина, облик друида, классовую переключаемую ауру паладина и аналогичные поддерживаемые Forever состояния. Отличать `FORM/STANCE` (режим, влияющий на доступные способности и ресурсы), `EXCLUSIVE_AURA` (взаимоисключающая классовая аура), обычный поддерживающий баф `SPELL` и способность питомца `PET_COMMAND`. Рекомендация не выполняет защищённое переключение, не вызывает `CastSpellByID`/`CastShapeshiftForm` и не нажимает кнопки.
+
+Контракт: `actionType="STANCE_OR_FORM"`, `spellID` (если достоверен), `formID/formSlot` (если применимо), `desiredState`, `currentState=ACTIVE/INACTIVE/UNKNOWN`, `status=READY/BLOCKED/UNKNOWN`, `reason`, `priority`, `channel`, `source/revision`, безопасные `name/texture`. `READY` означает «смена действительно нужна и доступна», а не только «заклинание существует». Уже активная стойка/аура/форма не рекомендуется повторно. Нельзя предполагать, что одинаковый индекс формы у разных классов означает одну и ту же способность.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161,185`: обработка правил ограничена `SPELL`; `STANCE_OR_FORM` как typed action отсутствует.
+- `RotationEngine.lua:173–182`: уже существует распределение защитных и поддерживающих действий по каналам, включая `aspect` и `aura`; новый тип не должен ломать эту логику или переносить выключенную ауру в основной фрейм.
+- `KordRotation/Core/GameAPI.lua:17,24–26`: имеются `UnitAura`, spell metadata и `IsUsableSpell`; в проверенной allowlist не подтверждены `GetNumShapeshiftForms`, `GetShapeshiftFormInfo`, `GetShapeshiftFormID`, `GetShapeshiftForm`.
+- `KordRotation/Core/GameState.lua`: в просмотренном ядре не найдено отдельного typed `FormStanceObservation` с `activeFormSpellID` и безопасным UNKNOWN.
+- `KordRotation/Core/EventBus.lua:19,23`: `UPDATE_SHAPESHIFT_FORM` уже инвалидирует `actionbar`, `UNIT_AURA` — `auras`; специализированная ревизия состояния формы и проверка `UPDATE_SHAPESHIFT_FORMS` пока не подтверждены.
+- `AbilityEligibility` и `RotationConditions`: spell eligibility уже существует, но не доказывает необходимость смены текущей стойки/облика.
+- **Итог:** отдельный тип отсутствует, но spell pipeline, aura observation и частичная событийная инфраструктура уже есть.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:398` реагирует на `UPDATE_SHAPESHIFT_FORM`, `Sonah/UI/ActionBars.lua:1321–1322` обновляет панель форм; `Sonah/Classes/Druid.lua:241` предупреждает о недоступности заклинания в форме. Полезно разделение наблюдения и допустимости.
+2. **JustAC:** `JustAC/FormCache.lua:23–33,60–67` сопоставляет spellID с формой через `GetNumShapeshiftForms/GetShapeshiftFormInfo`; `JustAC/BlizzardAPI/StateHelpers.lua:1823` — обёртка API. Главный ориентир для формы, но не копировать форму по фиксированному индексу.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:1398` обрабатывает `UPDATE_SHAPESHIFT_FORM`, `:5731` читает `GetShapeshiftFormID`. Триггер не равен политике смены.
+4. **MaxDps:** `MaxDps/Buttons.lua:399–413` связывает stance bar с `GetShapeshiftFormInfo`; `MaxDps_Druid/Specialization/Forever/Balance.lua:9–11` читает активный formID. Полезна проверка формы, но индексы могут отличаться.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:119–130` получает активную форму через безопасное чтение списка форм; `ForeverRotation/Display.lua:314–317` поддерживает требуемую форму/отсутствие формы. Ориентир для условия «нужна ли смена».
+6. **RotationGuide:** `RotationGuide/Core/State.lua:224` читает `GetShapeshiftFormID`; `RotationGuide/Data/Warrior.lua:31,51` задаёт правила Battle/Berserker Stance; `RotationGuide/Core/Display.lua:49–50` связывает stance button и spellID. Не переносить formID без проверки.
+7. **RotationMaster:** `RotationMaster/Conditions/combat.lua:800–810` различает активный form spell и индекс, возвращая UNKNOWN при отсутствии наблюдения; `:865–869` перечисляет доступные формы. Основной образец typed form observation.
+
+#### Выбранный путь Kord
+
+Добавить **`FormStanceObservation`** в существующий GameState, используя capability-probed `GetNumShapeshiftForms/GetShapeshiftFormInfo/GetShapeshiftFormID` и доступные `UnitAura` для переключаемых аур. Нормализовать `activeFormSpellID`, `formSlot`, `activeExclusiveAuraSpellID`, `knownForms`, `status/reason/source/revision`; `nil`/secret/отсутствующий API не трактовать как «обычная форма». Проверять различия интерфейса Forever по классу/талантам/спеку и уровню.
+
+В `ActionRecommendation` AC-01–AC-04 добавить `STANCE_OR_FORM` как **семантический тип**, использующий тот же `RotationEngine → RotationConditions → AbilityEligibility`. `FormStanceSelection` выбирает требуемое состояние из политики профиля, сравнивает с фактическим, проверяет изученность, ресурс/кулдаун/GCD, доступность смены в текущем контроле, касте, бою, ограничения формы и итоговый spell eligibility. `STANCE_OR_FORM` не обходит spell gate. Для аур, уже реализованных как SPELL, обеспечить адаптер, не создавать дубликаты одновременно в SPELL и STANCE_OR_FORM.
+
+Смена формы может быть **предусловием** последующего SPELL, но не должна провоцировать циклическое переключение туда-обратно между соседними тиками. Ввести приоритет/стабилизацию, учёт отмены формы, временной блокировки переключения, hysteresis и смены цели/ситуации. Настройки `enableFormRecommendations`, `allowOutOfCombat`, `allowInCombat`, `minimumSwitchInterval`, `auraPlacement` должны сохранять действующие правила defensive/maintenance. EventBus: `UPDATE_SHAPESHIFT_FORM`, `UPDATE_SHAPESHIFT_FORMS` при подтверждении на Forever, `UNIT_AURA`, `SPELLS_CHANGED`, talent/spec, cooldown, combat, target, config. Lazy `Needs.formStance`, memo; DevTools reasons `form_already_active`, `form_unknown`, `form_unlearned`, `form_switch_blocked`, `aura_already_active`, `form_switch_ready`, `form_oscillation_suppressed`.
+
+#### Требуемые изменения
+
+1. Добавить typed `STANCE_OR_FORM` в общий action contract без второго spell engine; сохранить `SPELL`, `ITEM`, `PET_COMMAND`, `TARGET`.
+2. Добавить в GameAPI capability-probed Forever form APIs и `FormStanceObservation` в GameState, различая form slot, spellID, класс и эксклюзивную ауру.
+3. Реализовать `FormStanceSelection` с проверкой необходимости, learned/max rank, ресурса, cooldown/GCD, текущего контроля, боя и итогового `AbilityEligibility`.
+4. Исключить повтор активной формы, дублирование SPELL-аур и колебания между формами; корректно обрабатывать форму «нет», переходы и потерю состояния.
+5. Сохранить пользовательские настройки показа аур/аспектов и разделение main/defensive каналов, включая выключенную настройку показа в бою.
+6. Добавить подтверждённые Forever EventBus revisions, lazy Needs, DevTools reasons и диагностику источника UNKNOWN.
+7. Тесты: warrior Battle/Defensive/Berserker, druid Bear/Cat/Caster, paladin exclusive aura, hunter aspect при применимости, уже активная форма, неизвестный formID, unlearned spell, GCD/resource/cooldown, combat/OOC, каст/контроль, смена спека, secret/nil, смена цели, предотвращение циклов, сохранение SPELL-рекомендаций, отсутствие protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ (P1).** Существующие spell и aura механизмы переиспользовать; отдельная typed form/stance observation и выбор действительно нужного переключения ещё требуются.
+
+**Архитектурные ссылки:** AC-01–AC-04, SP-01–SP-14, CC-01–CC-03, PE-04, `RotationEngine`, `GameState`, `AbilityEligibility`. Обратные ссылки внесены в AC-01, AC-03 и AC-04.
 
 **Изменения Lua:** отсутствуют. Только документация.
