@@ -111,7 +111,7 @@ local function levelOf(snapshot)
      or not validID(r.value) or r.value>100 then return nil end
  return r.value
 end
-local function run(channel,sharedSnapshot)
+local function run(channel,sharedSnapshot,sharedContext)
  channel=channel=="defensive" and "defensive" or "main"
  if not KR.RotationProfiles or type(KR.RotationProfiles.ResolveForEngine)~="function"
     or not KR.RotationSettings or not KR.AbilityEligibility
@@ -146,8 +146,9 @@ local function run(channel,sharedSnapshot)
  if profile.status~="verified" and
     not (profile.status=="experimental" and saved.allowUnverifiedProfiles==true) then
   return unknown("profile_unverified",profile.id) end
- local cfg=config(profile,saved)
- local S=KR.RotationConditions:Create(profile,snapshot)
+ local cfg=sharedContext and sharedContext.config or config(profile,saved)
+ local S=sharedContext and sharedContext.conditions
+ if not S then S=KR.RotationConditions:Create(profile,snapshot) end
  if not S then return unknown("condition_context_missing",profile.id) end
  local diagnostics={}
  local combatRecord=snapshot.player and snapshot.player.combat
@@ -260,8 +261,25 @@ function E:EvaluateBoth()
  if not ok or type(snapshot)~="table" then
   return unknown("game_state_unavailable"),unknown("game_state_unavailable")
  end
- local mainOK,main=pcall(run,"main",snapshot)
- local defOK,def=pcall(run,"defensive",snapshot)
+ -- Share the same per-evaluation demand-driven provider cache in both
+ -- channels. Each condition and Blizzard API fact is read at most once,
+ -- even when a recommendation is evaluated for both windows.
+ local prepared
+ local currentID=identity()
+ if currentID and KR.RotationProfiles and KR.RotationSettings and
+     KR.RotationConditions and type(KR.RotationConditions.Create)=="function" then
+  local saved=KR.RotationSettings:GetProfile(false)
+  local level=levelOf(snapshot)
+  if saved and level then
+   local profile=KR.RotationProfiles:ResolveForEngine(currentID,level)
+   if profile then
+    local ctx=KR.RotationConditions:Create(profile,snapshot)
+    if ctx then prepared={conditions=ctx,config=config(profile,saved)} end
+   end
+  end
+ end
+ local mainOK,main=pcall(run,"main",snapshot,prepared)
+ local defOK,def=pcall(run,"defensive",snapshot,prepared)
  if not mainOK or type(main)~="table" then main=unknown("engine_exception") end
  if not defOK or type(def)~="table" then def=unknown("engine_exception") end
  return main,def
