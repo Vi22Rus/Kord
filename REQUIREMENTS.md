@@ -9744,102 +9744,102 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 | Механика | Способности / семейства (Forever-oriented источники, не CLIENT PASS) | Нормативные проверки |
 |---|---|---|
-| Облики и переключение | Bear Form \`5487\`, Dire Bear Form \`9634\`, Cat Form \`768\`, Moonkin Form \`24858\`, Travel Form \`783\`, Aquatic Form \`1066\`, caster/no form; отдельные доступные Forever формы — по каталогу | \`GetShapeshiftForm()\` + \`GetShapeshiftFormInfo(index)\` (матрица #34), learned spell/rank, current form identity, mutually exclusive family, action availability, mana cost, cast/GCD, combat/zone/movement restrictions, form-dependent spell eligibility. Не приравнивать Blizzard index к spellID или Forever formID; \`nil\`/secret → UNKNOWN, не caster. Смена — AC-05 \`STANCE_OR_FORM\`, не protected \`CastShapeshiftForm\` |
-| Ресурсы по формам | Bear/Dire Bear: RAGE; Cat: ENERGY + COMBO_POINTS; caster/Moonkin: MANA; \`Shifting Power\` \`1322605\`, \`Enrage\` \`5229\`, \`Innervate\` \`29166\` | Typed resource observations одновременно для \`MANA\`, \`RAGE\`, \`ENERGY\`, \`COMBO_POINTS\`, включая доступность ресурса вне активного облика, cap/percent/regen, spell cost и reserve. Нельзя читать только \`UnitPowerType('player')\` и заключать, что маны в форме нет; нельзя считать неактивный ресурс нулём. Не переносить Rogue energy ticks в Forever Druid: Sonah отмечает continuous regen; проверить на клиенте. \`Shifting Power\` — отдельный spell с проверкой mana→energy, cooldown и cat form, **не** классический powershifting |
-| Комбо и финишеры | \`Claw\` \`1082\`, \`Rake\` \`1822\`, \`Shred\` \`5221\`, \`Rip\` \`1079\`, \`Ferocious Bite\` \`22568\`, \`Ravage\` \`6785\`, \`Pounce\` \`9005\` (ID/ranks client-gated) | Combo count/cap/target GUID/ownership, finisher min CP, energy cost, cat form, target alive/range/position, DoT remaining, reset/transfer semantics on target/form changes **only after Forever validation**. UNKNOWN combo/target → STOP, не финisher READY |
-| HoT и лечение | \`Rejuvenation\` \`774\` (rank family), \`Regrowth\` \`8936\` (rank family), \`Swiftmend\` \`18562\`, \`Wild Growth\` \`408120\` (Forever variants), \`Healing Touch\` \`5185\`, \`Tranquility\` \`740\`; \`Lifebloom\` **не считать существующим в Forever** без проверки | Unit player/party/raid, friendly/exists/alive, source/caster GUID, exact HoT family/rank/stacks/remaining, recipient HP with secret-safe UNKNOWN, refresh window, direct vs periodic heal, \`Swiftmend\` consumption/eligibility only when verified, Wild Growth group coverage, range/LOS/mana/cast/channel; не считать HoT чужого caster своим и не считать недоступное здоровье низким |
-| Воскрешение | \`Revive\` \`437138\` и Forever rank family \`1237948–1237951\`; \`Rebirth\` \`20484/20739/20742/20747/20748\` | Разделить обычное out-of-combat Revive и combat resurrection Rebirth: target dead, friendly, accessible, range, mana/reagent (если требуется конкретному рангу), spellbook, cooldown/shared battle-res charges только если подтверждены, combat restriction, cast/zone/group policy. Dead target не пропускать через alive-only friendly selection. Cast success ≠ доказательство alive |
-| Снятие яда/проклятия | \`Cure Poison\` \`8946\`, \`Abolish Poison\` \`2893\`, \`Remove Curse\` \`2782\` | \`Poison\` и \`Curse\` — разные \`dispelName\` и spell capabilities; friendly target, aura source/dispel eligibility, remaining/periodic effect, cast/GCD/mana/range, current form restriction, priority between recipients, ability known/rank. \`Abolish Poison\` как periodic cleansing buff не приравнивать к instant Cure Poison; не обещать Magic/Disease dispel |
-| Срыв ауры / отмена формы | \`Cancel Shapeshift\`/return to caster; \`CancelAura\` и \`CancelUnitBuff\` — **только как потенциальные защищённые API, не как разрешённые автоматические действия** | Термин «срыв ауры» неоднозначен: различать (A) выход из формы, (B) отмену собственного отменяемого бафа, (C) снятие hostile/friendly aura заклинанием dispel, (D) прерывание channel. Для каждого нужны exact aura/form, owner, cancellable flag, policy и client capability. Не удалять собственный HoT/defensive buff вслепую, не пытаться снимать чужую/uncancellable aura, не выдавать protected cancel как автоматизируемое действие. Для отмены формы — только \`STANCE_OR_FORM\`/ручная подсказка при подтверждённой необходимости; до уточнения значения «срыв ауры» — \`catalog_alias_unresolved\` и STOP для зависимого правила |
-| Способности в форме и эффекты смены | \`Faerie Fire\` \`770\` (form-specific variant/cooldown проверить), \`Barkskin\` \`22812\`, \`Prowl\` \`5215\`, \`Dash\` \`1850\`, \`Frenzied Regeneration\` \`22842\`, \`Mark of the Wild\` \`1126\` | Spell form eligibility отдельно от активной ауры, stealth, mount/travel restrictions, GCD/cooldown, resource switch and preservation, threat/defensive effects. Не считать форму и баф взаимозаменяемыми; не советовать выйти из формы ради buff/heal без явной policy, безопасной стоимости и допустимости в текущем бою |
+| Облики и переключение | Bear Form `5487`, Dire Bear Form `9634`, Cat Form `768`, Moonkin Form `24858`, Travel Form `783`, Aquatic Form `1066`, caster/no form; отдельные доступные Forever формы — по каталогу | `GetShapeshiftForm()` + `GetShapeshiftFormInfo(index)` (матрица #34), learned spell/rank, current form identity, mutually exclusive family, action availability, mana cost, cast/GCD, combat/zone/movement restrictions, form-dependent spell eligibility. Не приравнивать Blizzard index к spellID или Forever formID; `nil`/secret → UNKNOWN, не caster. Смена — AC-05 `STANCE_OR_FORM`, не protected `CastShapeshiftForm` |
+| Ресурсы по формам | Bear/Dire Bear: RAGE; Cat: ENERGY + COMBO_POINTS; caster/Moonkin: MANA; `Shifting Power` `1322605`, `Enrage` `5229`, `Innervate` `29166` | Typed resource observations одновременно для `MANA`, `RAGE`, `ENERGY`, `COMBO_POINTS`, включая доступность ресурса вне активного облика, cap/percent/regen, spell cost и reserve. Нельзя читать только `UnitPowerType('player')` и заключать, что маны в форме нет; нельзя считать неактивный ресурс нулём. Не переносить Rogue energy ticks в Forever Druid: Sonah отмечает continuous regen; проверить на клиенте. `Shifting Power` — отдельный spell с проверкой mana→energy, cooldown и cat form, **не** классический powershifting |
+| Комбо и финишеры | `Claw` `1082`, `Rake` `1822`, `Shred` `5221`, `Rip` `1079`, `Ferocious Bite` `22568`, `Ravage` `6785`, `Pounce` `9005` (ID/ranks client-gated) | Combo count/cap/target GUID/ownership, finisher min CP, energy cost, cat form, target alive/range/position, DoT remaining, reset/transfer semantics on target/form changes **only after Forever validation**. UNKNOWN combo/target → STOP, не финisher READY |
+| HoT и лечение | `Rejuvenation` `774` (rank family), `Regrowth` `8936` (rank family), `Swiftmend` `18562`, `Wild Growth` `408120` (Forever variants), `Healing Touch` `5185`, `Tranquility` `740`; `Lifebloom` **не считать существующим в Forever** без проверки | Unit player/party/raid, friendly/exists/alive, source/caster GUID, exact HoT family/rank/stacks/remaining, recipient HP with secret-safe UNKNOWN, refresh window, direct vs periodic heal, `Swiftmend` consumption/eligibility only when verified, Wild Growth group coverage, range/LOS/mana/cast/channel; не считать HoT чужого caster своим и не считать недоступное здоровье низким |
+| Воскрешение | `Revive` `437138` и Forever rank family `1237948–1237951`; `Rebirth` `20484/20739/20742/20747/20748` | Разделить обычное out-of-combat Revive и combat resurrection Rebirth: target dead, friendly, accessible, range, mana/reagent (если требуется конкретному рангу), spellbook, cooldown/shared battle-res charges только если подтверждены, combat restriction, cast/zone/group policy. Dead target не пропускать через alive-only friendly selection. Cast success ≠ доказательство alive |
+| Снятие яда/проклятия | `Cure Poison` `8946`, `Abolish Poison` `2893`, `Remove Curse` `2782` | `Poison` и `Curse` — разные `dispelName` и spell capabilities; friendly target, aura source/dispel eligibility, remaining/periodic effect, cast/GCD/mana/range, current form restriction, priority between recipients, ability known/rank. `Abolish Poison` как periodic cleansing buff не приравнивать к instant Cure Poison; не обещать Magic/Disease dispel |
+| Срыв ауры / отмена формы | `Cancel Shapeshift`/return to caster; `CancelAura` и `CancelUnitBuff` — **только как потенциальные защищённые API, не как разрешённые автоматические действия** | Термин «срыв ауры» неоднозначен: различать (A) выход из формы, (B) отмену собственного отменяемого бафа, (C) снятие hostile/friendly aura заклинанием dispel, (D) прерывание channel. Для каждого нужны exact aura/form, owner, cancellable flag, policy и client capability. Не удалять собственный HoT/defensive buff вслепую, не пытаться снимать чужую/uncancellable aura, не выдавать protected cancel как автоматизируемое действие. Для отмены формы — только `STANCE_OR_FORM`/ручная подсказка при подтверждённой необходимости; до уточнения значения «срыв ауры» — `catalog_alias_unresolved` и STOP для зависимого правила |
+| Способности в форме и эффекты смены | `Faerie Fire` `770` (form-specific variant/cooldown проверить), `Barkskin` `22812`, `Prowl` `5215`, `Dash` `1850`, `Frenzied Regeneration` `22842`, `Mark of the Wild` `1126` | Spell form eligibility отдельно от активной ауры, stealth, mount/travel restrictions, GCD/cooldown, resource switch and preservation, threat/defensive effects. Не считать форму и баф взаимозаменяемыми; не советовать выйти из формы ради buff/heal без явной policy, безопасной стоимости и допустимости в текущем бою |
 
-**Нормативные различия Forever:** \`Sonah/Classes/Druid.lua:6–24\` утверждает, что классический powershifting отсутствует, Furor сохраняет энергию Cat при выходе, \`Shifting Power\` конвертирует ману в энергию, а \`Lifebloom\` отсутствует. Это **сведения референса, не доказательство текущего клиента**. Никакого автоматического \`Cat→caster→Cat\` ради восстановления энергии; не переносить фиксированные пороги, стоимость, уровни изучения и особенности чужих версий без QA-04. При расхождении Forever build — UNKNOWN, не Classic/Retail fallback.
+**Нормативные различия Forever:** `Sonah/Classes/Druid.lua:6–24` утверждает, что классический powershifting отсутствует, Furor сохраняет энергию Cat при выходе, `Shifting Power` конвертирует ману в энергию, а `Lifebloom` отсутствует. Это **сведения референса, не доказательство текущего клиента**. Никакого автоматического `Cat→caster→Cat` ради восстановления энергии; не переносить фиксированные пороги, стоимость, уровни изучения и особенности чужих версий без QA-04. При расхождении Forever build — UNKNOWN, не Classic/Retail fallback.
 
 #### Аудит текущего Kord (main)
 
-- \`KordRotation/Core/GameAPI.lua:9–55\`: \`UnitPowerType\`, \`UnitPower\`, \`UnitPowerMax\`, \`UnitAura\`, spellbook/cooldown доступны через allowlist; \`GetShapeshiftForm/Info\`, per-form spell readiness, resurrection and dispel-specific APIs в проверенном allowlist не подтверждены. Не добавлять вызовы без QA-04.
-- \`KordRotation/Core/GameState.lua:80–102,108–148,224–243\`: один \`cleanPower()\` читает текущий \`UnitPowerType\` и его значение; не даёт параллельного typed MANA/RAGE/ENERGY/COMBO observation в форме. Player/target/combat snapshots существуют, но нет DruidFormObservation, HoT group coverage или corpse selection.
-- \`KordRotation/Core/RotationConditions.lua:10–18,51–74\`: basic resource/auras/pet facts; нет \`druid.form\`, \`druid.manaWhileShifted\`, \`druid.comboTarget\`, \`druid.hotCoverage\`, \`druid.dispelTarget\`, \`druid.resurrection\`, \`druid.auraCancel\`.
-- \`KordRotation/Core/RotationProfiles.lua:16–20,44\`: \`form\` семантически классифицирован, но это **не** подтверждённый Druid form provider. Разрешённые Needs \`auras/ranges/enemyCount/ttd/swing\`; новая typed логика требует EN-A1 versioned contract, не runtime alias.
-- \`KordRotation/Core/EventBus.lua:19–32\`: \`UPDATE_SHAPESHIFT_FORM\` сейчас относится к \`actionbar\`, \`UNIT_POWER_*\` — к \`resources\`; отдельная form revision и связанная инвалидация eligibility/active bindings/auras отсутствует. \`UNIT_AURA\` и cast events не доказывают complete HoT/cancel outcomes.
-- \`KordRotation/Core/AbilityEligibility.lua\`: общие spellbook/cooldown/GCD/usability/target gates есть, но end-to-end form, dual-resource, corpse, periodic dispel и cancellation eligibility не подтверждены.
-- \`docs/rotation/Canonical_API_Matrix.md\` v14: #34 shapeshift, #35 dispel/heal, #40–41 friendly HP/secret, #43 HoT/DoT duration, #45 aura stacks, #49 combo points, #52–53 spell usability/cost, #55–57 cast; SOURCE baseline, **CLIENT PASS 0/101**.
+- `KordRotation/Core/GameAPI.lua:9–55`: `UnitPowerType`, `UnitPower`, `UnitPowerMax`, `UnitAura`, spellbook/cooldown доступны через allowlist; `GetShapeshiftForm/Info`, per-form spell readiness, resurrection and dispel-specific APIs в проверенном allowlist не подтверждены. Не добавлять вызовы без QA-04.
+- `KordRotation/Core/GameState.lua:80–102,108–148,224–243`: один `cleanPower()` читает текущий `UnitPowerType` и его значение; не даёт параллельного typed MANA/RAGE/ENERGY/COMBO observation в форме. Player/target/combat snapshots существуют, но нет DruidFormObservation, HoT group coverage или corpse selection.
+- `KordRotation/Core/RotationConditions.lua:10–18,51–74`: basic resource/auras/pet facts; нет `druid.form`, `druid.manaWhileShifted`, `druid.comboTarget`, `druid.hotCoverage`, `druid.dispelTarget`, `druid.resurrection`, `druid.auraCancel`.
+- `KordRotation/Core/RotationProfiles.lua:16–20,44`: `form` семантически классифицирован, но это **не** подтверждённый Druid form provider. Разрешённые Needs `auras/ranges/enemyCount/ttd/swing`; новая typed логика требует EN-A1 versioned contract, не runtime alias.
+- `KordRotation/Core/EventBus.lua:19–32`: `UPDATE_SHAPESHIFT_FORM` сейчас относится к `actionbar`, `UNIT_POWER_*` — к `resources`; отдельная form revision и связанная инвалидация eligibility/active bindings/auras отсутствует. `UNIT_AURA` и cast events не доказывают complete HoT/cancel outcomes.
+- `KordRotation/Core/AbilityEligibility.lua`: общие spellbook/cooldown/GCD/usability/target gates есть, но end-to-end form, dual-resource, corpse, periodic dispel и cancellation eligibility не подтверждены.
+- `docs/rotation/Canonical_API_Matrix.md` v14: #34 shapeshift, #35 dispel/heal, #40–41 friendly HP/secret, #43 HoT/DoT duration, #45 aura stacks, #49 combo points, #52–53 spell usability/cost, #55–57 cast; SOURCE baseline, **CLIENT PASS 0/101**.
 
 #### Сопоставление семи референсов (конкретные Lua, адресная проверка)
 
-1. **Sonah:** \`Sonah/Classes/Druid.lua:6–24\` Forever-specific замечания об отсутствии powershifting, Furor/Shifting Power и Lifebloom; \`:62–94\` Innervate/Rebirth/Remove Curse/Abolish Poison, Bear/Cat/Moonkin. Перенять **разделение форм и ресурсов**, не чужие фиксированные пороги/таймеры и не Classic fallbacks как доказательство.
-2. **JustAC:** \`JustAC/Data/Forever/Rotations.lua:41–105\` \`DRUID_F\` Balance/Feral/Bear/Restoration, \`:65–75\` energy/combo/\`Shifting Power 1322605\`, \`:78–101\` Bear rage. Перенять typed gates и form-specific rule scopes, не считать \`starved\` точным числом маны.
-3. **ForeverAuras:** \`ForeverAuras/SecretAuraRanks.lua:9–67\` включает Cat/Bear/Dire Bear/Moonkin/Travel, Rejuvenation/Regrowth, Rebirth, Revive, Remove Curse, Abolish Poison, Swiftmend, Wild Growth. Перенять family/rank catalog и safe aura matching; запись в rank list не подтверждает learnability/effect на клиенте.
-4. **MaxDps:** \`MaxDps_Druid/Specialization/Forever/Feral.lua:12–49\` использует \`GetShapeshiftFormID()\`, form IDs 1/5, \`Power("energy")\`, \`Power("rage")\`, combo, Innervate. Перенять разделение form/resource gates, но \`GetShapeshiftFormID\` не подменяет подтверждённый v14 \`GetShapeshiftForm/Info\`; другие form IDs и пороги требуют QA-04.
-5. **ForeverRotation:** \`ForeverRotation/Rotations/Druid.lua:1–81\` выделяет Cat/Bear/Balance и форму как контекст; \`:41–42\` содержит energy signal/threshold и Shifting Power. Полезна граница по форме, но источники Warcraft Tavern/Maxroll/TBC в комментариях **не** являются Forever API evidence; сигналы не гарантируют числовое значение secret energy.
-6. **RotationGuide:** \`RotationGuide/Data/Druid.lua:5–32\` различает Cat form 1, Bear 5, Dire Bear 8, Moonkin 31, \`:16–18\` Cat combo finishers и \`:24–32\` Bear actions. Перенять формо-зависимую диспетчеризацию, но form ID зависит от клиента и не эквивалентен индексу shapeshift bar.
-7. **RotationMaster:** \`RotationMaster/Assets/Conditions/v2/form.tga\` и \`RotationMaster/Platform/auras.lua\`/общие condition and action adapters показывают инфраструктурный подход к форме/аурам; **в данном адресном проходе конкретный \`RotationMaster/Conditions/stance.lua\` отсутствует**, поэтому не утверждать, что найден готовый Druid form/powershift provider. Переиспользовать только проверенные универсальные платформенные контракты, не копировать движок.
+1. **Sonah:** `Sonah/Classes/Druid.lua:6–24` Forever-specific замечания об отсутствии powershifting, Furor/Shifting Power и Lifebloom; `:62–94` Innervate/Rebirth/Remove Curse/Abolish Poison, Bear/Cat/Moonkin. Перенять **разделение форм и ресурсов**, не чужие фиксированные пороги/таймеры и не Classic fallbacks как доказательство.
+2. **JustAC:** `JustAC/Data/Forever/Rotations.lua:41–105` `DRUID_F` Balance/Feral/Bear/Restoration, `:65–75` energy/combo/`Shifting Power 1322605`, `:78–101` Bear rage. Перенять typed gates и form-specific rule scopes, не считать `starved` точным числом маны.
+3. **ForeverAuras:** `ForeverAuras/SecretAuraRanks.lua:9–67` включает Cat/Bear/Dire Bear/Moonkin/Travel, Rejuvenation/Regrowth, Rebirth, Revive, Remove Curse, Abolish Poison, Swiftmend, Wild Growth. Перенять family/rank catalog и safe aura matching; запись в rank list не подтверждает learnability/effect на клиенте.
+4. **MaxDps:** `MaxDps_Druid/Specialization/Forever/Feral.lua:12–49` использует `GetShapeshiftFormID()`, form IDs 1/5, `Power("energy")`, `Power("rage")`, combo, Innervate. Перенять разделение form/resource gates, но `GetShapeshiftFormID` не подменяет подтверждённый v14 `GetShapeshiftForm/Info`; другие form IDs и пороги требуют QA-04.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Druid.lua:1–81` выделяет Cat/Bear/Balance и форму как контекст; `:41–42` содержит energy signal/threshold и Shifting Power. Полезна граница по форме, но источники Warcraft Tavern/Maxroll/TBC в комментариях **не** являются Forever API evidence; сигналы не гарантируют числовое значение secret energy.
+6. **RotationGuide:** `RotationGuide/Data/Druid.lua:5–32` различает Cat form 1, Bear 5, Dire Bear 8, Moonkin 31, `:16–18` Cat combo finishers и `:24–32` Bear actions. Перенять формо-зависимую диспетчеризацию, но form ID зависит от клиента и не эквивалентен индексу shapeshift bar.
+7. **RotationMaster:** `RotationMaster/Assets/Conditions/v2/form.tga` и `RotationMaster/Platform/auras.lua`/общие condition and action adapters показывают инфраструктурный подход к форме/аурам; **в данном адресном проходе конкретный `RotationMaster/Conditions/stance.lua` отсутствует**, поэтому не утверждать, что найден готовый Druid form/powershift provider. Переиспользовать только проверенные универсальные платформенные контракты, не копировать движок.
 
 **Граница аудита:** семь ZIP рассмотрены адресно; это **не полный построчный аудит каждого Lua**. SpellID, rank, form index/ID, стоимость, эффекты и availability на конкретном WoW Forever build должны быть подтверждены QA-04; чужие источники не заменяют клиентский тест.
 
 #### Выбранный путь Kord: универсальные провайдеры, без дублирования
 
-1. **\`FormStanceObservation\` (PL-09/AC-05)** — единый shared provider для Warrior stance, Druid form и иных переключаемых режимов; Druid-specific \`DruidFormPolicy\` только задаёт допустимые переходы, form family, spell requirements и manual exit. Состояние \`currentFormIndex\`, \`formSpellID\`, \`formFamily\`, \`active\`, \`source/reason/revision\` независимо от aura state.
-2. **\`ResourceStateProvider\` (CL-01/CL-04/CL-05/CL-07)** — один typed multi-resource snapshot \`MANA/RAGE/ENERGY/COMBO_POINTS\`, а не отдельный Druid scanner. Для каждого \`value/max/percent/availableInCurrentForm/source/reason\`; неактивный тип UNKNOWN, если API не даёт значение. Сохранение энергии/очков после смены формы не предполагать без client proof.
-3. **\`ComboPointObservation\` (CL-04)** — target GUID, current/cap, finisher requirements, loss/transfer on target change, form-specific gates; общая инфраструктура, отдельная Feral policy.
-4. **\`AuraStateProvider\` + \`HoTCoverageObservation\` (CL-05/CL-08)** — один per-caster/per-recipient GUID aura scanner с HoT family/rank/remaining/stacks/refresh/ownership; \`FriendlyUnitSelectionProvider\` для party/raid, без второго сканера лечения.
-5. **\`ResurrectionStateProvider\` (CL-02/CL-05/CL-06)** — общий выбор умершего союзника и ограничения боя, с отдельными policy \`Revive\` и \`Rebirth\`; client-only battle resurrection quota не выдумывать.
-6. **\`DispelStateProvider\` (CL-02/CL-05/CL-06)** — общий \`dispelName\`/target/aura eligibility и отдельная capability mapping Cure/Abolish Poison/Remove Curse; периодический эффект Abolish — отдельный тип, не прямой dispel.
-7. **\`AuraCancellationObservation\`** — общий read-only контракт отменяемой self aura и выхода из формы, расширяющий PL-09/AC-05, **не** механизм автоматического \`CancelAura\`. Неразрешённый «срыв ауры» → \`catalog_alias_unresolved\`, STOP зависимого правила; пользовательская подсказка только при доказанном безопасном действии.
-8. **\`AbilityEligibility\`** — единственный итоговый READY для \`SPELL\`/\`STANCE_OR_FORM\`/\`WAIT\`/\`STOP\`; typed \`Needs\`, lazy short-circuit, \`UNKNOWN→STOP\` (AC-07), per-evaluation memo и EventBus revisions form/resources/target/auras/group/cast/identity. \`UPDATE_SHAPESHIFT_FORM\` должен инвалидировать не только actionbar, но и form/resources/eligibility; только при подтверждённой семантике событий.
+1. **`FormStanceObservation` (PL-09/AC-05)** — единый shared provider для Warrior stance, Druid form и иных переключаемых режимов; Druid-specific `DruidFormPolicy` только задаёт допустимые переходы, form family, spell requirements и manual exit. Состояние `currentFormIndex`, `formSpellID`, `formFamily`, `active`, `source/reason/revision` независимо от aura state.
+2. **`ResourceStateProvider` (CL-01/CL-04/CL-05/CL-07)** — один typed multi-resource snapshot `MANA/RAGE/ENERGY/COMBO_POINTS`, а не отдельный Druid scanner. Для каждого `value/max/percent/availableInCurrentForm/source/reason`; неактивный тип UNKNOWN, если API не даёт значение. Сохранение энергии/очков после смены формы не предполагать без client proof.
+3. **`ComboPointObservation` (CL-04)** — target GUID, current/cap, finisher requirements, loss/transfer on target change, form-specific gates; общая инфраструктура, отдельная Feral policy.
+4. **`AuraStateProvider` + `HoTCoverageObservation` (CL-05/CL-08)** — один per-caster/per-recipient GUID aura scanner с HoT family/rank/remaining/stacks/refresh/ownership; `FriendlyUnitSelectionProvider` для party/raid, без второго сканера лечения.
+5. **`ResurrectionStateProvider` (CL-02/CL-05/CL-06)** — общий выбор умершего союзника и ограничения боя, с отдельными policy `Revive` и `Rebirth`; client-only battle resurrection quota не выдумывать.
+6. **`DispelStateProvider` (CL-02/CL-05/CL-06)** — общий `dispelName`/target/aura eligibility и отдельная capability mapping Cure/Abolish Poison/Remove Curse; периодический эффект Abolish — отдельный тип, не прямой dispel.
+7. **`AuraCancellationObservation`** — общий read-only контракт отменяемой self aura и выхода из формы, расширяющий PL-09/AC-05, **не** механизм автоматического `CancelAura`. Неразрешённый «срыв ауры» → `catalog_alias_unresolved`, STOP зависимого правила; пользовательская подсказка только при доказанном безопасном действии.
+8. **`AbilityEligibility`** — единственный итоговый READY для `SPELL`/`STANCE_OR_FORM`/`WAIT`/`STOP`; typed `Needs`, lazy short-circuit, `UNKNOWN→STOP` (AC-07), per-evaluation memo и EventBus revisions form/resources/target/auras/group/cast/identity. `UPDATE_SHAPESHIFT_FORM` должен инвалидировать не только actionbar, но и form/resources/eligibility; только при подтверждённой семантике событий.
 
 Все логические имена — **контракты**, не требование создавать отдельный Lua-файл на каждый. Нет второго движка, самостоятельного class scanner, чтения WoW API непосредственно из профилей или автоматического protected action.
 
 #### Требуемые изменения
 
-1. Проверить на Forever build \`GetShapeshiftForm/Info\`, \`GetShapeshiftFormID\` (если есть), spell/form mapping, rank, action restrictions и формы по QA-04; не смешивать index/formID/spellID.
-2. Расширить PL-09/AC-05 общим \`FormStanceObservation\` и Druid form policy: caster/Cat/Bear/Dire Bear/Moonkin/Travel/Aquatic, explicit manual exit, invalidation и \`UNKNOWN\`.
-3. Расширить общий \`ResourceStateProvider\` до typed MANA/RAGE/ENERGY/COMBO, включая hidden/inactive mana, safe secret, cost/reserve и form transition; проверить Forever continuous energy vs legacy ticks.
+1. Проверить на Forever build `GetShapeshiftForm/Info`, `GetShapeshiftFormID` (если есть), spell/form mapping, rank, action restrictions и формы по QA-04; не смешивать index/formID/spellID.
+2. Расширить PL-09/AC-05 общим `FormStanceObservation` и Druid form policy: caster/Cat/Bear/Dire Bear/Moonkin/Travel/Aquatic, explicit manual exit, invalidation и `UNKNOWN`.
+3. Расширить общий `ResourceStateProvider` до typed MANA/RAGE/ENERGY/COMBO, включая hidden/inactive mana, safe secret, cost/reserve и form transition; проверить Forever continuous energy vs legacy ticks.
 4. Добавить target-GUID combo/finisher eligibility с form/range/energy/CP checks, не переносить комбо на новую цель без доказательства.
-5. Добавить HoT family/rank/owner/recipient/remaining, \`Swiftmend\` requirements и group \`Wild Growth\` coverage через общий Aura/Friendly provider; secret HP не превращать в low HP.
-6. Реализовать единый \`ResurrectionStateProvider\`: Revive OOC vs Rebirth combat, dead-friendly selection, cooldown, reagent и success confirmation.
-7. Расширить общий \`DispelStateProvider\`: Curse/Poison, Cure/Abolish periodic distinction, recipient/range/mana/form checks, неизвестные dispel flags → STOP.
+5. Добавить HoT family/rank/owner/recipient/remaining, `Swiftmend` requirements и group `Wild Growth` coverage через общий Aura/Friendly provider; secret HP не превращать в low HP.
+6. Реализовать единый `ResurrectionStateProvider`: Revive OOC vs Rebirth combat, dead-friendly selection, cooldown, reagent и success confirmation.
+7. Расширить общий `DispelStateProvider`: Curse/Poison, Cure/Abolish periodic distinction, recipient/range/mana/form checks, неизвестные dispel flags → STOP.
 8. Уточнить пользовательский термин «срыв ауры» по игровому эффекту; до этого сохранить unresolved alias и запрет protected automatic cancel. Отдельно проверять форму, self buff и channel.
-9. Связать form/resources/auras/cast/group/target revisions с \`EventBus\`/DA-08, lazy \`Needs\` и \`AbilityEligibility\`; миграция только по EN-A1 с отказом несовместимых профилей.
+9. Связать form/resources/auras/cast/group/target revisions с `EventBus`/DA-08, lazy `Needs` и `AbilityEligibility`; миграция только по EN-A1 с отказом несовместимых профилей.
 10. Составить QA-07 Lua 5.1 mock fixtures, раздельные source/client proofs и DevTools trace для Druid, регрессию CL-01/02/04/05/06/07/08, PL-09/AC-05; GitHub Actions только на согласованном финальном QA.
 
-**DevTools-only reasons:** \`druid_form_unknown\`, \`druid_form_mismatch\`, \`druid_form_transition_pending\`, \`druid_form_spell_unavailable\`, \`druid_resource_type_unknown\`, \`druid_inactive_mana_unknown\`, \`druid_energy_regen_unverified\`, \`druid_combo_target_unknown\`, \`druid_combo_insufficient\`, \`druid_hot_owner_unknown\`, \`druid_hot_remaining_unknown\`, \`druid_hot_target_unavailable\`, \`druid_swiftmend_prerequisite_unknown\`, \`druid_resurrection_target_unknown\`, \`druid_rebirth_cooldown_unknown\`, \`druid_dispel_type_unknown\`, \`druid_abolish_periodic_unknown\`, \`druid_aura_cancel_unresolved\`, \`druid_aura_not_cancellable\`, \`druid_revision_stale\`.
+**DevTools-only reasons:** `druid_form_unknown`, `druid_form_mismatch`, `druid_form_transition_pending`, `druid_form_spell_unavailable`, `druid_resource_type_unknown`, `druid_inactive_mana_unknown`, `druid_energy_regen_unverified`, `druid_combo_target_unknown`, `druid_combo_insufficient`, `druid_hot_owner_unknown`, `druid_hot_remaining_unknown`, `druid_hot_target_unavailable`, `druid_swiftmend_prerequisite_unknown`, `druid_resurrection_target_unknown`, `druid_rebirth_cooldown_unknown`, `druid_dispel_type_unknown`, `druid_abolish_periodic_unknown`, `druid_aura_cancel_unresolved`, `druid_aura_not_cancellable`, `druid_revision_stale`.
 
 #### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
 
 | ID | Состояние | Ожидаемый результат |
 |---|---|---|
-| \`DRU-FORM-01\` | Cat already active, Cat requested | не переключать повторно |
-| \`DRU-FORM-02\` | form API nil/secret | UNKNOWN→STOP |
-| \`DRU-FORM-03\` | Bear current, Cat action desired | explicit policy + eligibility before transition |
-| \`DRU-FORM-04\` | \`UPDATE_SHAPESHIFT_FORM\` | invalidate form/resources/eligibility |
-| \`DRU-FORM-05\` | index and spellID differ | no ID conflation |
-| \`DRU-RESOURCE-01\` | Cat energy known, mana inactive unknown | no fake mana=0 |
-| \`DRU-RESOURCE-02\` | Bear rage insufficient | BLOCKED |
-| \`DRU-RESOURCE-03\` | Shifting Power requested outside Cat | BLOCKED/UNKNOWN per verified policy |
-| \`DRU-RESOURCE-04\` | energy regeneration timing unknown | no fixed tick assumption |
-| \`DRU-RESOURCE-05\` | form changes, energy old snapshot | invalidate, no stale READY |
-| \`DRU-COMBO-01\` | Cat, 5 CP on same GUID, finisher eligible | READY only after Eligibility |
-| \`DRU-COMBO-02\` | CP count secret | STOP |
-| \`DRU-COMBO-03\` | target GUID changes | no stale combo transfer |
-| \`DRU-COMBO-04\` | CP enough, energy insufficient | BLOCKED |
-| \`DRU-HOT-01\` | own Rejuvenation remaining sufficient | no refresh |
-| \`DRU-HOT-02\` | HoT belongs to other caster | not own HoT |
-| \`DRU-HOT-03\` | HoT remaining secret | UNKNOWN→STOP |
-| \`DRU-HOT-04\` | ally health secret | no invented healing threshold |
-| \`DRU-HOT-05\` | Swiftmend prerequisites unknown | STOP |
-| \`DRU-RES-01\` | dead ally OOC, Revive eligible | recommend Revive |
-| \`DRU-RES-02\` | dead ally in combat, Rebirth eligible | recommend Rebirth |
-| \`DRU-RES-03\` | Rebirth cooldown unknown | STOP |
-| \`DRU-RES-04\` | resurrection cast success, target still dead | not confirmed alive |
-| \`DRU-DISPEL-01\` | Poison on ally, Cure Poison known | recommend only after type+eligibility |
-| \`DRU-DISPEL-02\` | Curse on ally, Remove Curse known | recommend only after type+eligibility |
-| \`DRU-DISPEL-03\` | Magic debuff only | do not recommend unsupported dispel |
-| \`DRU-DISPEL-04\` | Abolish Poison periodic effect active | do not confuse with instant cure |
-| \`DRU-CANCEL-01\` | «срыв ауры» unspecified | unresolved alias, STOP |
-| \`DRU-CANCEL-02\` | own noncancellable HoT | no automatic cancel |
-| \`DRU-CANCEL-03\` | leaving Cat requires protected action | manual suggestion only |
-| \`DRU-REVISION-01\` | form/target/group/aura changed | invalidate affected observations |
+| `DRU-FORM-01` | Cat already active, Cat requested | не переключать повторно |
+| `DRU-FORM-02` | form API nil/secret | UNKNOWN→STOP |
+| `DRU-FORM-03` | Bear current, Cat action desired | explicit policy + eligibility before transition |
+| `DRU-FORM-04` | `UPDATE_SHAPESHIFT_FORM` | invalidate form/resources/eligibility |
+| `DRU-FORM-05` | index and spellID differ | no ID conflation |
+| `DRU-RESOURCE-01` | Cat energy known, mana inactive unknown | no fake mana=0 |
+| `DRU-RESOURCE-02` | Bear rage insufficient | BLOCKED |
+| `DRU-RESOURCE-03` | Shifting Power requested outside Cat | BLOCKED/UNKNOWN per verified policy |
+| `DRU-RESOURCE-04` | energy regeneration timing unknown | no fixed tick assumption |
+| `DRU-RESOURCE-05` | form changes, energy old snapshot | invalidate, no stale READY |
+| `DRU-COMBO-01` | Cat, 5 CP on same GUID, finisher eligible | READY only after Eligibility |
+| `DRU-COMBO-02` | CP count secret | STOP |
+| `DRU-COMBO-03` | target GUID changes | no stale combo transfer |
+| `DRU-COMBO-04` | CP enough, energy insufficient | BLOCKED |
+| `DRU-HOT-01` | own Rejuvenation remaining sufficient | no refresh |
+| `DRU-HOT-02` | HoT belongs to other caster | not own HoT |
+| `DRU-HOT-03` | HoT remaining secret | UNKNOWN→STOP |
+| `DRU-HOT-04` | ally health secret | no invented healing threshold |
+| `DRU-HOT-05` | Swiftmend prerequisites unknown | STOP |
+| `DRU-RES-01` | dead ally OOC, Revive eligible | recommend Revive |
+| `DRU-RES-02` | dead ally in combat, Rebirth eligible | recommend Rebirth |
+| `DRU-RES-03` | Rebirth cooldown unknown | STOP |
+| `DRU-RES-04` | resurrection cast success, target still dead | not confirmed alive |
+| `DRU-DISPEL-01` | Poison on ally, Cure Poison known | recommend only after type+eligibility |
+| `DRU-DISPEL-02` | Curse on ally, Remove Curse known | recommend only after type+eligibility |
+| `DRU-DISPEL-03` | Magic debuff only | do not recommend unsupported dispel |
+| `DRU-DISPEL-04` | Abolish Poison periodic effect active | do not confuse with instant cure |
+| `DRU-CANCEL-01` | «срыв ауры» unspecified | unresolved alias, STOP |
+| `DRU-CANCEL-02` | own noncancellable HoT | no automatic cancel |
+| `DRU-CANCEL-03` | leaving Cat requires protected action | manual suggestion only |
+| `DRU-REVISION-01` | form/target/group/aura changed | invalidate affected observations |
 
 **QA статус:** сценарии заданы как спецификация, не исполнялись. Для каждого реального Druid profile отдельно потребуются approved priorities, exact source SHA, fixture, expected reason, read counts и client evidence.
 

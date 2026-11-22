@@ -1,3 +1,6 @@
+## KR-20261122-026 — корректировка Markdown CL-09
+- Дата: 2026-11-22, GitHub UTC. Исправлены экранированные Markdown backticks в CL-09 без изменения смысла, сценариев или Lua/ZIP. SOURCE format PASS; Lua 5.1/CI/WoW Forever NOT RUN.
+
 ## KR-20261122-025 — аудит CL-09: Druid forms, resources, combo, HoT, resurrection, dispel, aura cancellation
 - Дата: 2026-11-22; время/зона: GitHub commit metadata UTC. ID коммита `KR-20261122-025`; точный SHA — `git log --grep KR-20261122-025`.
 - Задача: документировать CL-09 как P0 требование, не внедрять Lua. Ожидалось: безопасные form/resource/HoT/rez/dispel/aura cancel контракты и обратные ссылки. Фактически: общие primitives есть, Druid-specific end-to-end нет.
