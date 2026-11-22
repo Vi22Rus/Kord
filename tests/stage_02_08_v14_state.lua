@@ -58,6 +58,16 @@ GetInstanceInfo=function() return "Test Dungeon",instanceType end
 UnitHealthPercent=function() if apiErrors then error("API denied") end return playerHealth end
 UnitPowerPercent=function() if apiErrors then return secret end return playerPower end
 C_Spell={IsAutoRepeatSpell=function() return true end,IsCurrentSpell=function() return false end}
+local swingMelee=false
+C_SwingTimer={IsTargetWithinSwingRange=function(hand)
+  assert(hand==0,"mainhand range read")
+  return swingMelee
+end}
+local raptorRange=true
+C_Spell.IsSpellInRange=function(id)
+ if id==2973 then return raptorRange end
+ return nil
+end
 CreateFrame=function()
   return {RegisterEvent=function() end,
     SetScript=function(self,k,f) self[k]=f end}
@@ -140,4 +150,20 @@ targetTargetPresent=false
 eq(state:ReadSignal("player.hasAggro",nil,snap).reason,"target_changed",
   "absent targettarget cannot override changed target")
 liveTargetGUID="target-GUID"
+-- WoW Forever next-swing Raptor Strike may say "in range" from
+-- 50 yards. Only the independently verified swing band is melee.
+time=time+1
+snap=state:GetSnapshot()
+eq(state:ReadSignal("target.melee",nil,snap).value,false,
+ "Raptor spell-range true cannot override swing-range false")
+swingMelee=true
+eq(state:ReadSignal("target.melee",nil,snap).value,true,
+ "swing-range true proves melee independently")
+liveTargetGUID="other-target"
+eq(state:ReadSignal("target.melee",nil,snap).reason,"melee_target_changed",
+ "melee fact cannot leak across target changes")
+liveTargetGUID="target-GUID"
+C_SwingTimer=nil
+eq(state:ReadSignal("target.melee",nil,snap).status,"UNKNOWN",
+ "missing swing API does not trust Raptor next-swing true")
 print("PASS canonical v14 GameState/GameAPI mock: "..count.." assertions")
