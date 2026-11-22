@@ -3,7 +3,7 @@
 local _,D=...
 local kinds={EVENT=true,ENGINE=true,ELIGIBILITY=true,PROFILE=true,TARGET=true,ERROR=true,API=true,PERFORMANCE=true,CHECK=true,BAR=true,DISPLAY=true,RULE=true,SIGNAL=true,STAGE=true,METHOD=true}
 local statuses={READY=true,BLOCKED=true,UNKNOWN=true,UNAVAILABLE=true,ERROR=true}
-local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
+local reasons={fact_true=true,fact_false=true,none=true,unknown=true,unavailable=true,protected_value=true,
     cooldown_unavailable=true,spellbook_unavailable=true,api_missing=true,
     engine_unavailable=true,profile_not_registered=true,rotation_disabled=true,
     already_casting=true,global_cooldown=true,not_learned=true,
