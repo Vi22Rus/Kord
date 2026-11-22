@@ -4373,6 +4373,9 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
+
+
 **Архитектурная актуализация IT-10:** **См. IT-10: IT-10 weapon coatings and pet action autocast are unrelated despite similar toggle/enchant terminology; no duplicate pet mechanics.**
 
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 item inventory counts must remain distinct from pet action slots/autocast and pet spell readiness.**
@@ -5929,6 +5932,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
 
+**Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
+
+
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
 
 
@@ -5984,6 +5990,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-02 — ITEM: предмет, зелье, камень (после IT-01–IT-04)
 
+**Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
+
+
 **Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: после реализации IT-01–IT-04.**
 
 #### Требование
@@ -6035,5 +6044,64 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 **НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ ПОСЛЕ IT-01–IT-04.** Существующий SPELL pipeline является основой; предметный typed dispatch и item-specific gate ещё необходимо внедрить.
 
 **Архитектурные ссылки:** AC-01, IT-01–IT-14, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки на AC-02 внесены в IT-01–IT-04 и AC-01 в этом коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: после реализации PE-04.**
+
+#### Требование
+
+Поддержать `PET_COMMAND` как отдельный тип рекомендации **команды управления питомцем**, а не spell игрока: `ATTACK`, `FOLLOW`, `STAY`, `PASSIVE`, `DEFENSIVE`, `ASSIST` и другие **реально поддерживаемые Forever-клиентом** команды. Не объявлять все команды доступными без проверки версии API/панели питомца. Различать команды, способности питомца (`PET_SPELL`/способность из pet action bar), лечение/воскрешение питомца заклинанием игрока (`SPELL`) и кормление предметом (`ITEM`); одна и та же иконка не означает один и тот же тип действия.
+
+Рекомендация должна иметь `actionType="PET_COMMAND"`, `commandID` или подтверждённый `petActionSlot`, `petGUID`, `targetGUID` при необходимости, `status=READY/BLOCKED/UNKNOWN`, `reason`, `priority`, `channel`, `source/revision`, безопасно полученные `name/texture`. Команда ATTACK возможна только при подтверждённой подходящей цели, существующем управляемом питомце и отсутствии уже выполненного приказа; FOLLOW — только если действительно требуется отозвать питомца. Нельзя рекомендовать ATTACK в ломаемый контроль без учёта EN-04, на дружелюбную/недоступную цель или без проверки отношений питомца с целью. Только рекомендации: никакого `PetAttack`, `PetFollow`, `PetPassiveMode`, `CastPetAction` и других protected actions.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161,185`: `spellID` берётся только для `rule.type="SPELL"`, остальные типы исключаются; самостоятельный `PET_COMMAND` в основном маршруте отсутствует.
+- `KordRotation/Core/GameState.lua:184–197`: уже наблюдает `pet.exists`, `pet.targetExists`, `pet.attackingTarget` через `UnitExists/UnitIsUnit`. **Это реальная база**, не создавать второй scanner присутствия питомца.
+- `KordRotation/Core/GameAPI.lua:250,260`: поддерживает unit `pet` в проверенных read paths; в allowlist не подтверждены `GetPetActionInfo`, `GetPetActionCooldown`, `GetPetActionSlotUsable` и typed pet command metadata. Доступность/secret semantics проверить на Forever.
+- `KordRotation/Core/AbilityEligibility.lua` и `RotationConditions.lua`: существующий spell gate не является проверкой команды ATTACK/FOLLOW/STAY; нужен typed eligibility без подмены commandID spellID.
+- **Итог:** наблюдение питомца частично есть; самостоятельный тип `PET_COMMAND` и проверка конкретной команды в основном маршруте не реализованы.
+
+#### Сравнение семи референсов (проверенные пути ZIP, архитектурные ориентиры)
+
+1. **Sonah:** `Sonah/Core/Atoms/Pet.lua` и классовые Hunter/Warlock правила — отдельные pet observations и pet actions; перенять различение команды и pet spell, не копировать автокоманды.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua`, классовые профили — pet state и защитные правила; не использовать один `petExists` как достаточное основание ATTACK.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua`, `ForeverAuras/GenericTrigger.lua` — pet unit/action наблюдения в триггерах; UI-trigger не является разрешением рекомендовать команду.
+4. **MaxDps:** `MaxDps/Helper.lua`, классовые профили — pet-related conditions и отображение; не переносить отдельную схему вывода.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua` и Hunter/Warlock ротации — управление питомцем и pet abilities; команды нужно отделить от spellID.
+6. **RotationGuide:** `RotationGuide/Core/State.lua` и Hunter/Warlock данные — pet state и class-specific behavior; нет подтверждённого полного typed PET_COMMAND contract.
+7. **RotationMaster:** `RotationMaster/Core/build_context.lua` и condition modules — нормализация pet context; использовать общий condition/capability подход без нового pet engine.
+
+**Граница проверки:** основной маршрут Kord проверен построчно; пути референсов — ориентиры по ранее использованным ZIP, не новая исчерпывающая проверка всех pet API/команд. Конкретные Forever pet action slot IDs, command APIs и сигнатуры должны быть проверены до реализации.
+
+#### Выбранный путь Kord
+
+**После PE-04** расширить общий `ActionRecommendation` typed dispatch до `PET_COMMAND`, сохраняя SPELL (AC-01) и ITEM (AC-02). Команды формировать в том же `RotationEngine → RotationConditions → AbilityEligibility → recommendation`, но с отдельной проверкой `PetCommandEligibility` внутри общего итогового gate; не запускать отдельный pet engine. `PET_COMMAND` не требует изученности spell игрока и не может проходить через spell cooldown только потому, что pet action bar содержит spellID.
+
+Существующие `GameState.pet.exists/targetExists/attackingTarget` переиспользовать как основу PE-01–PE-04. Добавить только отсутствующие наблюдения `petGUID`, `petControllable`, `petStance`, `petCommandState`, `petActionSlots` и фактическую доступность команды через capability-probed Forever APIs. `ATTACK`: есть управляемый питомец, подходящая подтверждённая враждебная цель, не атакует её уже, нет запрета на ломаемый CC; `FOLLOW`: нужно отозвать питомца и приказ не дублирует уже установленный режим; `STAY/stance`: применять только при доказанной необходимости/изменении. Если pet GUID/command state/target relation неизвестны — `UNKNOWN`, не READY. При смерти/отсутствии/смене питомца сбрасывать command context.
+
+Профиль может указывать команду символическим `commandKey`, который резолвится в verified command/slot на текущем клиенте; не хардкодить позиции панели и не выдавать `spellID` команды за player SPELL. Для интерфейса добавить иконку/название/подсказку команды, корректный тип бинда, fallback при неизвестной клавише, отдельный reason. Согласовать с PE-04 и EN-04; не давать команду атаки на цель под ломаемым контролем, если отсутствует подтверждённая безопасная политика.
+
+EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE_COOLDOWN`, `PET_UI_UPDATE`, `UNIT_TARGET`, смена цели/питомца/спека и config — **только события, подтверждённые на Forever**. Lazy `Needs.petCommands`, per-evaluation memo. DevTools: `pet_absent`, `pet_dead`, `pet_not_controllable`, `pet_command_unknown`, `pet_already_attacking`, `pet_target_invalid`, `pet_target_cc_protected`, `pet_action_slot_unknown`, `pet_command_ready`.
+
+#### Требуемые изменения
+
+1. После PE-04 добавить `PET_COMMAND` в общий typed `ActionRecommendation` и dispatch, без второго движка ротации.
+2. Реиспользовать `GameState.pet` и PE-01–PE-04; добавить только отсутствующие pet command state/stance/slot/controllability readers с capability/secret-safe Forever проверкой.
+3. Реализовать `PetCommandEligibility` в общем итоговом `AbilityEligibility`, отдельно от spell/item eligibility.
+4. Добавить `ATTACK/FOLLOW/STAY/stance` по реально поддерживаемым командам, с target GUID, pet GUID, защитой EN-04 от атаки ломаемого CC и отсутствием повторных бессмысленных команд.
+5. Поддержать `commandKey` → verified action slot/commandID, UI иконку, тип бинда и диагностику, не подменяя команду spellID.
+6. EventBus pet/target/actionbar revisions, lazy `Needs.petCommands`, memo и DevTools reasons; только подтверждённые Forever events.
+7. Тесты: hunter/warlock pet, no pet/dead pet/new pet, attack same/new target, target friendly/dead/CC, follow recall, stance changes, command unavailable/unknown, pet action slot changed, pet spell vs pet command, nil/secret, combat/OOC, SPELL/ITEM regression, no false READY/protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ ПОСЛЕ PE-04.** Частичные pet observations уже есть, но typed command dispatch, command-state eligibility и вывод PET_COMMAND отсутствуют.
+
+**Архитектурные ссылки:** PE-01–PE-04, AC-01, AC-02, EN-04, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки внесены в PE-04, AC-01 и AC-02.
 
 **Изменения Lua:** отсутствуют. Только документация.
