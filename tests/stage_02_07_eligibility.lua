@@ -243,6 +243,9 @@ KR.GameAPI.ReadValues=function(self,name,...)
   end
   return {status="READY",value={0,0,1}}
  end
+ if name=="GetSpellCharges" then return {status="READY",value={1,2}} end
+ if name=="IsUsableSpell" then return {status="READY",value={true,false}} end
+ if name=="IsSpellInRange" then return {status="READY",value={1}} end
  return oldMulti(self,name,...)
 end
 eq(eval().reason,"global_cooldown","legacy 29515 GCD active")
@@ -251,6 +254,9 @@ KR.GameAPI.ReadValues=function(self,name,...)
  if name=="GetSpellCooldown" then
   return {status="READY",value={0,0,1}}
  end
+ if name=="GetSpellCharges" then return {status="READY",value={1,2}} end
+ if name=="IsUsableSpell" then return {status="READY",value={true,false}} end
+ if name=="IsSpellInRange" then return {status="READY",value={1}} end
  return oldMulti(self,name,...)
 end
 eq(eval().status,"READY","legacy 29515 idle")
