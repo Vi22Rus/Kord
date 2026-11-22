@@ -1,3 +1,11 @@
+## 2026-11-22 — Fix in-game BM Hawk action-slot rank mismatch
+
+- Latest user test after travel-aspect fix reaches BM rule #2 in combat, then fails `action_slot_unconfirmed` with `bm_bar_2 visible_spell_rank_mismatch` (t9912). Unlike prior `condition_unknown`, this is a precise rank/slot issue.
+- Inspected Sonah `Core/Atoms/Spells.lua:41–66,137–159` (rank/name learned spell resolution), `Core/Atoms/ActionSlots.lua:15–33,62–75` (exact spell IDs from `GetActionInfo` / `FindSpellActionButtons`), and JustAC `ActionBarScanner.lua:431–486` (strict action IDs plus verified transformations). No localized-name-only acceptance.
+- `BM_Leveling_Contract.resolveSpells` now prefers a **learned, exact-ID-confirmed visible button** for Aspect of the Hawk and Monkey when it differs from highest learned rank; otherwise keeps the existing learned selection. `BMLeveling:Register` subscribes to actionbar revision changes and re-resolves only when visible spell IDs change, avoiding repeated registration on state-only events.
+- Added `tests/hunter_bm_aspect_bar_rank.lua` testing lower rank on bar, replacement with higher rank, restoration of lower rank, unknown bar ID fail-closed and stable repeats. Included in manual Lua 5.1 regression workflow.
+- **Code committed; mock tests and client confirmation NOT RUN.** A READY recommendation still requires the actual registered spell ID, verified button/key, usability and remaining eligibility.
+
 ## 2026-11-22 — Correct Aspect of the Hawk condition using Sonah Hunter reference
 
 - User's latest two-page test confirmed a readable `player.travelAspect` signal while BM rule #2 was `BLOCKED/condition_false`, then hidden aura reads left the rule UNKNOWN in combat. Existing `if travel==true then return false` was wrong for combat.
