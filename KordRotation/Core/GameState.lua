@@ -133,6 +133,18 @@ local function unitSnapshot(unit)
         record.assistable=read("UnitCanAssist", "boolean", "player", "target")
         -- Matrix #38/#67/#100: UnitIsUnit(player,target) is NOT UnitIsPlayer.
         record.isPlayer=read("UnitIsPlayer", "boolean", "target")
+        -- A classification is an ordinary direct v14 signal when the client
+        -- supplies it. Never infer elite/normal from level or health.
+        local classification=read("UnitClassification","string","target")
+        if classification.status=="READY" and
+            (classification.value=="normal" or classification.value=="elite"
+            or classification.value=="rare" or classification.value=="rareelite"
+            or classification.value=="worldboss" or classification.value=="trivial"
+            or classification.value=="minus") then
+            record.classification=classification
+        else
+            record.classification=invalid(classification,"classification_unverified")
+        end
         record.threat=number("UnitThreatSituation",0,3,"player","target")
         -- Matrix #14/#78/#92: threat situation is an integer 0..3.
         if record.threat.status=="READY" and
