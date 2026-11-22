@@ -286,3 +286,18 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | Diagnostic source records within 12 retained segments | `dropped=0`, `evicted_parts=0`, `truncated=1` means page 1 of multi-page journal, not lost entries | SOURCE IMPLEMENTED; CLIENT NOT RETESTED |
 | SavedVariables actually evicted older segments | `evicted_parts>0`; missing records cannot be reconstructed via export pagination | SOURCE IMPLEMENTED; CLIENT NOT RETESTED |
 
+
+## Reference-first v14 adoption audit (2026-11-22)
+
+Reference ledger: `docs/rotation/V14_Reference_Implementation_Audit.md` includes **101 individual entries**, existing approved API chain, leading reference and alternative references indexed from canonical v14, plus explicit `SOURCE_CANDIDATE` / `SOURCE_REVIEWED` flags. All 101 are indexed; not all six implementations were individually inspected for each. Referenced health/power and aura source routines were inspected directly.
+
+| Case | Required expected result | Current result |
+|---|---|---|
+| Direct aura present | Existing SpellID+type validation remains READY | SOURCE UNCHANGED; CLIENT NOT RUN |
+| Direct aura missing while `C_Secrets.ShouldAurasBeSecret()==true` | UNKNOWN `aura_hidden_by_client`, 0 batch/index reads | SOURCE IMPLEMENTED; MOCK NOT RUN |
+| Secrecy predicate missing while in combat lockdown | UNKNOWN `aura_secrecy_unverified`, 0 batch/index reads | SOURCE IMPLEMENTED; MOCK NOT RUN |
+| Dedicated predicate false, bounded safe enumeration completes | Existing exact-match / absent semantics retained | SOURCE UNCHANGED; MOCK NOT RUN |
+| Full source-by-source audit and best adaptation of all 101 v14 features | Every choice justified by inspected reference behavior and test evidence | IN PROGRESS; not 101/101 reviewed |
+| In-game confirmation of Aspect of the Hawk recommendation | R2 becomes READY with proven aura absence and eligible SpellID/action bar | NOT PROVEN / CLIENT NOT RUN |
+
+Do not treat avoided protected calls as verified aura absence. Do not claim game success based on SOURCE IMPLEMENTED.
