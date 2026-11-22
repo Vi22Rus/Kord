@@ -419,6 +419,56 @@ function S:ReadSignal(field,spellID,snapshot)
             r.reason=="api_call_failed") then
             return unknown("aura_lookup_unverified")
         end
+        -- Prefer a single validated batch read, as in the ForeverAuras /
+        -- JustAC reference implementations. A protected field is UNKNOWN,
+        -- never evidence of aura absence. A completed plain list is
+        -- authoritative for this unit/filter at the time of observation.
+        if api:Probe("C_UnitAuras.GetUnitAuras").status=="READY" then
+            local batch=api:Read("C_UnitAuras.GetUnitAuras","table",
+                unit,unit=="target" and "HARMFUL" or "HELPFUL")
+            if batch.status=="READY" then
+                local items=batch.value
+                local count=0
+                local complete=true
+                local match=false
+                local okScan=pcall(function()
+                    for index,aura in ipairs(items) do
+                        count=count+1
+                        if count>256 then complete=false break end
+                        local spell=api:ReadField(aura,"spellId","number")
+                        if spell.status~="READY" then
+                            complete=false
+                            break
+                        end
+                        if spell.value==spellID then
+                            local kind=api:ReadField(aura,flag,"boolean")
+                            if kind.status~="READY" then
+                                complete=false
+                            elseif kind.value==true then
+                                match=true
+                            end
+                            break
+                        end
+                    end
+                end)
+                if not okScan then complete=false end
+                if unit=="target" then
+                    local current=api:Read("UnitGUID","string","target")
+                    if current.status~="READY" or current.value~=targetGUID then
+                        return unknown("aura_target_changed")
+                    end
+                end
+                if match then
+                    return {status="READY",value=true,
+                        source="GameState.ReadSignal.aura_batch"}
+                end
+                if complete then
+                    return {status="READY",value=false,
+                        source="GameState.ReadSignal.aura_batch"}
+                end
+                return unknown("aura_batch_fields_unverified")
+            end
+        end
         -- Forever C_UnitAuras.GetAuraDataByIndex enumeration allows a
         -- complete, bounded negative scan. Nil terminator is distinct
         -- from a protected/failed entry. No false-negative guessing.
