@@ -157,4 +157,23 @@ if type(newproxy)=="function" then
         "protected userdata never yields ready action slot")
     issecretvalue=previousSecret
 end
+-- Duplicate spell: one stale frame must not invalidate a verified other.
+actions[17]={"spell",888}
+actions[18]={"spell",888}
+ActionButton6=button("ActionButton6",17)
+ActionButton7=button("ActionButton7",18)
+KR.ActionBarScanner:Invalidate("duplicate_test")
+eq(KR.ActionBarScanner:FindSpell(888).status,"READY",
+    "duplicate spell initially confirmed")
+eq(KR.ActionBarScanner.dirty,false,"snapshot clean")
+ActionButton6.shown=false
+eq(KR.ActionBarScanner:FindSpell(888).status,"READY",
+    "second duplicate still confirms spell")
+eq(KR.ActionBarScanner.dirty,false,
+    "stale duplicate does not force rescans while one remains READY")
+ActionButton7.shown=false
+local noValid=KR.ActionBarScanner:FindSpell(888)
+eq(noValid.status,"UNKNOWN","both copies stale")
+eq(noValid.reason,"button_not_visible","precise visible-stage failure")
+eq(KR.ActionBarScanner.dirty,true,"no valid duplicate invalidates cache")
 print("PASS stage 2.5 mocked action bar scenarios")
