@@ -1807,6 +1807,9 @@
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
 
 
+**Архитектурная актуализация AU-06:** **См. AU-06:** подсчёт моих DoT на нескольких целях использует общий AU-01/AU-05 reader с проверкой caster и отдельный общий GUID-index наблюдаемых целей; не создавать новый aura scanner. AU-02 duration относится только к подтверждённой ауре, а не к предположительному состоянию невидимой цели.
+
+
 **Архитектурная актуализация AU-05:** **См. AU-05:** поиск ауры по локализованному имени и по семейству рангов — варианты запроса к **тому же** общему AuraPresenceObservation. Не создавать отдельные name/rank aura scanners; точный ID, имя и семейство должны иметь разные критерии совпадения и статусы.
 
 
@@ -1863,6 +1866,9 @@
 
 
 ### AU-02 — Длительность, остаток времени, число стаков
+
+
+**Архитектурная актуализация AU-06:** **См. AU-06:** подсчёт моих DoT на нескольких целях использует общий AU-01/AU-05 reader с проверкой caster и отдельный общий GUID-index наблюдаемых целей; не создавать новый aura scanner. AU-02 duration относится только к подтверждённой ауре, а не к предположительному состоянию невидимой цели.
 
 
 **Архитектурная актуализация AU-05:** **См. AU-05:** длительность/остаток/стаки берутся только из конкретной подтверждённой AuraData, найденной общим AU-01 reader по ID, имени или семейству; при нескольких совпадениях не смешивать поля разных рангов.
@@ -1966,6 +1972,9 @@
 
 ### AU-05 — Поиск ауры по имени и семейству рангов, а не только по одному ID
 
+
+**Архитектурная актуализация AU-06:** **См. AU-06:** подсчёт моих DoT на нескольких целях использует общий AU-01/AU-05 reader с проверкой caster и отдельный общий GUID-index наблюдаемых целей; не создавать новый aura scanner. AU-02 duration относится только к подтверждённой ауре, а не к предположительному состоянию невидимой цели.
+
 **Приоритет: P1.**
 
 #### Требование
@@ -2010,3 +2019,51 @@
 **Архитектурные ссылки:** AU-01 — единый reader; AU-02 — поля matched aura; AU-04 — тип matched aura; SP-02 — проверенные rank families. Соответствующие старые требования обновлены сносками на AU-05.
 
 **Изменения кода:** не выполнялись; внесён аудит AU-05 и актуализированы AU-01, AU-02, AU-04, SP-02.
+
+
+### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
+
+**Приоритет: P2.**
+
+#### Требование
+
+Общеклассово определять `targetsWithMyAura(query)` (уникальные GUID целей с подтверждённой моей аурой), `myDebuffInstances` (число подтверждённых экземпляров моих негативных эффектов) и `targetsWithAnyMyDebuff` (уникальные GUID с хотя бы одним моим дебаффом), не смешивая эти показатели с `enemiesNearby`, `nameplateCount`, `totalDebuffsFromAnyone`. Источник ауры — именно player, либо отдельно включённый pet (не смешивать); запрос по exact spellID/name/rank family использует AU-05. Подсчёт из наблюдаемых целей — **нижняя подтверждённая граница**, а не гарантированное количество по всему бою, если часть целей недоступна.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 440–452, 472–499: `ReadSignal` читает `target.debuff` по одному spellID с защитой GUID текущей цели; не хранит многозначный GUID→auras индекс.
+- [`KordRotation/Core/AuraEvidence.lua`](KordRotation/Core/AuraEvidence.lua): positive evidence ограничено отдельными аурами игрока, не учёт DoT на врагах.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 23,35: `UNIT_AURA` инвалидирует общий канал; нет подтверждённой обработки nameplate GUID lifecycle и `COMBAT_LOG_EVENT_UNFILTERED` для собственного DoT tracker.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 66–67: только единичная проверка player buff/target debuff; нет `aura.targetsCount` и `aura.myDotCount`.
+
+#### Сравнение семи локальных референсов
+
+1. **Sonah** — `Core/Molecules/Conditions.lua:1214+` считает nearby enemies через nameplates, но это **не** подсчёт целей с моим DoT. Готовый GUID-index моих DoT в просмотренных местах не подтверждён.
+2. **JustAC** — `UI/UINameplateOverlay.lua` использует nameplate lifecycle и визуализацию, `UIMaintenanceAura.lua` отображает ауры; не подтверждён единый точный подсчёт моих DoT на всех GUID.
+3. **ForeverAuras** — `BuffTrigger2.lua:1867,1999` хранит `aura.sourceUnit`, `isFromPlayerOrPlayerPet`, `spellId`, `duration`; строки 2394–2402 и 2449 — lifecycle nameplate и UNIT_AURA; `GenericTrigger.lua` поддерживает multi/nameplate unit. **Сильный образец multi-unit aura state**, но секретность и точное различение player/pet должны быть проверены.
+4. **MaxDps** — `Core.lua:440–453` поддерживает список видимых nameplates; сам список **не доказывает** присутствия моего DoT и не охватывает скрытые цели.
+5. **ForeverRotation** — `Engine.lua:268+` считает противников через nameplates, а `Immune.lua:55–56` привязывает некоторые наблюдения к конкретному противнику; это не подтверждённый multi-target DoT tracker.
+6. **RotationGuide** — `Core/State.lua:279–295` считает боевых врагов по nameplates; не проверяет, какие из них несут мой DoT.
+7. **RotationMaster** — `Libs/LibClassicDurations/core.lua:49–50,311,573–588,714–735,899–904` содержит GUID→nameplate mapping и обработку SPELL_AURA_APPLIED/REFRESH/REMOVED/DOSE. **Полезный образец событийного GUID-index**, но legacy event duration нельзя считать подтверждённым live состоянием без проверки клиента Forever.
+
+#### Сравнение и рекомендация
+
+**Основа — AU-01/AU-05 Kord + ForeverAuras (multi-unit aura state) + RotationMaster (GUID/event lifecycle).** Не создавать `HunterDotTracker`, `WarlockDotTracker` или отдельный AU-06 сканер аур. Общий логический `MultiTargetAuraIndex` хранит доказательные наблюдения `targetGUID→auraQuery→casterGUID→presence/status/lastObserved`; источником полей остаётся общий `AuraPresenceObservation`. Отдельный GUID-index нужен как агрегатор, а не конкурирующий aura reader.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК МНОГОЦЕЛЕВОЙ КОНТРАКТ — ДОРАБОТАТЬ (P2).** Есть только чтение одного target debuff и частичные исходные примитивы.
+
+#### Требуемые изменения
+
+1. Сначала обеспечить AU-01 multi-unit `nameplateN` (если поддерживается клиентом), GUID guard и проверенный `sourceUnit/sourceGUID`; AU-05 family query и AU-02 duration/stacks повторно использовать, а не дублировать.
+2. Вести ограниченный GUID-index наблюдаемых целей с отдельными состояниями `confirmedActive`, `confirmedRemoved`, `stale/unknown`; при исчезновении nameplate или потере target **не** приравнивать к снятию DoT и не считать прошлое наблюдение текущим фактом.
+3. Исследовать доступность `COMBAT_LOG_EVENT_UNFILTERED` и полей `sourceGUID/destGUID/spellID` в WoW Forever и secret combat. Event evidence использовать лишь в пределах доказуемой семантики, с ограниченным TTL и подтверждением; не превращать event APPLIED в бесконечный активный дебафф.
+4. Проверять caster ownership: player отдельно от pet/guardian; `isFromPlayerOrPlayerPet` не доказывает player-only. Для неподтверждённого источника — UNKNOWN, не засчитывать как «мой».
+5. Поддерживать агрегаты `uniqueTargetsWithAura`, `uniqueTargetsWithAnyMyDebuff`, `confirmedDebuffInstances`, `unknownTargets`, `coverage`; не путать count of enemies с count of DoT.
+6. Ленивая агрегация по необходимым query, bounded memory/CPU, инвалидация при UNIT_AURA/nameplate add/remove, смене target/GUID, подтверждённом снятии, смерти/деспавне, истечении времени и изменении доступности secret данных.
+7. Тесты: 1/2/5 врагов, два DoT на одной цели, один DoT на двух, ранги семейства, чужой DoT того же ID, player vs pet, потеря nameplate, target swap, reapply/refresh/remove, смерть, secret aura, CLEU недоступен, GUID reuse/изменение, невалидное duration, отсутствующие наблюдаемые цели.
+
+**Архитектурные ссылки:** AU-01 — единый reader; AU-02 — длительность и стаки; AU-05 — запрос по семейству; AU-06 — агрегатор GUID. В AU-01, AU-02 и AU-05 внесены обратные сноски.
+
+**Изменения кода:** не выполнялись; внесён аудит AU-06 и актуализированы связанные требования.
