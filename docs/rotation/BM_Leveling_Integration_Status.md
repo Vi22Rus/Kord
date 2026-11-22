@@ -164,3 +164,5 @@ Additional invariants:
 - Newly initialized settings enable Defensive and show it out of combat. Previously saved choices remain authoritative. If a player disabled Defensive or selected 'only in combat', they must change those existing preferences to see pre-combat auras.
 - Automatic refresh on checkbox changes. Manual Lua 5.1 workflow includes two-channel routing mocks; in-game validation still outstanding.
 
+
+**Final implementation detail:** `RotationEngine:EvaluateBoth()` uses a single force-refreshed `GameState` snapshot for main and Defensive; separate condition/eligibility passes still stop independently. `RotationDisplay` consumes the pair and suppresses duplicate spell IDs. Mock scenarios assert one snapshot read per dual-channel evaluation. Test execution remains pending manual GitHub Actions or local Lua 5.1; this is not an in-game verification.
