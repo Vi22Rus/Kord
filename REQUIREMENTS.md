@@ -7341,6 +7341,8 @@ Burst — отдельная типизированная настройка п�
 
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
 
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
+
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
@@ -7792,6 +7794,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение QA-07:** QA-07 использует event/revision последовательности в сценариях смены цели, спека, уровня, талантов и панели; состояние после события должно проверяться отдельным ожидаемым результатом, без stale snapshot.
 
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
@@ -8334,6 +8338,8 @@ Kord должен корректно реагировать на фактиче�
 
 ### QA-01 — DevTools: запись, трассировка, зонды API. Отдельный аддон, ядро побайтово то же, что у пользователя
 
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
+
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
 
 #### Требование
@@ -8405,6 +8411,8 @@ Kord должен корректно реагировать на фактиче�
 
 ### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
 
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
+
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
 
 #### Требование
@@ -8474,6 +8482,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-05:** дифференциальный отчёт QA-05 сравнивает вычисленные trusted `reason/subreasons` и `NOT_EVALUATED` из единого QA-02 envelope; самостоятельный диагностический обход непрочитанных условий не признаётся эквивалентной трассой и не должен влиять на live evaluation.
 
 ### QA-03 — Mock-тесты движка и профилей, запуск на Lua 5.1
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
 
@@ -8628,6 +8638,8 @@ DevTools должен записывать **все достоверно сфо�
 
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
+
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
 
 #### Требование
@@ -8702,6 +8714,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 — канонический источник проверенных ожидаемых решений для candidate в дифференциальных тестах. Legacy output остаётся свидетельством, а не oracle; QA-05 привязывает каждое сравнение к `scenarioID` и approved expectation.
 
 ### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
@@ -8778,6 +8792,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 сценарные fixtures проходят QA-06 purity gate для реальных profile source; отсутствие прямого API не доказывает правильности выбранного действия, поэтому QA-07 остаётся отдельным обязательным поведенческим gate.
 
 ### QA-07 — Сценарные таблицы «состояние → ожидаемое действие» для каждого профиля
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
@@ -9894,6 +9910,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 ### NO-01 — Запрещено нажимать кнопки, выполнять макросы, менять цель и двигать персонажа
 
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
+
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
@@ -9985,6 +10003,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 
 ### NO-02 — Запрещено читать скрытые значения в бою и подставлять догадки вместо nil
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
@@ -10083,6 +10103,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 
 ### NO-03 — Запрещено хранить в журнале произвольные данные игрока, цели и чат
+
+**Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Обязателен для пользовательского KordRotation и отдельного KordRotationDevTools, всех девяти классов, PvE/PvP, API probes, событий, ошибок, performance trace, UI, экспорта и SavedVariables.
 
@@ -10185,3 +10207,118 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 **ЧАСТИЧНО ПОДТВЕРЖДЕНО ПО ПРОСМОТРЕННЫМ ИСХОДНИКАМ / ПОЛНАЯ ГАРАНТИЯ ПРИВАТНОСТИ ЖУРНАЛА НЕ ДОКАЗАНА / P0.** Recorder уже использует ограниченные scalar поля, opt-in, фиксированные причины и сегменты; `METHOD.detail`, `ReadField`, legacy SavedVariables, общий byte budget и непрямые вызовы требуют отдельного тестирования. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** NO-01, NO-02, QA-04, QA-06, QA-07, DA-02, DA-08, UI-01 — дополнены ссылкой на NO-03 в том же коммите.
+
+
+### NO-04 — Запрещено включать в пользовательскую сборку другую логику, чем в диагностической
+
+**Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Распространяется на `KordRotation-user.zip`, `KordRotation-dev.zip`, канонический `KordRotation/`, отдельный `KordRotationDevTools/`, все классы, PvE/PvP, main/defensive, GameAPI, GameState, RotationConditions, RotationProfiles, RotationEngine, AbilityEligibility, UI, кэши, события, конфигурацию и будущие варианты поставки.
+
+#### Требование
+
+**Инвариант `ONE_CANONICAL_DECISION_PATH / DIAGNOSTIC_NON_INTERFERENCE`:** обе поставки содержат побайтово одинаковый **полный комплект упакованных файлов KordRotation/** (в том числе TOC, Lua, UI, профили, локали, настройки и ресурсы). Dev-поставка добавляет только независимый аддон `KordRotationDevTools/` с `## Dependencies: KordRotation` и своими SavedVariables. Пользовательская поставка не содержит DevTools. **Нельзя** поддерживать два исполняемых дерева Engine/Profiles/Conditions/Eligibility/GameAPI, разные приоритеты и специальные debug-ветви, отличные настройки по умолчанию, изменяющие результат, или скрытый developer-toggle в пользовательской сборке.
+
+Паритет — **не только SHA**: при одном и том же подтверждённом входном следе, последовательности событий, конфигурации, profile/version и прочих одинаковых предпосылках результат одной production evaluation идентичен независимо от того, установлен ли DevTools, запущена/остановлена запись, выполнен ли экспорт. Проверяются channel (main/defensive), profile, candidate/actionType/SpellID/ItemID, priority, eligibility, status `READY|BLOCKED|UNKNOWN`, reason/subreasons, `UNKNOWN→STOP`, отображаемая рекомендация, биндинг/подсветка и решение о видимости UI. `nil`/secret/недоступное значение остаётся UNKNOWN в обоих режимах (NO-02). Диагностические timestamps, счётчики, размеры буфера и память DevTools не обязаны совпадать, **но не вправе менять** canonical snapshot, ревизии EventBus, кэш, частоту/порядок живых вычислений или gameplay side effects; нагрузка должна укладываться в согласованный бюджет.
+
+| Граница | Запрещённое отличие | Требуемый контракт |
+|---|---|---|
+| Упаковка | Иное Lua/TOC, conditional compilation, подмена модуля или профиля | Один `KordRotation/`; общие ZIP entries побайтово равны |
+| Core Engine | Debug-only branch, иной приоритет, eligibility/UNKNOWN/fallback, defensive route | Один алгоритм, одно разрешение профиля и action |
+| Diagnostic bridge | `Evaluate`/`EvaluateBoth`/`AuditFull` из event/timer trace, принудительный lazy-проход | Чтение готового ограниченного decision envelope |
+| GameAPI/GameData | Дополнительные reads/probes меняют ревизии, кэш, состояние | Пассивная запись уже подтверждённых результатов; manual probes изолированы |
+| SavedVariables/UI | DevTools пишет `KordRotationDB`, меняет profile, priority, visibility, keybind | Своё хранилище, read-only вывод без управления решением |
+| Ошибки/нагрузка | Logging exception, overflow, probe failure ломают core или создают READY | Fail-isolated observer, bounded overhead, UNKNOWN сохраняется |
+| Трасса | В diagnostic «полный результат» из второго запуска движка | Только реально оценённые checks; прочие `NOT_EVALUATED` |
+| Release | Паритет объявлен по filenames или без тестов | SHA-256/bytes ZIP + Lua 5.1 paired replay + release gate |
+
+#### Аудит Kord (main)
+
+- `AGENTS.md` и `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md` уже нормативно определяют два ZIP и один `KordRotation/`. NO-04 усиливает **проверку невмешательства**, не создаёт второй build-mode, движок или новый runtime provider.
+- `scripts/build_variants.py`: `ordinary=contents(root, BASE)`, пакет user использует `ordinary`, dev — `ordinary+diagnostic`; assert проверяет равенство общих записей, отсутствие DevTools в user и наличие в dev. `build-manifest.json` содержит SHA-256. Однако запуск actual ZIP build здесь не проводился; сам скрипт не доказывает semantic parity.
+- `KordRotationDevTools/KordRotationDevTools.toc` задаёт `## Dependencies: KordRotation`, `## SavedVariables: KordRotationDevToolsDB`. `Core.lua` и `Recorder.lua` разделяют сеанс/сохранение, но отсутствие любой косвенной записи production state полным динамическим тестом ещё не подтверждено.
+- `KordRotation/Core/CoreObservation.lua:Read()` объявлен read-only scalar summary. **Риск в ином методе:** `ReadEngineDiagnostic()` реально вызывает `RotationEngine:EvaluateBoth()` либо `Evaluate()`, а `ReadFullAudit()` — `RotationEngine:AuditFull()` при наличии. Это **доказанный по исходнику повторный вычислительный путь**, не доказанное расхождение финальной рекомендации. Дублирующий расчёт нельзя считать capture исходного live decision.
+- `KordRotationDevTools/Trace.lua:TraceStart()` включает event hooks и `OnUpdate` с интервалом приблизительно 0,75 секунды; `ObserveTransition()` вызывает bridge.Diagnose через `CoreObservation`. Следовательно, дополнительная engine evaluation потенциально происходит во время записи не только по ручному запросу.
+- `KordRotation/Core/GameAPI.lua:BeginDiagnosticTrace()/DrainDiagnosticTrace()`: wrapper добавляет counters/status и возвращает результат оригинального метода. Однако запись/overflow/ошибка instrumentation требуют проверки, что `nil`, exception semantics, кэш, последовательность чтений и source status не меняются. `KordRotation/Core/RotationEngine.lua:EvaluateBoth()` использует общий snapshot/per-evaluation cache для main+defensive; дополнительные diagnostic passes способны отличаться по времени и state.
+- `KordRotationDevTools/Probe.lua`: ручной `ProbeAll` — presence-only, не доказательство CLIENT PASS. Не смешивать с реальной production eligibility и не менять GameAPI contract.
+- **Фактический статус:** побайтовое сравнение ZIP, полная статическая проверка и реальные WoW Forever тесты при этом документальном аудите не выполнялись.
+
+#### Сравнение семи референсов (архитектурная граница и источники)
+
+1. **Sonah:** ранее исследованные `Core/Atoms` дают пример отделения наблюдения от условий; никакая их диагностическая логика не разрешает второй engine Kord. Новая проверка вариантов поставки Sonah в этом проходе NOT RUN.
+2. **JustAC:** ранее изученные `StateHelpers` и rotation rules полезны для разделения условий/источников данных; специальный user/dev decision split в просмотренных прежних материалах не доказан.
+3. **ForeverAuras:** ранее исследованные aura/event observations показывают возможные read-only точки наблюдения; trigger logic референса нельзя переносить в диагностическую ветку Kord как альтернативный выбор.
+4. **MaxDps:** glow/recommendation surface — применимый пример информационного UI; модель двух byte-identical ZIP у референса в этих исследованиях не подтверждена.
+5. **ForeverRotation:** условные профили/приоритеты — исследовательский ориентир; не основание делать diagnostic-only decision tree. Variant parity не доказан.
+6. **RotationGuide:** показ списка действий не равен оценке отдельным движком. Повторная проверка ZIP-паритета в этом проходе не производилась.
+7. **RotationMaster:** platform adapters/conditions — ориентир на единый контракт источников; собственный re-run для debug-вывода Kord не идентичен наблюдению реально выбранной рекомендации.
+
+**Доказательная граница:** здесь использованы предыдущие задокументированные адресные исследования семи ZIP и заново проверенные исходники **самого Kord через GitHub API**. Новый полный построчный аудит чужих архивов НЕ ПРОВОДИЛСЯ; утверждать, что вариант-паритет какого-либо из референсов доказан, нельзя. NO-04 — независимое продуктовое ограничение Kord.
+
+#### Выбранный путь Kord
+
+**Сохранить единственные действующие `KordRotation/` + `KordRotationDevTools/`, сборщик и существующий read-only `CoreObservation`; усилить его до пассивного захвата реальных результатов.** После завершения обычной live evaluation строить ограниченный immutable `DecisionObservationEnvelope(schemaVersion,evaluationID,channel,profileCode,revision,status,reason,priority,candidateCode,eligibility,checks,notEvaluated)`, используя только *уже рассчитанные* и проверенные данные, без нового World API read или engine Evaluate. Поля/коды должны согласовываться с QA-02, NO-03 (allowlist, no raw GUID/имён/чата/secret, bounded safe numbers). Простое чтение `CoreObservation:Read()` не должно обновлять GameState или lazy conditions. Если готового безопасного результата нет — `UNAVAILABLE/UNKNOWN`, но не искусственная «полная» оценка.
+
+`Trace` читает envelope, не повторяет `RotationEngine:EvaluateBoth` ради reason. `AuditFull` допускается лишь в **явно изолированном offline/mock harness на frozen fixture**, не в live UI/onUpdate/event recording. `GameAPI` wrappers должны сохранять все return values, error semantics, UNKNOWN и event/cache invariants даже при переполнении/ошибке диагностической записи. DevTools работает только с ограниченным безопасным snapshot, не мутирует настройки, profile registry, queue, GameState или поведение UI; probes по явному действию маркируются отдельной экспериментальной выборкой без присвоения production verdict. Пределы CPU/memory измеряют отдельно от семантических полей и фиксируют до приёмки.
+
+Это **новая ось differential**: user-vs-dev modes при фиксированном SHA и input; QA-05 уже сравнивает legacy-vs-candidate commit и здесь переиспользуется его deterministic harness, но никогда не вводится второй runtime engine.
+
+#### Требуемые изменения
+
+1. На точном коммите запустить `scripts/build_variants.py` и перечислить ZIP entries: имена, byte length, SHA-256, полные bytes всех `KordRotation/`, отсутствие DevTools в user и посторонних core-дубликатов в dev. Сохранить manifest и SHA.
+2. Проверить оба TOC, реально загружаемые Lua/XML, developer dependencies, overrides/monkey patching, conditional `_G` dispatch, debug-specific profiles, `KordRotationDB` writes в DevTools, hooks/callbacks и возможность переключения engine. Блокировать выпуск при доказанном runtime divergence.
+3. Заменить live вызовы engine `CoreObservation.ReadEngineDiagnostic`/Trace `ObserveTransition` на чтение **уже рассчитанного** production envelope. Убрать реальный `AuditFull` из live paths; не нарушать lazy `Needs`.
+4. Уточнить schema `DecisionObservationEnvelope` совместно с QA-02/NO-03, зафиксировать `NOT_EVALUATED` для непрочитанных условий; отсутствие данных — `UNKNOWN`, не дополнительная проверка.
+5. Изолировать logging wrapper: любое исключение `Recorder`, overflow/Stop/Export, missing bridge не меняет return/error contract оригинального GameAPI вызова и не ломает engine/UI.
+6. Lua 5.1 mode-differential fixtures: сравнивать одну и ту же последовательность событий, профиль, конфигурацию, snapshots в режимах user / dev OFF / dev RECORDING / dev STOP / export. Отдельно проверить main/defensive и `READY/BLOCKED/UNKNOWN`.
+7. Сравнить кроме decision fields источники/ревизии, lazy rule order, cache invalidation, число canonical API reads; **manual probes исключить из парного теста**, диагностические counters не приравнивать к gameplay changes.
+8. Проверить fail-isolation при secret/nil, malformed envelope, recorder overflow, exception, /reload, ошибочном stop, отсутствующей зависимости; NO-02 fail-closed, NO-03 privacy в обоих режимах.
+9. Дополнить QA-03/QA-07/QA-05 и локальные scripts для release gate, сохранить результаты/fixture hashes/build SHA; performance сравнить с заранее установленными tolerances. CI запускать только вручную перед общим QA, согласно AGENTS.md.
+10. Release gate: при хотя бы одном различии общего ZIP, recommendation/priority/reason, или повторном `Evaluate`/`AuditFull` из live DevTools **блокировать пользовательскую поставку**. Не объявлять PASS при незапущенных тестах.
+
+**DevTools-only коды причин (спецификация, не реализованный список):** `no04_core_hash_mismatch`, `no04_shared_entry_missing`, `no04_devtools_in_user_zip`, `no04_runtime_override_detected`, `no04_live_diagnostic_reevaluation`, `no04_decision_mismatch`, `no04_reason_mismatch`, `no04_revision_mutated`, `no04_cache_pollution`, `no04_probe_interference`, `no04_trace_exception`, `no04_trace_overflow`, `no04_missing_bridge`, `no04_untrusted_envelope`, `no04_perf_budget_exceeded`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Сценарий | Ожидаемый результат |
+|---|---|---|
+| `NO04-01` | user vs dev ZIP common entries | байты, имена, размеры, SHA равны |
+| `NO04-02` | user ZIP | нет `KordRotationDevTools/` |
+| `NO04-03` | dev TOC | отдельная зависимость от KordRotation |
+| `NO04-04` | common TOC/profiles | один набор loaded rules |
+| `NO04-05` | DevTools не установлен | исходная рекомендация |
+| `NO04-06` | DevTools установлен, OFF | та же рекомендация |
+| `NO04-07` | DevTools RECORDING | те же status/priority/reason |
+| `NO04-08` | DevTools STOP/EXPORTED | то же решение |
+| `NO04-09` | main READY | тот же candidate |
+| `NO04-10` | defensive READY | тот же defensive candidate |
+| `NO04-11` | condition UNKNOWN | одинаковый STOP |
+| `NO04-12` | Eligibility UNKNOWN | READY не возникает |
+| `NO04-13` | secret/protected input | UNKNOWN, не unwrap |
+| `NO04-14` | nil/UNAVAILABLE API | одинаковый fail-closed |
+| `NO04-15` | смена профиля/конфига | один resolve |
+| `NO04-16` | binding/actionbar change | одинаковая подсветка/keybind |
+| `NO04-17` | target/event storm | ревизии и выбор не расходятся |
+| `NO04-18` | START/STOP trace wrapper | неизменные return/error |
+| `NO04-19` | recorder overflow | не меняет engine |
+| `NO04-20` | recorder throws | engine/UI устойчивы |
+| `NO04-21` | missing bridge | user решение сохраняется |
+| `NO04-22` | reload без opt-in | запись OFF, решение прежнее |
+| `NO04-23` | получение decision envelope | не вызывает Evaluate повторно |
+| `NO04-24` | diagnostic event/OnUpdate | нет дополнительных Evaluate |
+| `NO04-25` | AuditFull в live callback | static/dynamic gate FAIL |
+| `NO04-26` | manual presence ProbeAll | client verdict не изменён |
+| `NO04-27` | record без raw GUID/name/chat | NO-03 pass |
+| `NO04-28` | DevTools UI vs profile setting | production settings неизменны |
+| `NO04-29` | overhead | в утверждённом CPU/memory budget |
+| `NO04-30` | новый actionType | одинаковое отклонение/UNKNOWN |
+| `NO04-31` | второй core/debug branch | static gate FAIL |
+| `NO04-32` | exact-SHA full scenario replay | decision fields MATCH |
+| `NO04-33` | запись выключена | нет retained raw data |
+| `NO04-34` | повтор fixture | детерминированный MATCH |
+
+**QA статус:** 34 сценария заданы, Lua 5.1/ZIP/game run в этом аудите NOT RUN.
+
+#### Вердикт
+
+**P0 / SPECIFIED, НЕ ПРОВЕРЕН В ПОЛНОМ ОБЪЁМЕ; ИМЕЕТСЯ ИСХОДНИКОВЫЙ РИСК ПОВТОРНОЙ LIVE-ОЦЕНКИ.** Утверждён один общий пакет `KordRotation/`, а build script его дублирует побайтово. Но `CoreObservation.ReadEngineDiagnostic` запускает `Evaluate/EvaluateBoth`, `Trace.ObserveTransition` вызывает Diagnose по событиям и таймеру. Это доказывает второй вычислительный путь во время записи, **но не доказывает фактического изменения пользовательской рекомендации**. Следовательно, до переработки/изолированного теста выпуск не может быть признан прошедшим NO-04. **SOURCE/DOC AUDIT PASS; ZIP BUILD NOT RUN; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Ретроактивные связи:** QA-01, QA-02, QA-03, QA-05, QA-06, QA-07, DA-02, UI-01, NO-01, NO-02, NO-03. В указанные разделы добавлены обратные ограничения; не вводится новый engine, заменяющий уже существующие контракты.

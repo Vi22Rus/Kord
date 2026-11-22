@@ -1,3 +1,14 @@
+## KR-20261122-030 — аудит NO-04: паритет user/dev без второй логики
+- Дата: 2026-11-22 (точное UTC время — GitHub metadata); Git SHA: см. git log --grep KR-20261122-030.
+- Тип/статус: docs / P0 SPECIFIED; full parity NOT VERIFIED; Lua, TOC, ZIP не менялись.
+- Контекст: в обеих поставках требуются одно byte-identical ядро и одинаковые решения при одинаковом input trace; один SHA сам по себе не гарантирует non-interference.
+- Причина/риск: CoreObservation.ReadEngineDiagnostic вызывает Evaluate/EvaluateBoth, а Trace.ObserveTransition — bridge.Diagnose по событиям/таймеру. Есть повторный вычислительный путь, но изменение recommendation не доказано.
+- Изменения: REQUIREMENTS.md — NO-04 (аудит, 7 референсов с честной границей доказательств, одно passive DecisionObservationEnvelope, 10 задач, 34 QA-07 сценария, вердикт); обратные ссылки в QA-01/02/03/05/06/07, DA-02, UI-01, NO-01/02/03; CHANGELOG.md — эта запись.
+- Решение: только canonical production pipeline; DevTools как read-only observer, без второго Evaluate/AuditFull в live trace; проверка semantic parity user/dev modes на exact-SHA deterministic fixtures плюс ZIP-byte gate. Тесты QA-05 используются, но ось сравнения новая.
+- Проверки: SOURCE/DOC AUDIT PASS; ZIP BUILD NOT RUN; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.
+- Выдано тестировщику: спецификация 34 сценариев для совокупного QA; устанавливать аддон после docs-only изменения не требуется.
+- Осталось: исправить либо доказанно изолировать live re-evaluation, запустить сценарии, собрать ZIP и игровой QA. Следующий пункт — по запросу.
+
 ## KR-20261122-029 — аудит NO-03: приватность диагностического журнала
 - Дата: 2026-11-22; UTC время/SHA по GitHub commit metadata.
 - Задача: NO-03 P0 — запрет произвольных данных игрока/цели/чата в журнале, SavedVariables и экспорте. Текущий Recorder ограничивает scalar поля, но regex-only METHOD.detail/ReadField и legacy data остаются source-level рисками.
