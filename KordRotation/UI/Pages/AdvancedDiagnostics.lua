@@ -138,8 +138,21 @@ function KR.Pages:Diagnostics(parent)
     local compat=panel(body,-277,214)
     prose(compat,"ADV_COMPAT_TITLE",15,-12,520,true)
     local compatText=value(compat,15,-45,520)
-    local info=panel(body,-510,135)
+    local info=panel(body,-510,165)
     prose(info,"DIAG_DEVTOOLS_NOTE",15,-16,500)
+    local openResult=value(info,15,-116,510)
+    click(info,"DIAG_OPEN_DEVTOOLS",15,-76,240,function()
+        -- The separate addon is optional: do not require it at load time.
+        -- Open its public window only, without starting diagnostics.
+        local addon=_G.KordRotationDevTools
+        if type(addon)~="table" or type(addon.OpenUI)~="function" then
+            openResult:SetText(KR:L("DIAG_DEVTOOLS_MISSING"))
+            return
+        end
+        local ok,shown=pcall(addon.OpenUI,addon)
+        openResult:SetText(KR:L(ok and shown==true
+            and "DIAG_DEVTOOLS_OPENED" or "DIAG_DEVTOOLS_MISSING"))
+    end)
     local function refresh()
         local snap=D:Snapshot()
         status:SetText(KR:Format("DIAG_SUMMARY",snap.class,snap.profile,snap.status,
