@@ -936,3 +936,54 @@
 6. Тесты: изучены ранги 1–3; изучен только первый; старший ранг secret; каталог неполон; одинаковые локализованные имена разных семейств; pet rank; талант/руна; override; неизвестный familyKey; смена билда и изучение нового ранга.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-02.
+
+
+### SP-03 — Кулдаун способности: активен / нет, остаток времени, если безопасно
+
+**Приоритет: P0.**
+
+#### Требование
+
+По spellID независимо сообщать `cooldown.active` (активен/неактивен/UNKNOWN) и `cooldown.remainingSeconds` (**только когда числовое время достоверно и не secret**). Различать индивидуальный cooldown, общий cooldown (GCD), shared cooldown, charges/recharge и отключённое заклинание. Отсутствие безопасного времени **не отменяет** достоверный `isActive`; и наоборот, не выводить точный остаток из защищённых start/duration, UI-свайпа или эвристик. Значение `0` допустимо только при подтверждённой готовности, не как fallback.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 72–102: **реализована** проверка cooldown по `C_Spell.GetSpellCooldown(id).isActive`. `false` → `READY`; `true` → `BLOCKED/cooldown_active_unclassified`. Правильно не пытается вывести индивидуальный/GCD из `isOnGCD` вне события. Legacy `GetSpellCooldown` вычисляет `start+duration` против `GetTime` только после проверки чисел.
+- Там же, строки 103–141: GCD обрабатывается отдельно (Forever spellID **29515**, не retail 61304), modern `isActive` используется как безопасный сигнал; секретные таймеры не читаются.
+- Там же, строки 142–168: charges имеют отдельную проверку; recharge и доступные заряды нельзя смешивать с cooldown.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9, 24–35: API `GetTime`, `GetSpellCooldown`, `C_Spell.GetSpellCooldown` и charges в allowlist, чтения типизированы и защищены.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 21–22: есть `SPELL_UPDATE_COOLDOWN`, `ACTIONBAR_UPDATE_COOLDOWN`, `SPELL_UPDATE_CHARGES`, `SPELL_UPDATE_USABLE`.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 437–445: `cooldownActive` возвращает факт активности, но **нет универсального структурированного `remainingSeconds`**, статуса его точности/источника и пороговых условий по остаточному времени. `AbilityEligibility.cooldown` возвращает только `READY/BLOCKED/UNKNOWN` и reason.
+- Нужна явная модель `active` и `remaining` как двух независимых наблюдений; сейчас modern active может быть известен, а remaining недоступен без отражения этого различия в контракте.
+
+#### Как делают семь референсов (проверены Lua в локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua` использует `Secret.Call(C_Spell.GetSpellCooldown,...)`, `Spells.CooldownRemaining` и `Secret.Number`; `Sonah/Core/Molecules/Conditions.lua:139` проверяет оставшееся время в условиях. `Sonah/Core/Atoms/Curves.lua:250` и `UI/Display.lua:510` используют duration objects для визуализации, не обязательно для безопасного числового решения.
+2. **JustAC** — `JustAC/BlizzardAPI/CooldownTracking.lua` централизует `C_Spell.GetSpellCooldown`; `JustAC/BlizzardAPI/SpellQuery.lua` отделяет cooldown-query; `JustAC/DebugCommands.lua:1115` диагностирует spellbook cooldown; `JustAC/SpellDB.lua:1599` подчёркивает отдельную обработку charges. Подход — API-адаптер + диагностика доступности.
+3. **ForeverAuras** — `ForeverAuras/SpellCooldown.lua:36` предоставляет GCD-флаг; `ForeverAuras/CooldownViewerTrigger.lua` использует Cooldown Viewer, `GenericTrigger.lua:2309` поддерживает cooldown-триггеры. UI-триггер и duration object не являются доказательством безопасного числового остатка для движка.
+4. **MaxDps** — `MaxDps/Helper.lua:36` использует modern/legacy `GetSpellCooldown`, `MaxDps/SecretHelper.lua:178` отдельно читает `isActive`, `MaxDps/Buttons.lua:1135` получает `GetSpellCooldownDuration` для кнопок. Разделение активности и визуального отображения полезно, но не переносить секретные таймеры в числовое условие.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:4` документирует опору на NeverSecret `isActive/isOnGCD`; `ForeverRotation/Display.lua:302` использует `C_Spell.GetSpellCooldown` для отображения/готовности. Проверка активного cooldown реализована, но доказательство точного числового остатка в secret-контексте отсутствует.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:93` использует `C_Spell.GetSpellCooldownDuration` (duration object), а не гарантированно безопасное число секунд; не переносить в пороговую логику без подтверждённого числового API.
+7. **RotationMaster** — `RotationMaster/Conditions/spell.lua` и `Conditions/anyspell.lua` обращаются к платформенным `IsSpellReady`, `GetSpellCooldown`, `GetSpellCharges`; `RotationMaster/Core/forecast.lua:362` прямо отмечает, что при secret-таймерах можно использовать `isActive`, не вычисляя остаток; `Core/condition_restrictions.lua:31` помечает cooldown как ограниченный с fallback. Это наиболее близкая архитектура к требованию.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + Sonah**, с сохранением уже реализованных правил Kord. RotationMaster — разделение платформенных cooldown-фактов и условий, секретный fallback на `isActive`; Sonah — числовой `CooldownRemaining` только после safe-number проверки, независимый от UI duration objects. JustAC полезен как образец диагностического покрытия modern/legacy и charges. Не заменять проверенный modern `isActive` таймерами; не объявлять `remaining=0`, когда таймер secret; не смешивать GCD с индивидуальным cooldown.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).**
+
+Бинарная проверка активности и блокировка применения уже реализованы, включая GCD и legacy таймер. Не реализован самостоятельный типизированный остаток времени с отдельной достоверностью, а также явная классификация индивидуального/shared/GCD при доступных свидетельствах.
+
+#### Требуемые изменения
+
+1. Добавить `CooldownObservation(spellID)` с независимыми `active:{status,value,reason,source}` и `remaining:{status,seconds,reason,source}`, плюс `kind` (`individual/shared/gcd/unknown`).
+2. Сначала читать безопасный `C_Spell.GetSpellCooldown.isActive` через `GameAPI`; для `remaining` использовать только доказанно обычные числовые `startTime/duration` + `GetTime` либо legacy-числа, с проверкой конечности и неотрицательности. Secret → `remaining.UNKNOWN`, даже если `active.READY`.
+3. Не использовать `isOnGCD` из произвольного snapshot для классификации; только при доказанном событийном контракте, и не смешивать со spellID 29515 GCD.
+4. Отделить charges/recharge и shared cooldown; сохранить за `AbilityEligibility` итоговое решение `READY`.
+5. Использовать `Needs.cooldowns` как разрешение на ленивый запрос конкретного spellID и числового остатка; не читать таймеры без реального потребителя.
+6. Инвалидировать по существующим cooldown/charge событиям и обновлению времени; не кэшировать остаток как неизменное число.
+7. Тесты: active true/false при secret таймерах; remaining safe/secret; legacy ready/active; GCD-only; shared cooldown; recharge при доступном заряде; enabled=false; смена цели/способности; clock invalid/NaN; отсутствующий API; неиспользуемое поле remaining не читается.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-03.
