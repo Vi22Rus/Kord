@@ -139,9 +139,26 @@ eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
  decisivePriority=5,decisiveStatus="UNKNOWN",
  decisiveReason="action_slot_unconfirmed"},true),true,"repeat sample available")
 eq(#D.entries,detailsCount,"unchanged detailed observations not duplicated")
+local earlier=#D.entries
+eq(D:ObserveDetails({arcaneR4Status="BLOCKED",
+ arcaneR4Reason="already_casting",arcaneR4Checks={
+  {name="cast",status="BLOCKED",reason="already_casting"},
+ }},true),true,"lazy BLOCKED observation")
+local skipped={}
+for i=earlier+1,#D.entries do
+ local item=D.entries[i]
+ if item.reason=="arcane_check_range" or item.reason=="arcane_check_gcd"
+   or item.reason=="arcane_check_cooldown" then
+  skipped[item.reason]=item.status
+ end
+end
+eq(skipped.arcane_check_range,"UNAVAILABLE","range visibly not evaluated")
+eq(skipped.arcane_check_gcd,"UNAVAILABLE","GCD visibly not evaluated")
+eq(skipped.arcane_check_cooldown,"UNAVAILABLE","cooldown visibly not evaluated")
+local finalCount=#D.entries
 _G.KordRotationCoreObservation=nil
 D.active=false
 current.engineStatus="BLOCKED"
 eq(D:ObserveTransition(),false,"opt-in disabled")
-eq(#D.entries,detailsCount,"no late recording")
+eq(#D.entries,finalCount,"no late recording")
 print("PASS DevTools aggregate trace mock: "..n.." assertions")
