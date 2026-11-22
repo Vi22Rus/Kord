@@ -1,3 +1,10 @@
+## 2026-11-22 — Correct Aspect of the Hawk condition using Sonah Hunter reference
+
+- User's latest two-page test confirmed a readable `player.travelAspect` signal while BM rule #2 was `BLOCKED/condition_false`, then hidden aura reads left the rule UNKNOWN in combat. Existing `if travel==true then return false` was wrong for combat.
+- Matched `Sonah/Classes/Hunter.lua:142–171`: out of combat preserve Cheetah/Pack; in combat recommend switching to Hawk while a travel aspect is still confirmed, including via previously observed and not-yet-consumed travel evidence. A confirmed already active Hawk still blocks redundant recommendation.
+- `AuraEvidence` now recognizes higher-rank Hawk and other combat aspects as successful cast consumers, remembers **verified live positive** travel for up to 120s, never creates negative aura evidence and never refreshes its own stale live observation. Reset upon world entry/death.
+- Added `tests/hunter_bm_aspect_switch.lua` (combat/offcombat/known active Hawk/unknown/disabled option) and extended GameState mock; added new test to manual Lua 5.1 workflow. **Tests not executed here; no live WoW client pass.**
+
 ## 2026-11-22 — Actual core aura provider improvements sourced from Sonah/ForeverAuras
 
 - `GameState:ReadSignal` now tries ForeverAuras' targeted `C_UnitAuras.GetUnitAuraBySpellID(unit,spellID)` after a failed player-specialized lookup; exact ID and helpful flag must be readably verified. This adds a possible real successful data path when the specialized method returns nil.
