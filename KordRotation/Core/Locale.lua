@@ -3640,6 +3640,98 @@ for locale,strings in pairs(bmModuleTranslations) do
  if t then for key,value in pairs(strings) do t[key]=value end end
 end
 
+-- BM level 60 additional module-bound settings.
+local bm60Translations={
+ enUS={
+  BM_CFG_cooldowns="Cooldown policy",
+  TIP_BM_CFG_cooldowns="Cooldown policy. Applies only to the selected rotation module.",
+  BM_CFG_trueshot_aura="Trueshot Aura",
+  TIP_BM_CFG_trueshot_aura="Trueshot Aura. Applies only to the selected rotation module.",
+  BM_CFG_pull_cast="Pre-pull Aimed Shot",
+  TIP_BM_CFG_pull_cast="Pre-pull Aimed Shot. Applies only to the selected rotation module.",
+  BM_CFG_traps="Trap policy",
+  TIP_BM_CFG_traps="Trap policy. Applies only to the selected rotation module.",
+  BM_CHOICE_on_cd="On cooldown",
+  BM_CHOICE_boss="Boss only",
+  BM_CHOICE_always="Always",
+  BM_CHOICE_aoe="Area damage",
+ },
+ ruRU={
+  BM_CFG_cooldowns="Режим кулдаунов",
+  TIP_BM_CFG_cooldowns="Режим кулдаунов. Настройка только текущего модуля ротации.",
+  BM_CFG_trueshot_aura="Аура меткого выстрела",
+  TIP_BM_CFG_trueshot_aura="Аура меткого выстрела. Настройка только текущего модуля ротации.",
+  BM_CFG_pull_cast="Прицельный выстрел перед пуллом",
+  TIP_BM_CFG_pull_cast="Прицельный выстрел перед пуллом. Настройка только текущего модуля ротации.",
+  BM_CFG_traps="Режим ловушек",
+  TIP_BM_CFG_traps="Режим ловушек. Настройка только текущего модуля ротации.",
+  BM_CHOICE_on_cd="По откату",
+  BM_CHOICE_boss="Только боссы",
+  BM_CHOICE_always="Всегда",
+  BM_CHOICE_aoe="По площади",
+ },
+ deDE={
+  BM_CFG_cooldowns="Abklingzeit-Regel",
+  TIP_BM_CFG_cooldowns="Abklingzeit-Regel. Applies only to the selected rotation module.",
+  BM_CFG_trueshot_aura="Aura des Volltreffers",
+  TIP_BM_CFG_trueshot_aura="Aura des Volltreffers. Applies only to the selected rotation module.",
+  BM_CFG_pull_cast="Gezielter Schuss vor Pull",
+  TIP_BM_CFG_pull_cast="Gezielter Schuss vor Pull. Applies only to the selected rotation module.",
+  BM_CFG_traps="Fallen-Regel",
+  TIP_BM_CFG_traps="Fallen-Regel. Applies only to the selected rotation module.",
+  BM_CHOICE_on_cd="Sobald bereit",
+  BM_CHOICE_boss="Nur Bosse",
+  BM_CHOICE_always="Immer",
+  BM_CHOICE_aoe="Flächenschaden",
+ },
+ frFR={
+  BM_CFG_cooldowns="Gestion des temps de recharge",
+  TIP_BM_CFG_cooldowns="Gestion des temps de recharge. Applies only to the selected rotation module.",
+  BM_CFG_trueshot_aura="Aura de précision",
+  TIP_BM_CFG_trueshot_aura="Aura de précision. Applies only to the selected rotation module.",
+  BM_CFG_pull_cast="Visée avant l'engagement",
+  TIP_BM_CFG_pull_cast="Visée avant l'engagement. Applies only to the selected rotation module.",
+  BM_CFG_traps="Gestion des pièges",
+  TIP_BM_CFG_traps="Gestion des pièges. Applies only to the selected rotation module.",
+  BM_CHOICE_on_cd="Dès disponibilité",
+  BM_CHOICE_boss="Boss uniquement",
+  BM_CHOICE_always="Toujours",
+  BM_CHOICE_aoe="Dégâts de zone",
+ },
+ esES={
+  BM_CFG_cooldowns="Política de reutilización",
+  TIP_BM_CFG_cooldowns="Política de reutilización. Applies only to the selected rotation module.",
+  BM_CFG_trueshot_aura="Aura de disparo certero",
+  TIP_BM_CFG_trueshot_aura="Aura de disparo certero. Applies only to the selected rotation module.",
+  BM_CFG_pull_cast="Puntería antes del combate",
+  TIP_BM_CFG_pull_cast="Puntería antes del combate. Applies only to the selected rotation module.",
+  BM_CFG_traps="Política de trampas",
+  TIP_BM_CFG_traps="Política de trampas. Applies only to the selected rotation module.",
+  BM_CHOICE_on_cd="Cuando esté disponible",
+  BM_CHOICE_boss="Solo jefes",
+  BM_CHOICE_always="Siempre",
+  BM_CHOICE_aoe="Daño en área",
+ },
+ ptBR={
+  BM_CFG_cooldowns="Política de recargas",
+  TIP_BM_CFG_cooldowns="Política de recargas. Applies only to the selected rotation module.",
+  BM_CFG_trueshot_aura="Aura de tiro certeiro",
+  TIP_BM_CFG_trueshot_aura="Aura de tiro certeiro. Applies only to the selected rotation module.",
+  BM_CFG_pull_cast="Tiro Certo antes de puxar",
+  TIP_BM_CFG_pull_cast="Tiro Certo antes de puxar. Applies only to the selected rotation module.",
+  BM_CFG_traps="Política de armadilhas",
+  TIP_BM_CFG_traps="Política de armadilhas. Applies only to the selected rotation module.",
+  BM_CHOICE_on_cd="Quando disponível",
+  BM_CHOICE_boss="Apenas chefes",
+  BM_CHOICE_always="Sempre",
+  BM_CHOICE_aoe="Dano em área",
+ },
+}
+for locale,strings in pairs(bm60Translations) do
+ local t=translations[locale]
+ if t then for k,v in pairs(strings) do t[k]=v end end
+end
+
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.
 -- Do not silently overwrite client locale: it is determined via GetLocale().
 local locale = type(GetLocale) == "function" and GetLocale() or "enUS"
