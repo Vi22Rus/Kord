@@ -1292,3 +1292,51 @@
 7. Тесты: instant, обычный каст, канал, cast while moving, неподвижный каст на ходу, proc instant, haste, смена формы, secret timing, отсутствующий spell info, начало/конец/прерывание каста, spellID и имя текущего каста.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-09.
+
+
+### SP-10 — Подтверждено ли заклинание на видимой панели (слот), клавиша привязки
+
+**Приоритет: не указан пользователем; не назначать произвольно.**
+
+#### Требование
+
+Для конкретного spellID достоверно установить, есть ли **сейчас видимая и активная кнопка** с соответствующим действующим слотом, и подтверждённую клавишу, ведущую именно к этой кнопке. Отдельные результаты: `visibleButton`, `slot`, `spellMatch`, `bindingCommand`, `bindingKeys`, `bindingLabel`, `bindingRouteVerified`, `status/reason/source`. Проверять смену страницы, формы/стойки, override-binding, кастомные панели и несколько кнопок. Отсутствие найденной кнопки при неполном покрытии — `UNKNOWN`, а не доказательство отсутствия. **Наличие панели/бинда не определяет пригодность заклинания**; итоговый READY остаётся у `AbilityEligibility`.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/ActionBarScanner.lua`](KordRotation/Core/ActionBarScanner.lua), строки 8–22, 63–127: перечисляет Blizzard/LAB/популярные сторонние кнопки; проверяет `IsVisible`, slot через атрибуты/`GetAction`, `C_ActionBar.HasAction`/`HasAction`, `GetActionInfo`, и возвращает подтверждённые `slot/spellID/buttonName/source`. Прямые spell/macro/item-кнопки без подтверждённого слота намеренно не считаются slot-совпадением.
+- `ActionBarScanner.lua`, строки 233–236, 267–314: `coverage=CONFIRMED_BUTTONS_ONLY`; `GetVerifiedButtons` повторно сверяет текущий слот и ID, `FindSpell` перепроверяет перед выбором. Отсутствие видимой кнопки не трактуется как пустая панель.
+- [`KordRotation/Core/BindingResolver.lua`](KordRotation/Core/BindingResolver.lua), строки 49–106, 128–154, 202–240: строит команду привязки по проверенной кнопке/слоту, учитывает EllesmereUI и ограничения динамических страниц, читает `GetBindingKey`, проверяет обратный маршрут `GetBindingAction`, возвращает `READY/UNBOUND/UNKNOWN`; неизвестная маршрутизация не объявляется подтверждённой.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 296–315, 384: получает слот/состояние панели отдельно от пригодности. Отсутствие кнопки или бинда не делает изученное пригодное заклинание `UNKNOWN`.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 27–32: allowlist `GetActionInfo`, `HasAction`, `C_ActionBar.HasAction`, `C_ActionBar.FindSpellActionButtons`, `GetBindingKey`, `GetBindingAction`.
+- **Оставшиеся вопросы:** не доказано полное покрытие всех сторонних action bars, override/click bindings, макросов и direct-spell кнопок; выбор одного из нескольких совпадений и все случаи совпадения по имени/разным рангам требуют сценарных тестов. Эти случаи должны сохранять `UNKNOWN` без ложной клавиши.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/ActionSlots.lua:16–74`: secret-safe обход 180 слотов через `HasAction/GetActionInfo`, `GetMacroSpell`, stance spellID, `C_ActionBar.FindSpellActionButtons`, `GetBindingKey`. Есть слот и привязка, но сам скан 180 слотов не доказывает видимость конкретной кнопки.
+2. **JustAC** — `JustAC/ActionBarScanner.lua:155–220`: `GetBindingKey` с выбором keyboard/gamepad, кэшированием биндов по Blizzard-командам и дополнением для сторонних кнопок; отдельно обрабатывает action bar и spell/macro mapping. Не следует копировать кэш без повторной проверки текущей страницы.
+3. **ForeverAuras** — `ForeverAuras/ActionRange.lua:29–53`: `FindSpellActionButtons` + перебор слотов/`GetActionInfo` с учётом одинакового имени и разных рангов, использует слот для range events; **не является полноценным resolver клавиши видимой кнопки**.
+4. **MaxDps** — `MaxDps/SpellFrame.lua:188–240`: `GetSpellKeybind`, `FindSpellOnActionBar`, `GetKeybindForSpell` через `GetActionInfo/GetBindingKey`, есть совпадение по имени для рангов; простой маппинг slot→command требует осторожности при кастомных/динамических панелях.
+5. **ForeverRotation** — `ForeverRotation/Bars.lua:1–98`: перечисляет Blizzard/Bartender/Dominos/LAB, читает action slot/макросы, при сканировании предпочитает видимые кнопки и берёт `HotKey:GetText` для отображения; имя spell как ключ может объединять ранги.
+6. **RotationGuide** — `RotationGuide/Core/Display.lua:13–61`: сканирует кнопки Blizzard и stance bar через `HasAction/GetActionInfo/GetMacroSpell`, сопоставляет по имени; сторонние панели прямо не покрыты, полноценная привязка клавиши в этом сканере не подтверждена.
+7. **RotationMaster** — `RotationMaster/buttons.lua:1669–1710,2317–2324,2876`: сопоставляет кнопки и слоты с `C_ActionBar.FindSpellActionButtons`, проверяет `IsVisible`, учитывает более сложные источники action buttons. Не переносить его эвристики без проверки маршрута бинда на Forever.
+
+#### Сравнение и рекомендация
+
+**Сохранить Kord ActionBarScanner + BindingResolver как основную общеклассовую реализацию**, дополнив проверенными подходами **JustAC** (keyboard/gamepad и кастомные бинды), **ForeverRotation** (видимость и отображаемый HotKey) и **RotationMaster** (сопоставление кнопки/слота). Из Sonah взять полезные сценарии макросов, stance bar и рангов. Не создавать новый `HunterActionBar` или отдельный файл на класс; новые `ActionSlotObservation`/`BindingObservation` — логические контракты в существующих общих модулях.
+
+#### Вердикт
+
+**В ОСНОВНОМ РЕАЛИЗОВАНО — ПРОВЕРИТЬ ПОКРЫТИЕ И КРАЕВЫЕ СЛУЧАИ.** Базовая связка «видимая кнопка → актуальный слот → spellID → подтверждённая клавиша» есть. Полное покрытие всех UI/override/макросов не доказано. **Приоритет не указан**.
+
+#### Требуемые изменения
+
+1. Сохранить `ActionBarScanner` и `BindingResolver` едиными для всех классов; не плодить отдельные Lua-файлы под каждый тип панели.
+2. Явно различать `VISIBLE_VERIFIED`, `NOT_VISIBLE_VERIFIED` только при доказанном полном покрытии, и `UNKNOWN` при неполном скане; `UNBOUND` только при подтверждённом маршруте.
+3. Проверять слот, spellID/ранг, видимость, paging и binding-route непосредственно перед показом; не показывать устаревшую клавишу после смены формы/панели.
+4. Отдельно проверить macro → spell, direct spell button, stance/possess/pet bars, дубли, action overrides, mouseover/click-bind, keyboard/gamepad и пользовательские панели. При неоднозначности не выдавать ложную привязку.
+5. Для сопоставления по имени использовать подтверждённое семейство рангов из SP-02, а не любое совпадение локализованного имени.
+6. Инвалидация по `ACTIONBAR_SLOT_CHANGED`, `ACTIONBAR_PAGE_CHANGED`, `UPDATE_BINDINGS`, смене формы/стойки, таланта и видимости/перестройке кнопок; учесть особенности событий Forever.
+7. Диагностика: объяснять `no_confirmed_visible_button`, `slot_mismatch`, `binding_not_verified`, `dynamic_routing_unverified`, `UNBOUND`; исключить утечки raw protected/secret данных.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-10.
