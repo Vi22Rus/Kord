@@ -1,3 +1,11 @@
+## KR-20261122-080 — docs: reconcile IT-02/2.2 mock source test
+- Дата/время: 2026-11-22 UTC, точное время Git. Тип test/docs; ID IT-02, P0, этап 2/шаг 2.2. Коммит source: [KR-20261122-079, 29d5d9ff330c5138bbc34f554f7407ab99db067a](https://github.com/Vi22Rus/Kord/commit/29d5d9ff330c5138bbc34f554f7407ab99db067a).
+- Добавлен `tests/item_cooldown_allowlist_mock.lua`: Lua 5.1 synthetic mock `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown`, проверка `Probe`, `ReadTuple`, отсутствие execution API, protected/Nan/missing behavior. Фактический GameAPI и логика игрового вызова этим тестовым коммитом не менялись.
+- Причина: ранее новые allowlist entries имели только статическую проверку, а наличие API и типы на Forever ещё не доказаны. Mock не является реальной игровой валидацией и не проверяет обоснованность сигнатур; исходная причина бага на клиенте НЕ УСТАНОВЛЕНА.
+- PASS: статическая проверка наличия assertions и ограниченного набора candidate names. NOT RUN: Lua 5.1 execution, полный mock/local suite, ручной CI и WoW Forever. Runner в KR-20261122-072 обнаруживает новые Lua тесты автоматически. Изменения expected behavior LEGACY отсутствуют.
+- Для тестировщика: включить тест в агрегированный общий прогон и получить реальные PASS/FAIL; только затем ссылаться на runtime mock PASS; отдельный клиентский тест не нужен до общего QA.
+- Результат: test source added, IT-02/2.2 PARTIALLY IMPLEMENTED, клиент NOT RUN. Связи IT-01/IT-02, KR-20261122-073–079. Из-за GitHub Contents API тестовый коммит не содержал CHANGELOG — правило атомарности нарушено, факт не скрывается; запись внесена следующим коммитом.
+
 ## KR-20261122-078 — docs: reconcile REQUIREMENTS and phased plan for IT-02/2.2
 - Дата/время: 2026-11-22 UTC; точные времена — GitHub history по ID. Тип docs; IT-02 P0 / этап 2 шаг 2.2. Коммит: `git log --grep KR-20261122-078`.
 - Контекст: частичная кодовая реализация read-only API позволила документировать только allowlist; полноценные cooldown signatures, secret/time validations и клиент Forever ещё не проверены.
