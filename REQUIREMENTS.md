@@ -316,6 +316,9 @@
 ## PL-02 — Класс, специализация, уровень, раса, фракция
 
 
+**Архитектурная актуализация TG-05:** **См. TG-05: pet and player identity must be independently verified before targettarget relation, no fallback to player when pet missing.**
+
+
 **Архитектурная актуализация TG-03:** **См. TG-03: уровень игрока повторно используется из общего player identity snapshot; разницу уровней считать только из двух подтверждённых значений.**
 
 **Приоритет: P0.**
@@ -536,6 +539,9 @@
 
 
 ## PL-07 — Боевой статус, группа/рейд/соло и режим подземелья
+
+
+**Архитектурная актуализация TG-05:** **См. TG-05: player combat/group context and target combat/threat share EventBus and typed combat observations; player combat does not prove target combat.**
 
 **Приоритет: P2.**
 
@@ -1530,6 +1536,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-05:** **См. TG-05: target-of-target and threat restrictions reuse common TargetAggroObservation, while final ability READY remains AbilityEligibility.**
+
+
 **Архитектурная актуализация TG-04:** **См. TG-04: type-limited spell requirements reuse a common CreatureTypeObservation and AbilityEligibility, not class-specific readers.**
 
 
@@ -2296,6 +2305,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-05:** **См. TG-05: target combat, target-of-target and threat use the same targetGUID and TargetObservation, not a parallel target scanner.**
+
+
 **Архитектурная актуализация TG-04:** **См. TG-04: creature type is an additional fact on the same targetGUID and TargetObservation, not a separate scanner.**
 
 
@@ -2502,3 +2514,53 @@
 **Архитектурные ссылки:** TG-01 — target identity, TG-03 — classification, SP-14 — ограничения заклинаний. Обратные сноски добавлены в старые требования.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-04.
+
+
+### TG-05 — Цель в бою, цель цели (агро на мне / на питомце / на другом)
+
+**Раздел: 5. Цель. Приоритет: P1.**
+
+#### Требование
+
+Независимые доказательные поля `targetInCombat`, `targetOfTargetExists`, `targetOfTargetGUID`, `targetTargetsPlayer`, `targetTargetsPet`, `targetTargetsOther`, `playerThreatStatus`, `petThreatStatus`, `aggroHolder` с `READY/UNKNOWN`, reason/source и guard на исходный targetGUID. **Цель цели не равна владельцу агро:** моб может смотреть/кастовать в одного, а иметь максимальную угрозу к другому. Отдельно представлять `currentTargetRelation` и `threatLeader`; не утверждать `aggroHolder=player` только из `targettarget==player`. При отсутствии доказательства владельца угрозы — UNKNOWN.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155: `record.combat=UnitAffectingCombat("player")` читается только для игрока, **не** для target. `record.threat=UnitThreatSituation("player","target")` существует (0–3), но это угроза игрока относительно цели, не подтверждённый владелец агро среди player/pet/other.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 186–197: `pet.attackingTarget` сравнивает `pettarget` с `target`; это **куда атакует питомец**, а не кто атакует питомца. Не путать с `targettarget==pet`.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 392–438: `ReadSignal("target.targetsPlayer"/"player.hasAggro")` проверяет `UnitExists("targettarget")`, `UnitIsUnit("targettarget","player")` с target GUID guard. Поле `player.hasAggro` в текущей реализации фактически означает «цель выбрала игрока», а не подтверждённое лидерство угрозы: требуется исправить семантику в будущей реализации, не просто переименовать UI.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 10–15: allowlist `UnitAffectingCombat`, `UnitIsUnit`, `UnitThreatSituation`, `UnitDetailedThreatSituation`; общие примитивы уже доступны.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 20,45–46: target changed и unit events частично есть; `UNIT_TARGET`/`UNIT_THREAT_LIST_UPDATE`/`UNIT_THREAT_SITUATION_UPDATE` не подтверждены в event map. Проверить на Forever и добавить инвалидацию при поддержке.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Units.lua:230,279,773` защищённо читает `UnitAffectingCombat(unit)`; полезен общий per-unit combat fact. Нельзя из него вывести владельца агро.
+2. **JustAC** — `DefensiveEngine.lua:607,1479` использует combat state игрока, `JustAC.lua` и другие модули работают с target state; подтверждённого единого threat-leader контракта для player/pet/other в проверенных местах нет.
+3. **ForeverAuras** — `BuffTrigger2.lua:4491` регистрирует `UNIT_TARGET`, поддерживает `targettarget`/`pettarget` в unit-tracking; подходит для обновления unit-of-unit, но aura trigger не доказывает владельца угрозы.
+4. **MaxDps** — классовые ротации используют `UnitThreatSituation` и combat flags; классовые проверки не равны общему доказательному `aggroHolder`.
+5. **ForeverRotation** — `Engine.lua:284` считает врагов в бою по `UnitAffectingCombat(unit)`; `Engine.lua:321–322` отдельно сравнивает `targettarget` с player. Полезное разделение фактов.
+6. **RotationGuide** — `Core/State.lua:285,297` читает `UnitAffectingCombat(unit)` для целей и игрока; готового общего player/pet/other threat attribution не подтверждено.
+7. **RotationMaster** — `Platform/unit_flags.lua:3–53` общая secret-safe проверка `UnitAffectingCombat`, `Platform/raid_marks.lua:103,586` реагирует на `UNIT_TARGET`; `Libs/ThreatClassic-1.0` содержит более развитые threat-механизмы, но библиотечные оценки не считать подтверждённым текущим агро на Forever.
+
+#### Рекомендация
+
+**Основа — Kord GameState/ReadSignal + ForeverRotation (разделение combat и targettarget) + RotationMaster (общие unit flags) + ForeverAuras (UNIT_TARGET lifecycle).** Логический `TargetAggroObservation(targetGUID)` агрегирует: `targetInCombat` из `UnitAffectingCombat("target")`; `currentTargetRelation` из `UnitExists("targettarget")` и сравнения с `player`/`pet`; `playerThreatStatus` из `UnitThreatSituation("player","target")`, `petThreatStatus` из проверенного `UnitThreatSituation("pet","target")`; `threatLeader` только при достаточных подтверждённых данных `UnitDetailedThreatSituation` или других разрешённых источников. Не создавать второй target scanner; не смешивать `pet.attackingTarget` и `targetTargetsPet`. Не делать `player.hasAggro` синонимом targettarget.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Есть player combat, player threat status и targettarget→player, но нет target combat, targettarget→pet/other и доказательного владельца агро.
+
+#### Требуемые изменения
+
+1. В `unitSnapshot("target")` добавить `UnitAffectingCombat("target")` через GameAPI и tri-state. Не подменять `targetInCombat` состоянием боя игрока.
+2. Добавить `targetOfTargetExists/GUID` и независимо `targetTargetsPlayer`, `targetTargetsPet`, `targetTargetsOther`, с `UnitIsUnit` и проверенной идентичностью player/pet. При `targettarget` отсутствует — все отношения не должны ссылаться на предыдущего юнита.
+3. Ввести чёткое разделение `currentTargetRelation` (кого сейчас выбрал моб) и `threatLeader` (кто лидирует по угрозе). `player.hasAggro` переопределить или заменить без нарушения существующих потребителей, добавить migration diagnostics.
+4. Общий `ThreatObservation(sourceUnit,targetUnit)` использует `UnitThreatSituation` и, если безопасно, `UnitDetailedThreatSituation`; player/pet/other сравнивать только по подтверждённым наблюдениям. Угроза по party/raid не гарантирует полную картину неизвестных игроков.
+5. Привязать чтения к targetGUID до и после, к petGUID при проверке pet, а targettargetGUID не переносить после смены цели. Отсутствие питомца не означает «агро на другом».
+6. Проверить `UNIT_TARGET`, `UNIT_THREAT_LIST_UPDATE`, `UNIT_THREAT_SITUATION_UPDATE`, `UNIT_FLAGS` на Forever; инвалидировать target/threat при поддержке; fallback heartbeat только для свежести, не как доказательство.
+7. Использовать общие target/identity/party observations из TG-01/PL-02/PL-07, не классовые hunters-only решения. Итоговая готовность способности — `AbilityEligibility`.
+8. Диагностика `target_combat_unknown`, `targettarget_guid_changed`, `pet_target_relation_unknown`, `threat_leader_unknown`, `target_vs_threat_mismatch`; тесты player target, pet target, party tank target, no targettarget, mob switches target, taunt, threat leader differs from current target, pet absent, pet changes, combat secret, two mobs, target swap.
+
+**Архитектурные ссылки:** TG-01 — target identity, PL-02 — player/pet identity, PL-07 — combat/group, SP-14 — target restrictions. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-05.
