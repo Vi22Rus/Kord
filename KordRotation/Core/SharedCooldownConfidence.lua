@@ -37,6 +37,21 @@ function C:Evaluate(evidence)
  local out={status="UNKNOWN",reason="item_cd_group_rule_unverified",
      itemCooldownConfidence=(a+i)>0 and "CONFIRMED" or "UNKNOWN",
      groupLockoutConfidence="UNKNOWN",groupReadyConfidence="UNKNOWN"}
+ -- Correlated propagation counters must represent the exact same
+ -- stable item-specific snapshot. Invalid counts must not be labelled
+ -- a genuine group conflict or an estimated shared lockout.
+ local aligned,divergent,reportedInactive=x.alignedCandidateCount,
+     x.divergentActiveCount,x.inactiveCandidateCount
+ if x.useCorrelation=="ESTIMATED" then
+   if x.propagationEvidence~="ALIGNED_CANDIDATES"
+       and x.propagationEvidence~="SINGLE_CANDIDATE"
+       and x.propagationEvidence~="MIXED_CANDIDATES" then return unknown end
+   if not count(aligned) or not count(divergent)
+       or not count(reportedInactive) or aligned+divergent~=a
+       or reportedInactive~=i then return unknown end
+ elseif x.propagationEvidence~="UNKNOWN" then
+   return unknown
+ end
  -- CONFIRMED is permitted only for individual cooldown records read
  -- from the item-specific provider, never for unverified group semantics.
  if x.useCorrelation=="ESTIMATED"

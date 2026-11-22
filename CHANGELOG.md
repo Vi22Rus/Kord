@@ -1,3 +1,13 @@
+## KR-20261122-115 — IT-02/2.6: fail-closed confidence evidence consistency
+- Дата/время: 2026-11-22 UTC (точное время по Git commit); SHA по `git log --grep KR-20261122-115`.
+- Этап/ID: 2/2.6, IT-02 P0; fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: коррелированные member counters могли противоречить active/inactive totals, а валидатор отмечал synthetic MIXED как конфликт вместо UNKNOWN. Это исходниковый риск, игровой баг не подтверждён.
+- Причина: `SharedCooldownConfidence:Evaluate` проверял count totals и ESTIMATED-only agreement, но не целостность всех коррелированных classified counters перед MIXED/прочими ветками.
+- Изменения: `KordRotation/Core/SharedCooldownConfidence.lua` требует полное соответствие correlated counts и отказывает при invalid/SECRET/incomplete evidence; `tests/shared_cooldown_confidence_consistency_mock.lua` — 10 синтетических positive/negative assertions. Новых WoW API нет. SOURCE_ONLY group semantics, no READY и существующая общая архитектура сохранены.
+- Проверки: PASS — точные source anchors, самостоятельная статическая проверка текстовых инвариантов, атомарная Git tree publication. NOT RUN — Lua 5.1 mock execution / full regression (нет Lua 5.1 runtime), GitHub Actions (manual-only), WoW Forever (нет клиента).
+- Для тестировщика: итоговый IT-02 QA дополнить conflict vs corrupt counters и проверить, что UNKNOWN не стал READY; промежуточная установка не требуется.
+- Документация: REQUIREMENTS.md и поэтапный план синхронизированы в том же коммите. Осталось: доказать реальные shared-lockout semantics и confidence на Forever, запустить mock suite и общий regression. Связи IT-01/IT-02/IT-03, KR-20261122-114.
+
 ## KR-20261122-114 — IT-02/2.6+2.9: manual DevTools shared cooldown evidence probe
 - Дата/время: 2026-11-22 UTC (точное время Git commit). SHA по `git log --grep KR-20261122-114`. IT-02 P0, 2.6/2.9, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: есть bounded individual/member evidence, но не было manual client-facing агрегированного вывода для проверки реальной shared cooldown семантики Forever. Без клиентского доказательства group ACTIVE/READY нельзя повышать из UNKNOWN. Причина: отсутствие DevTools-only manual bridge к существующему evidence reader, не подтверждённый игровой баг.
