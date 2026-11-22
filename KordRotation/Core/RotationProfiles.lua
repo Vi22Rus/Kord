@@ -41,7 +41,7 @@ function P:RecommendationKind(rule,effectiveCategory)
  end
  return kind,maintenanceKinds[kind]==true
 end
-local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true}
+local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true,items=true}
 local function finite(n)
  return type(n)=="number" and n==n and n~=math.huge and n~=-math.huge
 end
@@ -88,6 +88,33 @@ local function needList(value)
  end
  return true
 end
+-- IT-01/1.7: item declaration is an allowlist, not eager loading.
+-- IDs/family names must be dense, unique and bounded; no raw game APIs here.
+local function itemNeeds(value)
+ if type(value)~="table" then return false end
+ for key in pairs(value) do
+  if key~="ids" and key~="families" then return false end
+ end
+ local ids=value.ids or {}
+ local families=value.families or {}
+ if not dense(ids,96) or not dense(families,96) then return false end
+ local idSeen,familySeen={},{}
+ for _,id in ipairs(ids) do
+  if not spellID(id) or idSeen[id] then return false end
+  idSeen[id]=true
+ end
+ for _,family in ipairs(families) do
+  if type(family)~="string" or #family<1 or #family>96
+      or familySeen[family] then return false end
+  local api=KR.GameAPI
+  if not api or type(api.IsSafeValue)~="function" then return false end
+  local ok,isSafe=pcall(api.IsSafeValue,api,family)
+  if not ok or isSafe~=true then return false end
+  familySeen[family]=true
+ end
+ return true
+end
+
 local function validate(profile,classToken,specIndex)
  if type(profile)~="table" or profile.contractVersion~=1
      or not nonempty(profile.id,96) or not profile.id:match("^[A-Z][A-Z0-9_]+$")
@@ -116,6 +143,8 @@ local function validate(profile,classToken,specIndex)
   if not allowedNeeds[key] then return false,"invalid_needs" end
   if key=="auras" or key=="ranges" then
    if not needList(val) then return false,"invalid_needs" end
+  elseif key=="items" then
+   if not itemNeeds(val) then return false,"invalid_needs" end
   elseif type(val)~="boolean" then return false,"invalid_needs" end
  end
  if type(profile.Config)~="table" or not dense(profile.Config,128) then
