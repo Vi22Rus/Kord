@@ -34,6 +34,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          failed=0
           for f in \
             tests/stage_02_03_game_state.lua \
             tests/aura_cooldown_viewer_reference.lua \
@@ -63,7 +64,8 @@ jobs:
             tests/bm_full_audit.lua \
             tests/diagnostics_devtools_launch.lua; do
             echo "RUN $f"
-            lua5.1 "$f"
+            lua5.1 "$f" || failed=1
           done
+          test "$failed" -eq 0
       - name: Verify byte-identical packaging and TOC references
         run: python3 -m unittest discover -s tests -p 'test_build_variants.py' -v
