@@ -6190,6 +6190,7 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение CL-03:** CL-03: PET_COMMAND охотника должен использовать общий PetCommandProvider и отдельные команды attack/follow/stay/passive, с UNKNOWN/STOP и без автоматического нажатия.
 
 ### AC-04 — TARGET: смена цели (рекомендация, не действие)
 
@@ -6328,6 +6329,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение CL-02:** CL-02: паладинские ауры и печати требуют отдельной семантики переключения/поддержания; STANCE_OR_FORM не является автоматическим эквивалентом seal/aura.
 
+**Ретроактивное уточнение CL-03:** CL-03: смена Aspect через общий STANCE_OR_FORM/AuraMode contract с отдельными Hunter аспектами и channel policy; не приравнивать aspect к warrior stance.
+
 ### AC-06 — WAIT: ничего не нажимать, ждать (не клиппить автострельбу, копить ресурс)
 
 **Архитектурная актуализация EN-A2:** порядок `Rules` — нормативный приоритет; первое достоверно `READY` завершает оценку, последующие правила не вычисляются; `UNKNOWN` обязательного факта останавливает цепочку по AC-07, разрешённый `skip` — только по проверенному исключению (см. EN-A2).
@@ -6396,6 +6399,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Изменения Lua:** отсутствуют. Только документация.
 
 **Ретроактивное уточнение CL-01:** CL-01: очередь следующего удара Heroic Strike/Cleave не тождественна WAIT или swing-таймеру; отсутствие подтверждённого queue state приводит к UNKNOWN/STOP для зависящего правила.
+
+**Ретроактивное уточнение CL-03:** CL-03: WAIT при клиппинге Auto Shot разрешён только при подтверждённом ranged swing timing; UNKNOWN swing не превращается в WAIT или ложный READY.
 
 ### AC-07 — STOP: остановка рекомендаций при неизвестном ключевом факте
 
@@ -6562,6 +6567,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-01:** CL-01: класс-специфические данные и условия Warrior должны объявляться через версионированные Needs/Spells; профили не читают API напрямую.
 
 **Ретроактивное уточнение CL-02:** CL-02: паладинские данные и действия объявляются через версионированный профильный контракт; никаких прямых Unit*/C_* API в профиле.
+
+**Ретроактивное уточнение CL-03:** CL-03: Hunter Needs/Spells/Rules расширяются только версионированно; legacy BM.Next(s,cfg) не v1 profile и не читает WoW API напрямую в новой архитектуре.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8525,6 +8532,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-02:** CL-02: проверить в WoW Forever API aura ownership, dispelName, dead friendly targeting, resurrection combat restrictions, seal consumption, blessing group scope; непроверенные факты остаются UNKNOWN.
 
+**Ретроактивное уточнение CL-03:** CL-03: обязательно подтвердить в WoW Forever trap shared cooldown, ranged swing timing, ammo/equipment, pet happiness, dead-zone range и Feign Death threat outcomes; неподтверждённые API не объявлять реализованными.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8753,6 +8762,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-02:** CL-02: отдельный Paladin scenario manifest обязателен для seal→Judgement→reseal, aura switch, blessing target, Hand conflicts, Divine Shield, Consecration mana reserve, dead-friendly resurrection, poison/disease dispel.
 
+**Ретроактивное уточнение CL-03:** CL-03: отдельные сценарии Hunter для аспектов, trap shared CD, pet state/commands/heal/revive/happiness, ammo, ranged swing/clipping, dead zone, Hunter's Mark, Feign Death и main/defensive routing.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -8861,6 +8872,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-02:** CL-02: StanceStateProvider/ауры паладина используют общий переключаемый режим состояния, но паладинская aura не считается warrior stance; общие AuraStateProvider, ResourceStateProvider и AbilityEligibility расширяются без дублирования.
 
+**Ретроактивное уточнение CL-03:** CL-03: Warrior next-swing melee queue и Hunter ranged Auto Shot clipping — разные состояния; общий SwingStateProvider должен типизировать melee/ranged, не переносить Hunter autoShot.swing на Warrior.
+
 ### CL-02 — Паладин: печати и суд, ауры, благословения, руки, Divine Shield, Consecration, воскрешение, снятие яда и болезни
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к выразимости данных и действий, **не приоритеты ротации**. Для Holy/Protection/Retribution и Leveling/60/PVE/PVP действуют отдельные утверждённые профили; отсутствие профиля не разрешает придумывать его ротацию.
@@ -8963,3 +8976,110 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / PALADIN-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Базовые ресурсы, target, aura, Eligibility существуют, но `friendly_dead`, выбор союзников, dispel-type, seal/Judgement transition, blessing recipient и полноценные paladin-specific QA-07 сценарии отсутствуют или не доказаны. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация, Lua/TOC/ZIP без изменений.
 
 **Ретроактивные ссылки:** CL-01, AC-05, QA-07, EN-A1, QA-04, SP-01.
+
+**Ретроактивное уточнение CL-03:** CL-03: Hunter Aspect и Paladin Aura используют общий AuraStateProvider/ExclusiveAuraModeProvider, но различаются семантикой и условиями смены; не создавать дублирующие сканеры.
+
+### CL-03 — Охотник: аспекты, ловушки, питомец, боеприпасы, автострельба, мёртвая зона, метка и имитация смерти
+
+**Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это **требования к данным и действиям**, а не приоритеты BM/MM/SV ротаций. Для Leveling/60/PVE/PVP — только отдельные утверждённые профили. Никакого автоматического выполнения действий: аддон рекомендует и диагностирует.
+
+#### Полный контракт механик
+
+| Механика | Способности / сущности | Обязательные факты, проверки и решение |
+|---|---|---|
+| Аспекты | Aspect of the Hawk, Monkey, Cheetah, Pack, Beast, Viper (только если изучен и подтверждён в клиенте) | current aspect ID/rank, aura source, travel/combat state, movement, group safety, existing buff/remaining, switching cooldown, explicit config; single active aspect; `STANCE_OR_FORM`/aura mode через общий provider, **не переносить travel aspect в main при отключённой настройке** |
+| Ловушки | Freezing Trap, Frost Trap, Immolation Trap, Explosive Trap, Snake Trap (если существует) | per-spell cooldown **и общая cooldown group** `trap` (подтвердить клиент), combat restrictions, placement/range, enemy count, breakable CC, target/path/ground targeting, talent modifiers; при UNKNOWN shared CD — STOP для обязательного trap rule |
+| Команды питомца | Pet Attack, Follow, Stay, Passive, Defensive, Assist (только реально поддерживаемые команды), Call Pet, Dismiss Pet | exists/dead, pet target, attack state, command available, stance/behavior, range, threat, command cooldown; `PET_COMMAND` AC-03 как рекомендация, не программный вызов protected action |
+| Лечение/воскрешение питомца | Mend Pet, Revive Pet, Call Pet, Feed Pet | pet alive/dead/missing отдельно, pet HP%, Mend Pet aura/remaining, cast/mana/cooldown, pet happiness/mood, food inventory/eligibility, resurrection requirements; не предлагать Revive Pet при `petExists=false` без доказательства `petDead` |
+| Настроение питомца | Happiness/mood, loyalty/food if client supports | confirmed pet happiness API/state, status UNKNOWN vs unhappy, food compatibility and inventory, combat/OOC; не считать отсутствующий API «счастлив» или «голоден» |
+| Боеприпасы | Ammo slot, arrows/bullets, ranged weapon compatibility | equipped ranged weapon, ammo equipped/type/count, ammo requirements, depletion, inventory and usable state, client-specific equipment API; без ammo не рекомендовать недоступную ranged ability |
+| Автострельба | Auto Shot, ranged autoattack, Aimed Shot, Steady Shot (если клиент поддерживает), Multi-Shot | active auto shot, ranged swing duration/remaining, cast/channel window, shot release, movement, GCD, latency, clipping policy; `WAIT` только по подтверждённому таймеру, без выдуманной реконструкции |
+| Мёртвая зона | ranged/melee range для конкретных spellID, Raptor Strike/Wing Clip и ranged attacks | `inRange` spell-specific, melee range, dead-zone evidence, too-close/too-far/UNKNOWN, target exists/hostile; **никаких универсальных 8 м без подтверждения**; не рекомендовать Raptor Strike на 50 м |
+| Метка | Hunter's Mark | target debuff ID/rank, owner, remaining, TTD/profitability, valid hostile target, range, mana, learned; не считать чужую метку своей, если ownership важен |
+| Имитация смерти | Feign Death | learned/cooldown, combat, threat/aggro, solo vs dungeon/raid, HP threshold from profile, pet status, client-specific outcome; в solo не предлагать лишь из-за aggro при высоком HP; defensive channel/placement configurable |
+
+**Точность клиента:** все spellID, ранги, механики shared trap CD, счастья питомца, боеприпасов, dead zone, Feign Death и ranged swing должны пройти QA-04. Sonah указывает на один общий 30s trap CD и 8 yd dead zone, **но это свидетельство референса, не подтверждение на текущем клиенте WoW Forever**. В WoW Forever могут отличаться доступные способности и ограничения; отсутствие подтверждения → UNKNOWN. `nil` не означает false. Не выдумывать время выстрела, дистанцию, наличие питомца или результат Feign Death.
+
+#### Аудит текущего Kord
+
+- `KordRotation/Profiles/Hunter/Kord_Hunter_BM_Leveling_PVE.lua`: исторический `BM.Next(s,cfg)`, содержит `Auto Shot`, `Hunter's Mark`, `Feign Death`, `Freezing Trap`, `Mend Pet`, pet attack, аспекты и флаги конфигурации. **Не является зарегистрированным v1 профилем**; переносить с сохранением фактов, но без слепого копирования старых решений.
+- `KordRotation/Core/GameState.lua`: уже различает `pet.exists`, `pet.dead`, `pet.attackingTarget`; содержит чтение `C_SwingTimer.IsTargetWithinSwingRange` как один из источников melee/range, а также `player.travelAspect` через TravelAspectAuras. Это **не доказательство** точного ranged swing timer и отсутствия clipping.
+- `KordRotation/Core/RotationConditions.lua`: разрешены `pet.exists/dead/health.percent/attackingTarget`, `autoShot.active`, `player.travelAspect`, `pet.mendActive`, `trap.profitable`, `autoShot.swing` при `Needs.swing`. Наличие имени факта не подтверждает работающий API provider или полноту поведения.
+- `KordRotation/Core/RotationProfiles.lua`: текущий v1 `Needs` содержит `auras/ranges/enemyCount/ttd/swing`, но не полноценные `trapSharedCooldown/petHappiness/ammo`. `Profile_Contract.md` явно отмечает `PET_COMMAND` как неподдерживаемое в v1.
+- `KordRotation/Core/AbilityEligibility.lua`: финальный общий spell gate, но нет доказанного end-to-end контракта shared trap CD, ammo gating, pet command и точного ranged swing clipping.
+- `docs/rotation/Profile_Registry.md`: шесть Hunter PvE файлов BM/MM/SV × Leveling/60 существуют, но `Registered/TOC=NO`, `Game verified=NO`; поэтому никакого утверждения «вся Hunter ротация работает».
+- Из прежних игровых сообщений зафиксированы регрессии: до выбора цели отсутствовала OOC defensive aura; при вступлении в бой она переносилась в main даже с выключенной настройкой; дальнейшие действия не показывались; Raptor Strike рекомендовался на недопустимой дистанции. CL-03 требует **явных сценариев** этих случаев, не считать исправленными.
+
+#### Сравнение семи референсов (проверены конкретные ZIP-исходники)
+
+1. **Sonah** — `Sonah/Classes/Hunter.lua:7–12`: прямо описаны mana+ammo, 8 yd dead zone, traps usable in combat и общий trap CD; `Sonah/UI/SwingTimer.lua` выделяет swing. Переносить архитектурные факты в QA-04 с пометкой «референс», а не считать клиентски подтверждёнными.
+2. **JustAC** — `JustAC/Data/Forever/Rotations.lua:112–140`: отдельная `HUNTER_F` таблица, `Auto Shot` (ID 75), `Hunter's Mark` (ID 1130) и специализации. Это evidence для покрытия действий, но не гарантия корректной дальности, pet или swing.
+3. **ForeverAuras** — `ForeverAuras/SwingTimer.lua:2–16`: использует Blizzard-supplied swing timing, не реконструкцию из combat log; `GetSwingTimerInfo` отдаёт duration/expiration. Применимость именно к ranged Auto Shot в Kord требует отдельной проверки API.
+4. **MaxDps** — `MaxDps/SwingTimer.lua:4–13`: отдельно учитывает `mainhand/offhand/melee/ranged` timers; `MaxDps_Hunter/Specialization/Classic/` содержит Hunter-specific исходники. Нельзя принимать timer logic retail за доказательство WoW Forever.
+5. **ForeverRotation** — `ForeverRotation/Rotations/Hunter.lua:7,63–64`: Hunter's Mark и отдельные Explosive/Immolation Trap, текстовый комментарий о shared trap cooldown. Полезно для моделирования семейства cooldown, но не oracle готовности.
+6. **RotationGuide** — `RotationGuide/Data/Hunter.lua:10–19,30`: Aspect of Hawk/Monkey, Revive/Call Pet, Hunter's Mark с конкретными правилами. Пример явного различения pet absence и buff upkeep; нельзя слепо копировать spell IDs/приоритеты.
+7. **RotationMaster** — проверено наличие `Analytics/replay.lua`, `Conditions` и assets для `pet-happiness`, `swing-time`. Это подтверждает наличие соответствующих понятий в ресурсах аддона, **не** подтверждает реализацию API/условия в Lua без дальнейшего построчного анализа.
+
+**Граница доказательства:** проведена адресная проверка реальных Lua-строк шести референсов и путей/ресурсов RotationMaster; не выполнялся полный построчный аудит всех ZIP, не запускался WoW Forever. Чужие spellID/времена не считаются подтверждёнными клиентскими фактами.
+
+#### Выбранная архитектура: общие провайдеры
+
+1. `AuraStateProvider` + `ExclusiveAuraModeProvider`: Hunter aspects, mark, Mend Pet aura, travel vs combat, owner/remaining; общий с CL-02, но разная семантика переключения.
+2. `CooldownGroupProvider`: per-spell и shared cooldown groups для trap family; общий для других классов/предметов, без отдельных таймеров в профиле.
+3. `PetStateProvider` + `PetCommandProvider`: exists/dead/HP/target/behavior/happiness/food, commands, Mend/Revive/Call; общий контракт AC-03, fail-closed.
+4. `AmmoEquipmentProvider`: ammo count/type, weapon compatibility, equip/availability; общий equipment gate `AbilityEligibility`.
+5. `SwingStateProvider`: **раздельные ranged Auto Shot и melee swing**; read-only, confirmed duration/expiration, clip-safe window, fake clock и invalidation; при UNKNOWN — STOP для зависящих от swing правил, а не искусственный WAIT.
+6. `SpellRangeProvider`: per-spell melee/ranged/dead-zone eligibility, target validation, actual min/max if proven; не конвертировать неизвестную дальность в «можно».
+7. `ThreatStateProvider`: solo/dungeon/raid, actual aggro, HP, Feign Death policy, independent defensive routing; общая модель защитных действий.
+8. `AbilityEligibility`: **единственный** final READY для SPELL/PET_COMMAND/STANCE_OR_FORM/WAIT после расширения контракта; все новые `Needs`/action types — только через versioned `Profile_Contract`, без обхода QA-06.
+
+#### Сценарные таблицы QA-07 (нормативные кейсы, НЕ тестовый PASS)
+
+| ID | Состояние | Ожидаемое решение |
+|---|---|---|
+| `HUN-ASPECT-01` | OOC без цели, нужна combat aura | defensive recommendation без обязательного target, если policy позволяет |
+| `HUN-ASPECT-02` | in combat, `defensiveInCombatMain=false` | aura остаётся в defensive, main не захватывает её |
+| `HUN-ASPECT-03` | travel aspect active, target далеко | не предлагать melee attack или неверное переключение |
+| `HUN-TRAP-01` | одна trap на общем cooldown | другие trap не выдавать READY |
+| `HUN-TRAP-02` | shared trap cooldown UNKNOWN | STOP для обязательного trap rule |
+| `HUN-TRAP-03` | рядом breakable CC | не рекомендовать AoE trap, разрушающую CC |
+| `HUN-PET-01` | pet отсутствует, death unknown | не предлагать Revive Pet как подтверждённый READY |
+| `HUN-PET-02` | pet dead confirmed | Revive Pet только после Eligibility |
+| `HUN-PET-03` | pet alive, HP low, Mend missing | Mend Pet при подтверждённом пороге и mana |
+| `HUN-PET-04` | pet happiness UNKNOWN | не выдумывать Feed Pet |
+| `HUN-PET-05` | pet attack state/target unknown | не повторять команду без подтверждения |
+| `HUN-AMMO-01` | ammo count=0, ammo required | ranged action BLOCKED |
+| `HUN-AMMO-02` | ammo type/availability UNKNOWN | STOP для ammo-dependent action |
+| `HUN-SWING-01` | Auto Shot about to fire, cast clips it | WAIT только при подтверждённом swing и policy |
+| `HUN-SWING-02` | ranged swing UNKNOWN | не рекомендовать WAIT наугад |
+| `HUN-RANGE-01` | target в подтверждённой dead zone | ranged action BLOCKED, melee только по своей проверке |
+| `HUN-RANGE-02` | target далеко, melee ability | melee BLOCKED, никакого Raptor Strike на 50 м |
+| `HUN-MARK-01` | mark отсутствует, цель valid | Hunter's Mark при eligibility и утверждённом правиле |
+| `HUN-MARK-02` | чужая mark или duration UNKNOWN | учитывать ownership/UNKNOWN, не угадывать |
+| `HUN-FEIGN-01` | solo aggro, HP high | не предлагать Feign Death только по aggro |
+| `HUN-FEIGN-02` | dungeon/raid aggro, spell eligible | defensive Feign Death по утверждённой policy |
+| `HUN-REVISION-01` | target/pet/aspect/ammo changed | invalidate stale data, reevaluate |
+| `HUN-CHANNEL-01` | OOC aura без target → combat при disabled transfer | без исчезновения DPS из main и без неправильного переноса aura |
+
+Каждый кейс должен иметь конкретный `profileID` BM/MM/SV, spellID/rank, source evidence, exact expected action/status/priority/channel/reason, provider reads, `NOT_RUN` до реального теста. Сценарии **не означают**, что Hunter уже исправлен или работает.
+
+#### Требуемые работы
+
+1. Сверить Hunter spell/rank/ability catalogue по клиенту, отдельно BM/MM/SV Leveling/60; не создавать фальшивые PvP профили.
+2. Подключить аспекты через общий aura/mode provider и исправить target-independent OOC defensive recommendations и disabled main transfer.
+3. Ввести `CooldownGroupProvider` для trap shared cooldown, учитывать талантные модификаторы только после QA-04.
+4. Реализовать PetState/PetCommand с command availability, Mend, Revive, Call, happiness/food, без protected automation.
+5. Подключить AmmoEquipmentProvider и общий ranged ability gate, различать ammo absent/UNKNOWN.
+6. Реализовать подтверждённый ranged SwingStateProvider, clipping-aware WAIT, раздельно от melee, без выдуманного swing timer.
+7. Ввести spell-specific range/dead-zone policy, проверить Raptor Strike на дальних целях и ranged spells слишком близко.
+8. Подключить Hunter's Mark через общий debuff ownership/remaining и Feign Death через ThreatStateProvider.
+9. Добавить 23+ QA-07 cases для каждого применимого Hunter-профиля и проверить все старые регрессии, включая OOC/defensive/main.
+10. Интегрировать QA-04/QA-06/QA-05, диагностические reason codes, синхронизировать матрицу и реестр; Lua 5.1 mocks до клиентской проверки, без автоматического GitHub Actions.
+
+**Диагностика:** `hunter_aspect_unknown`, `hunter_aspect_channel_mismatch`, `hunter_trap_shared_cooldown`, `hunter_trap_shared_cd_unknown`, `hunter_pet_absent`, `hunter_pet_dead`, `hunter_pet_happiness_unknown`, `hunter_pet_command_unknown`, `hunter_ammo_missing`, `hunter_ammo_unknown`, `hunter_ranged_swing_unknown`, `hunter_autoshot_clip_risk`, `hunter_dead_zone`, `hunter_melee_out_of_range`, `hunter_mark_ownership_unknown`, `hunter_feign_threat_unknown`, `hunter_feign_solo_hp_high`, `hunter_snapshot_stale`.
+
+#### Вердикт
+
+**ЧАСТИЧНО В ИСТОРИЧЕСКОМ HUNTER И ОБЩИХ ПРИМИТИВАХ / ПОЛНЫЙ CL-03 НЕ РЕАЛИЗОВАН / P0.** Исторический BM содержит большинство именованных механик, но не зарегистрирован как v1, отсутствует доказанное сквозное поведение shared trap CD, pet commands/happiness, ammo, ranged swing clipping и dead-zone safety; известные UI/target регрессии не признаны исправленными. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP без изменений.
+
+**Ретроактивные ссылки:** CL-01, CL-02, AC-03, AC-05, AC-06, QA-07, QA-04, EN-A1.

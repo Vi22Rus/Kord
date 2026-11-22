@@ -1,3 +1,14 @@
+## KR-20261122-019 — аудит CL-03: Hunter aspects, traps, pet, ammo, Auto Shot and Feign Death
+- Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-019`.
+- Тип: docs / CL-03 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
+- Контекст: Hunter требует аспектов, shared trap cooldown, pet commands/heal/revive/happiness, ammo, ranged swing clipping, dead zone, Hunter's Mark, Feign Death. Исторический BM.Next не зарегистрирован как v1; прежние OOC/defensive/main/range регрессии остаются.
+- Причина: отсутствуют доказанные shared trap group, ammo and pet happiness contracts, точный ranged swing и per-spell dead zone eligibility.
+- Решение: общие AuraMode/CooldownGroup/PetState/PetCommand/AmmoEquipment/SwingState/SpellRange/ThreatState providers, единственный AbilityEligibility, 23 QA-07 сценария, fail-closed UNKNOWN.
+- Референсы: адресно прочитаны строки Sonah Hunter, JustAC Forever rotations, ForeverAuras SwingTimer, MaxDps SwingTimer, ForeverRotation Hunter, RotationGuide Hunter; RotationMaster проверен по путям и assets, без полного построчного аудита.
+- Ретроактивные ссылки: CL-01, CL-02, AC-03, AC-05, AC-06, QA-07, QA-04, EN-A1.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-03 документирован; реальные исправления и клиентская проверка не выполнялись.
+
 ## KR-20261122-018 — аудит CL-02: Paladin seals, blessings, hands, resurrection and dispels
 - Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-018`.
 - Тип: docs / CL-02 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`, без Lua/TOC/ZIP.
