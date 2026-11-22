@@ -24,6 +24,7 @@ Core\AbilityEligibility.lua
 Core\RotationProfiles.lua
 Core\RotationConditions.lua
 Core\RotationEngine.lua
+Core\RotationAudit.lua
 Profiles\Hunter\BM_Pilot_Experimental.lua
 Profiles\Hunter\BM_Leveling_Contract.lua
 Core\CoreObservation.lua
