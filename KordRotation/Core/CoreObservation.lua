@@ -455,6 +455,79 @@ function O:ReadDisplay()
     return out
 end
 
+-- IT-01/1.9: manual-only DevTools-facing inventory diagnosis.
+-- Return only fixed status/reason tokens, never ID, count or bag contents.
+-- Normal gameplay does not call this entry point or collect diagnostics.
+local inventoryCodes={
+    item_count_unknown=true,item_count_secret=true,
+    item_count_scope_unverified=true,item_bag_scan_incomplete=true,
+    item_family_unknown=true,item_family_partial=true,
+    item_family_duplicate_id=true,item_catalog_revision_changed=true,
+    item_bag_revision_changed=true,item_soulwell_refresh_missing_event=true,
+    item_count_zero_confirmed=true,
+}
+local inventoryWhy={
+    item_count_secret="item_count_secret",
+    protected_value="item_count_secret",
+    item_count_scope_unverified="item_count_scope_unverified",
+    item_bag_scan_incomplete="item_bag_scan_incomplete",
+    item_family_unknown="item_family_unknown",
+    item_family_partial="item_family_partial",
+    item_family_duplicate_id="item_family_duplicate_id",
+    item_catalog_revision_changed="item_catalog_revision_changed",
+    item_bag_revision_changed="item_bag_revision_changed",
+    item_soulwell_refresh_missing_event="item_soulwell_refresh_missing_event",
+}
+function O:ReadInventoryDiagnostic(kind,id)
+    if not safe(kind) or type(kind)~="string"
+        or (kind~="item" and kind~="family" and kind~="bag") then
+        return {status="UNKNOWN",code="item_count_unknown"}
+    end
+    if kind=="item" and (not safe(id) or type(id)~="number"
+        or id~=id or id~=math.floor(id) or id<1 or id>99999999) then
+        return {status="UNKNOWN",code="item_count_unknown"}
+    end
+    if kind=="family" and (not safe(id) or type(id)~="string"
+        or #id<1 or #id>64 or not id:match("^[A-Z][A-Z0-9_]*$")) then
+        return {status="UNKNOWN",code="item_family_unknown"}
+    end
+    local state=KR.GameState
+    local methods={item="ReadInventoryItemObservation",
+        family="ReadInventoryFamilyObservation",
+        bag="ReadInventoryBagSnapshot"}
+    local method=methods[kind]
+    if not state or type(state[method])~="function" then
+        return {status="UNKNOWN",
+            code=kind=="family" and "item_family_unknown"
+                or kind=="bag" and "item_bag_scan_incomplete"
+                or "item_count_unknown"}
+    end
+    local ok,record=pcall(state[method],state,id)
+    if not ok or type(record)~="table" or not safe(record) then
+        return {status="UNKNOWN",code=kind=="family"
+            and "item_family_unknown" or "item_count_unknown"}
+    end
+    local st=field(record,"status")
+    local why=field(record,"reason")
+    local scope=field(record,"inventoryScope")
+    local count=field(record,"count")
+    if kind~="bag" and st=="READY" and scope~="BAGS_ONLY" then
+        return {status="UNKNOWN",code="item_count_scope_unverified"}
+    end
+    if kind=="item" and st=="READY" and scope=="BAGS_ONLY"
+        and type(count)=="number" and count==0 then
+        return {status="READY",code="item_count_zero_confirmed"}
+    end
+    if st=="READY" then return {status="READY",code="none"} end
+    local diagnostic=inventoryWhy[why]
+    if not diagnostic or not inventoryCodes[diagnostic] then
+        diagnostic=kind=="family" and "item_family_unknown"
+            or kind=="bag" and "item_bag_scan_incomplete"
+            or "item_count_unknown"
+    end
+    return {status="UNKNOWN",code=diagnostic}
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
@@ -487,6 +560,11 @@ _G.KordRotationCoreObservation = {
     Target=function()
         local ok,result=pcall(O.ReadTarget,O)
         if not ok then return {liveStatus="UNKNOWN",snapshotStatus="UNKNOWN"} end
+        return result
+    end,
+    InventoryDiagnostic=function(_,kind,id)
+        local ok,result=pcall(O.ReadInventoryDiagnostic,O,kind,id)
+        if not ok then return {status="UNKNOWN",code="item_count_unknown"} end
         return result
     end,
     BeginAPITrace=function()

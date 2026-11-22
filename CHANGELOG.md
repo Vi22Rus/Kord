@@ -1,3 +1,12 @@
+## KR-20261122-069 — IT-01/1.9: opt-in DevTools inventory diagnostics
+- Дата: 2026-11-22 UTC (точное время по Git), этап 1 / подшаг 1.9, IT-01 P0. Тип feat/test/docs. SHA определяется по `git log --grep KR-20261122-069`.
+- Контекст: требуется безопасно отличать UNKNOWN/secret/incomplete bag чтения и подтверждённый ноль без записи предметов, содержимого сумок или Protected WoW объектов. Это разработка контракта, не воспроизведённый игровой дефект; подтверждённая первопричина багов не установлена.
+- Изменено: `CoreObservation.lua` — ручной scalar-only bridge; `KordRotationDevTools/Probe.lua` — `InventoryDiagnostic`; `Recorder.lua` — whitelist 11 причин, `UI.lua` — явная `/krdev inventory ...` команда; `tests/inventory_diagnostics_mock.lua` — отдельный тест (NOT LEGACY), `REQUIREMENTS.md`, поэтапный план и эта запись. Не изменены основная логика рекомендаций, GameState, игровая автоматизация или CI.
+- API/методы: новых WoW API нет. Bridge вызывает только ранее реализованные GameState readers через pcall, передаёт фиксированные status/code. Референсы — исторический аудит IT-01 (ForeverAuras, JustAC, RotationMaster), первичные архивы не перепроверены.
+- Проверки: PASS — статическая source-review branch/whitelist и контроль отсутствия сырого itemID/count/сканирования в журнале. NOT RUN — Lua 5.1/new mock, полный local regression (в GitHub инструменте нет среды исполнения), GitHub Actions manual-only, WoW Forever.
+- Ограничения: коды missing Soulwell и duplicate ID не выдаются без реального evidence; итоговый пункт пока PARTIALLY IMPLEMENTED и NOT TESTED. Тестировщику: кейсы explicit count/family/bag только при общем QA, не устанавливать промежуточный билд после каждого коммита. Следующий IT-01/1.10.
+- Связи: IT-01/1.6, IT-01/1.8, IT-02, IT-05, AC-02. Кодовые изменения в том же коммите.
+
 ## KR-20261122-068 — fix: preserve secret policy input UNKNOWN in ITEM gate
 - Дата/время: 2026-11-22 UTC (точные Git-дата и SHA по `git log --grep KR-20261122-068`). Тип: fix/test/docs, IT-01/1.8 P0.
 - Контекст: при review первого исходного implementation установлено, что itemField скрывал неподтверждённый `minLevel` и `stateSnapshot` как nil, делая их необязательными, что могло бы снять необходимое ограничение. Это исходная логическая ошибка, игровое воспроизведение НЕ ПОДТВЕРЖДЕНО.

@@ -120,6 +120,24 @@ function D:CreateUI()
     SLASH_KORDROTATIONDEVTOOLS1="/krdev"
     SlashCmdList["KORDROTATIONDEVTOOLS"]=function(message)
         message=type(message)=="string" and message:lower():match("^%s*(.-)%s*$") or ""
+        -- Explicit manual item/family/bag diagnosis; no automatic polling.
+        local kind,identifier=message:match("^inventory%s+(item|family)%s+([%w_]+)$")
+        if not kind then
+            if message=="inventory bag" then kind="bag" end
+        end
+        if kind and type(D.InventoryDiagnostic)=="function" then
+            local item=identifier
+            if kind=="item" then
+                item=tonumber(identifier)
+            end
+            local result=D:InventoryDiagnostic(kind,item)
+            if D.ui and D.ui.report then
+                D.ui.report:SetText("Inventory: "..result.status.." / "..result.code)
+                D.ui.frame:Show()
+                D:RefreshUI()
+            end
+            return
+        end
         if message=="why" then
             if D.ui and D.ui.report and type(D.Why)=="function" then
                 local ok,report=pcall(D.Why,D)

@@ -54,6 +54,15 @@ local reasons={aura_batch_fields_unverified=true,
 -- by our own modules; do not accept arbitrary user/player/API strings.
 -- Keeping this list aligned with AbilityEligibility and RotationEngine
 -- prevents a real UNKNOWN cause from being silently exported as "unknown".
+-- IT-01/1.9: fixed diagnostic vocabulary only; no raw itemIDs exported.
+for _,code in ipairs({
+    "item_count_unknown","item_count_secret","item_count_scope_unverified",
+    "item_bag_scan_incomplete","item_family_unknown","item_family_partial",
+    "item_family_duplicate_id","item_catalog_revision_changed",
+    "item_bag_revision_changed","item_soulwell_refresh_missing_event",
+    "item_count_zero_confirmed",
+}) do reasons[code]=true end
+
 local fixedRefusals={
     spell_known_unverified=true,cooldown_activity_unknown=true,
     cooldown_active_unclassified=true,cooldown_invalid=true,

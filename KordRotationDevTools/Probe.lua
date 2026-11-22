@@ -67,6 +67,49 @@ function D:ProbeAll()
     return self.lastProbe
 end
 
+-- IT-01/1.9: explicit bounded inventory check. DevTools records only
+-- approved diagnostic tokens; no item IDs, names or bag counts persist.
+local inventoryReasons={
+    none=true,
+    item_count_unknown=true,item_count_secret=true,
+    item_count_scope_unverified=true,item_bag_scan_incomplete=true,
+    item_family_unknown=true,item_family_partial=true,
+    item_family_duplicate_id=true,item_catalog_revision_changed=true,
+    item_bag_revision_changed=true,item_soulwell_refresh_missing_event=true,
+    item_count_zero_confirmed=true,
+}
+function D:InventoryDiagnostic(kind,id)
+    if not self:Safe(kind) or type(kind)~="string"
+        or (kind~="item" and kind~="family" and kind~="bag") then
+        return {status="UNKNOWN",code="item_count_unknown"}
+    end
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" or type(bridge.InventoryDiagnostic)~="function" then
+        return {status="UNAVAILABLE",code="item_count_unknown"}
+    end
+    local ok,record=pcall(bridge.InventoryDiagnostic,bridge,kind,id)
+    if not ok or type(record)~="table" or not self:Safe(record) then
+        return {status="UNKNOWN",code="item_count_unknown"}
+    end
+    local valid,status,code=pcall(function()
+        if not self:Safe(record.status) or not self:Safe(record.code) then
+            return "UNKNOWN","item_count_unknown"
+        end
+        if record.status~="READY" and record.status~="UNKNOWN" then
+            return "UNKNOWN","item_count_unknown"
+        end
+        if type(record.code)~="string" or not inventoryReasons[record.code] then
+            return "UNKNOWN","item_count_unknown"
+        end
+        return record.status,record.code
+    end)
+    if not valid then status,code="UNKNOWN","item_count_unknown" end
+    if self.active and type(self.Record)=="function" then
+        self:Record("CHECK",status,code)
+    end
+    return {status=status,code=code}
+end
+
 -- Manual, bounded diagnostic report. No game-state mutation, cast, or
 -- uncontrolled logging. Main addon exposes only sanitized read-only data.
 function D:Why()
