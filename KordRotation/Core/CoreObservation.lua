@@ -193,7 +193,8 @@ local BM_SIGNALS={
  ["multi.profitable"]=true,["enemy.count"]=true,
  ["hawk.count"]=true,["hawk.oldestRemaining"]=true,
  ["aimed.profitable"]=true,["sting.profitable"]=true,
- ["spell.range"]=true
+ ["spell.range"]=true,["fact.known"]=true,
+ ["fact.inRange"]=true,["fact.cooldownActive"]=true
 }
 local BM_CHECKS={
  cast=true,usability=true,charges=true,cooldown=true,gcd=true,range=true
