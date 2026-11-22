@@ -83,6 +83,16 @@ local function declared(ctx,field,id)
   return type(needs.items)=="table" and type(needs.items.families)=="table"
       and familyID(id) and has(needs.items.families,id)
  end
+ if field=="items.cooldownActive" or field=="items.cooldownRemaining" then
+  return type(needs.items)=="table" and needs.items.cooldown==true
+      and type(needs.items.ids)=="table" and itemID(id)
+      and has(needs.items.ids,id)
+ end
+ if field=="items.sharedCooldownRemaining" then
+  return type(needs.items)=="table" and needs.items.cooldown==true
+      and type(needs.items.cooldownGroups)=="table" and familyID(id)
+      and has(needs.items.cooldownGroups,id)
+ end
  if field=="target.ttd" then return needs.ttd==true and id==nil end
  if field=="enemy.count" then return needs.enemyCount==true and id==nil end
  if field=="autoShot.swing" then return needs.swing==true and id==nil end
@@ -137,6 +147,71 @@ local function readItemFact(field,id)
  return nil,why
 end
 
+-- IT-02/2.8: read the existing canonical observations on demand.
+-- A cooldown fact is not overall item eligibility. UNKNOWN is represented
+-- as nil, including incomplete shared-member evidence or untrusted fields.
+local function readCooldownFact(field,id)
+ local state=KR.GameState
+ local shared=field=="items.sharedCooldownRemaining"
+ local reader=shared and "ReadSharedItemCooldownObservation"
+     or "ReadItemCooldownObservation"
+ if not state or type(state[reader])~="function" then
+  return nil,"item_cd_provider_missing"
+ end
+ local ok,record=pcall(state[reader],state,id)
+ if not ok or type(record)~="table" or not safe(record) then
+  return nil,"item_cd_provider_error"
+ end
+ local valid,answer,reason=pcall(function()
+  if not safe(record.status) or record.status~="READY" then
+   local why=record.reason
+   if safe(why) and type(why)=="string" and #why<=64
+     and why:match("^[a-z][a-z0-9_]*$") then
+    return nil,why
+   end
+   return nil,"item_cd_unverified"
+  end
+  local actualID=shared and record.groupID or record.itemID
+  if not safe(actualID) or actualID~=id then
+   return nil,"item_cd_identity_unverified"
+  end
+  if shared then
+   -- Do not promote ESTIMATED, partial, or inferred absence to READY.
+   local status=record.groupStatus
+   if not safe(status) or
+      (status~="CONFIRMED_ACTIVE" and status~="CONFIRMED_READY") then
+    return nil,"item_cd_group_unverified"
+   end
+  else
+   if not safe(record.cooldownScope)
+      or record.cooldownScope~="ITEM_SPECIFIC" then
+    return nil,"item_cd_scope_unverified"
+   end
+  end
+  local remaining=record.remaining
+  if not number(remaining) or remaining<0 then
+   return nil,"item_cd_remaining_unknown"
+  end
+  if shared then
+   if record.groupStatus=="CONFIRMED_READY" and remaining~=0 then
+    return nil,"item_cd_group_conflict"
+   end
+   if record.groupStatus=="CONFIRMED_ACTIVE" and remaining<=0 then
+    return nil,"item_cd_group_conflict"
+   end
+   return remaining,nil
+  end
+  if not safe(record.active) or type(record.active)~="boolean"
+      or record.active~=(remaining>0) then
+   return nil,"item_cd_activity_unverified"
+  end
+  if field=="items.cooldownActive" then return record.active,nil end
+  return remaining,nil
+ end)
+ if not valid then return nil,"item_cd_secret" end
+ return answer,reason
+end
+
 local function value(ctx,field,id)
  if not safe(field) or type(field)~="string"
      or not declared(ctx,field,id) then return nil end
@@ -162,6 +237,9 @@ local function value(ctx,field,id)
  elseif field=="items.count" or field=="items.familyCount"
      or field=="items.hasAny" then
   answer,failure=readItemFact(field,id)
+ elseif field=="items.cooldownActive" or field=="items.cooldownRemaining"
+     or field=="items.sharedCooldownRemaining" then
+  answer,failure=readCooldownFact(field,id)
  else
   local state=KR.GameState
   if state and type(state.ReadSignal)=="function" then
@@ -380,6 +458,11 @@ function C:Create(profile,snapshot)
    count=function(_,id) return value(ctx,"items.count",id) end,
    familyCount=function(_,id) return value(ctx,"items.familyCount",id) end,
    hasAny=function(_,id) return value(ctx,"items.hasAny",id) end,
+   cooldownActive=function(_,id) return value(ctx,"items.cooldownActive",id) end,
+   cooldownRemaining=function(_,id) return value(ctx,"items.cooldownRemaining",id) end,
+   sharedCooldownRemaining=function(_,id)
+    return value(ctx,"items.sharedCooldownRemaining",id)
+   end,
   },
   __newindex=function() error("restricted_inventory_methods") end,
   __metatable=false

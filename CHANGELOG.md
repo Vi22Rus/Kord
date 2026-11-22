@@ -1,3 +1,13 @@
+## KR-20261122-093 — IT-02/2.8: lazy item cooldown conditions and declared Needs
+- Дата/время: 2026-11-22 UTC, точный timestamp по Git; SHA `git log --grep KR-20261122-093`.
+- Этап: 2/2.8, IT-02 P0, feature/test/docs; SOURCE IMPLEMENTED, CLIENT NOT RUN.
+- Причина: `RotationConditions` поддерживал item count, но не cooldown facts, а `RotationProfiles.itemNeeds` не принимал потребности для cooldown. Это исходное неполное покрытие, не подтверждённый баг клиента.
+- Изменено: `RotationProfiles.lua` optional explicit `Needs.items.cooldown` + `cooldownGroups` allowlist; `RotationConditions.lua` добавляет `readCooldownFact`, три `items` метода, lazy gated lookup, per-evaluation memo; mock `tests/item_cooldown_conditions_mock.lua`, smoke-contract `tests/item_cooldown_needs_contract_mock.lua`; синхронизированы `REQUIREMENTS.md` и поэтапный план. Нет нового движка, GameAPI вызовов или обхода AbilityEligibility.
+- Источники: существующие GameState/SharedCooldownGroupCatalog/AbilityEligibility из Kord, правила IT-02/2.8 и исходное сравнение Sonah/JustAC/ForeverAuras/RotationMaster в REQUIREMENTS. Client compatibility не доказана.
+- Проверки: PASS — source-only check по точным замещённым якорям и тестовым assertions; NOT RUN Lua 5.1 syntax/mock/full regression (нет локального Lua 5.1), GitHub Actions (manual-only), WoW Forever (игра недоступна). Не выдавать source PASS за тест Lua.
+- Для тестировщика: общий IT-02 QA — declared/undeclared id, invalid group, protected/nil, missing provider, true/false/zero, confirmed/partial/estimated, cache per evaluation, отсутствие финального READY при item-only факте.
+- Результат: шаг 2.8 SOURCE IMPLEMENTED, общий IT-02 PARTIALLY IMPLEMENTED. Требуются 2.6 attribution, 2.7 TTL, 2.9 diagnostics, 2.10 QA. Связи IT-01/02/03, AC-02, KR-20261122-090–092.
+
 ## KR-20261122-092 — IT-02/2.7: item cooldown event revisions and reader race guard
 - Дата/время: 2026-11-22 UTC, точный timestamp по Git. SHA: `git log --grep KR-20261122-092`.
 - Этап: 2.7 / IT-02 P0; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

@@ -97,11 +97,18 @@ local function itemNeeds(value)
  local okTable,safeTable=pcall(api.IsSafeValue,api,value)
  if not okTable or safeTable~=true then return false end
  for key in pairs(value) do
-  if key~="ids" and key~="families" then return false end
+  if key~="ids" and key~="families" and key~="cooldown"
+     and key~="cooldownGroups" then return false end
  end
  local ids=value.ids or {}
  local families=value.families or {}
- if not dense(ids,96) or not dense(families,96) then return false end
+ local cooldownGroups=value.cooldownGroups or {}
+ -- Explicit opt-in is an allowlist, not a preload request.
+ -- Reject a misspelled or non-boolean cooldown declaration.
+ if value.cooldown~=nil and type(value.cooldown)~="boolean" then return false end
+ if not dense(ids,96) or not dense(families,96)
+     or not dense(cooldownGroups,96) then return false end
+ if #cooldownGroups>0 and value.cooldown~=true then return false end
  local idSeen,familySeen={},{}
  for _,id in ipairs(ids) do
   if not spellID(id) or idSeen[id] then return false end
@@ -116,6 +123,16 @@ local function itemNeeds(value)
   end)
   if not ok or not isValid then return false end
   familySeen[family]=true
+ end
+ local groupSeen={}
+ for _,group in ipairs(cooldownGroups) do
+  local ok,valid=pcall(function()
+   return type(group)=="string" and #group>=1 and #group<=64
+    and group:match("^[A-Z][A-Z0-9_]*$")~=nil
+    and api:IsSafeValue(group) and not groupSeen[group]
+  end)
+  if not ok or not valid then return false end
+  groupSeen[group]=true
  end
  return true
 end

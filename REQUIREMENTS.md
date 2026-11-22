@@ -5127,6 +5127,15 @@
 - Не выполнены TTL/cache, достоверная корреляция use-spell с itemID и проверка клиентских событий. Статус частичный, без подтверждённого общего cooldown.
 
 8. RotationConditions `items.cooldownActive(itemID)`, `items.cooldownRemaining(itemID)`, `items.sharedCooldownRemaining(groupID)` и lazy `Needs.items.cooldown`; AbilityEligibility единственный final READY.
+
+**Реализация Kord — фактическое состояние IT-02/2.8 (2026-11-22, P0, IMPLEMENTED SOURCE / CLIENT NOT RUN).**
+- `KordRotation/Core/RotationProfiles.lua`, `itemNeeds`: optional `Needs.items.cooldown=true` включает ленивое чтение только разрешённых `Needs.items.ids`; `Needs.items.cooldownGroups` — отдельный bounded allowlist из проверенных синтаксически group IDs. Несовместимые типы, дубли или недекларированные группы отклоняются. Старые `ids/families` остаются допустимы.
+- `KordRotation/Core/RotationConditions.lua`, `declared/readCooldownFact/value/C:Create`: `S.items:cooldownActive(itemID)`, `S.items:cooldownRemaining(itemID)`, `S.items:sharedCooldownRemaining(groupID)`; кэш в пределах оценки, строго типизированные source-facts, защита от identity/scope/secret/error, без прямого WoW API и без параллельного reader.
+- `tests/item_cooldown_conditions_mock.lua`: source regression сценарии lazy, memoization, unknown, false/zero, group partial/confirmed/conflict и отсутствия права чтения. Отдельный `tests/item_cooldown_needs_contract_mock.lua` проверяет наличие validation-entrypoint (не runtime валидатор всех видов).
+- Используются только существующие внутренние `GameState:ReadItemCooldownObservation/ReadSharedItemCooldownObservation` (путь выбран в IT-02); новых WoW API нет. Group CONFIRMED поддерживается формой чтения, но действующий provider не выдаёт такой статус до доказательства на Forever. `AbilityEligibility` остаётся единственным final READY.
+- PASS — проверка патчей исходников и декларации контракта; NOT RUN — фактический Lua 5.1/mock regression, CI (ручной до общего QA), WoW Forever. Не подтверждено поведение на клиенте.
+- Статус SOURCE IMPLEMENTED, полный IT-02 PARTIALLY IMPLEMENTED из-за 2.6/2.7/2.9/2.10 и игровых тестов.
+
 9. DevTools-only диагностика: `item_cd_api_missing`, `item_cd_secret`, `item_cd_disabled`, `item_cd_invalid_tuple`, `item_cd_gcd_only`, `item_cd_remaining_unknown`, `item_cd_group_unknown`, `item_cd_group_partial`, `item_cd_group_estimated`, `item_cd_group_conflict`, `item_cd_use_attribution_unknown`, `item_cd_ready_confirmed`.
 10. Тесты: cooldown zero/active/expired, enabled bool/0/1/false, nil/secret/invalid numbers, own CD vs GCD, health/mana potion shared cooldown, healthstone independence, bandage and food, multiple ranks, absent item but active group lockout, item moved/split, cooldown starts after use, use-spell collision, combat secret, estimated last-use timer, reload/zone/clock discontinuity, missed BAG_UPDATE_COOLDOWN, API fallback, no false ready/no protected uses.
 
