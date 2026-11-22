@@ -114,8 +114,9 @@ end
 local function signal(S,key,id)
  return S:observe(key,id)
 end
-local function mana(S,cfg)
- local floor={max=0,fast=15,balanced=30,economy=50}
+local function mana(S,cfg,is60)
+ local floor=is60 and {max=0,fast=10,balanced=25,economy=40}
+    or {max=0,fast=15,balanced=30,economy=50}
  local pct=signal(S,"resources.percent")
  local min=floor[cfg.mana] or 30
  if type(pct)~="number" then return nil end
@@ -157,7 +158,7 @@ local function makeRules(spells,is60)
   rules[#rules+1]=rule
  end
  local function hasTargetAndMana(S,c)
-  return and2(target(S),mana(S,c))
+  return and2(target(S),mana(S,c,is60))
  end
  local function markAllowed(S,c)
   if c.mark=="off" then return false end
@@ -239,6 +240,15 @@ local function makeRules(spells,is60)
   if combat(S)~=false then return false end
   return markWhen(S,c)
  end,nil,"buffs")
+ if is60 then
+  add("prepull_aimed","Aimed",function(S,c)
+   if not c.pull_cast or not c.use_aimed_shot then return false end
+   if combat(S)~=false then return false end
+   local seconds=signal(S,"pull.remaining")
+   if type(seconds)~="number" then return nil end
+   return seconds>=2.3 and seconds<=6
+  end,nil,"damage")
+ end
  add("pet_attack","PetAttack",function(S,c)
   if not c.pet_attack then return false end
   return and2(target(S),
@@ -259,6 +269,7 @@ local function makeRules(spells,is60)
    signal(S,"player.hasAggro")))
  end,nil,"movement")
  local function trapWhen(S,c,key)
+  if is60 and c.traps=="off" then return false end
   if key=="Freezing" and not c.use_freezing_trap then return false end
   if key=="Frost" and not c.use_frost_trap then return false end
   return and2(target(S),signal(S,"trap.profitable"))
@@ -287,6 +298,15 @@ local function makeRules(spells,is60)
   return type(ttd)=="number" and ttd>=15 or nil
  end
  local function cds(S,c,key)
+  if is60 then
+   if c.cooldowns=="off" then return false end
+   if c.cooldowns=="boss" then
+    local kind=signal(S,"target.classification")
+    if type(kind)~="string" then return nil end
+    if kind~="elite" and kind~="worldboss" and kind~="rareelite"
+       then return false end
+   end
+  end
   if key=="Wrath" then
    return and2(wrathAllowed(S,c),
      and2(signal(S,"pet.exists"),signal(S,"pet.attackingTarget")))
@@ -361,7 +381,7 @@ local function makeRules(spells,is60)
  add("aoe_multi","Multi",function(S,c)
   if c.aimed_multi=="aimed" then return false end
   return and2(ranged(S),and2(aoe(S,c),
-   and2(signal(S,"multi.profitable"),mana(S,c))))
+   and2(signal(S,"multi.profitable"),mana(S,c,is60))))
  end,nil,"damage")
  add("ranged_hawk","Hawk",function(S,c)
   if c.hawk_arcane=="off" or c.hawk_arcane=="arcane" then return false end
@@ -372,18 +392,18 @@ local function makeRules(spells,is60)
   local oldest=signal(S,"hawk.oldestRemaining")
   if type(count)~="number" then return nil end
   if count>=2 and type(oldest)~="number" then return nil end
-  return and2(ranged(S),and2(mana(S,c),
+  return and2(ranged(S),and2(mana(S,c,is60),
    count<2 or oldest<=1.5))
  end)
  add("ranged_aimed","Aimed",function(S,c)
   if not c.use_aimed_shot then return false end
   if c.aimed_multi=="multi" and aoe(S,c)==true then return false end
-  return and2(ranged(S),and2(mana(S,c),
+  return and2(ranged(S),and2(mana(S,c,is60),
    signal(S,"aimed.profitable")))
  end)
  add("ranged_arcane","Arcane",function(S,c)
   if c.hawk_arcane=="off" then return false end
-  local gate=and2(ranged(S),mana(S,c))
+  local gate=and2(ranged(S),mana(S,c,is60))
   if gate~=true then return gate end
   local h=known(S,spells,"Hawk")
   if h==false then return true end
@@ -398,7 +418,7 @@ local function makeRules(spells,is60)
  end)
  add("ranged_sting","Sting",function(S,c)
   if c.sting=="off" then return false end
-  local gate=and2(ranged(S),mana(S,c))
+  local gate=and2(ranged(S),mana(S,c,is60))
   if gate~=true then return gate end
   if c.sting=="elite" then
    local kind=signal(S,"target.classification")
@@ -425,7 +445,7 @@ local function makeRules(spells,is60)
   if c.use_aimed_shot and aimedKnown~=false then
    return aimedKnown==true and false or nil
   end
-  return and2(ranged(S),and2(mana(S,c),
+  return and2(ranged(S),and2(mana(S,c,is60),
    signal(S,"multi.profitable")))
  end)
  return rules
