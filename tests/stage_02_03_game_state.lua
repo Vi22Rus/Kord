@@ -213,6 +213,18 @@ eq(KR.AuraEvidence:Read(13165),nil,"switch invalidates old aspect")
 eq(KR.AuraEvidence:Read(13163).value,true,"new aspect cast tracked")
 KR.AuraEvidence:Reset()
 eq(KR.AuraEvidence:Read(13163),nil,"world/death reset removes evidence")
+-- ForeverAuras uses the generic known-ID lookup in hidden-aura mode;
+-- it can return a readable self aura even if the specialized lookup misses.
+C_UnitAuras.GetUnitAuraBySpellID=function(unit,id)
+ if unit=="player" and id==12345 then
+  return {spellId=12345,isHelpful=true}
+ end
+ return nil
+end
+local genericSelf=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(genericSelf.status,"READY","generic targeted player aura verified")
+eq(genericSelf.value,true,"generic player aura presence")
+C_UnitAuras.GetUnitAuraBySpellID=nil
 -- Sonah address-by-name access is able to establish a clean negative
 -- even when the two list APIs cannot enumerate the client's auras.
 C_Spell={GetSpellInfo=function(id)
