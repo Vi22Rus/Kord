@@ -1568,6 +1568,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 interrupt recommendation is a candidate until common AbilityEligibility confirms the current addressed target and spell constraints; no second READY gate.**
+
 
 **Архитектурная актуализация EN-05:** **См. EN-05: profile-configured AoE mode/threshold is recommendation policy, not a replacement for final spell eligibility.**
 
@@ -2857,6 +2859,8 @@
 
 ### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
 
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 nearest is only a proven partial order from available range evidence, not fabricated exact meters; ability range is checked separately.**
+
 
 **Архитектурная актуализация EN-04:** **См. EN-04: interval distance-to-player cannot by itself prove target-centered AoE overlap; use verified geometry and spell footprint.**
 
@@ -2962,6 +2966,8 @@
 
 ### TG-11 — Фокус-цель и мышь-цель (если профиль их использует)
 
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 must distinguish currently addressable target/focus/mouseover from an observed GUID requiring manual switch; no protected auto-target.**
+
 
 **Архитектурная актуализация EN-03:** **См. EN-03: focus/mouseover/target are aliases to a canonical GUID, not independent enemies; recipient checks remain token-specific.**
 
@@ -3018,6 +3024,8 @@
 
 
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
+
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 nearest/switch and interrupt candidate discovery consumes the same budgeted observed-enemy snapshot, never an independent nameplate scan.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: radius counting consumes the shared EN-08 budgeted ObservedEnemyIndex snapshot; do not perform an independent GetNamePlates scan per count request.**
 
@@ -3151,6 +3159,8 @@
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
 
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 switch/cast candidates must use canonical GUID identity and alias validation; never choose by name or recycled token.**
+
 **Архитектурная актуализация EN-08:** **См. EN-08: GUID alias reconciliation is performed within EN-08 shared refresh budget; identity queries must not trigger their own plate enumeration.**
 
 
@@ -3216,6 +3226,8 @@
 
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
+
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target-switch candidates must respect existing breakable-CC safety and not infer safe AoE from a cast candidate.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: AoE CC safety consumes the EN-08 shared bounded enemy snapshot; expired or incomplete coverage yields UNKNOWN, never an emergency unbounded scan.**
 
@@ -3390,7 +3402,61 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 
+
+### EN-07 — Ближайшая цель для смены, цель с прерываемым кастом
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P2.**
+
+#### Требование
+
+На основе единого наблюдаемого списка врагов предлагать (а) ближайшую **достоверно различимую по доступным данным** подходящую цель для ручного переключения и (б) врага с подтверждённым активным прерываемым cast/channel, когда можно корректно сопоставить каст, GUID, адресуемый unit token и подходящую способность прерывания. Разделить `TargetSwitchCandidateObservation`, `EnemyCastObservation`, `InterruptCandidateObservation` и окончательную проверку `AbilityEligibility`; эти названия — логические контракты, не отдельные обязательные Lua-файлы. Никакого автоматического защищённого target switch/cast. Не выдавать «ближайшая» без сравнимых подтверждённых диапазонов/порядка и не выдавать «прерываемый» при скрытом/secret флаге. `UNKNOWN` не превращать в true.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10,17,26,36–37,56`: allowlist содержит `UnitGUID`, `UnitIsUnit`, `UnitCastingInfo`, `UnitChannelInfo`, range APIs и `C_NamePlate.GetNamePlates`; разрешение чтения не доказывает реализованный выбор других врагов.
+- `KordRotation/Core/GameState.lua:159–173,232–233`: `castingSnapshot` сейчас получает cast/channel только для `player`; нет per-enemy cast/interruptibility snapshot. `GameState.lua:120,327–344` показывает GUID guard и осторожную оценку melee только для текущего target.
+- `KordRotation/Core/EventBus.lua:27–30,39–46`: есть `UNIT_SPELLCAST_*` invalidation, но unit-event filter допускает лишь `player/target/pet/pettarget`; прочие наблюдаемые nameplate casts не покрыты доказанным общим event tracker.
+- `KordRotation/Core/AbilityEligibility.lua:187–239,448–488`: проверка цели/дальности связана с текущим `target` и перепроверкой GUID; отсутствует финальная eligibility для произвольного неадресуемого enemy GUID. `AbilityEligibility.lua:240–255` проверяет собственный каст игрока, не вражескую interruptibility.
+- `KordRotation/Core/RotationConditions.lua:12–21,48–73`: target predicates и Needs есть, но общие `enemy.castInterruptible`/`target.switchCandidate` providers не подтверждены.
+- `KordRotation/Core/RotationEngine.lua:306`: движок не создаёт отдельного `OnUpdate`; EN-07 обязан использовать общий EN-08 budget.
+
+#### Сравнение семи референсов (Lua ZIP)
+
+1. **Sonah:** `Sonah/Classes/Rogue.lua:217–218`, `Classes/Mage.lua:321,330`, `Classes/Warrior.lua:253–257` применяют `C.targetInterruptible` в классовых правилах; комментарий Rogue явно допускает `unknown => assume yes`. Перенять отделение cast predicate от профиля, **не** переносить fail-open UNKNOWN как подтверждённую прерываемость. Достоверный глобальный nearest-target selector в проверенных местах не подтверждён.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:1837–1857,1899–1914` комбинирует `UNIT_SPELLCAST_INTERRUPTIBLE/NOT_INTERRUPTIBLE`, поля `UnitCastingInfo/UnitChannelInfo`, reset при смене цели и serial текущего каста; `targetCastInterruptible=true` по умолчанию — сознательный fail-open. Перенять event-first cast lifecycle, serial/GUID reset и доказательное состояние, **не** fail-open и не визуальный castbar как безусловно надёжный факт.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:4880–4901` отслеживает nameplate target aliases и GUID, применяет ограниченный 0.2s update; `GenericTrigger.lua:1402,1499` использует nameplate lifecycle. Перенять осторожную identity/lifecycle привязку, не вводить отдельный polling EN-07 или считать GUID-target доказательством interruptibility.
+4. **MaxDps:** `MaxDps/Core.lua:440–451` поддерживает event-maintained visibleNameplates; `MaxDps/Buttons.lua:1166–1181` использует `UnitCastingInfo/UnitChannelInfo` и boolean interruptibility для визуального overlay. Перенять переиспользуемый список unit tokens и разделение наблюдения/индикации; не переносить retail-специфичные индексы полей без матрицы Forever.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:165–186` читает target cast/channel и возвращает `interruptible=true/false/nil(hidden)`; `:749–754` рекомендует interrupt даже при `nil` (`interruptible ~= false`). Перенять явное трёхзначное представление, но Kord не должен объявлять `nil` доказанным `true`; неизвестный флаг — отдельная политика без ложной уверенности.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:278–290` перечисляет nameplates для count; в проверенных местах нет подтверждённого общего nearest-target + per-enemy interruptible cast selector. Нельзя подменять ближайшую цель порядком массива nameplates или count; не объявлять механизм отсутствующим во всём аддоне без исчерпывающего доказательства.
+7. **RotationMaster:** `RotationMaster/Conditions/casting.lua:375–390` использует общий `Platform.GetUnitCastObservation` через per-pass cache; `record.active=false` даёт false, скрытый `interruptible` даёт nil с reason. `Conditions/channeling.lua:384–390` повторяет семантику для channel. Перенять единый platform observation, lazy cache и честный UNKNOWN; не копировать отдельный класс-специфичный трекер.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Выбрать модель RotationMaster для универсального `EnemyCastObservation(unitGUID,alias)` с per-evaluation memo и `UNKNOWN(reason)`, событийную lifecycle/serial-инвалидацию JustAC, общий GUID-index EN-03 и event-maintained observed registry MaxDps/EN-08.** Принцип `true/false/nil` ForeverRotation сохранить, но исключить его fail-open при рекомендации прерывания. Для nearest selection использовать только подтверждённый частичный порядок диапазонов/достижимости: при равных/неразличимых диапазонах вернуть `UNKNOWN(nearest_unresolved)` либо упорядоченный список кандидатов **без утверждения «самая близкая»**. Не пытаться вычислять метры из имени, порядка nameplates, screen position или секретных значений. Если подтверждён каст другой цели, выдавать отдельно «цель для ручного переключения»; готовую кнопку прерывания текущей цели рекомендовать только после GUID-safe `AbilityEligibility`. Это сохраняет единое общеклассовое ядро и не дублирует EN-01/03/08, TG-09, TG-11 и SP-14.
+
+#### Требуемые изменения
+
+1. Расширить общий `ObservedEnemyIndex` (EN-01/02/03/08) адресуемыми aliases и статусами доступности, не добавлять новый nameplate scanner.
+2. Реализовать общеклассовый `EnemyCastObservation` для cast и channel: active, spellID/name если plain, start/end если доступны, interruptible tri-state, GUID, cast serial, observedAt, provenance, reason. Проверять версию клиента/индексы API по v14.
+3. Учитывать `UNIT_SPELLCAST_START/STOP/FAILED/INTERRUPTED/CHANNEL_*`, `UNIT_SPELLCAST_INTERRUPTIBLE/NOT_INTERRUPTIBLE` только при подтверждённой доступности в клиенте; nameplate add/remove, target switch и GUID changes инвалидируют соответствующий cast, не соседние GUID.
+4. Реализовать `TargetSwitchCandidateObservation` с фильтрами alive/hostile/CC/visible/addressable и проверяемой оценкой range; nearest только при доказуемом сравнении, иначе UNKNOWN или честно немаркированный набор.
+5. Реализовать `InterruptCandidateObservation` для активного interruptible cast, оставшегося времени (только при доступных plain данных), способности/дальности и целевого GUID; чужой GUID не объявлять текущей целью.
+6. Передать рекомендацию прерывания текущей цели в общую `AbilityEligibility` (единственный final READY); пользовательское переключение показывать как отдельную информационную подсказку, не как автоматическое действие.
+7. Сохранить lazy `Needs`, EN-08 rate limit, bounded cast TTL и GUID-keyed cache; не опрашивать все nameplates каждый frame.
+8. DevTools-only диагностика: `enemy_cast_active`, `enemy_cast_secret`, `enemy_interruptible_unknown`, `enemy_cast_guid_changed`, `enemy_cast_stale`, `nearest_unresolved`, `switch_requires_manual_target`, `interrupt_range_unknown`, `interrupt_candidate_ready`.
+9. Тесты: 0/1/many enemies, два одинаковых имени/разные GUID, один GUID/несколько aliases, recycled nameplate, cast vs channel, cast stop/interrupt, mid-cast interruptibility change, secret flag, no cast, disappearing plate, current vs off-target, range unknown, CC protected, equal range bands, cooldown, stale snapshot, event burst, no protected action.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord имеет базовые read-only cast/range API, target GUID guards и event invalidation, но не имеет подтверждённого общего выбора ближайшей переключаемой цели и per-enemy interruptible cast observation с корректной адресуемостью.
+
+**Архитектурные ссылки:** EN-01, EN-03, EN-04, EN-08, TG-09, TG-11, SP-14. Обратные архитектурные ссылки добавлены в перечисленные ранее требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
 ### EN-08 — Бюджет: чтение nameplates не чаще заданного интервала, без постоянного сканирования
+
+**Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target selection and cast tracking reuse the EN-08 refresh budget; interrupt urgency does not authorize unbounded nameplate enumeration.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
