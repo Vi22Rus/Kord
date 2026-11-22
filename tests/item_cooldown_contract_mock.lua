@@ -1,0 +1,20 @@
+-- IT-02/2.1 Lua 5.1 mock: no false cooldown READY.
+local KR={GameAPI={IsSafeValue=function(_,v) return v~="SECRET" end}}
+assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
+local S=KR.GameState
+local one=S:ReadItemCooldownObservation(5512)
+assert(one.status=="UNKNOWN" and one.itemID==5512)
+assert(one.reason=="item_cd_reader_unimplemented")
+assert(one.source=="GameState.ItemCooldownObservation")
+assert(one.active==nil and one.remaining==nil)
+assert(one.enabled==nil and one.revision==nil)
+local group=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(group.status=="UNKNOWN" and group.groupStatus=="UNKNOWN")
+assert(group.groupID=="POTION_SHARED" and group.remaining==nil)
+local invalid=S:ReadItemCooldownObservation("SECRET")
+assert(invalid.status=="UNKNOWN" and invalid.itemID==nil)
+assert(invalid.reason=="item_cd_id_unverified")
+local unknown=S:ReadSharedItemCooldownObservation("SECRET")
+assert(unknown.status=="UNKNOWN" and unknown.groupID==nil)
+assert(S:ReadItemCooldownObservation(5512).status=="UNKNOWN")
+print("item_cooldown_contract_mock PASS")

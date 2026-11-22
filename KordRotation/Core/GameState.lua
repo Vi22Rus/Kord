@@ -1047,6 +1047,37 @@ function S:ReadInventoryFamilyObservation(familyID)
     return result
 end
 
+-- IT-02/2.1: typed, source-only cooldown contracts. Adapter in 2.2/2.3.
+-- No inferred readiness from possession or an unrelated spell cooldown.
+local function unknownItemCooldown(reason,source)
+    return {status="UNKNOWN",reason=reason,source=source}
+end
+
+function S:ReadItemCooldownObservation(itemID)
+    local result=unknownItemCooldown("item_cd_reader_unimplemented",
+        "GameState.ItemCooldownObservation")
+    if not inventorySafeID(itemID,"item") then
+        result.reason="item_cd_id_unverified"
+        return result
+    end
+    result.itemID=itemID
+    -- active, remaining, enabled, revision are nil until a proven read.
+    return result
+end
+
+function S:ReadSharedItemCooldownObservation(groupID)
+    local result=unknownItemCooldown("item_cd_group_unimplemented",
+        "GameState.SharedItemCooldownObservation")
+    if not inventorySafeID(groupID,"family") then
+        result.reason="item_cd_group_id_unverified"
+        return result
+    end
+    result.groupID=groupID
+    result.groupStatus="UNKNOWN"
+    -- Group catalog and evidence arrive in IT-02/2.5–2.6.
+    return result
+end
+
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
 function S:ReadAutoShot(spellID)
     if not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"

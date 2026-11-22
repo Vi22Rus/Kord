@@ -1,3 +1,11 @@
+## KR-20261122-073 — IT-02/2.1: typed item cooldown observation contracts
+- Дата/время: 2026-11-22 UTC, точное время и SHA по Git `git log --grep KR-20261122-073`. Тип feature/test/docs, IT-02 P0, этап 2 шаг 2.1.
+- Проблема: после IT-01 item eligibility ожидает типизированные отдельные item/shared cooldown facts, но GameState не имел этих методов. Это подтверждено исходником, не игровой баг.
+- Изменены `KordRotation/Core/GameState.lua` (два новых общих источника `ReadItemCooldownObservation` и `ReadSharedItemCooldownObservation`), `tests/item_cooldown_contract_mock.lua` (contract assertions), `REQUIREMENTS.md`, поэтапный план, `CHANGELOG.md`. Старые Lua/LEGACY/CI не изменены. Сейчас runtime выдаёт UNKNOWN, а не фиктивные READY/remaining=0.
+- API/референсы: новых WoW API нет; source-основание IT-02 и историческое сравнение RotationMaster/JustAC/ForeverAuras; первичные архивы повторно не проверены. Нельзя заявлять клиентскую совместимость.
+- PASS — статическая сверка исходников и отсутствия fail-open; NOT RUN — Lua 5.1 mock/CI/Forever. Для тестировщика: добавить unknown-contract проверку к общему QA, не требуется промежуточная установка.
+- Ограничения: реальный adapter и shared group inference — шаги 2.2–2.6, group cooldown UNKNOWN. Статус PARTIALLY IMPLEMENTED, следующий 2.2.
+
 ## KR-20261122-072 — test: автоматический полный прогон Lua 5.1 mock в CI и локально
 - Дата/время: 2026-11-22T14:56:23.265Z (UTC); этап: тестовая инфраструктура Kord, тип: test/ci.
 - Коммит: определяется через `git log --grep KR-20261122-072`.

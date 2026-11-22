@@ -5120,6 +5120,14 @@
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+#### Реализация Kord — фактическое состояние (IT-02, этап 2, шаг 2.1)
+- **Дата/приоритет/статус:** 2026-11-22, P0, PARTIALLY IMPLEMENTED / LOCAL NOT RUN / CLIENT NOT RUN. Исторические аудиты и вердикт не изменены.
+- **Код:** `KordRotation/Core/GameState.lua`, общие функции `ReadItemCooldownObservation(itemID)`, `ReadSharedItemCooldownObservation(groupID)`. Типизированный result с `status="UNKNOWN"`, `source/reason`, безопасным `itemID/groupID` и `groupStatus="UNKNOWN"`; `active/remaining/enabled/revision` отсутствуют до доказанной реализации API. Никаких придуманных нулевых длительностей или готовности предмета. `AbilityEligibility:EvaluateItem` продолжает fail-closed, не подменяя itemID spellID.
+- **Тест:** `tests/item_cooldown_contract_mock.lua`, mock valid/invalid/secret ID, UNKNOWN vs false READY. Обычный runner автоматически подбирает Lua файлы, существующие LEGACY не исключаются; workflow не изменён.
+- **WoW API:** в данном подшаге отсутствуют новые вызовы. Задокументированные в IT-02 ссылки RotationMaster Platform/items.lua, JustAC StateHelpers.lua, ForeverAuras GenericTrigger.lua используются как ранее проверенный ориентир, первичные ZIP здесь повторно не открывались. Клиент Forever NOT VERIFIED.
+- **Проверки:** PASS — статическая сверка метода/типов и отсутствия side-effects; NOT RUN — Lua 5.1/mock, CI, WoW Forever. Коммит `KR-20261122-073` (SHA `git log --grep KR-20261122-073`). Оставшиеся 2.2–2.10, связи IT-01, IT-03, IT-04, AC-02.
+
+
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
