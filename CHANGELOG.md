@@ -1,3 +1,8 @@
+## KR-20261122 — Diagnostic contract gap sentinels (no silent reason loss)
+
+- `Recorder.lua` no longer collapses unknown fixed internal reason codes silently to `unknown`, or strips unknown detail codes to an empty eighth column. Invalid/untrusted reason → `diagnostic_code_invalid`; syntactically valid unregistered reason → `diagnostic_code_unmapped`; unknown/protected/invalid detail → `diagnostic_detail_unmapped`. Original rejected values are never exported.
+- Updated `tests/devtools_recorder.lua` assertions for safe sentinels, retained scanner rank mismatch and aura diagnostics, and matrix row preservation. **MOCK/CLIENT NOT RUN** on newest commit.
+
 ## KR-20261122 — Exhaustive v14 presence census and lossless fixed-reason DevTools trace
 
 - At explicit DevTools Start, `ProbeAll` now writes **101 separately indexed API journal records** (`kind=API`, `reason=matrix_probe`, `matrix=1..101`, detail `presence_only`/`api_missing`/`no_single_safe_probe` or fixed refusal). All rows are covered once per recording. This checks **API presence, not execution, capability support, secret usability, or 101 client passes**. Unmapped composite rows remain UNKNOWN; no speculative protected game calls.
