@@ -432,6 +432,26 @@ function S:ReadSignal(field,spellID,snapshot)
                 local complete=true
                 local match=false
                 local okScan=pcall(function()
+                    -- Reject sparse/extra-key tables: ipairs otherwise stops at
+                    -- the first hole and could fabricate a negative scan.
+                    local size=0
+                    for key in pairs(items) do
+                        if type(key)~="number" or key~=math.floor(key)
+                            or key<1 or key>256 then
+                            complete=false
+                            break
+                        end
+                        size=size+1
+                    end
+                    if complete then
+                        for index=1,size do
+                            if rawget(items,index)==nil then
+                                complete=false
+                                break
+                            end
+                        end
+                    end
+                    if not complete then return end
                     for index,aura in ipairs(items) do
                         count=count+1
                         if count>256 then complete=false break end
