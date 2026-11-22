@@ -79,7 +79,8 @@ eq(D.dropped,0,"intentional cooldown coalescing is not data loss")
 for _,why in ipairs({
  "cast_unknown","usability_invalid","gcd_activity_unknown",
  "range_unavailable","cooldown_active_unclassified",
- "spell_known_unverified","target_relation_unknown"
+ "spell_known_unverified","target_relation_unknown",
+ "button_action_info_unconfirmed","button_mapping_changed"
 }) do
  eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,why),
   true,"known eligibility detail accepted: "..why)
@@ -88,7 +89,8 @@ local detailed=D:Export()
 for _,why in ipairs({
  "cast_unknown","usability_invalid","gcd_activity_unknown",
  "range_unavailable","cooldown_active_unclassified",
- "spell_known_unverified","target_relation_unknown"
+ "spell_known_unverified","target_relation_unknown",
+ "button_action_info_unconfirmed","button_mapping_changed"
 }) do
  eq(detailed:find("\t"..why,1,true)~=nil,true,
   "real reason is exported in detail: "..why)
@@ -96,5 +98,16 @@ end
 eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,
  "unexpected_private_player_name"),true,"unknown detail does not break recording")
 eq(D.records[#D.records].detail,nil,"arbitrary details are never exported")
+eq(D:Record("CHECK","UNKNOWN","arcane_check_cast",nil,nil,"cast_unknown"),
+ true,"cast check can be recorded")
+eq(D:Record("CHECK","UNKNOWN","arcane_check_range",nil,nil,"range_unavailable"),
+ true,"range check can be recorded")
+eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_bar_failure",nil,nil,
+ "button_action_info_unconfirmed"),true,"scanner subreason can be recorded")
+local detailedChecks=D:Export()
+eq(detailedChecks:find("arcane_check_cast",1,true)~=nil,true,
+ "cast check label survives export")
+eq(detailedChecks:find("button_action_info_unconfirmed",1,true)~=nil,true,
+ "action info failure stage survives export")
 eq(D:Stop(),true,"burst session stops")
 print("PASS DevTools recorder mock "..n.." assertions")
