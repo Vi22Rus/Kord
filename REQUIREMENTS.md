@@ -600,3 +600,51 @@
 6. Тесты: стояние, движение, падение, плавание, верхом стоя/двигаясь, такси, транспорт, смена состояний, secret-скорость, отсутствующий API, потеря/задержка событий, устаревший fallback.
 
 **Изменения кода:** не выполнялись; внесён аудит PL-08.
+
+
+## PL-09 — Скрытность, форма, стойка, облик и аура-статус класса
+
+**Приоритет: P0.**
+
+### Требование
+
+Независимо и достоверно наблюдать `stealthed`, текущую форму/стойку/облик (индекс, ID, связанное заклинание и активность, если API поддерживает), а также классовые ауры/режимы (например, аспекты охотника, печати паладина, скрытность разбойника, формы друида, стойки воина). **Не смешивать** наличие ауры, активную форму и доступность переключающего заклинания. Не делать вывод «не в скрытности» из отсутствующего/secret API; не считать `GetShapeshiftForm()==nil` доказательством базовой формы. Классовые ауры должны определяться по проверенным ID и рангам, с `UNKNOWN` при скрытых аурах.
+
+### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 123–130: базовый снимок игрока содержит `mounted`/`moving`, но не `stealthed`, `form`, `stance` или универсальное `classAuraState`.
+- `GameState.lua`, строки 349–383: существует специальная логика travel-aspect охотника, использующая подтверждённые наблюдения аур; это **частная** классовая аура, а не общий классификатор.
+- [`KordRotation/Core/AuraEvidence.lua`](KordRotation/Core/AuraEvidence.lua), строки 1–83: положительные наблюдения отдельных аур с сохранением достоверности, но не единый каталог форм/стоек/классовых режимов.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 8–56: `IsStealthed`, `GetShapeshiftForm`, `GetShapeshiftFormID`, `GetNumShapeshiftForms`, `GetShapeshiftFormInfo` отсутствуют в allowlist.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 7–27: нет разрешённых условий `player.stealthed`, `player.form`, `player.stance`, `player.classAura`. Проверка аур по ID через существующий провайдер не равнозначна каноническому состоянию формы.
+
+### Как реализовано в семи референсах (проверены локальные архивы)
+
+1. **Sonah** — `Sonah/Core/Atoms/Units.lua:1165` имеет `Units.ShapeshiftForm()`; `Sonah/Classes/Rogue.lua:121–126` определяет скрытность как **комбинацию** подтверждённого бафа Stealth, формы 1 и бафа Vanish, после чего допускает скрытные открывающие способности. `Sonah/Classes/Druid.lua` использует классовые условия форм и Prowl. Подход полезен для классовых аур, но один лишь индекс формы 1 не является универсальным доказательством скрытности всех классов.
+2. **JustAC** — `JustAC/FormCache.lua:28–30,61–99` сканирует формы через `GetNumShapeshiftForms` и `GetShapeshiftFormInfo`, кэширует spellID/активность; комментарий отмечает, что `GetShapeshiftForm()` может вернуть `nil` при загрузке, поэтому перебор надёжнее. `BlizzardAPI/StateHelpers.lua:1816–1823` содержит адаптеры форм; `DebugCommands.lua:8306–8307` отдельно проверяет `GetShapeshiftForm` и `IsStealthed`.
+3. **ForeverAuras** — `ForeverAuras/Prototypes.lua:7193–7313` предоставляет отдельные триггеры текущей формы и ID формы, сканирует `GetShapeshiftFormInfo`; `GenericTrigger.lua:5731` читает `GetShapeshiftFormID`. Классовые ауры наблюдаются универсальной системой aura-триггеров, а не выводятся из одного индекса стойки.
+4. **MaxDps** — `MaxDps/Buttons.lua:399–406` перечисляет формы/стойки для кнопок; `MaxDps_Druid/Specialization/Forever/Balance.lua:9`, `Feral.lua:13` используют `GetShapeshiftFormID` в правилах. Профили разбойника (например, `MaxDps_Rogue/Specialization/Cata/Assassination.lua:154`) непосредственно используют `IsStealthed`. Прямые API-вызовы профилей не подходят Kord.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:113–127`: `IsStealthed` вызывается через `pcall`, формы перечисляются через `GetNumShapeshiftForms`/`GetShapeshiftFormInfo` и активный флаг. `Engine.lua` поддерживает условие `stealth` для правил. Возврат `false` при отсутствующем `IsStealthed` не сохраняет различие `UNKNOWN`.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:224–228`: `Form()` использует `Clean(GetShapeshiftFormID()) or 0`, `Stealth()` — `Clean(IsStealthed()) == true`; `Data/Druid.lua`, `Data/Rogue.lua`, `Data/Warrior.lua` применяют `form`, `notForm`, `stealth` в правилах. Подстановка `0` и `false` при недоступном наблюдении нарушает строгую тристейт-семантику Kord.
+7. **RotationMaster** — `RotationMaster/Conditions/combat.lua:230–252`: условие `STEALTHED` получает флаг через `Platform.GetPlayerFlagObservation` с кэшированием на проход; `Conditions/combat.lua:789–909` реализует условия стоек/форм с перебором `GetShapeshiftFormInfo`; `RotationMaster/main.lua:5745` обновляет активную форму. Это наиболее подходящее разделение типизированного наблюдения, условий и кэша, но прямые вызовы `GetShapeshiftFormInfo` необходимо адаптировать через `GameAPI` и проверку secret.
+
+### Моя рекомендация
+
+**Основа — RotationMaster + JustAC**: из RotationMaster взять независимые наблюдения `stealthed` и `form/stance`, кэширование в рамках оценки и объяснимое `UNKNOWN`; из JustAC — перебор `GetShapeshiftFormInfo` с кэшем spellID и active-флага вместо доверия одному `GetShapeshiftForm` во время загрузки. **Для классовых аур — Sonah + существующий Kord AuraEvidence**: классовые каталоги по spellID/рангам и тристейт-проверки. Не копировать подстановку `0`/`false` при неизвестном из RotationGuide/ForeverRotation и прямые игровые вызовы профилей MaxDps.
+
+### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО ТОЛЬКО ПО ОТДЕЛЬНЫМ КЛАССОВЫМ АУРАМ — НЕОБХОДИМО ДОРАБОТАТЬ (P0).**
+
+Нет канонического наблюдения скрытности и формы/стойки; имеются только отдельные ауры охотника и общая инфраструктура аур.
+
+### Требуемые изменения
+
+1. После проверки доступности WoW Forever расширить `GameAPI` адаптерами `IsStealthed`, `GetShapeshiftForm`, `GetShapeshiftFormID`, `GetNumShapeshiftForms`, `GetShapeshiftFormInfo` с проверками secret и корректной обработкой multi-return.
+2. Создать ленивый `PlayerFormState` с независимыми `stealthed`, `formIndex`, `formID`, `formSpellID`, `stance`, `classAuraState`, `status/reason/source` на каждое поле. Не объявлять отсутствие формы, если перечень ещё не загружен.
+3. Обновлять кэш на `UPDATE_SHAPESHIFT_FORM`, `UPDATE_SHAPESHIFT_FORMS`, `UPDATE_STEALTH`, события аур и смены класса/талантов; не считать устаревшие значения подтверждёнными.
+4. Определить классовые каталоги форм/стоек/аур по проверенным ID и рангам; не считать `formIndex=1` универсальным эквивалентом stealth.
+5. Предоставить профилям разрешённые наблюдения через `RotationConditions`, без WoW API в профилях; окончательное READY — только `AbilityEligibility`.
+6. Тесты: разбойник в stealth/после Vanish, друид в разных формах и Prowl, воин в стойках, паладин с печатями, охотник с аспектами, смена формы в бою, загрузка UI, отсутствующие API, secret-формы/ауры и задержанные события.
+
+**Изменения кода:** не выполнялись; внесён аудит PL-09.
