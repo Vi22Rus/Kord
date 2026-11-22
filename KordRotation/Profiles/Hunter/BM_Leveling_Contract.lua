@@ -173,7 +173,8 @@ local function makeRules(spells,is60)
   -- Optional buffs/movement/damage are safe to skip if their condition
   -- needs an unimplemented provider. Core Eligibility UNKNOWN never skips.
   if rule.category=="buffs" or rule.category=="damage"
-     or rule.category=="movement" then
+     or rule.category=="movement" or rule.category=="cooldowns"
+     or rule.category=="defensive" then
    rule.onUnknown="skip"
   end
   -- PET_COMMAND must carry action but no spell; Lua 'and nil or' cannot select nil.
