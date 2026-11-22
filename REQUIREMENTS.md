@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-01:** **См. IT-01: IT-01 provides verified inventory counts only; item READY/use policy must be handled by the canonical eligibility path and never by item count alone.**
+
 **Архитектурная актуализация SW-04:** **См. SW-04: SW-04 resource reserve and queue status are candidate constraints; final READY only AbilityEligibility; unknown resource/queue cannot be treated as available.**
 
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 non-clipping window is a profile/policy constraint on candidates, not permission to override AbilityEligibility's final READY.**
@@ -4033,6 +4035,8 @@
 
 ### GR-05 — Кому нужен приоритетный хил, мёртвые для воскрешения
 
+**Архитектурная актуализация IT-01:** **См. IT-01: IT-01 bandage/potion availability is an input to healing policy; count>0 alone does not make a healing action safe or usable.**
+
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 pet resurrection is distinct from GR-05 resurrection of group members and must not enter group dead-member selection.**
 
 **Архитектурная актуализация PE-02:** **См. PE-02: PE-02 pet health can inform pet-specific heal/revive recommendations; never count pet as a player member or infer critical HP from secret.**
@@ -4323,6 +4327,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация IT-01:** **См. IT-01: IT-01 item inventory counts must remain distinct from pet action slots/autocast and pet spell readiness.**
+
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 player auto-repeat status is distinct from PE-04 pet autocast enabled; share safe spell API patterns, not state.**
 
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 summon spell cooldown is distinct from summoned-unit remaining lifetime and range; reuse the common spell eligibility gate.**
@@ -4379,6 +4385,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
+
+**Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory count is not item cooldown, spell cast timing, or a proof that a consumable effect is active.**
 
 **Архитектурная актуализация SW-03:** **См. SW-03: SW-03 reuses validated cast-time observation/clock conventions but not pet-care-specific timers or static spell durations.**
 
@@ -4661,6 +4669,8 @@
 
 ### SW-04 — Следующий удар усиливается способностью — запас
 
+**Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory reserve and SW-04 player power reserve are distinct typed resources; do not mix item counts and rage/mana budget.**
+
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P2.**
 
 #### Требование
@@ -4712,5 +4722,58 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ API — ДОРАБОТАТЬ (P2).** Kord уже разрешает `C_Spell.IsCurrentSpell` и `C_Spell.GetSpellPowerCost`, имеет player resources и range logic, но **не подтверждены** универсальный next-swing queue state, ресурсный резерв после стоимости удара и suppression повторной рекомендации.
 
 **Архитектурные ссылки:** SW-01, SW-02, SW-03, SP-14, EN-04, EN-05, PE-02. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
+
+#### Требование
+
+Доказательно определять `bagCount(itemID)` и `familyCount(familyID)` для **сумок персонажа**, включая зелья здоровья/маны, камни здоровья всех подтверждённых рангов, бинты, еду/питьё и конфигурируемые Forever-семейства. `InventoryItemObservation(itemID)` и `InventoryFamilyObservation(familyID)` возвращают `count`, `knownItemIDs`, `countsByID`, `inventoryScope=BAGS_ONLY`, `status=READY/UNKNOWN`, `reason/source/observedAt/bagRevision/catalogRevision`. `0` — только подтверждённое отсутствие после успешного чтения; secret/nil/API missing/partial bag scan — **UNKNOWN**, не ноль. По умолчанию **не считать банк, реагентный банк, экипировку, почту и другие недоступные хранилища**. Если `C_Item.GetItemCount(itemID,false,false)` действительно подтверждённо возвращает только сумки на Forever, использовать его для точного ID; иначе нормализованный `C_Container` bag snapshot с явной полнотой. `familyCount` — сумма **уникальных itemID** из проверенного семейства, без двойного счёта ID в пересекающихся тегах; учитывать актуальность каталога, ранги и custom Forever items. `count>0` не означает cooldown ready, usable, разрешённость в бою, подходящий уровень, доступную цель или применимость эффекта.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–55`: есть read-only allowlist для spells/units, но в проверенном списке **нет** `C_Item.GetItemCount`, `GetItemCount`, `C_Container.GetContainerNumSlots/GetContainerItemID/GetContainerItemInfo`; нельзя считать item count реализованным.
+- `KordRotation/Core/GameState.lua:184–244`: snapshot player/target/pet/resources/cast, но нет bag inventory/item family observation.
+- `KordRotation/Core/EventBus.lua:21–42`: spell/cast/pet/resource events присутствуют, но `BAG_UPDATE`, `BAG_UPDATE_DELAYED`, `BAG_CONTAINER_UPDATE`, `PLAYER_ENTERING_WORLD` как inventory revision здесь не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:54–55,175–183`: catalogue/spell usability gate, **не** item inventory/cooldown/usable gate; item `READY` нельзя выводить из проверки spellID.
+- `KordRotation/Core/RotationConditions.lua:27,63–74`: нет подтверждённого универсального `items.count(itemID)`/`items.familyCount(family)` с lazy `Needs.items`.
+
+#### Сравнение семи референсов (реально проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Items.lua:84–94` реализует `Items.Count(itemID)` с `C_Item.GetItemCount`/legacy fallback; `Sonah/Classes/Warlock.lua:485–494` перечисляет пять рангов камня здоровья и проверяет `Items.Count` для каждого, `:517–519` использует `C.hasItem`. Перенять family ID catalog и shared count API, но не переносить `nil -> 0` при недоступном API/secret.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:15,327` использует `C_Item.GetItemCount`; `JustAC/SpellDB.lua:142–153,183,392` проверяет owned items по каталогу и кэширует при изменении сумок; `JustAC/Data/Forever/Consumables.lua:1–7,524–535` — Forever-specific каталог бинтов/расходников; `JustAC/Data/HealingItems.lua:1–13` разделяет healing items и retail data. Перенять версионированный Forever каталог и event-driven family lookup, но `or 0` в боевом секрете не считать безопасной семантикой.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:7010–7033` читает `C_Item.GetItemCount` с параметрами scope и подписывается на `BAG_UPDATE_DELAYED`; `ForeverAuras/ItemStatus.lua:189–206` сканирует `C_Container.GetContainerNumSlots/GetContainerItemID/GetContainerItemInfo`; `ForeverAuras/GenericTrigger.lua:4989–5011` обрабатывает `BAG_UPDATE_DELAYED` и документирует случай, когда обновление healthstones из soulwell **не вызывает** это событие. Перенять dual strategy: точный count API + bounded bag scan, с осторожной перепроверкой после пропущенных событий; не вводить постоянный OnUpdate.
+4. **MaxDps:** `MaxDps_Mage/Specialization/Cata/Arcane.lua:190` и `MaxDps_Mage/Specialization/Mop/Arcane.lua:219` читают `C_Item.GetItemCount` для mana gem с дополнительными флагами; `MaxDps/Libs/LibRangeCheck-3.0/LibRangeCheck-3.0/LibRangeCheck-3.0.lua:401,427–436` содержит IDs бинтов как **range catalog**. Перенять факт вариативности параметров `GetItemCount`, но не считать range library универсальным inventory catalog и не копировать `includeBank=true` в BAGS_ONLY.
+5. **ForeverRotation:** в проверенных Lua не обнаружены `C_Item.GetItemCount`, `GetItemCount`, `C_Container` bag scan и универсальный item family counter. Отсутствие подтверждённого count provider не доказывает отсутствия конкретных item recommendations.
+6. **RotationGuide:** в проверенных Lua не обнаружены `C_Item.GetItemCount`, `GetItemCount`, `C_Container` bag scan и универсальный item family counter. Не переносить itemIDs из приоритетов как доказательство наличия предметов.
+7. **RotationMaster:** `RotationMaster/Platform/items.lua:337–344` реализует `GetItemCount(item)` через `C_Item.GetItemCount(id,false,false)`; `RotationMaster/Platform/inventory.lua:43,201` выделяет **bag-only** snapshot; `RotationMaster/Core/item_conditions.lua:128,241` переиспользует single count и `GetBagItemCounts`; `RotationMaster/Core/item_sets.lua:155` вычисляет семейства на общем bag snapshot; `RotationMaster/init.lua:57–86` содержит базовые списки бинтов/камней здоровья с расширением. `RotationMaster/Core/condition_support.lua:401,555–556` проверяет API capabilities. **Основной референс** для единого adapter, family dedup, scope и UNKNOWN.
+
+#### Выбранный путь Kord
+
+**Один логический `InventoryObservation` в GameState/GameAPI с `InventoryItemObservation` и `InventoryFamilyObservation`, единым `ItemFamilyCatalog` и revision-based кэшем**, по архитектуре RotationMaster, с Forever каталогом JustAC и обновлением ForeverAuras. `InventoryReadAdapter` сперва пробует проверенный `C_Item.GetItemCount(itemID,false,false)`, а если semantics/secret/capability не позволяют доказать bags-only count, использует **один** bounded `C_Container` bag snapshot (только подтверждённые ID сумок) с полным coverage и обработкой secret. Не суммировать API count и bag scan как два независимых количества. Для `familyCount` строить множество уникальных ID из каталога (варианты рангов, healing potions, mana potions, healthstones, bandages, food/drink) и суммировать только полные известные результаты; при хотя бы одном неизвестном компоненте family count `UNKNOWN` с опциональной **нижней границей** `knownMinimum`, но не READY/полным count. Пересекающиеся семейства могут намеренно иметь один ID, но **внутри одного** семейства повторов нет. Семейство по `GetItemFamily` (тип сумки) не равно функциональной категории расходников — категории задаёт каталог, а не item bag family bitmask.
+
+`BAG_UPDATE_DELAYED`, `BAG_UPDATE`, `BAG_CONTAINER_UPDATE` и подтверждённые inventory/healthstone refresh события меняют `bagRevision`; отдельная `catalogRevision` при обновлении семейства. При Soulwell refresh без `BAG_UPDATE_DELAYED` применять ограниченную **event-triggered recheck** при подтверждённом item/cooldown/interaction signal или по explicit UI/DevTools запросу, а не постоянный full scan. Lazy `Needs.items` разрешает чтение по запросу и per-evaluation memo; batched family query выполняет один snapshot/набор уникальных ID, без N×bag scanning. Различать item count и item cooldown/usability/effect/rank/level restrictions (следующие IT требования), а финальное `READY` — только в `AbilityEligibility` после item-specific gate. Read-only; никакого использования предметов/защищённых команд.
+
+#### Требуемые изменения
+
+1. Ввести единый `InventoryObservation` (BAGS_ONLY), `InventoryItemObservation`, `InventoryFamilyObservation`, с status/source/reason/revision; не дублировать bag scanners.
+2. Валидировать на Forever `C_Item.GetItemCount` параметры `includeBank/includeUses`, secret/nil и bags-only semantics; `GetItemCount` legacy только при подтверждённой совместимости.
+3. Валидировать `C_Container.GetContainerNumSlots/GetContainerItemID/GetContainerItemInfo`, bag IDs, scope, неполные/secret слоты; не смешивать equipped/bank/reagent bank.
+4. Реализовать версионированный `ItemFamilyCatalog` с Forever IDs и вариантами рангов, health/mana potions, healthstones, bandages, food/drink; дедупликация внутри семьи.
+5. `familyCount` суммирует только подтверждённые counts, unknown component -> UNKNOWN с optional knownMinimum; отсутствие API никогда не становится count=0.
+6. EventBus добавить `BAG_UPDATE`/`BAG_UPDATE_DELAYED`/`BAG_CONTAINER_UPDATE` после client probe, per-bag revisions, bounded event coalescing и refresh при soulwell edge case.
+7. RotationConditions `items.count(itemID)`, `items.familyCount(familyID)`, `items.hasAny(familyID)`, `Needs.items` lazy memo и прозрачное UNKNOWN.
+8. Подготовить отдельную item eligibility ветку в AbilityEligibility (count, usable, cooldown, combat/level/target), не считать item count готовностью и не использовать spellID как itemID.
+9. DevTools-only диагностика: `item_count_unknown`, `item_count_secret`, `item_count_scope_unverified`, `item_bag_scan_incomplete`, `item_family_unknown`, `item_family_partial`, `item_family_duplicate_id`, `item_catalog_revision_changed`, `item_bag_revision_changed`, `item_soulwell_refresh_missing_event`, `item_count_zero_confirmed`.
+10. Тесты: 0/1/multiple stacks, same item in multiple bags, partial bag secret, item count API vs scan, bank-only/equipped-only, includeBank false, family rank variants, duplicate IDs within family, overlapping families, potion/stone/bandage/food, custom Forever items, split/merge stacks, soulwell stone refresh without BAG_UPDATE_DELAYED, missing/out-of-order bag events, combat secret, item usability/cooldown separate, no heavy OnUpdate/protected item use.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** В Kord нет подтверждённого bag count API allowlist, inventory revisions, bags-only snapshot и семейного каталога. Внедрение IT-01 необходимо для достоверных рекомендаций расходников.
+
+**Архитектурные ссылки:** SP-14, PE-04, PE-05, GR-05, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
