@@ -39,6 +39,7 @@ local allowed = {
     ["C_SpellBook.GetSpellBookItemTexture"]=true,
     ["C_Spell.GetSpellInfo"]=true,
     ["C_Secrets.ShouldAurasBeSecret"]=true,
+    ["C_UnitAuras.GetAuraDataBySpellName"]=true,
     ["C_UnitAuras.GetUnitAuras"]=true,
     ["C_UnitAuras.GetAuraDataByIndex"]=true,
     ["C_UnitAuras.GetPlayerAuraBySpellID"]=true,
