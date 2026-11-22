@@ -7341,6 +7341,8 @@ Burst — отдельная типизированная настройка п�
 
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
 
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
+
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7715,6 +7717,8 @@ Burst — отдельная типизированная настройка п�
 
 ### DA-08 — Реакция на смену спека, талантов, уровня, панели, привязок
 
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
+
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 requires form transitions to invalidate resource/form-specific action eligibility, bindings and profile-dependent reads without necessarily changing spec.
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7788,6 +7792,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение QA-07:** QA-07 использует event/revision последовательности в сценариях смены цели, спека, уровня, талантов и панели; состояние после события должно проверяться отдельным ожидаемым результатом, без stale snapshot.
 
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
+
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
@@ -8537,6 +8543,8 @@ DevTools должен записывать **все достоверно сфо�
 
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
+
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 form, typed rage/energy/mana/combo, HoT/dispel, combat resurrection and aura cancellation APIs require separate Forever validation, not inferred CLIENT PASS.
@@ -8695,6 +8703,8 @@ DevTools должен записывать **все достоверно сфо�
 
 ### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
 
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
+
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Ретроактивное ограничение → NO-01:** NO-01 extends purity/negative checks from profiles to core, UI and DevTools: no protected automation through wrappers, aliases or dynamic dispatch.
@@ -8768,6 +8778,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 сценарные fixtures проходят QA-06 purity gate для реальных profile source; отсутствие прямого API не доказывает правильности выбранного действия, поэтому QA-07 остаётся отдельным обязательным поведенческим gate.
 
 ### QA-07 — Сценарные таблицы «состояние → ожидаемое действие» для каждого профиля
+
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 defines Druid scenario cases for form/resource/HoT/dispel/resurrection/aura-break, all SPECIFIED / NOT RUN.
 
@@ -9882,6 +9894,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 ### NO-01 — Запрещено нажимать кнопки, выполнять макросы, менять цель и двигать персонажа
 
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
+
 **Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Раздел 19. Что нельзя и чего не стоит делать. Приоритет: P0 (безусловный запрет).** Действует для обоих аддонов `KordRotation` и `KordRotationDevTools`, всех девяти классов, профилей, режимов PVE/PVP, UI, обработчиков событий, инструментов отладки, тестов и будущих типов действий. **Kord — read-only рекомендательный аддон, а не исполнитель ротации.**
@@ -9971,6 +9985,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 
 ### NO-02 — Запрещено читать скрытые значения в бою и подставлять догадки вместо nil
+
+**Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
 
 **Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Применяется к KordRotation и KordRotationDevTools, всем классам, профилям, UI, провайдерам, кэшу и диагностике. **NO_SECRET_UNWRAP_AND_NO_GUESS:** недоступное игровое значение не превращается в достоверное путём догадки, преобразования, чтения protected Blizzard internals или использования старого snapshot. Это отдельный инвариант от NO-01.
 
@@ -10064,3 +10080,108 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 **ЧАСТИЧНО ПО ИСХОДНИКАМ / SECRET И NIL SAFETY НЕ ДОКАЗАНЫ ПОЛНОСТЬЮ / P0.** GameAPI имеет fail-closed read contract, но отсутствие probes и nested secret требуют проверки. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** NO-01, AC-07, QA-04, QA-06, DA-02, EN-A3, AU-01, PL-01, UI-01; обновлены в том же коммите.
+
+
+### NO-03 — Запрещено хранить в журнале произвольные данные игрока, цели и чат
+
+**Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Обязателен для пользовательского KordRotation и отдельного KordRotationDevTools, всех девяти классов, PvE/PvP, API probes, событий, ошибок, performance trace, UI, экспорта и SavedVariables.
+
+#### Требование
+
+**Инвариант `DIAGNOSTIC_ALLOWLIST_ONLY`:** диагностическая запись должна создаваться **только** из строго определённой схемы, где значения берутся из контролируемых внутренних enum/кодовых словарей или ограниченных проверенных числовых счётчиков. Не сохранять в журнал, экспорт, SavedVariables или сторонние каналы произвольные данные игрока, цели, членов группы, питомцев, имена, GUID, сообщения чата, текст ошибок/stack trace целиком, raw event arguments, spell/aura payload, сырые результаты WoW API, произвольные строки пользователя, frame/table/userdata/secret, макросы, конфигурационные токены и текст игровых подсказок. **Не пытаться «очистить» произвольную строку регулярным выражением и считать её безопасной:** синтаксически корректное имя игрока тоже может пройти regex. Требуется принадлежность к заранее контролируемому словарю.
+
+**Разрешённый минимальный контракт:** `{sequence,kind,status,reason,matrix,elapsed,time,detail,method,count}` плюс ограниченные метаданные сеанса `{sessionID,part,started,stopped,dropped,evictedParts,version,matrix,final}` — только если каждое поле валидировано по типу, диапазону, словарю и источнику. `time` — относительная техническая отметка сеанса, не чат timestamp; `method` — имя подтверждённого API из статического реестра или строго контролируемый технический ключ, не произвольное имя из игры; `reason` — фиксированный код, не текст. Запись возможна только в явно запущенном пользователем DevTools сеансе, без автоматического возобновления после reload. Пользовательская сборка не содержит developer recorder, журнала событий или диагностических SavedVariables. Базовые счётчики ошибок/показ состояния в UI не должны удерживать payload.
+
+| Источник | Запрещённое содержимое | Допустимая замена |
+|---|---|---|
+| Игрок/цель/группа/питомец | `UnitName`, `UnitGUID`, player/target name, realm, health/power snapshots, targetGUID, координаты, имена участников | `target_present`, `target_unverified`, `player_level_unverified`, `status` — фиксированные коды без идентификаторов |
+| Чат и коммуникации | `CHAT_MSG_*` payload, автор, канал, whisper, guild/group chat, addon-message payload | Не подписываться для записи чата; отсутствие соответствующих данных в схеме |
+| Combat/event/API | `COMBAT_LOG_EVENT_UNFILTERED` raw args, `UNIT_SPELLCAST_*` payload, raw `C_UnitAuras`, `UnitCastingInfo`, secret fields, raw `pcall` error text | Тип события из закрытого словаря, матричный номер API, статус, безопасный reason, счётчик |
+| Логи ошибок | `debugstack`, `geterrorhandler` payload, произвольное `tostring(err)`, file path, user-supplied text | `engine_exception`, `api_call_failed`, `diagnostic_code_unmapped` без исходной строки |
+| SavedVariables/экспорт | Копии raw tables, полные snapshots, скрытые значения, экспорт «всего состояния» | Ограниченные записи, кольцевые сегменты, максимальный размер, удаление старых частей, ручной постраничный экспорт |
+| Технические коды | Произвольный `reason`, `method`, `detail`, `profileID` или `source` | Enum/allowlist с проверкой источника; неизвестный код → фиксированный `unmapped` и счётчик потерь |
+
+**Нормативная граница:** допустимо использовать игровой факт **в оперативной памяти** для вычисления рекомендаций, если он законно доступен по NO-02; это не разрешает записывать его в диагностический журнал. Ограничение распространяется на **сохранение, экспорт и долговременное удержание диагностикой**, а не на необходимые краткоживущие GameState snapshots. Публичная UI-подсказка не является разрешением логировать её текст. Запрет NO-03 действует даже при ручном запуске записи: opt-in разрешает лишь ограниченную схему, не произвольный сбор. Локальный ручной экспорт не означает передачу данных наружу; автоматически отправлять журнал по сети/в чат/через addon messaging запрещено.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/Diagnostics.lua:1–11`: пользовательская `D:Log(level,module,message)` сохраняет только ограниченный `errorCount` для ERROR; `message` не удерживается. `RecordCharacter` возвращает признак наличия, не сохраняет объект. `Snapshot:14–35` формирует краткий текущий support state; его нельзя автоматически переносить в журнал. **Проверить** все пути отображения/экспорта snapshot на отсутствие пользовательских строк и secret.
+- `KordRotation/Core/GameAPI.lua:276–359`: `BeginDiagnosticTrace/DrainDiagnosticTrace` создают ограниченные агрегаты `method/status/reason/count`; явный лимит `TRACE_LIMIT=2048`; `observe` не сохраняет аргументы API, spellID, player/target. `traceToken` валидирует синтаксис, а метод затем проверяется по allowlist. `ObserveDiagnostic` использует два фиксированных имени сканера. `ReadField` принимает bounded ASCII field key; проверить, что ключ **никогда** не может быть произвольным игровым/user-provided полем.
+- `KordRotationDevTools/Core.lua:8–15,47–63`: `maxRecords=512`, `maxExport=32768`; запись не возобновляется после reload; чат используется только для локализованного UI уведомления, не для захвата `CHAT_MSG_*`.
+- `KordRotationDevTools/Recorder.lua:155–201`: `safeDetail`, `sanitizeReason`, `enum`, `int` ограничивают данные; неизвестный код заменяется фиксированным `diagnostic_code_unmapped`/`diagnostic_detail_unmapped`.
+- `Recorder.lua:203–236`: `SaveJournalPart` копирует фиксированные scalar fields в `KordRotationDevToolsDB.sessions`, ограничивает число частей `maxSessions`; `Recorder.lua:238–289` требует явного Start и сохраняет при Stop.
+- `Recorder.lua:291–363`: `Record` проверяет поля, применяет enum/allowlist, ограничивает матрицу `1..101`, latency/count и coalescing cooldown events. **Риск:** `METHOD`-ветка `cleanDetail=detail` принимает любую синтаксически корректную строку `^[a-z][a-z0-9_]*$` длиной до 64, не обязательно из фиксированного словаря; аналогично `ReadField` принимает синтаксически валидный ключ. Требуется доказать, что эти значения поступают исключительно из доверенного внутреннего реестра, иначе заменить на закрытый словарь. Это **source-level риск**, не подтверждённая утечка.
+- `Recorder.lua:365–410`: `Clear` удаляет sessions, `Export` формирует постраничный экспорт из записей. Проверить полную цепочку экспорта и миграцию старых SavedVariables: данные прежней версии должны повторно валидироваться или отбрасываться.
+- `KordRotationDevTools/Trace.lua:26–44,110–115`: event trace ограничен выбранными событиями, не удерживает чужие spellcast аргументы; target читается через sanitized bridge, не raw GUID. **Не доказан** полный audit всех callback и legacy записей.
+- `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md`: уже предписывает opt-in, ring buffer, отдельные SavedVariables, no raw GUID/chat/secret и ручной экспорт. NO-03 закрепляет это как глобальный запрет с QA критериями.
+
+#### Сравнение семи референсов (граница доказательств)
+
+1. **Sonah:** `Core/Atoms/Units.lua`, `Core/Atoms/Auras.lua` — runtime наблюдения могут включать unit data; Kord не переносит произвольные поля в journal.
+2. **JustAC:** `BlizzardAPI/StateHelpers.lua`, `DebugCommands.lua` — debug/probe идеи применимы только после enum/sanitization, не копировать raw dump.
+3. **ForeverAuras:** `GenericTrigger.lua`, `API.lua` — aura trigger data/tooltip не являются допустимыми diagnostic payload.
+4. **MaxDps:** `Helper.lua`, `Buttons.lua` — spell/target context пригоден для расчёта, но не для raw логирования.
+5. **ForeverRotation:** `Engine.lua`, `Rotations/Signals.lua` — trace приоритетов допустим только как fixed reason/rule ordinal, без снимка target.
+6. **RotationGuide:** `Core/State.lua` — диагностические state tables не копировать целиком в SavedVariables.
+7. **RotationMaster:** `Platform/world_state.lua`, `Core/condition_support.lua` — condition provenance допустим в виде enum, но не произвольных Lua objects или текстовых dump.
+
+**Доказательная граница:** ссылки на семь ZIP опираются на ранее проведённые адресные исследования; полный новый построчный анализ референсов и всех Lua Kord не выполнен. Референсы не устанавливают политику хранения Kord.
+
+#### Выбранный путь Kord
+
+**Единый `DiagnosticRecordSchema` + `DiagnosticPrivacyBoundary` в существующем DevTools Recorder/GameAPI trace**, без второго logger. Проверять значения **до** сохранения, агрегирования, форматирования и экспорта; только immutable allowlist и ограниченные числа. Любой неизвестный метод/причина/деталь → `unmapped`, счётчик rejected/dropped; не удерживать исходное значение даже временно в таблице очереди. `method` привязан к известному GameAPI allowlist, `reason` к фиксированному словарю; `ReadField` — только подтверждённый внутренний field key registry. `sessionID` — локальный порядковый номер, не GUID. Экспорт только по ручному действию, без автоотправки; старые записи повторно санитизировать при чтении. Ограничивать размер по **записям и байтам**, общую ёмкость сегментов и срок хранения; при переполнении показывать dropped/evicted count, не наращивать без ограничения.
+
+#### Требуемые изменения и приёмка
+
+1. Аудировать `GameAPI` trace, `Recorder`, `Trace`, `Probe`, `Performance`, `UI`, `Diagnostics`, все мосты/колбэки на raw payload, `CHAT_MSG_*`, `COMBAT_LOG_EVENT_UNFILTERED`, `UnitName`, `UnitGUID`, `debugstack`, `tostring(err)`, `SavedVariables` и `SendAddonMessage`; учитывать алиасы и непрямые вызовы.
+2. Сделать closed vocabulary для `METHOD.detail` и `ReadField` names, без одной лишь regex-валидации; сохранить расширяемость через versioned внутренний registry.
+3. Добавить единый schema validator на входе `Record`, перед `SaveJournalPart` и при `Export` для legacy/malformed SavedVariables; неизвестные поля и записи отбрасывать без печати.
+4. Установить суммарный лимит байтов и частей на все `sessions` и retention policy, проверить segment rollover, eviction, overflow и large counters.
+5. Убедиться, что user ZIP не содержит DevTools recorder/trace/diagnostic SavedVariables; dev ZIP сохраняет побайтовую идентичность `KordRotation/`.
+6. Добавить Lua 5.1 negative mocks и privacy fixtures: names, GUIDs, whisper/chat, combat log payload, secret nested tables, error strings, fake method names, malicious SavedVariables, overlong UTF-8, unknown reasons, mixed target change.
+7. В клиенте Forever подтвердить ручной Start/Stop/Clear/Export, отсутствие автоактивации, безопасный journal при combat/reload/logout и no chat capture. Ни одна QA проверка не должна логировать реальные личные данные ради теста.
+
+**DevTools-only причины:** `no03_payload_rejected`, `no03_unknown_method`, `no03_unknown_reason`, `no03_unknown_detail`, `no03_chat_payload_denied`, `no03_unit_identifier_denied`, `no03_secret_payload_denied`, `no03_legacy_record_rejected`, `no03_storage_limit`, `no03_export_schema_invalid`, `no03_session_not_opted_in`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Сценарий | Ожидаемый результат |
+|---|---|---|
+| `NO03-01` | Recorder не запущен | нет записей |
+| `NO03-02` | Явный Start | только разрешённая схема |
+| `NO03-03` | Player name | rejected, не сохранять |
+| `NO03-04` | Target GUID | rejected, не сохранять |
+| `NO03-05` | Party/pet name | rejected, не сохранять |
+| `NO03-06` | CHAT_MSG_WHISPER payload | не подписываться/не сохранять |
+| `NO03-07` | CHAT_MSG_GUILD payload | не сохранять |
+| `NO03-08` | COMBAT_LOG raw args | не сохранять |
+| `NO03-09` | Raw AuraData | не сохранять |
+| `NO03-10` | Secret nested table | не индексировать/не сохранять |
+| `NO03-11` | Raw pcall error string | только fixed reason |
+| `NO03-12` | Unknown reason | unmapped, без оригинала |
+| `NO03-13` | Regex-valid fake METHOD detail | rejected без allowlist |
+| `NO03-14` | Regex-valid fake ReadField key | rejected без registry |
+| `NO03-15` | Numeric overflow | reject/clamp по контракту |
+| `NO03-16` | 512 записей | segment rollover, bounded |
+| `NO03-17` | Превышение общего byte budget | eviction/dropped |
+| `NO03-18` | SavedVariables с raw GUID legacy | reject при чтении/экспорте |
+| `NO03-19` | Старый record с неизвестным полем | не экспортировать |
+| `NO03-20` | Reload | запись не возобновляется |
+| `NO03-21` | Logout активного сеанса | безопасное завершение |
+| `NO03-22` | Clear | sessions удалены |
+| `NO03-23` | Manual paginated export | только schema fields |
+| `NO03-24` | Автоотправка по addon message | запрещена |
+| `NO03-25` | User ZIP | без DevTools journal |
+| `NO03-26` | Dev ZIP | каноническое ядро byte-identical |
+| `NO03-27` | Diagnostic method trace | только allowed method/status/reason/count |
+| `NO03-28` | UI support snapshot | не записывать в journal |
+| `NO03-29` | Unknown spell/target data | не превращать в raw trace |
+| `NO03-30` | Target change storm | bounded counters, no GUID |
+
+**QA статус:** 30 сценариев специфицированы, не исполнялись.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПОДТВЕРЖДЕНО ПО ПРОСМОТРЕННЫМ ИСХОДНИКАМ / ПОЛНАЯ ГАРАНТИЯ ПРИВАТНОСТИ ЖУРНАЛА НЕ ДОКАЗАНА / P0.** Recorder уже использует ограниченные scalar поля, opt-in, фиксированные причины и сегменты; `METHOD.detail`, `ReadField`, legacy SavedVariables, общий byte budget и непрямые вызовы требуют отдельного тестирования. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** NO-01, NO-02, QA-04, QA-06, QA-07, DA-02, DA-08, UI-01 — дополнены ссылкой на NO-03 в том же коммите.

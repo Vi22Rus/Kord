@@ -1,3 +1,10 @@
+## KR-20261122-029 — аудит NO-03: приватность диагностического журнала
+- Дата: 2026-11-22; UTC время/SHA по GitHub commit metadata.
+- Задача: NO-03 P0 — запрет произвольных данных игрока/цели/чата в журнале, SavedVariables и экспорте. Текущий Recorder ограничивает scalar поля, но regex-only METHOD.detail/ReadField и legacy data остаются source-level рисками.
+- Изменения: REQUIREMENTS.md — полный NO-03 (privacy allowlist, source audit, семь референсов по прежним адресным исследованиям, schema, 7 задач, 30 QA-07 сценариев, причины и вердикт); 8 ретроссылок NO-01/02, QA-04/06/07, DA-02/08, UI-01; CHANGELOG.md — эта запись. Lua/TOC/ZIP не менялись.
+- Решение: DiagnosticRecordSchema, DiagnosticPrivacyBoundary в существующем Recorder, opt-in, bounded storage, no raw data, closed vocab, revalidate legacy exports, no auto network/chat send.
+- Проверки: SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101. Следующий пункт по запросу.
+
 ## KR-20261122-028 — аудит NO-02: secret и nil safety
 - Дата: 2026-11-22; время/SHA по GitHub commit metadata.
 - Задача: запрет чтения скрытых значений и подмены nil догадками; P0. В GameAPI есть fail-closed reads, но отсутствие probes и nested secret остаются потенциальными пробелами.
