@@ -1080,3 +1080,51 @@
 6. Тесты: `0/N`, `1/N`, `N/N`, `isActive=true` при `current>0`, secret current при известном max, secret start/duration, legacy tuple, таймер уже истёк, charges с GCD, отсутствие API, порог 2, смена числа зарядов в бою.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-05.
+
+
+### SP-06 — Пригодность: хватает ли ресурса, есть ли нужная форма/стойка/реагенты
+
+**Приоритет: P0.**
+
+#### Требование
+
+Определять пригодность конкретной способности к применению, разделяя: `usable` (общее состояние), `hasResources`, `requiredForm/stanceSatisfied`, `hasReagents` и прочие ограничения, **только если причина подтверждается API/надёжным отдельным источником**. `IsSpellUsable=false` не доказывает отсутствие реагента или неверную стойку. Не путать пригодность с известностью, cooldown, GCD, дальностью, целью и итоговым `AbilityEligibility.READY`. Secret/ошибка/недоступность → `UNKNOWN` для соответствующего факта.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 171–186: реализована `usability(id)` с `C_Spell.IsSpellUsable` и legacy `IsUsableSpell`. Проверяются два boolean: `usable`, `noPower`. `noPower=true` → `BLOCKED/insufficient_resources`, `usable=false` → `BLOCKED/spell_unusable`, обе истины/доступность → `READY`. Secret/неверные типы → `UNKNOWN`.
+- `AbilityEligibility.lua`, строки 349–352: usability — самостоятельная стадия итоговой eligibility, отдельно от charges, cooldown и GCD. Архитектурная граница уже соблюдена.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 26, 35: оба API пригодности разрешены и читаются через типизированный защитный слой.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua): ресурсы игрока и часть состояний формы/аур доступны как наблюдения, но нет типизированного провайдера **требований конкретного spellID** к ресурсу, форме/стойке или реагенту.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua): условия не предоставляют отдельных `spell.hasResources`, `spell.formSatisfied`, `spell.hasReagents` с доказуемой причиной. Нельзя делать вывод о реагентах из общего `spell_unusable`.
+- Зависимости: PL-04 (ресурсы), PL-09 (форма/стойка), PL-12 (предметы/экипировка), SP-01 (известность). Ни одна из них не заменяет проверку требований конкретной способности.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua`: использует защищённые вызовы spell usability и разделяет факт применения и доступность ресурса; `Sonah/Core/Molecules/Conditions.lua` содержит отдельные проверки условий по форме/ресурсам и контексту способности. Нет подтверждения, что `usable=false` автоматически классифицируется именно как отсутствие реагента.
+2. **JustAC** — `JustAC/BlizzardAPI/SpellQuery.lua` и `JustAC/GapCloserEngine.lua:70–103`: отдельно проверяет `IsSpellKnown`, `IsSpellAvailable` и применимость; form-gated способность может быть известна, но недоступна в текущей форме. Это важное разграничение known и usable.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua` содержит триггеры usable и power, а `ForeverAuras/Prototypes.lua` — описания отдельных игровых состояний; универсальный достоверный классификатор причин `usable=false` на resource/form/reagent не подтверждён.
+4. **MaxDps** — `MaxDps/Helper.lua` использует `C_Spell.IsSpellUsable`/`IsUsableSpell` и отдельно проверяет ресурсы/формы в профилях. Для Kord нельзя переносить прямые вызовы из профиля или трактовать false как конкретную причину без свидетельства.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua` проверяет `C_Spell.IsSpellUsable` при выборе рекомендаций и учитывает отдельные ограничения состояний; подтверждённого общего `reagent/form/resource` reason-provider в проверенном коде нет.
+6. **RotationGuide** — `RotationGuide/Core/State.lua` проверяет применимость заклинаний и состояние ресурсов через игровой API/данные состояния; в проверенных файлах нет подтверждённого универсального разделения всех причин непригодности на форму, стойку и реагенты.
+7. **RotationMaster** — `RotationMaster/Platform/spells.lua`, `Platform/actions.lua` и `Conditions/spell.lua`: платформенный слой отделяет `IsSpellUsable` от известных заклинаний, ресурсов, формы и других условий, условия возвращают собственный результат. Это лучший образец архитектурного разделения фактов, но полный reagent-reason API для Forever необходимо подтвердить отдельно.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + JustAC + Sonah**, с сохранением Kord `AbilityEligibility.usability`. Из RotationMaster взять раздельные платформенные факты и условия; из JustAC — строгое разделение known/available/form-gated; из Sonah — secret-safe чтение usable/noPower. Для реагентов вводить самостоятельное доказательство только если доступен проверенный API/метаданные расходников и надёжная проверка суммарного количества (с учётом источника, сумки/предметов и клиента Forever). Если известен только `usable=false`, сохранять `reason=spell_unusable_unclassified`, не выдавать `missing_reagent` или `wrong_form`.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Общая пригодность и отдельный флаг нехватки ресурса уже работают; достоверные причины формы/стойки/реагентов не реализованы как единый типизированный провайдер.
+
+#### Требуемые изменения
+
+1. Добавить `SpellUsabilityObservation(spellID)` с независимыми `usable`, `hasResources`, `formSatisfied`, `stanceSatisfied`, `hasReagents` и `status/reason/source` для каждого; неизвестные причины не приписывать.
+2. Сохранить `C_Spell.IsSpellUsable`/`IsUsableSpell` как авторитетный общий gate, отдельно обрабатывать `noPower`; проверять типы и secret через `GameAPI`.
+3. Подключить PL-04 и PL-09 только для конкретных подтверждённых spell requirements. Не выводить требуемую форму из текущей формы без метаданных конкретного заклинания.
+4. Реагенты: проверить реальные возможности API Forever и предметного провайдера; без подтверждённых reagentID/count возвращать `UNKNOWN`, а не `false`. Не смешивать отсутствие реагента с недостатком ресурса.
+5. Поддержать ленивые условия `spell.usable`, `spell.hasResources`, `spell.formSatisfied`, `spell.stanceSatisfied`, `spell.hasReagents` при сохранении единственного итогового READY в `AbilityEligibility`.
+6. Кэшировать на оценку, инвалидировать по `SPELL_UPDATE_USABLE`, `UNIT_POWER_UPDATE`, смене формы/стойки, изменениям сумок/предметов, талантов и конфигурации, если они влияют на способность.
+7. Тесты: usable true/false, noPower true, форма отсутствует/подтверждена, неверная стойка, есть/нет реагента, общий false без причины, secret, неподдерживаемый API, способность без reagent requirement, изменившаяся форма/ресурс и отсутствие ложного READY.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-06.
