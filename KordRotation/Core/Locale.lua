@@ -3210,6 +3210,26 @@ for locale,strings in pairs(experimentalLabels) do
  end
 end
 
+-- Optional DevTools launch button on the Diagnostics tab.
+-- All six UI languages include the label, tooltip and result messages.
+local devtoolsLaunchTexts={
+ enUS={"Open DevTools","Open the separate Kord Rotation DevTools window. Does not start recording.","DevTools window opened.","Kord Rotation DevTools is not installed, loaded, or its window is unavailable."},
+ ruRU={"Открыть DevTools","Открыть окно отдельного аддона Kord Rotation DevTools. Запись не начинается.","Окно DevTools открыто.","Kord Rotation DevTools не установлен, не загружен или окно недоступно."},
+ deDE={"DevTools öffnen","Öffnet das Fenster des separaten Addons Kord Rotation DevTools. Die Aufzeichnung wird nicht gestartet.","DevTools-Fenster geöffnet.","Kord Rotation DevTools ist nicht installiert, nicht geladen oder das Fenster ist nicht verfügbar."},
+ frFR={"Ouvrir DevTools","Ouvre la fenêtre de l'addon séparé Kord Rotation DevTools. L'enregistrement ne démarre pas.","Fenêtre DevTools ouverte.","Kord Rotation DevTools n'est pas installé, chargé ou sa fenêtre est indisponible."},
+ esES={"Abrir DevTools","Abre la ventana del complemento independiente Kord Rotation DevTools. No inicia la grabación.","Ventana de DevTools abierta.","Kord Rotation DevTools no está instalado, cargado o su ventana no está disponible."},
+ ptBR={"Abrir DevTools","Abre a janela do addon separado Kord Rotation DevTools. Não inicia a gravação.","Janela do DevTools aberta.","Kord Rotation DevTools não está instalado, carregado ou a janela está indisponível."},
+}
+for locale,strings in pairs(devtoolsLaunchTexts) do
+ local entries=translations[locale]
+ if entries then
+  entries.DIAG_OPEN_DEVTOOLS=strings[1]
+  entries.TIP_DIAG_OPEN_DEVTOOLS=strings[2]
+  entries.DIAG_DEVTOOLS_OPENED=strings[3]
+  entries.DIAG_DEVTOOLS_MISSING=strings[4]
+ end
+end
+
 -- License notice (2/3): translation tables are part of the original Kord Rotation work.
 -- Do not silently overwrite client locale: it is determined via GetLocale().
 local locale = type(GetLocale) == "function" and GetLocale() or "enUS"
