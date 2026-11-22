@@ -20,6 +20,8 @@ lifecycle:RegisterEvent("TRAIT_CONFIG_UPDATED")
 lifecycle:RegisterEvent("PLAYER_TALENT_UPDATE")
 lifecycle:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 lifecycle:RegisterEvent("PLAYER_LEVEL_UP")
+lifecycle:RegisterEvent("SPELLS_CHANGED")
+lifecycle:RegisterEvent("LEARNED_SPELL_IN_TAB")
 
 -- License notice (2/3): (c) 2026 Vi22Rus, all rights reserved; see root LICENSE.
 -- No license-file deletion checks: missing LICENSE does not change copyright or user rights.
@@ -71,11 +73,19 @@ lifecycle:SetScript("OnEvent", function(self, event, arg1)
         if KR.ActionBarScanner then KR.ActionBarScanner:Initialize() end
         if KR.BindingResolver then KR.BindingResolver:Initialize() end
         if KR.AbilityEligibility then KR.AbilityEligibility:Initialize() end
+        if KR.BMLeveling then KR.BMLeveling:Register() end
         KR:RefreshCharacter("PLAYER_LOGIN")
         if KR.db.showAtLogin then KR:ToggleWindow(true) end
     elseif event == "TRAIT_CONFIG_UPDATED" or event == "PLAYER_TALENT_UPDATE"
-        or event == "ACTIVE_TALENT_GROUP_CHANGED" or event == "PLAYER_LEVEL_UP" then
-        if KR.db then KR:RefreshCharacter(event) end
+        or event == "ACTIVE_TALENT_GROUP_CHANGED" or event == "PLAYER_LEVEL_UP"
+        or event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
+        if KR.db then
+            if KR.BMLeveling and (event=="SPELLS_CHANGED"
+                or event=="LEARNED_SPELL_IN_TAB" or event=="PLAYER_LEVEL_UP") then
+                KR.BMLeveling:Register()
+            end
+            KR:RefreshCharacter(event)
+        end
     end
 end)
 
