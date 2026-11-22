@@ -60,6 +60,7 @@ function D:TraceStart()
     self.lastFirstReason=nil
     self.lastDetailKeys={}
     self.nextDetailedAt=nil
+    self.methodAggregate={}
     local bridge=_G.KordRotationCoreObservation
     if type(bridge)=="table" and type(bridge.BeginAPITrace)=="function" then
         pcall(bridge.BeginAPITrace)
@@ -70,6 +71,13 @@ end
 function D:TraceStop()
     if self.active then self:ObserveDetails(nil,true) end
     self:DrainAPIMethods()
+    -- Persist final per-method totals once, not hundreds of identical
+    -- records every 2 seconds. The first observation preserves timing.
+    for _,entry in pairs(self.methodAggregate or {}) do
+        self:Record("METHOD",entry.status,"method_total",
+            entry.matrix,nil,entry.reason,entry.method,entry.count)
+    end
+    self.methodAggregate=nil
     local bridge=_G.KordRotationCoreObservation
     if type(bridge)=="table" and type(bridge.EndAPITrace)=="function" then
         pcall(bridge.EndAPITrace)
@@ -143,9 +151,21 @@ function D:DrainAPIMethods()
             and self:Safe(item.method) and self:Safe(item.status)
             and self:Safe(item.reason) and self:Safe(item.count)
             and type(item.method)=="string" then
-            self:Record("METHOD",item.status,"method_call",
-                ids[item.method],nil,item.reason,
-                item.method,item.count)
+            self.methodAggregate=self.methodAggregate or {}
+            local key=item.method.."|"..item.status.."|"..item.reason
+            local existing=self.methodAggregate[key]
+            if not existing then
+                existing={method=item.method,status=item.status,
+                    reason=item.reason,matrix=ids[item.method],count=0}
+                self.methodAggregate[key]=existing
+                -- First occurrence is enough for chronology. The final
+                -- totals emitted on Stop capture the complete volume.
+                self:Record("METHOD",item.status,"method_call",
+                    ids[item.method],nil,item.reason,
+                    item.method,item.count)
+            end
+            existing.count=math.min(1000000000,
+                existing.count+item.count)
         else
             self:Record("METHOD","UNKNOWN","method_trace_overflow")
         end
