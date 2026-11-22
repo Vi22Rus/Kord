@@ -160,11 +160,17 @@ local function run(channel,sharedSnapshot)
   local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
   local status,reason
   local ruleChecks,ruleBarReason
-  -- Route an aura to exactly one recommendation channel.
-  -- UNKNOWN combat is never treated as confirmed combat.
-  local auraRule=rule.recommendationType=="aura"
-  if (auraRule and ((channel=="main")~=auraInMain))
-      or (not auraRule and channel=="defensive") then
+  -- Route ANY recommended maintenance effect, not selected spell IDs.
+  -- Profiles can override their semantic type; 'buffs' is the fallback.
+  -- Enemy debuffs and utility actions are not maintenance buffs.
+  local kind=rule.recommendationType
+  if kind==nil and rule.category=="buffs" and rule.target~="enemy" then
+   kind="buff"
+  end
+  local maintenance=(kind=="buff" or kind=="aura" or
+      kind=="aspect" or kind=="stance")
+  if (maintenance and ((channel=="main")~=auraInMain))
+      or (not maintenance and channel=="defensive") then
    status,reason="BLOCKED","routed_to_other_channel"
   elseif rule.type~="SPELL" then
    status,reason="BLOCKED","unsupported_action"
@@ -230,7 +236,7 @@ local function run(channel,sharedSnapshot)
     keybind=keybind,bindingSource=bindingSource,
     source=profile.status=="verified" and "verified_profile" or "experimental_profile",
     priority=i,category=rule.category,mode=mode,
-    channel=channel}
+    recommendationType=kind,channel=channel}
    return {status="READY",source="RotationEngine",profileID=profile.id,
     mode=mode,channel=channel,queue={record},diagnostics=diagnostics}
   end
