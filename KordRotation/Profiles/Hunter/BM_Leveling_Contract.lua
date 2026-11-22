@@ -132,7 +132,7 @@ local function makeRules(spells,is60)
   for _,item in ipairs(spec) do if item[1]==key then data=item break end end
   if not data and actionType~="PET_COMMAND" then return end
   local rule={id=id,type=actionType or "SPELL",
-   spell=actionType=="PET_COMMAND" and nil or key,
+   spell=key,
    action=actionType=="PET_COMMAND" and key or nil,
    category=category or (data and data[4] or "damage"),
    target=data and data[5] or "enemy",
@@ -174,6 +174,8 @@ local function makeRules(spells,is60)
      or rule.category=="movement" then
    rule.onUnknown="skip"
   end
+  -- PET_COMMAND must carry action but no spell; Lua 'and nil or' cannot select nil.
+  if actionType=="PET_COMMAND" then rule.spell=nil end
   rules[#rules+1]=rule
  end
  local function hasTargetAndMana(S,c)
