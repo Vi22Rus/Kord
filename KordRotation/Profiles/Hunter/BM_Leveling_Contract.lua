@@ -139,6 +139,25 @@ local function makeRules(spells,is60)
    cast="idle",chargesRequired=false,mode=mode or "any",
    reason="BM leveling v2.3: "..id,
    when=function(S,cfg)
+    -- Honor a disabled module option before any spellbook/provider read.
+    -- Optional high-level abilities must not block low-level leveling when
+    -- the user explicitly turned the feature off.
+    local gated={
+      Feign="use_feign_death",Disengage="use_disengage",
+      Wing="use_wing_clip",Aimed="use_aimed_shot",
+      Freezing="use_freezing_trap",Frost="use_frost_trap",
+      Mend="mend_pet",CallPet="summon_pet",Revive="summon_pet",
+      PetAttack="pet_attack",AspectHawk="aspect",AspectMonkey="aspect",
+      Intimidate="intimidation"
+    }
+    if gated[key] and cfg[gated[key]]==false then return false end
+    if key=="Mark" and cfg.mark=="off" then return false end
+    if key=="Sting" and cfg.sting=="off" then return false end
+    if key=="Hawk" and (cfg.hawk_arcane=="off"
+        or cfg.hawk_arcane=="arcane") then return false end
+    if key=="Arcane" and cfg.hawk_arcane=="off" then return false end
+    if key=="Wrath" and cfg.bestial_wrath=="off" then return false end
+    if key=="Rapid" and cfg.rapid_fire=="off" then return false end
     if actionType~="PET_COMMAND" then
      -- A missing/unlearned spell must not block earlier conditions such
      -- as threat, hawk count or TTD that are irrelevant at this level.
