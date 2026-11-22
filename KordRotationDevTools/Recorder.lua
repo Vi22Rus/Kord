@@ -37,6 +37,12 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     target_live=true,target_snapshot=true,ui_engine_status=true,
     priority_1_rule=true,eligibility_ready_count=true,
     eligibility_blocked_count=true,eligibility_unknown_count=true,
+    defensive_enabled=true,defensive_combat_only=true,
+    aura_promotion=true,defensive_engine_status=true,
+    defensive_recommendation=true,defensive_frame_created=true,
+    defensive_frame_shown=true,defensive_visibility_allowed=true,
+    defensive_disabled=true,defensive_combat_only=true,
+    routed_to_other_channel=true,
     profile_ui=true,engine_decisive_priority=true,
     engine_decisive_reason=true}
 -- Fixed engine/eligibility refusal vocabulary. These tokens are emitted
