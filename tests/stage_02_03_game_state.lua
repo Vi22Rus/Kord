@@ -81,8 +81,8 @@ eq(observed["UnitExists/UNKNOWN/unexpected_type"],1,
  "failure reason retained")
 eq(observed["GameAPI.Probe.UnitExists/READY/none"],1,
  "presence probe never merges with real read")
-eq(observed["GameAPI.ReadField/READY/none"],1,
- "field read recorded")
+eq(observed["GameAPI.ReadField.x/READY/none"],1,
+ "field key metadata recorded without value")
 eq(observed["GameAPI.ActionBarScanner.findspell/UNKNOWN/visible_spell_rank_mismatch"],
  1,"button scanner internal checkpoint")
 eq(#KR.GameAPI:DrainDiagnosticTrace().entries,0,
