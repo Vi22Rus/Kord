@@ -1236,6 +1236,9 @@
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
 
+**Архитектурная актуализация TG-08:** **См. TG-08: target distance/melee/deadzone is not evidence of moving away; movement trend requires separate verified observations.**
+
+
 **Архитектурная актуализация TG-01:** **См. TG-01: attackable/visible/LoS и дистанция — разные факты; range не доказывает видимость, общий target snapshot не дублировать.**
 
 **Приоритет: P0.**
@@ -1864,6 +1867,9 @@
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
 
 
+**Архитектурная актуализация TG-08:** **См. TG-08: slow/snare presence reuses canonical aura reader, not a new movement-specific aura scanner.**
+
+
 **Архитектурная актуализация TG-07:** **См. TG-07: CC detection reuses the canonical aura reader and GUID/secret safety; no independent CC aura scanner.**
 
 
@@ -2052,6 +2058,9 @@
 
 
 ### AU-05 — Поиск ауры по имени и семейству рангов, а не только по одному ID
+
+
+**Архитектурная актуализация TG-08:** **См. TG-08: Wing Clip/Hamstring rank families use AU-05 canonical family matching; never one-rank-only assumptions.**
 
 
 **Архитектурная актуализация TG-07:** **См. TG-07: CC aura rank-family/name resolution reuses AU-05, not hardcoded one-rank checks.**
@@ -2324,6 +2333,9 @@
 
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
+
+
+**Архитектурная актуализация TG-08:** **См. TG-08: fleeing/movement observations are tied to the same targetGUID; range and attackability do not prove fleeing.**
 
 
 **Архитектурная актуализация TG-06:** **См. TG-06: TTD history is keyed by confirmed targetGUID and discarded on identity change; do not reuse prior target.**
@@ -2645,6 +2657,9 @@
 
 ### TG-07 — Состояние контроля цели: превращена, заморожена, оглушена, в страхе, и сломается ли от урона
 
+
+**Архитектурная актуализация TG-08:** **См. TG-08: fear-induced running is a CC observation; movement and fear mechanics must be distinguished, sharing aura evidence.**
+
 **Раздел: 5. Цель. Приоритет: P1.**
 
 #### Требование
@@ -2692,3 +2707,53 @@
 **Архитектурные ссылки:** AU-01/02/04/05 — ауры, TG-01 — GUID, AU-08 — защиты, SP-14 — spell requirements. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-07.
+
+
+### TG-08 — Бежит ли цель (Hamstring/Wing Clip etc нужен)
+
+**Раздел: 5. Цель. Приоритет: P2.**
+
+#### Требование
+
+Различать `targetMoving`, `targetMovingAway`, `targetFleeing`, `targetSnared`, `slowRefreshNeeded` и `slowAbilityUseful`. Каждый факт независим, `READY(true/false)/UNKNOWN`, reason/source/targetGUID/observedAt. `fleeing` может означать бегство из-за страха, low-health NPC flee AI или тактическое удаление; эти случаи не эквивалентны. Не считать расстояние, отсутствие melee, отсутствие debuff, движение игрока или `target.approaching=false` доказательством бегства. При secret speed/недоступном движении — UNKNOWN, а не false.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155,129–130: `record.moving=IsPlayerMoving()` **только для игрока**. `target` не имеет moving/speed/direction/fleeing observation; `target.melee` (строки 302+) — дистанция, не движение.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 53–55: имена `target.wingClip`, `target.approaching`, `target.slowed` перечислены среди полей условий, но это не подтверждает реализованный provider, измеряющий бегство/скорость/направление.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9–20: `IsPlayerMoving` есть, `GetUnitSpeed` в проверенном allowlist нет. Его доступность/secret policy для target на Forever должна проверяться, не обходиться.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 23,26,35,38: `UNIT_AURA`, `UNIT_FLAGS` доступны как каналы, но не доказательство направления движения или события бегства.
+- AU-01/AU-05 — общий reader замедлений и rank families; TG-07 — страх/CC; SP-08 — расстояние.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Locale/*.lua` содержит Wing Clip/Hamstring, но в проверенных местах не подтверждён универсальный secret-safe `targetFleeing` detector; локализация способности не доказывает механику.
+2. **JustAC** — `MaintenanceTracker.lua:1314–1319` прямо фиксирует, что `GetUnitSpeed` может быть secret в бою, и slow не определяется через `C_LossOfControl` (речь об эффектах на игроке). `Data/Forever/Rotations.lua:642` содержит Hamstring как условное правило, но не доказательство бегства.
+3. **ForeverAuras** — `GenericTrigger.lua:4943–4957` использует `GetUnitSpeed("player")` для движения **игрока**; `SecretAuraRanks.lua:156,504` хранит семьи Wing Clip/Hamstring. Не переносить player movement detector на target без доказательства.
+4. **MaxDps** — `SpellData.lua:143,421` знает Hamstring, а некоторые классовые модули используют `GetUnitSpeed`; не подтверждён общий `targetFleeing` с GUID/secret safety.
+5. **ForeverRotation** — `Rotations/Warrior.lua:77–85` предлагает Hamstring для предотвращения кайта, но `when="dot"` не равно измерению движения прочь.
+6. **RotationGuide** — в проверенных Lua по Wing Clip/Hamstring/fleeing/GetUnitSpeed не обнаружен универсальный detector; не выдавать отсутствие совпадений за доказательство отсутствия всей логики.
+7. **RotationMaster** — `Platform/player_movement.lua:3–45` описывает `GetUnitSpeed("player")` secret in combat и fallback на `PLAYER_STARTED_MOVING/STOPPED_MOVING` **только для игрока**. `Libs/LibClassicDurations/classAbilities.lua:512–513` содержит Hamstring durations. Player movement events не дают состояния target.
+
+#### Рекомендация
+
+**Основа — Kord TG-01/SP-08 + AU-01/AU-05 (snare aura) + TG-07 (fear/CC) + JustAC/RotationMaster (secret movement restrictions) + ForeverAuras (rank families).** Логический `TargetMovementObservation(targetGUID)` допускает движение/направление/бегство только из разрешённых и подтверждённых источников Forever. При недоступном `GetUnitSpeed("target")` не строить детектор из secret speed, непроверенных координат или догадок. `SnareNeedObservation(abilityID,targetGUID)` отдельно оценивает: цель существует/жива/атакуемая; замедление отсутствует или истекает по подтверждённой ауре; способность применима по рангу/типу/дистанции; движение/бегство известно или политика явно разрешает профилактическое замедление. **«Нужен slow» не эквивалентно «цель убегает».** В случае UNKNOWN движения допустима отдельная декларативная политика профилактического slow, но UI/диагностика обязаны называть это политикой, а не фактом бегства. Никаких классовых movement engines.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ДОСТОВЕРНОЕ ОПРЕДЕЛЕНИЕ БЕГСТВА ЦЕЛИ — ДОРАБОТАТЬ (P2).** Есть названия условий slow и общий aura reader, но нет подтверждённого target movement/flee observation.
+
+#### Требуемые изменения
+
+1. Проверить `GetUnitSpeed("target")`, `UnitIsMoving` и иные возможные API на реальном Forever: наличие, secret flags, боевой режим, GUID-safe reading. Не включать неподтверждённые API в allowlist.
+2. Отдельно хранить `moving`, `movingAway`, `fleeing` и `fleeReason` с независимыми статусами. Скорость сама по себе не определяет направление, а движение прочь — не всегда бегство.
+3. Если доступна доказательная позиционная динамика, использовать bounded GUID-keyed observations с таймстемпами, фильтром шума и проверкой target switch; если нет — `movingAway/fleeing=UNKNOWN`.
+4. Замедление и root читать через AU-01/AU-05/TG-07 с rank-family matching, caster/targetGUID и UNKNOWN при secret. Различать snare, root, fear и иммунитет к замедлению.
+5. `slowAbilityUseful` определять по декларативной политике: предотвращение бегства, удержание melee, кайт, PvP, профилактика; отдельно от факта `fleeing`. Не рекомендовать Wing Clip/Hamstring только потому, что target вне melee.
+6. Проверять spell-specific `AbilityEligibility` (дистанция, ресурс, cooldown, форма, тип цели), а при UNKNOWN движения не создавать ложное READY из условия профиля.
+7. Инвалидировать на смене targetGUID, подтверждённых movement/aura events и revision EventBus; heartbeat только для повторной проверки, не доказательство движения.
+8. Диагностика `target_movement_secret`, `target_direction_unknown`, `target_flee_unknown`, `target_slow_aura_unknown`, `slow_policy_preventive`, `target_guid_changed`; тесты неподвижная цель, цель приближается, удаляется, страх, низкое HP NPC flee, кайт, snare already present, slow expiring, root, secret speed, target swap, melee/no-melee, pet target.
+
+**Архитектурные ссылки:** TG-01 — targetGUID, TG-07 — fear/root, AU-01/AU-05 — slow auras, SP-08 — distance. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-08.
