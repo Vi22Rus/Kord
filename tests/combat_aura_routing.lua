@@ -125,6 +125,21 @@ for _,kind in ipairs({"buff","aura","aspect","stance"}) do
  profile.Rules[1].recommendationType=kind
  eq(spell(E:Evaluate()),7294,"semantic route supports "..kind)
 end
+-- An aspect is maintenance but follows the visible Defensive
+-- placement checkbox, not the old combat-buff preference.
+profile.Rules[1].recommendationType="aspect"
+S:SetFlag("buffsInCombatMain",true)
+S:SetFlag("defensiveInCombatMain",false)
+combat=true
+eq(spell(E:EvaluateDefensive()),7294,
+ "unchecked Defensive checkbox keeps aspect out of main in combat")
+eq(spell(E:Evaluate()),3044,
+ "unchecked Defensive checkbox does not replace DPS with aspect")
+S:SetFlag("defensiveInCombatMain",true)
+eq(spell(E:Evaluate()),7294,
+ "checked Defensive checkbox promotes aspect into main in combat")
+eq(E:EvaluateDefensive().status,"BLOCKED",
+ "promoted aspect never duplicated in separate frame")
 for _,kind in ipairs({"utility","debuff"}) do
  profile.Rules[1].recommendationType=kind
  eq(spell(E:Evaluate()),7294,"non-maintenance bypasses aura routing: "..kind)
