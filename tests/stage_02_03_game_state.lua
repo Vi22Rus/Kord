@@ -217,6 +217,17 @@ local hidden=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
 eq(hidden.status,"UNKNOWN","hidden aura absence stays unknown")
 eq(hidden.reason,"aura_hidden_by_client","explicit source-backed refusal")
 eq(deniedReads,0,"no forbidden aura enumeration under restrictions")
+-- Sonah restrictions fallback: when the secrecy predicate is unavailable
+-- and combat lockdown is true, still do not call a denied aura scan.
+C_Secrets.ShouldAurasBeSecret=nil
+local oldLockdown=InCombatLockdown
+InCombatLockdown=function() return true end
+local unknownMode=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(unknownMode.status,"UNKNOWN","secrecy predicate unavailable in combat")
+eq(unknownMode.reason,"aura_secrecy_unverified",
+ "unknown secrecy failure is visible")
+eq(deniedReads,0,"combat fallback skips forbidden scans")
+InCombatLockdown=oldLockdown
 C_Secrets.ShouldAurasBeSecret=function() return false end
 C_UnitAuras.GetUnitAuras=nil
 
