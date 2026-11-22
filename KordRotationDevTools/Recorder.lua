@@ -11,6 +11,8 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     target_missing=true,no_eligible_rule=true,invalid_status=true,
     snapshot_unavailable=true,manual_sample=true,game_state_unavailable=true,
     action_slot_unconfirmed=true,spell_visual_data_unverified=true,
+    matrix_probe=true,no_single_safe_probe=true,unlisted_method=true,
+    core_bridge_missing=true,probe_failed=true,
     condition_unknown=true,condition_false=true,no_confirmed_visible_slots=true,
     profile_unverified=true,rotation_settings_unavailable=true,
     player_level_unverified=true,spellbook_unavailable=true,
@@ -72,6 +74,8 @@ local scannerFailures={
     button_action_unconfirmed=true,button_action_info_unconfirmed=true,
     button_action_not_spell=true,button_spell_id_unconfirmed=true,
     button_mapping_changed=true,button_revalidation_unknown=true,
+    spell_not_confirmed_on_visible_bar=true,
+    visible_spell_rank_mismatch=true,
 }
 for code in pairs(scannerFailures) do reasons[code]=true end
 local eligibilityStages={"cast","usability","charges","cooldown","gcd","range"}
