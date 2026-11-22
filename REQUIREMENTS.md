@@ -6333,6 +6333,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение CL-03:** CL-03: смена Aspect через общий STANCE_OR_FORM/AuraMode contract с отдельными Hunter аспектами и channel policy; не приравнивать aspect к warrior stance.
 
+**Ретроактивное уточнение CL-05:** CL-05: Shadowform — STANCE_OR_FORM с проверкой допустимости исцеления и иных заклинаний; нельзя считать form toggle безусловно готовым.
+
 ### AC-06 — WAIT: ничего не нажимать, ждать (не клиппить автострельбу, копить ресурс)
 
 **Архитектурная актуализация EN-A2:** порядок `Rules` — нормативный приоритет; первое достоверно `READY` завершает оценку, последующие правила не вычисляются; `UNKNOWN` обязательного факта останавливает цепочку по AC-07, разрешённый `skip` — только по проверенному исключению (см. EN-A2).
@@ -6489,6 +6491,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение CL-04:** CL-04: UNKNOWN combo points, energy timing, stealth или interruptibility должны приводить к STOP для зависящего правила, а не ложному finisher/Kick.
 
+**Ретроактивное уточнение CL-05:** CL-05: неизвестный Weakened Soul, тип диспела, mana reserve, статус wand или состояние группы → STOP для зависимого правила.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6575,6 +6579,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-03:** CL-03: Hunter Needs/Spells/Rules расширяются только версионированно; legacy BM.Next(s,cfg) не v1 profile и не читает WoW API напрямую в новой архитектуре.
 
 **Ретроактивное уточнение CL-04:** CL-04: Rogue Needs и action policies расширяются версионированно; combo, energy tick, poison и stealth данные поставляют только общие providers.
+
+**Ретроактивное уточнение CL-05:** CL-05: Priest Needs и target/action policies только через versioned Profile_Contract; profile не читает WoW API.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8542,6 +8548,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-04:** CL-04: подтвердить на WoW Forever combo power/target binding, energy tick timing, stealth detection, weapon enchant remaining/charges, interruptible casts и Gouge cast-break semantics.
 
+**Ретроактивное уточнение CL-05:** CL-05: проверить WoW Forever Shadowform restrictions, shield/Weakened Soul, wand Shoot toggle, group unit tokens, dispel types, resurrection restrictions и group reagent rules.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8774,6 +8782,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-04:** CL-04: каждый Rogue профиль обязан иметь scenarios combo points target binding, finisher, stealth, poison MH/OH, energy ticks, Kick/Gouge, Vanish/Evasion/Feint и cast disruption.
 
+**Ретроактивное уточнение CL-05:** CL-05: сценарии Priest Shadowform, Power Word: Shield/Weakened Soul, DoT/mana, wand Shoot, party heal, friendly/hostile dispel, Resurrection и group buffs обязательны для каждого реального профиля.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -8991,6 +9001,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-03:** CL-03: Hunter Aspect и Paladin Aura используют общий AuraStateProvider/ExclusiveAuraModeProvider, но различаются семантикой и условиями смены; не создавать дублирующие сканеры.
 
+**Ретроактивное уточнение CL-05:** CL-05: Priest Resurrection использует ту же universal friendly_dead eligibility, FriendlyUnitSelectionProvider и DispelStateProvider; нельзя создавать priest-only альтернативы.
+
 ### CL-03 — Охотник: аспекты, ловушки, питомец, боеприпасы, автострельба, мёртвая зона, метка и имитация смерти
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это **требования к данным и действиям**, а не приоритеты BM/MM/SV ротаций. Для Leveling/60/PVE/PVP — только отдельные утверждённые профили. Никакого автоматического выполнения действий: аддон рекомендует и диагностирует.
@@ -9098,6 +9110,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-04:** CL-04: Rogue weapon poisons используют общий WeaponEnchantProvider/EquipmentProvider, но не Hunter ammo; interrupt/cast providers общие, а Rogue energy ticks отличаются от Auto Shot swing.
 
+**Ретроактивное уточнение CL-05:** CL-05: Priest wand Shoot и Hunter Auto Shot требуют общего типизированного AutoAttackStateProvider, но отдельной семантики wand/ranged и проверки остановки; swing timings не угадываются.
+
 ### CL-04 — Разбойник: очки комбо, финишеры, скрытность, яды, энергия и такты, прерывания, уход и срыв каста
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к данным, условиям и действиям, **не готовые приоритеты** Assassination/Combat/Subtlety, Leveling/60/PVE/PVP. Ротации — отдельные утверждённые профили; новых Rogue профилей в реестре нет.
@@ -9198,3 +9212,113 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / ROGUE-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Есть ресурсы, target, cooldown/cast Eligibility, но не доказаны combo target binding, stealth, MH/OH poison, energy ticks и CC cast disruption. Rogue профили отсутствуют. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись, только документация.
 
 **Ретроактивные ссылки:** CL-01, CL-03, IT-10, QA-07, QA-04, EN-A1, AC-07.
+
+**Ретроактивное уточнение CL-05:** CL-05: Priest Shadowform и Rogue Stealth используют общие StateTransition/ModeProvider с разными restrictions; mana resource отдельно от energy ticks.
+
+### CL-05 — Жрец: Shadowform, щит и Weakened Soul, DoT/мана, палочка, групповое лечение, диспел, воскрешение, баффы группы
+
+**Раздел 18. Специфика классов (девять классов). Приоритет P0.** Это требования к выразимости **данных и действий**, а не приоритеты Holy/Discipline/Shadow, Leveling/60, PvE/PvP. Ни один Priest-профиль не должен считаться существующим или протестированным, пока он не создан, зарегистрирован и проверен.
+
+#### Подробный контракт механик и способностей
+
+| Механика | Способности и сущности (по версии клиента) | Требуемые факты, условия, действия и UNKNOWN |
+|---|---|---|
+| Тёмная форма | Shadowform; Shadow spells, healing spells | active form ID/rank, source, learned, GCD, combat, restrictions on healing/Holy spells **по фактическому клиенту**; `STANCE_OR_FORM` только после Eligibility; выход из формы для лечения — отдельное решение, затем повторная оценка |
+| Щит и слабость | Power Word: Shield; Weakened Soul | buff shield on recipient, remaining, shield absorb if safely available, debuff Weakened Soul on **том же** получателе, duration, ownership, mana, GCD, range, target life, target eligibility; не рекомендовать щит при подтверждённой блокировке; UNKNOWN не равен «нет слабости» |
+| DoT и мана | Shadow Word: Pain, Devouring Plague, Vampiric Touch (если есть), Mind Blast, Mind Flay | target debuff ID/rank, owner, remaining/ticks, target TTD, mana current/cost/reserve, cast/channel clipping, range, target immune/CC, spell availability; не обновлять чужой DoT как свой без policy |
+| Палочка | Shoot, equipped wand, auto-repeat wand attack | wand equipped/usable, Shoot active/UNKNOWN, ranged range/dead zone if relevant, target, mana conservation, cast interruption, start/stop toggle, client-confirmed swing/timing; повторное нажатие Shoot может выключить атаку, поэтому **не рекомендовать повторный toggle вслепую** |
+| Лечение группы | Lesser Heal, Heal, Greater Heal, Flash Heal, Renew, Prayer of Healing, Binding Heal, Circle of Healing (если существуют) | per-member HP current/max, alive/dead, role/priority, effective heal/overheal only if reliable, incoming heal UNKNOWN, range/LoS, cast/channel, mana, AoE group eligibility, party/raid tokens; выбор **конкретного** получателя, а не абстрактной friendly цели |
+| Рассеивание | Dispel Magic, Cure Disease, Abolish Disease, Mass Dispel (если существует) | helpful/harmful aura on specific unit, dispel type `Magic|Disease` по spell capabilities, friendly vs enemy dispel direction, debuff stacks/remaining, priority, range/mana/GCD, restrictions, UNKNOWN; не обещать Poison/Curse без проверенной способности |
+| Воскрешение | Resurrection | `friendly_dead` recipient, dead state, combat/OOC restriction as verified, mana, cast time, range, target accessibility; живая цель BLOCKED, неизвестная жизнь UNKNOWN |
+| Бафф группы | Power Word: Fortitude, Prayer of Fortitude, Divine Spirit, Prayer of Spirit, Shadow Protection, Prayer of Shadow Protection, Inner Fire (self only) | spell family, self vs group/raid recipients, aura source/remaining, greater/group versions and reagents if present, duplicate/overwriting, class/role policy, rank, mana; не смешивать self-only и group buffs |
+
+Названия здесь — кандидаты для `SpellFamilyCatalog`, **не подтверждение** их доступности, ID, ранга, эффекта или стоимости на WoW Forever. Разные эпохи WoW имеют разные правила Shadowform, щитов, Prayer и dispel. Клиентский QA-04 обязателен. Ни одно UNKNOWN/secret значение не становится false/READY. Движок только рекомендует, не выполняет защищённые действия.
+
+#### Аудит текущего Kord
+
+- `KordRotation/Core/GameState.lua`: нормализует здоровье `UnitHealth/UnitHealthMax`, ресурсы `UnitPowerType/UnitPower/UnitPowerMax`, target/combat; **нет подтверждённого** полного per-party/raid health snapshot и wand auto-repeat state.
+- `KordRotation/Core/RotationConditions.lua`: доступны `player.health.percent`, `resources.percent`, `context.inGroup`, `player.buff`, `target.debuff` через Needs. Нет доказанных `ally.health`, `ally.weakenedSoul`, `wand.active`, `dispelType` и `groupBuffCoverage` как v1 typed facts.
+- `KordRotation/Core/AbilityEligibility.lua`: общая target policy `friendly` отклоняет dead target (`target_dead`), что **не подходит для Resurrection**. Требуется общий `friendly_dead` из CL-02, без ослабления live-only gate для лечения.
+- `KordRotation/Core/RotationProfiles.lua`: категории `form/aura/buff`, `target=friendly|self|enemy|none`, но не полноценный выбор party member и special policy для friendly_dead, wand toggle, dispel direction.
+- `docs/rotation/Canonical_API_Matrix.md`: #6 mana, #12/#13 auras, #17 group/raid, #21 spell cost, #27/#28 aura duration, #35 heal/dispel, #44 ownership, #53 resource cost; это **матрица методов**, не доказательство готовой Priest реализации.
+- `docs/rotation/Profile_Registry.md`: перечислены Hunter PvE исходники; Priest профили отсутствуют. MOCK/CLIENT PASS по Priest не заявляются.
+
+#### Семь предоставленных референсов: программа сопоставления
+
+| Референс | Проверяемый аспект | Ограничение |
+|---|---|---|
+| Sonah | Priest class rules, Shadowform, wand, healing/dispel | Нельзя копировать ротацию вместо данных |
+| JustAC | Forever rotations, group target and aura checks | SimC/Forever должны быть разделены |
+| ForeverAuras | Buff/debuff remaining, Weakened Soul, secret-safe reads | Aura trigger не подтверждает absorb amount |
+| MaxDps | Priest spec logic, wand and spell usability | Retail механика не равна Forever |
+| ForeverRotation | Priest buffs, healing signals and priorities | Сигнал не гарантирует target selection |
+| RotationGuide | Priest data/conditions and state representation | Нужны одинаковые revisions/snapshots |
+| RotationMaster | Group support, conditions, replay and target scopes | Forecast не подтверждает реальную цель |
+
+Это направления исследования предоставленных семи ZIP, **не утверждения о найденных конкретных Lua-функциях**: полный построчный аудит архивов в этом проходе не выполнялся.
+
+#### Выбранная архитектура: только общие провайдеры
+
+1. **`FormStateProvider`** — Shadowform, transitions и restrictions; общий `STANCE_OR_FORM` AC-05 с Warrior и другими классами, без автоматического разрешения Holy/healing spells в Shadowform.
+2. **`AuraStateProvider`** — shield buff, Weakened Soul debuff на одном unit, DoT owner/remaining, group buffs; typed `UNKNOWN`, secret-safe, event revision; absorb amount только при подтверждённом API.
+3. **`FriendlyUnitSelectionProvider`** — canonical player/party/raid units, per-unit health/dead/assistable/range, target identity, explicit recipient; общий с Paladin CL-02.
+4. **`HealEligibilityProvider`** — healing target, mana, cast, range, effective healing when reliable, no invented overheal predictions; финальное READY только `AbilityEligibility`.
+5. **`DispelStateProvider`** — types `Magic/Disease` for verified priest spells, friendly/enemy direction, debuff identity, target and immunity; общий с Paladin CL-02.
+6. **`ResourceStateProvider`** — typed MANA current/cost/reserve, regeneration when verified; не вводить фиксированные пороги в ядро.
+7. **`AutoAttackStateProvider`** — typed wand Shoot auto-repeat, toggle on/off, equipped wand, range, channel/cast interactions; общий с Hunter CL-03, но `wand` не равно `Auto Shot`.
+8. **`SpellFamilyCatalog`** — Fortitude/Prayer, Spirit/Prayer, Shadow Protection, shield, dispel, resurrection spell IDs/ranks and optional reagent rules; источник — проверенный spellbook.
+9. **`AbilityEligibility`** — единственный final READY для friendly/alive, friendly_dead, enemy, self, form/recipient/range/mana/auras/toggle; расширения только через versioned `Profile_Contract` EN-A1, QA-06 purity и lazy Needs.
+
+**Особое правило:** при подтверждённом Weakened Soul щит BLOCKED, но лечение союзника оценивается независимо; Shadowform не должна блокировать показ безопасной рекомендации выхода из формы, если профиль разрешает и клиент подтверждает ограничения. Не подменять main DPS рекомендацией group buff или defensive action вопреки UI policy.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (спецификация, NOT RUN)
+
+| ID | Состояние | Ожидаемый результат |
+|---|---|---|
+| `PRI-FORM-01` | Shadowform активна, Shadow spell eligible | не переключать форму повторно |
+| `PRI-FORM-02` | требуется heal, форма подтверждённо запрещает spell | отдельная рекомендация выхода из формы, не heal READY |
+| `PRI-FORM-03` | form restrictions UNKNOWN | STOP для зависящего правила |
+| `PRI-SHIELD-01` | на ally есть Weakened Soul | Power Word: Shield BLOCKED |
+| `PRI-SHIELD-02` | Weakened Soul UNKNOWN | не считать отсутствующим |
+| `PRI-SHIELD-03` | shield active, remaining enough | не обновлять по ошибке |
+| `PRI-DOT-01` | свой DoT истекает, target valid, mana sufficient | разрешить refresh по profile threshold |
+| `PRI-DOT-02` | DoT owner UNKNOWN | STOP для ownership-dependent rule |
+| `PRI-MANA-01` | mana ниже cost+reserve | BLOCKED |
+| `PRI-WAND-01` | Shoot уже active | не рекомендовать повторный toggle |
+| `PRI-WAND-02` | Shoot state UNKNOWN | STOP для wand-toggle rule |
+| `PRI-WAND-03` | wand не экипирована | Shoot BLOCKED |
+| `PRI-HEAL-01` | ally low HP, self full HP | heal конкретного ally, не self |
+| `PRI-HEAL-02` | ally dead | heal BLOCKED; resurrection оценивается отдельно |
+| `PRI-HEAL-03` | ally HP UNKNOWN | STOP для health-dependent heal |
+| `PRI-DISPEL-01` | friendly Disease confirmed, spell capable | dispel по Eligibility |
+| `PRI-DISPEL-02` | enemy dispellable Magic buff | enemy dispel только при verified capability |
+| `PRI-DISPEL-03` | debuff dispel type UNKNOWN | STOP, не обещать очищение |
+| `PRI-REZ-01` | dead friendly, OOC, spell eligible | Resurrection через `friendly_dead` |
+| `PRI-REZ-02` | alive friendly | Resurrection BLOCKED |
+| `PRI-BUFF-01` | party member lacks Fortitude | выбрать именно этого recipient |
+| `PRI-BUFF-02` | Prayer variant requires missing reagent | BLOCKED при verified requirement |
+| `PRI-REVISION-01` | party member/HP/form/aura changed | invalidate stale snapshot |
+| `PRI-CHANNEL-01` | group buff OOC, combat DPS active | main/defensive/maintenance routing согласно настройкам |
+
+Для каждого теста — реальные `profileID`, spellID/rank, входной snapshot, expected action/status/reason/channel, provider reads и evidence. Пока профилей и runner нет, **все эти сценарии NOT RUN**; они не считаются реальным покрытием.
+
+#### Требуемые работы
+
+1. Подтвердить Priest spell IDs/ranks/families, Shadowform restrictions, shield/Weakened Soul, wand, group buffs, dispel and resurrection в WoW Forever (QA-04).
+2. Подключить Shadowform к общему FormStateProvider и проверкам `AbilityEligibility`.
+3. Реализовать shield+Weakened Soul pair check на одном unit через AuraStateProvider, safe UNKNOWN.
+4. Добавить DoT owner/remaining и typed mana reserve, без лишнего обновления DoT.
+5. Подключить wand Shoot к общему AutoAttackStateProvider, с confirmed toggle и equipment checks.
+6. Реализовать FriendlyUnitSelectionProvider для party/raid, health/dead/target identity, затем HealEligibilityProvider.
+7. Подключить DispelStateProvider с friendly/enemy direction и per-spell Magic/Disease capabilities.
+8. Использовать общий `friendly_dead` из CL-02 для Resurrection, не менять live-friendly healing gate.
+9. Подключить group buff families/recipient/reagents, исключить self-only spells из group recommendation.
+10. Добавить 24 QA-07 сценария для каждого реального Priest профиля, QA-06 purity, diagnostics, Lua 5.1 mocks и отдельный WoW Forever validation, без GitHub Actions до финальной ручной QA.
+
+**Диагностика:** `priest_shadowform_unknown`, `priest_form_spell_restricted`, `priest_weakened_soul_active`, `priest_weakened_soul_unknown`, `priest_shield_aura_unknown`, `priest_dot_owner_unknown`, `priest_mana_reserve`, `priest_wand_active`, `priest_wand_state_unknown`, `priest_wand_missing`, `priest_heal_recipient_unknown`, `priest_heal_target_dead`, `priest_dispel_type_unknown`, `priest_dispel_direction_invalid`, `priest_resurrection_target_alive`, `priest_group_buff_missing`, `priest_group_buff_reagent_missing`, `priest_snapshot_stale`. Secret payload не писать в журнал.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / PRIEST-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Общие health, mana, target, aura, spell Eligibility существуют, но нет доказанного full party heal/dispel target selection, shield+Weakened Soul, Shadowform restriction, wand toggle и group buff contracts. Priest профилей нет. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** CL-02, CL-03, CL-04, QA-07, QA-04, EN-A1, AC-05, AC-07.

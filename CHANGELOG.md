@@ -1,3 +1,14 @@
+## KR-20261122-021 — аудит CL-05: Priest Shadowform, shield, wand, group heal/dispel, resurrection
+- Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-021`.
+- Тип: docs / CL-05 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP без изменений.
+- Контекст: Priest требует Shadowform restrictions, shield+Weakened Soul, DoT/mana, wand Shoot, group heal/dispel, resurrection, group buffs.
+- Причина: нет доказанных party recipient, wand toggle, form restriction и shield/debuff pair contracts; обычная friendly eligibility блокирует мёртвую цель.
+- Решение: общие FormState/AuraState/FriendlyUnitSelection/HealEligibility/DispelState/ResourceState/AutoAttackState/SpellFamilyCatalog providers, единый AbilityEligibility, `friendly_dead` из CL-02, 24 QA-07 сценария.
+- Семь ZIP: архитектурные направления сверки перечислены; полного построчного ZIP-аудита не было.
+- Ретроактивные ссылки: CL-02, CL-03, CL-04, QA-07, QA-04, EN-A1, AC-05, AC-07.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-05 документирован; реализация и клиентское подтверждение не выполнялись.
+
 ## KR-20261122-020 — аудит CL-04: Rogue combo, stealth, poison, energy ticks, interrupt and escape
 - Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-020`.
 - Тип: docs / CL-04 / P0; `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
