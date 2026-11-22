@@ -34,6 +34,10 @@ eq(#p.Rules>25,true,"full strategic priority list present")
 eq(p.Rules[1].spell,"Feign","defensive opener")
 eq(p.Rules[2].spell,"AspectHawk","aspect next")
 eq(p.Rules[3].spell,"AspectMonkey","early aspect fallback")
+eq(p.Rules[2].recommendationType,"aura","Hawk routed as aura")
+eq(p.Rules[3].recommendationType,"aura","Monkey routed as aura")
+eq(p.Rules[6].recommendationType,nil,
+ "Mend Pet remains independent of aura routing")
 eq(p.Rules[7].spell,"Mark","prepull mark")
 local has={}
 for _,rule in ipairs(p.Rules) do has[rule.spell or rule.action]=true end
