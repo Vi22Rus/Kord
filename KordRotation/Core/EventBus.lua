@@ -89,8 +89,11 @@ end
 -- changes invalidate shared observations; a known bag ID also gets its own
 -- revision. Unknown event parameters invalidate all bags, never imply zero.
 local function knownBag(bagID)
-    return type(bagID)=="number" and bagID==math.floor(bagID)
-        and bagID>=0 and bagID<=4
+    if type(bagID)~="number" then return false end
+    local ok,valid=pcall(function()
+        return bagID==math.floor(bagID) and bagID>=0 and bagID<=4
+    end)
+    return ok and valid==true
 end
 
 function E:GetInventoryRevision()
