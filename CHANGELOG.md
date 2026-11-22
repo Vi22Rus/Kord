@@ -1,3 +1,13 @@
+## KR-20261122-031 — аудит NO-05: запрет фонового сканирования аур и врагов
+- Дата: 2026-11-22; Git SHA/UTC — metadata коммита KR-20261122-031.
+- Тип: docs-only, P0 SPECIFIED; runtime соответствие NOT VERIFIED.
+- Контекст: Needs является разрешением на источник, а не eager preload; сканирование аур/врагов без реально достигнутой проверки профиля запрещено.
+- Источники: GitHub API — AGENTS.md, RotationConditions.lua, GameState.lua, EventBus.lua, RotationEngine.lua, GameAPI.lua, AbilityEligibility.lua; адресный просмотр семи загруженных ZIP Sonah/MaxDps/JustAC/ForeverAuras/ForeverRotation/RotationGuide/RotationMaster.
+- Обнаружено: lazy readCache и Needs gate имеются; GameState aura fallback ограничен 256 batch/64 index на запрос, но суммарный бюджет не доказан; enemy.count возвращает UNKNOWN/unimplemented; EventBus сам не сканирует; повторная диагностика NO-04 потенциально добавляет reads.
+- Изменения: REQUIREMENTS.md — NO-05, таблица границ, адресный аудит, 7 референсов, 10 задач, 40 QA-07 сценариев, P0 release gate; обратные ограничения в DA-01/02/03, EN-01/02/03, QA-01/03/07, NO-02/03/04. CHANGELOG.md — запись.
+- Проверки: SOURCE/DOC AUDIT PASS; FULL STATIC SCAN, Lua 5.1, CI, ZIP BUILD, WoW Forever NOT RUN; CLIENT PASS 0/101. Исходники Lua, TOC, ZIP не менялись.
+- Следующий этап: документальный аудит следующего пункта по запросу; реализацию NO-05 и runtime parity проверять в общем QA.
+
 ## KR-20261122-030 — аудит NO-04: паритет user/dev без второй логики
 - Дата: 2026-11-22 (точное UTC время — GitHub metadata); Git SHA: см. git log --grep KR-20261122-030.
 - Тип/статус: docs / P0 SPECIFIED; full parity NOT VERIFIED; Lua, TOC, ZIP не менялись.

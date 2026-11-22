@@ -3152,6 +3152,8 @@
 
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
+
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 nearest/switch and interrupt candidate discovery consumes the same budgeted observed-enemy snapshot, never an independent nameplate scan.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: radius counting consumes the shared EN-08 budgeted ObservedEnemyIndex snapshot; do not perform an independent GetNamePlates scan per count request.**
@@ -3223,6 +3225,8 @@
 
 ### EN-02 — Число врагов, находящихся в бою с группой
 
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
+
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 actor-specific threat evidence can support engaged-with-group classification but neither threat nil nor combat flag alone proves group engagement.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: engaged-with-group counting reuses EN-08 bounded enemy refresh and cached GUID evidence, not a separate periodic nameplate scan.**
@@ -3289,6 +3293,8 @@
 
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
 
@@ -7274,6 +7280,8 @@ Burst — отдельная типизированная настройка п�
 
 ### DA-01 — Шина событий с ревизиями каналов, пакетная обработка
 
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
+
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
 
 #### Требование
@@ -7340,6 +7348,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение DA-08:** DA-08: identity/talents/spellbook/actionbar/bindings должны менять revisions сразу; смена спека/уровня требует атомарного пересмотра профиля, рангов и рекомендаций. Исторический аудит сохранён.
 
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
@@ -7414,6 +7424,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-02:** UI-02: кеш button→spellID и binding labels должен учитывать actionbar/bindings/identity/talents revisions; защищённые или непроверенные кнопки не подсвечиваются. Исторический аудит сохранён.
 
 ### DA-03 — Провайдеры данных подключаются через список Needs; без разрешения профиль данные не получит
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
 
@@ -8338,6 +8350,8 @@ Kord должен корректно реагировать на фактиче�
 
 ### QA-01 — DevTools: запись, трассировка, зонды API. Отдельный аддон, ядро побайтово то же, что у пользователя
 
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
+
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8482,6 +8496,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-05:** дифференциальный отчёт QA-05 сравнивает вычисленные trusted `reason/subreasons` и `NOT_EVALUATED` из единого QA-02 envelope; самостоятельный диагностический обход непрочитанных условий не признаётся эквивалентной трассой и не должен влиять на live evaluation.
 
 ### QA-03 — Mock-тесты движка и профилей, запуск на Lua 5.1
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
@@ -8792,6 +8808,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 сценарные fixtures проходят QA-06 purity gate для реальных profile source; отсутствие прямого API не доказывает правильности выбранного действия, поэтому QA-07 остаётся отдельным обязательным поведенческим gate.
 
 ### QA-07 — Сценарные таблицы «состояние → ожидаемое действие» для каждого профиля
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
@@ -10004,6 +10022,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 ### NO-02 — Запрещено читать скрытые значения в бою и подставлять догадки вместо nil
 
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
+
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
 **Ретроактивное ограничение → NO-03:** журнал, DevTools, SavedVariables и экспорт допускают только ограниченные диагностические коды/счётчики; никаких произвольных данных игрока, цели, чата, сырых API payload или ошибок.
@@ -10103,6 +10123,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 
 ### NO-03 — Запрещено хранить в журнале произвольные данные игрока, цели и чат
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Ретроактивное ограничение → NO-04:** пользовательский и диагностический режимы выполняют один канонический KordRotation Engine/Profile/Eligibility pipeline. DevTools — только ограниченный read-only observer: при равном подтверждённом входе не изменяются recommendation, status/reason, priority/order, UNKNOWN policy, GameState/EventBus revisions и побочные эффекты. Диагностический повторный Evaluate/AuditFull запрещён в live path; паритет доказывается проверкой байтов ZIP и mode-differential тестами NO-04.
 
@@ -10210,6 +10232,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 
 ### NO-04 — Запрещено включать в пользовательскую сборку другую логику, чем в диагностической
+
+**Ретроактивное ограничение → NO-05:** `Needs` — разрешение на источник, а не приказ фонового сканирования. Ауры и враги читаются только при достижении фактически исполняемого условия/доказанной необходимости выбранного профиля, с bounded work, кэшем одной оценки, адресной инвалидацией, fail-closed UNKNOWN и без дополнительного обхода DevTools. Подробный контракт, отрицательные сценарии и release gate — NO-05.
 
 **Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Распространяется на `KordRotation-user.zip`, `KordRotation-dev.zip`, канонический `KordRotation/`, отдельный `KordRotationDevTools/`, все классы, PvE/PvP, main/defensive, GameAPI, GameState, RotationConditions, RotationProfiles, RotationEngine, AbilityEligibility, UI, кэши, события, конфигурацию и будущие варианты поставки.
 
@@ -10322,3 +10346,120 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 **P0 / SPECIFIED, НЕ ПРОВЕРЕН В ПОЛНОМ ОБЪЁМЕ; ИМЕЕТСЯ ИСХОДНИКОВЫЙ РИСК ПОВТОРНОЙ LIVE-ОЦЕНКИ.** Утверждён один общий пакет `KordRotation/`, а build script его дублирует побайтово. Но `CoreObservation.ReadEngineDiagnostic` запускает `Evaluate/EvaluateBoth`, `Trace.ObserveTransition` вызывает Diagnose по событиям и таймеру. Это доказывает второй вычислительный путь во время записи, **но не доказывает фактического изменения пользовательской рекомендации**. Следовательно, до переработки/изолированного теста выпуск не может быть признан прошедшим NO-04. **SOURCE/DOC AUDIT PASS; ZIP BUILD NOT RUN; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Ретроактивные связи:** QA-01, QA-02, QA-03, QA-05, QA-06, QA-07, DA-02, UI-01, NO-01, NO-02, NO-03. В указанные разделы добавлены обратные ограничения; не вводится новый engine, заменяющий уже существующие контракты.
+
+
+### NO-05 — Запрещено постоянно сканировать ауры и врагов без запроса профиля
+
+**Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Для единого пользовательского/диагностического ядра, всех классов, PvE/PvP, main/defensive, GameState, RotationConditions, RotationEngine, EventBus, GameAPI, UI и DevTools.
+
+#### Требование и точная граница
+
+**Инвариант `NEEDS_GATED_LAZY_BOUNDED_OBSERVATION`:** движок не выполняет постоянное перечисление аур, nameplates, враждебных юнитов или пространственных/боевых списков только потому, что работает UI, пришло событие, изменился target, включён DevTools или профиль **объявил** `Needs`. `Needs` — **allowlist**, не eager preload: чтение допускается лишь если текущая реально исполняемая ветка профиля/проверка AbilityEligibility требует конкретный факт, а этот факт нельзя получить из уже подтверждённого актуального кэша. Запрет распространяется на `OnUpdate`, heartbeat, таймеры, event callbacks, диагностические пробники и скрытые вспомогательные фоновые циклы. Не отменять необходимые лёгкие события инвалидации и обычный снимок состояния: запрет касается **дорогих aura/enemy enumeration**, а не всякого read-only обращения к API.
+
+**Допустимые исключения:** ограниченный адресный запрос ауры по конкретному `spellID` и unit, когда он разрешён `Needs.auras` и достигнут lazy condition; при доказанной доступности/несекретности клиента — ограниченный batch/index fallback только для **того же запрошенного факта**, после более дешёвых адресных путей и с конечным лимитом/валидностью отрицательного результата. `Needs.enemyCount=true` разрешает только фактически достигнутый `enemy.count`; параметры диапазона, enemy hostility, engagement, единичность GUID, подтверждённая видимость и источники должны быть явными в контракте EN-01/02/03, иначе `UNKNOWN`. Не превращать разрешение в сканирование всех юнитов на каждом тике. Не делать заранее дорогой `ScanAllAuras` или `GetNamePlates` на всех событиях.
+
+| Граница | Запрещено | Разрешено при проверяемом условии |
+|---|---|---|
+| Profile `Needs` | Сканировать сразу после регистрации профиля или смены класса | Только разрешить будущий запрос `Needs.auras[spellID]` / `Needs.enemyCount` |
+| Lazy evaluation | Выполнять запросы из невыбранных/short-circuited правил | Прочесть ровно нужный факт достигнутого правила |
+| Ауры | Каждый кадр обходить весь `player/target/focus/nameplates`; повторять один и тот же поиск | Сначала точный ID, затем доказанно безопасный bounded fallback; один readCache на оценку |
+| Враги | Постоянно собирать/дедуплицировать все nameplates; придумывать `0` при отсутствии источника | Demand-driven подсчёт по EN-01/02/03 с подтверждёнными границами, range и dedup |
+| События | `UNIT_AURA`/target-change/heartbeat запускают полный рескан | Пометить соответствующий канал dirty и инвалидацию без непосредственного обхода |
+| Кэш | Использовать устаревшую цель или ошибочный отрицательный результат | Per-evaluation key `field+spellID+unit+target identity+revision` по смыслу; long-lived только с точной инвалидацией |
+| Secret/недоступность | Обходить защищённый список, считать nil отсутствием ауры/нулём врагов | `UNKNOWN` с причиной; `UNKNOWN→STOP` по NO-02 |
+| DevTools | Дополнительный `Evaluate`, `AuditFull`, `ProbeAll`, aura/enemy scan из таймера | Пассивно читать уже сформированный bounded decision envelope по NO-04 |
+| Производительность | Неограниченная работа, лишние API calls при выключенном/неиспользуемом профиле | Детерминированные лимиты и счётчики по типу запроса, нагрузка измеряется отдельно |
+
+#### Адресный аудит Kord (main)
+
+- `AGENTS.md`: прямо предписано «Needs разрешает источники, не требует предзагрузку», lazy conditions, UNKNOWN→STOP, no direct WoW API in profiles и один движок.
+- `RotationConditions.lua:declared()` допускает `player.buff/target.debuff` только по `Needs.auras`, `enemy.count` — только при `Needs.enemyCount==true`; `value()` кэширует в `ctx.readDone/readCache/reasonCache` и вызывает `GameState.ReadSignal` только при реальном чтении. `all/any` должны сохранять short-circuit; дубли не дают новых API calls в одной оценке.
+- `GameState.lua:ReadSignal()` реализует адресный `C_UnitAuras.GetPlayerAuraBySpellID`/`GetUnitAuraBySpellID`, затем name lookup, CooldownViewer/evidence и защиту `C_Secrets.ShouldAurasBeSecret`. При доказанной безопасности может вызвать `GetUnitAuras` с проверкой до **256** элементов либо `GetAuraDataByIndex` до **64** индексов. Эти лимиты существуют **в коде**, но тест фактической частоты и отрицательной достоверности ещё NOT RUN. Запрос конкретного spellID оправдывает такой fallback только если он не был уже подтверждён и условия клиента позволяют.
+- `GameState.lua:ReadSignal("enemy.count")` не имеет полноценной ветки: незнакомое поле возвращает `UNKNOWN/signal_provider_unimplemented`. `Needs.enemyCount` **не означает**, что подсчёт уже реализован. EN-01/02/03 остаются самостоятельными контрактами будущего demand-driven provider.
+- `EventBus.lua`: `UNIT_AURA` маркирует канал `auras`; `PLAYER_TARGET_CHANGED` — `target`; `Tick()` коалесцирует события каждые **0,20 с**, heartbeat — **2 с**. Прямого aura/enemy scan в `Tick()` нет. Однако общий список listeners и downstream consumers ещё требуют полной трассировки для исключения косвенного eager scan.
+- `RotationEngine.lua` использует `GameState:GetSnapshot(true)` для live оценки; этот свежий базовый snapshot не равен сканированию всех аур/врагов. `EvaluateBoth` разделяет per-evaluation cache, а `OnUpdate` самого движка не устанавливается. Проверить вызовы из UI и независимость main/defensive от eager aura fetch.
+- `GameAPI.lua` разрешает `C_NamePlate.GetNamePlates`, aura methods; наличие API в allowlist **не является** доказательством его вызова. `CoreObservation.ReadEngineDiagnostic`/DevTools `Trace.ObserveTransition` повторно оценивают Engine по событиям/таймеру (NO-04); это источник потенциальных **дополнительных** aura lookups при реально достигнутых правилах. Не объявлять полное NO-05 PASS до устранения.
+- `AbilityEligibility.lua` может делать собственные целевые проверки по требованиям конкретного кандидата; это не общий enemy scan. Измерить реальные API calls отдельно, не заменять обязательную проверку допустимости заклинания кэшем сомнительной свежести.
+- **Итог исходников:** механизмы `Needs`, lazy per-evaluation cache и event-only invalidation **частично имеются**. Полный анализ всех listeners, static all-file scan, реальный runtime профилировщик и клиент Forever здесь NOT RUN. Факт нарушения «постоянно сканирует всех» **не доказан**; риск дополнительных live diagnostic evaluations установлен NO-04.
+
+#### Семь исходных ZIP: адресные референсы
+
+Архивы `Sonah.zip`, `MaxDps.zip`, `JustAC.zip`, `ForeverAuras.zip`, `ForeverRotation.zip`, `RotationGuide.zip`, `RotationMaster.zip` доступны как загруженные первоисточники. Адресный поиск исходных Lua-файлов в архивах выполнен; это **не** полная построчная ревизия каждого ZIP.
+
+1. **Sonah** — `Core/Atoms/Auras.lua` содержит `GetPlayerAuraBySpellID` и целевые aura reads, `Core/Atoms/Units.lua` — `C_NamePlate.GetNamePlates`. Переносим адресность и безопасность, не частоту обходов без проверки.
+2. **MaxDps** — `Helper.lua` использует `C_UnitAuras.GetAuraDataByIndex` в `IntUnitAura`; некоторые class modules используют `GetNamePlates`. Не переносить безусловные массовые проходы в Kord.
+3. **JustAC** — `BlizzardAPI/StateHelpers.lua:GetEngagedEnemyCount()` и `SpellQueue.lua` связывают счёт врагов с правилами; `BlizzardAPI/SecretValues.lua` отмечает ограничения защищённого индексного aura read. Копирование без проверки secrets недопустимо.
+4. **ForeverAuras** — `BuffTrigger2.lua`, `CooldownViewerCatalog.lua:ScanAuras`, `AuraEnvironment.lua` содержат обход по индексу. Их назначение — триггеры/наблюдение аур, но не доказательство, что Kord должен выполнять такой обход без запроса профиля.
+5. **ForeverRotation** — `Engine.lua:enemyCount()` содержит `C_NamePlate.GetNamePlates`; это пример условного подсчёта, а не основание для фонового сканирования.
+6. **RotationGuide** — `Core/State.lua` перебирает `C_NamePlate.GetNamePlates()`; в Kord такой источник допускается только demand-driven и с подтверждёнными границами.
+7. **RotationMaster** — `Platform/auras.lua` использует `GetAuraDataByIndex`, `Core/aura_conditions.lua` — адресные player aura checks. Переносить только typed API/secret guard, не предполагать безопасность произвольного полного обхода.
+
+**Выбор Kord:** `Needs` + ленивые правила + точный ID-first lookup + bounded fallback + event-driven invalidation. Не импортировать другой scanner, не создавать дополнительный scheduler/engine, не считать референсные heuristics доказанными WoW Forever API.
+
+#### План изменений / критерии приёмки
+
+1. Протрассировать все runtime вызовы `ReadSignal(player.buff,target.debuff,enemy.count)`, `GetUnitAuras`, `GetAuraDataByIndex`, `GetNamePlates` и подписчиков `EventBus`; построить call graph от UI, engine, DevTools, events и timers. Отличать address lookup от enumeration.
+2. Статический gate: запрет перечисления аур/врагов из `OnUpdate`, heartbeat, event handlers, init/registration, DevTools без достигнутого условия. Разрешён только bounded, documented fallback для конкретного fact.
+3. Проверить `Needs` как allowlist; отсутствие нужного `spellID` или `enemyCount` означает ноль соответствующих expensive API calls. Даже объявленный `Needs` при short-circuit означает ноль вызовов.
+4. В одной evaluation кэшировать факт и UNKNOWN по `field+spellID+unit/target identity`; повтор не вызывает provider. При новой evaluation, target change, UNIT_AURA, spec/profile/config changes инвалидация по каналам; не смешивать разные GUID.
+5. В aura provider: ID-first, затем safe name/viewer/evidence и только при подтверждённой доступности bounded batch/index; документировать максимумы **256/64** и контролировать совокупную стоимость для множества spellIDs. Если стоимость превышает бюджет — `UNKNOWN/budget_exceeded`, не false.
+6. Для enemyCount до реализации EN-01/02/03 оставлять `UNKNOWN/signal_provider_unimplemented`. Будущий provider должен принимать требуемую семантику radius/engagement/dedup и запускаться лишь при реально достигнутом `enemy.count`; no guess=0.
+7. Проверить main/defensive: общая уже подтверждённая информация может переиспользоваться, но независимость lane и отсутствие запросов для неисполненной ветки обязательны.
+8. DevTools: устранить повторный live `Evaluate` (NO-04); trace наблюдает уже сформированный bounded result, не делает самостоятельные aura/enemy reads.
+9. Добавить Lua 5.1 mock counters, negative tests и performance budget (max scans/indices/API calls на одну оценку и на единицу времени) до acceptance; тестировать burst `UNIT_AURA`, смену цели, secret, missing APIs, off-combat, профиль без `Needs`.
+10. Release gate: любой scan без demand, недоказанный `READY(false)` или `enemy.count=0`, переполнение bounded budget, повторное live DevTools evaluation — FAIL. При незапущенных тестах — NOT RUN, не PROD PASS.
+
+**DevTools-only коды причин (предложение, не существующая реализация):** `no05_scan_without_demand`, `no05_undeclared_aura`, `no05_undeclared_enemy_count`, `no05_eager_needs_preload`, `no05_short_circuit_violation`, `no05_duplicate_provider_read`, `no05_scan_budget_exceeded`, `no05_secret_enumeration_attempt`, `no05_stale_target_cache`, `no05_event_triggered_scan`, `no05_devtools_extra_scan`, `no05_enemy_count_unimplemented`, `no05_negative_aura_unverified`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Вход / триггер | Ожидаемое действие |
+|---|---|---|
+| `NO05-01` | профиль без `Needs.auras` | ноль aura enumeration |
+| `NO05-02` | профиль без `Needs.enemyCount` | ноль enemy scans |
+| `NO05-03` | `Needs.auras` объявлен, правило не достигнуто | ноль aura reads |
+| `NO05-04` | `Needs.enemyCount=true`, ветка не достигнута | ноль enemy reads |
+| `NO05-05` | `all` short-circuit до aura | ноль aura reads |
+| `NO05-06` | `any` short-circuit до enemy | ноль enemy reads |
+| `NO05-07` | разрешён конкретный `spellID` | только нужный fact, ID-first |
+| `NO05-08` | неразрешённый `spellID` | UNKNOWN без aura API |
+| `NO05-09` | повтор одного aura fact в оценке | provider вызван один раз |
+| `NO05-10` | повтор UNKNOWN fact | provider не вызывается второй раз |
+| `NO05-11` | новая evaluation | безопасная новая проверка, без stale |
+| `NO05-12` | `UNIT_AURA` | invalidate, без немедленного scan |
+| `NO05-13` | burst 100 `UNIT_AURA` | bounded flush, без 100 scans |
+| `NO05-14` | `PLAYER_TARGET_CHANGED` | invalidate target facts, без скана всех |
+| `NO05-15` | target GUID меняется в ходе lookup | UNKNOWN, нет reuse |
+| `NO05-16` | target GUID неизменен | корректный адресный lookup |
+| `NO05-17` | direct ID hit | batch/index не вызываются |
+| `NO05-18` | direct ID miss, secrecy true | UNKNOWN, нет enumeration |
+| `NO05-19` | secrecy unknown + lockdown | UNKNOWN, нет enumeration |
+| `NO05-20` | secrecy false, bounded batch | до 256, только по demand |
+| `NO05-21` | batch sparse/protected | UNKNOWN, не false |
+| `NO05-22` | index fallback | до 64, bounded UNKNOWN при лимите |
+| `NO05-23` | множество `Needs.auras` | общий budget, нет бесконтрольного N×256 |
+| `NO05-24` | enemy.count достигнут, provider отсутствует | UNKNOWN/unimplemented, не 0 |
+| `NO05-25` | enemyCount не объявлен | никакого GetNamePlates |
+| `NO05-26` | enemyCount будущий provider | проверены radius/engagement/GUID dedup |
+| `NO05-27` | enemy source secret | UNKNOWN, не 0 |
+| `NO05-28` | два источника одной цели | один подсчитанный GUID |
+| `NO05-29` | main/defensive оба нуждаются в ауре | общий корректный факт без лишнего read |
+| `NO05-30` | defensive не исполняется | нет его aura scans |
+| `NO05-31` | no target / out-of-combat | нет скана врагов по умолчанию |
+| `NO05-32` | `OnUpdate`/heartbeat без нужного правила | ноль aura/enemy enumeration |
+| `NO05-33` | DevTools OFF/ON/RECORDING | нет дополнительных scans/evaluations |
+| `NO05-34` | `AuditFull` из live diagnostic | запрещён NO-04 |
+| `NO05-35` | profile/spec/config changed | корректная инвалидация разрешений |
+| `NO05-36` | provider exception | UNKNOWN, нет runaway loop |
+| `NO05-37` | per-evaluation scan budget exhausted | UNKNOWN, не READY(false) |
+| `NO05-38` | user vs dev identical fixture | равные decisions и bounded read counts |
+| `NO05-39` | API unsupported/nil | UNKNOWN, не false/0 |
+| `NO05-40` | повтор deterministic fixture | тот же trace/count/status |
+
+**QA статус:** 40 сценариев SPECIFIED; Lua 5.1, полный static scan, CI, сборка ZIP и WoW Forever **NOT RUN** в документальном проходе.
+
+#### Вердикт
+
+**P0 / ДОКУМЕНТИРОВАНО; РЕАЛИЗАЦИЯ ЧАСТИЧНА; END-TO-END НЕ ПОДТВЕРЖДЁН.** `Needs` allowlist, ленивое кэширование и event invalidation видны в исходниках. Условный bounded aura fallback реализован, но нет доказательства лимита суммарной стоимости на оценку, а `enemy.count` пока не реализован. Повторная live диагностика из NO-04 может добавлять demand-reads. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; ZIP BUILD NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Это изменение только документации, не runtime.
+
+**Ретроактивные связи:** DA-01/02/03, EN-01/02/03, QA-01/03/07, NO-02/03/04. В них добавлены обратные ограничения, не удалены прежние контракты.
