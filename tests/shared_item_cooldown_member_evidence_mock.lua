@@ -41,14 +41,25 @@ function S:ReadItemCooldownObservation(id)
             active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown}
     end
     if id==118 or id==858 then
+        if mode=="single" and id==858 then
+            return {status="UNKNOWN",reason="item_cd_unverified"}
+        end
         if mode=="secret" and id==118 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
                 active="SECRET",remaining=20,revision=bus.cooldown}
+        end
+        if mode=="divergent" and id==858 then
+            return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+                active=true,remaining=20,startTime=70,duration=50,
+                revision=bus.cooldown}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
             active=true,remaining=20,startTime=90,duration=30,revision=bus.cooldown}
     end
     if id==929 then
+        if mode=="aligned_only" or mode=="single" then
+            return {status="UNKNOWN",reason="item_cd_unverified"}
+        end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
             active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown}
     end
@@ -67,9 +78,28 @@ assert(result.remaining==nil and result.active==nil)
 assert(result.evidenceItemIDs==nil)
 assert(result.useCorrelation=="ESTIMATED")
 assert(result.useCorrelationReason=="item_cd_use_member_time_match")
+assert(result.propagationEvidence=="MIXED_CANDIDATES")
+assert(result.alignedCandidateCount==2 and result.divergentActiveCount==0)
+assert(result.inactiveCandidateCount==1)
+mode="aligned_only"
+local aligned=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(aligned.propagationEvidence=="ALIGNED_CANDIDATES")
+assert(aligned.alignedCandidateCount==2 and aligned.unknownCount==17)
+assert(aligned.status=="UNKNOWN" and aligned.remaining==nil)
+mode="single"
+local single=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(single.propagationEvidence=="SINGLE_CANDIDATE")
+assert(single.alignedCandidateCount==1)
+mode="divergent"
+local divergence=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(divergence.propagationEvidence=="MIXED_CANDIDATES")
+assert(divergence.alignedCandidateCount==1 and divergence.divergentActiveCount==1)
+assert(divergence.groupStatus=="UNKNOWN" and divergence.remaining==nil)
 mode="wrong_time"
 local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongTime.useCorrelation=="UNKNOWN")
+assert(wrongTime.propagationEvidence=="UNKNOWN")
+assert(wrongTime.alignedCandidateCount==nil)
 mode="wrong_id"
 local wrongID=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongID.useCorrelation=="UNKNOWN")
@@ -83,6 +113,7 @@ assert(zero.candidateCount==19 and zero.knownInactiveCount==19)
 assert(zero.knownActiveCount==0 and zero.candidateMaxRemaining==nil)
 assert(zero.status=="UNKNOWN" and zero.groupStatus=="UNKNOWN" and zero.remaining==nil)
 assert(zero.useCorrelation=="UNKNOWN")
+assert(zero.propagationEvidence=="UNKNOWN" and zero.divergentActiveCount==nil)
 mode="secret"
 calls=0
 local protected=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")

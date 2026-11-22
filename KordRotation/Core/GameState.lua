@@ -1376,6 +1376,8 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     local active,inactive,unknown,coincident=0,0,0,0
     local maxRemaining=0
     local matchedUse=false
+    local originStart,originDuration=nil,nil
+    local activeTuples={}
     local starts={}
     for _,id in ipairs(ids) do
         local readOK,record=pcall(self.ReadItemCooldownObservation,self,id)
@@ -1409,6 +1411,10 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
             -- ESTIMATED_ACTIVE or CONFIRMED without item-use attribution.
             if finite(start,0) and finite(duration,0)
                 and start>0 and duration>0 then
+                -- Keep only bounded, locally copied scalar tuples. Never
+                -- store raw API returns or use these to infer group READY.
+                activeTuples[#activeTuples+1]={itemID=id,
+                    startTime=start,duration=duration}
                 local key=tostring(start)..":"..tostring(duration)
                 starts[key]=(starts[key] or 0)+1
                 if starts[key]>coincident then coincident=starts[key] end
@@ -1417,6 +1423,7 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 if id==observedID and observedAt
                     and math.abs(start-observedAt)<=2 then
                     matchedUse=true
+                    originStart,originDuration=start,duration
                 end
             end
         else
@@ -1442,7 +1449,34 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     result.useCorrelationReason=matchedUse
         and "item_cd_use_member_time_match"
         or "item_cd_use_attribution_unknown"
-    -- Do not return itemID, groupRemaining or CONFIRMED_READY here.
+    -- An event-associated origin may have matching cooldown tuples on
+    -- other candidate IDs. This remains merely source-only PROPAGATION
+    -- EVIDENCE; item-specific independent cooldowns can coincide by chance.
+    result.propagationEvidence="UNKNOWN"
+    if matchedUse then
+        local aligned,divergent=0,0
+        for _,tuple in ipairs(activeTuples) do
+            if math.abs(tuple.startTime-originStart)<=2
+                and math.abs(tuple.duration-originDuration)<=2 then
+                aligned=aligned+1
+            else
+                divergent=divergent+1
+            end
+        end
+        result.alignedCandidateCount=aligned
+        result.divergentActiveCount=divergent
+        result.inactiveCandidateCount=inactive
+        -- Divergent active tuples and idle candidate IDs are diagnostic
+        -- conflicts only, not evidence that the shared rule is false.
+        if divergent>0 or inactive>0 then
+            result.propagationEvidence="MIXED_CANDIDATES"
+        elseif aligned>=2 then
+            result.propagationEvidence="ALIGNED_CANDIDATES"
+        else
+            result.propagationEvidence="SINGLE_CANDIDATE"
+        end
+    end
+    -- No group active/remaining, confidence CONFIRMED or READY is emitted.
     return result
 end
 
