@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 checks actually learned group buff spell families/ranks through canonical spellbook evidence; a reference catalog is not proof of known spells.**
+
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 determines which dispel families are actually learned via the canonical spellbook/rank provider; catalog membership is not proof of known spell.**
 
 **Приоритет: P0.**
@@ -965,6 +967,8 @@
 
 
 ### SP-02 — Ранги: найти максимально выученный ранг по семейству ID
+
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 buff cast/aura family matching and maximum learned rank reuse SP-02; never treat a lower-rank or alternate applied aura as missing without validating equivalence.**
 
 
 **Архитектурная актуализация AU-05:** **См. AU-05:** family/rank resolver для аур должен повторно использовать проверенные семейства заклинаний SP-02, но не приравнивать автоматически ID каста к ID наложенной ауры.
@@ -1259,6 +1263,8 @@
 
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
+
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 uses per-member, per-spell range via GR-01 and common SP-08 adapter; no generic 40-yard assumption.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 friendly dispel range is checked for actual member GUID and specific learned spellID via the common range adapter.**
 
@@ -1575,6 +1581,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 identifies missing-buff candidates but only common AbilityEligibility can declare final READY for a friendly buff.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 identifies dispel candidates, but only AbilityEligibility can issue final READY for a friendly dispel.**
 
@@ -3730,6 +3738,8 @@
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
 
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 missing-buff detection consumes canonical GUID-keyed roster and per-member spell range; no second group scanner.**
+
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 dispel candidates consume the canonical GUID-keyed roster, validated aliases, member visibility/coverage and per-spell range; never create a second party/raid scan.**
 
 **Архитектурная актуализация GR-02:** **См. GR-02: GR-02 consumes the single GUID-keyed GroupRosterObservation and its revision/aliases; do not create a second roster scan for health, power or roles.**
@@ -3785,6 +3795,8 @@
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
 
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 uses canonical member life/connected/role evidence only for target applicability; never infers buff absence from a missing health or role observation.**
+
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 consumes canonical member health/life/role evidence for triage, not a duplicate member observation; debuff presence is independent of role.**
 
 **Раздел: 8. Группа и рейд. Приоритет: P1.**
@@ -3838,6 +3850,8 @@
 
 ### GR-03 — Дебаффы, которые можно рассеять, у кого они
 
+**Архитектурная актуализация GR-04:** **См. GR-04: GR-04 shares the same generic per-member aura observation and revision as GR-03; HELPFUL and HARMFUL filters and positive/negative evidence remain separate.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
 
 #### Требование
@@ -3884,5 +3898,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** В Kord есть базовый aura API, обработка player buff/target debuff и события `UNIT_AURA`, но нет подтверждённого roster-wide per-member dispellable-debuff index, capability mapping и безопасной dispel recommendation.
 
 **Архитектурные ссылки:** GR-01, GR-02, SP-01, SP-08, SP-14, TG-07, EN-08. Обратные ссылки внесены в GR-01, GR-02, SP-01, SP-08, SP-14, TG-07; EN-08 остаётся общим бюджетным контрактом без отдельного nameplate scan.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-04 — Отсутствующие групповые баффы (кого баффать)
+
+**Раздел: 8. Группа и рейд. Приоритет: P2.**
+
+#### Требование
+
+Для каждого `memberGUID` из канонического GR-01 roster и каждой реально доступной игроку **семьи группового/индивидуального баффа** определять, есть ли подтверждённый действующий эквивалентный `HELPFUL` эффект, кому бафф нужен, какой изученной способностью и по какой адресуемой цели его можно рекомендовать наложить. Различать `PRESENT`, `MISSING_CONFIRMED`, `REFRESH_DUE`, `NOT_APPLICABLE`, `UNKNOWN(reason)`; отсутствие записи в частичном/secret aura snapshot не является `MISSING_CONFIRMED`. Групповая способность, распространяющаяся на нескольких участников, должна оцениваться как **один каст с подтверждённым набором получателей**, а не как серия дублирующих рекомендаций на каждого. Не считать видимость, alive, in-range и buffable одним признаком; не путать cast spellID, rank, applied auraID и семейство эквивалентных эффектов. Не предлагать автоматические protected cast/target actions.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10,17,44–50`: есть `UnitGUID`, `UnitCanAssist`, `UnitAura`, `C_UnitAuras.GetUnitAuras/GetAuraDataByIndex/GetUnitAuraBySpellID` и secret API boundary. Это разрешённые источники, но не доказательство per-member group-buff покрытия.
+- `KordRotation/Core/GameState.lua:440–560,691–756`: `ReadSignal` проверяет `player.buff` и `target.debuff` через spellID/имя/ограниченный обход с target GUID guard; нет подтверждённого `partyN/raidN` helpful aura observation и общего списка недостающих баффов.
+- `KordRotation/Core/RotationConditions.lua:63–67,283–285`: `Needs.auras` и ленивые условия существуют для отдельных player/target аур, но не для `group.missingBuffs` по GUID и семейству.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_AURA` инвалидирует aura revision; per-member roster-wide `UNIT_AURA` обработка и GR-01 roster provider пока не подтверждены в Lua.
+- `KordRotation/Core/AbilityEligibility.lua:187–239`: общий friendly spell gate существует для текущего target, но не доказана адресуемая member-specific group-buff eligibility; финальное READY должно остаться в общем Eligibility.
+
+#### Сравнение семи референсов (предоставленные Lua ZIP, конкретные места)
+
+1. **Sonah:** `Sonah/Classes/Druid.lua:233–235` различает Gift of the Wild/Mark of the Wild и рекомендует upkeep через `C.buffMissing`; `Sonah/Core/Atoms/Auras.lua` реализует общие buff presence/missing сигналы. Перенять **семейство взаимозаменяемых эффектов и классовую декларацию**, но player/target reminder не доказывает отсутствие на каждом memberGUID.
+2. **JustAC:** `JustAC/PrecombatEngine.lua:393–433` проверяет `HELPFUL` по **списку auraIDs**, сначала targeted by-ID lookup, затем guarded scan; `:435–470` определяет `PartyMemberMissingBuff`, исключая dead/disconnected/non-assistable и проверяя range **конкретного castID**; `:703–712` предлагает один group recast, когда собственный бафф есть, но у члена группы отсутствует; `:685–710` использует post-cast latch для подавления ложного повторения из-за задержки аур. `JustAC/BlizzardAPI/CooldownTracking.lua:167–220` имеет дополнительный 12.1+ `C_CooldownViewer.GetGroupBuffItems` каталог с оговоркой, что он **не заменяет** aura family mapping. Это наиболее прямой референс функциональности GR-04. **Не копировать ограничения** party-only/raid skip, fail-silent `unknown => has buff` и допущения Midnight 12.1+ в Forever; в Kord UNKNOWN должен быть явным, а raid — bounded/lazy.
+3. **ForeverAuras:** `ForeverAuras/BuffTrigger2.lua:294–328,2030–2042,2074–2090,2422` применяет `SafeForEachAura`, `HELPFUL` фильтры, ограниченную обработку аур и `GROUP_ROSTER_UPDATE`; `ForeverAuras/BlizzardAuraDisplay.lua:4593,4643` поддерживает group/raid roster events. Перенять secret-safe фильтры и событийную инвалидизацию; UI trigger сам по себе не определяет кастуемый бафф и полный список получателей.
+4. **MaxDps:** `MaxDps/Modules/Profiler.lua:35` читает ауры игрока, `MaxDps/SecretHelper.lua:156` учитывает категорию `GroupBuff`, а классовые профили используют buff upkeep. В проверенных Lua нет доказанного универсального `memberGUID -> missing raid buff` провайдера. Перенять разделение категорий и классового upkeep, но не выдавать player-only aura scan за group coverage.
+5. **ForeverRotation:** `ForeverRotation/Sync.lua:206` слушает `GROUP_ROSTER_UPDATE`; в проверенных Lua не подтверждён общий per-member missing-buff selector. Использовать roster invalidation, но sync событие не доказывает отсутствие баффов.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:144,161` инвалидирует состояние на `GROUP_ROSTER_UPDATE`; в проверенных Lua не подтверждён общий per-member missing-buff selector. Не переносить target-only условия на всех членов группы.
+7. **RotationMaster:** `RotationMaster/Conditions/buffs.lua:3–8,55–59` объявляет универсальный `BUFF`/remain/stacks для выбранного unit; `RotationMaster/Core/aura_conditions.lua:3–8,17–67` использует per-pass `(unit,filter,index)` memo, `RotationMaster/Platform/auras.lua:81–104,129–137` даёт secret-aware `HELPFUL` aura adapter с `nil,reason`. Перенять общий aura reader, lazy memo и tri-state; дополнить его roster-wide candidate selector и family mapping JustAC, которых сами BUFF условия не гарантируют.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Выбрать GR-01 GUID-keyed roster + общий per-member `AuraObservation` GR-03/RotationMaster + проверку `HELPFUL` семейств и post-cast suppression JustAC + классовые декларации семейств Sonah + event/secret boundary ForeverAuras.** Один логический `GroupBuffCoverageObservation(memberGUID,buffFamilyID)` возвращает подтверждённые `PRESENT/MISSING_CONFIRMED/REFRESH_DUE/NOT_APPLICABLE/UNKNOWN`, matching auraID/rank, source, observedAt, completeness. Отдельный `GroupBuffRecommendation(buffFamilyID,castSpellID)` выбирает кандидатов с подтверждённым отсутствием и валидным unit token; для raid-wide buff агрегирует подтверждённых получателей, учитывает range/target/group semantics и предотвращает повторные предложения на каждого члена группы. Не создавать второй roster scan или buff reader. Для direct auraID point query отрицательный ответ признавать доказательством отсутствия **только если** клиентская семантика, фильтр, GUID и полнота всех эквивалентных auraIDs подтверждены; `nil` при secret/ошибке — UNKNOWN. При неизвестном member state или частичном raid coverage не объявлять `all buffed` или `all missing`. Ленивая обработка по `Needs.groupBuffFamilies` с per-evaluation memo, bounded refresh, event-driven `UNIT_AURA`/roster revision, per-GUID freshness и post-cast grace только для подтверждённого собственного успешного применения. Не копировать hard-coded retail/Midnight API и spellIDs без проверки Forever; `C_CooldownViewer.GetGroupBuffItems` использовать лишь при реальном подтверждении и только как вспомогательный каталог, не как источник applied aura equivalence. Различать buff duration/refresh threshold, group vs single-target ranks, reagent/party subgroup restrictions, death/ghost/disconnect/LOS, class-specific exclusions и duplicate providers. Окончательный `READY` только через `AbilityEligibility`; пользователь получает рекомендацию и при необходимости ручное указание цели, без protected actions.
+
+#### Требуемые изменения
+
+1. Переиспользовать GR-01 roster, GR-02 life/connectivity, GR-03 общий aura reader, SP-01/02 spell identity/ranks и SP-08/14 friendly eligibility; не создавать параллельный обход группы.
+2. Проверить на Forever `HELPFUL`, by-ID/filtered aura reads, secret/nil, authoritative negative, auraInstanceID, applied aura vs cast ID, buff rank/family и group/raid targeting semantics.
+3. Ввести канонический `GroupBuffCoverageObservation(memberGUID,buffFamilyID)` с явной полнотой и доказательством отсутствия; `UNKNOWN` не приравнивать ни к PRESENT, ни к MISSING.
+4. Ввести class-data реестр buff family -> cast SpellID/rank -> applied auraIDs/equivalents, исключения, refresh threshold, individual/group mode, target policy, reagents и client validation.
+5. Ввести `GroupBuffRecommendation` с dedup по buffFamily/recipient set, выбором одного допустимого group cast либо конкретного individual target; не предлагать рейдовый recast по одному недоступному/непроверенному member.
+6. Общий spell-specific range для memberGUID, `UnitCanAssist`, alive/connected/visible, групповая принадлежность, ограничения подгрупп и class applicability; финальная пригодность только через AbilityEligibility.
+7. EventBus per-member `UNIT_AURA` + `GROUP_ROSTER_UPDATE`, GUID/revision/TTL, lazy `Needs.groupBuffFamilies`, bounded 40-member coverage, post-cast grace/latch против повторных ложных рекомендаций, без OnUpdate scanner.
+8. DevTools-only диагностика: `group_buff_family_unknown`, `group_buff_aura_secret`, `group_buff_missing_confirmed`, `group_buff_coverage_partial`, `group_buff_member_unaddressable`, `group_buff_range_unknown`, `group_buff_duplicate_suppressed`, `group_buff_postcast_grace`, `group_buff_spell_unlearned`, `group_buff_equivalence_unverified`.
+9. Тесты: solo/party/raid 40, один участник без баффа, все баффнуты, позднее присоединение, resurrect, group recast vs individual, family equivalent aura, rank variation, multiple casters, group subgroup scope, expired/soon-expiring, secret/nil vs proven absent, target swap, GUID alias recycled, dead/disconnected/out-of-range, wrong faction/non-assistable, postcast aura delay, no duplicate group cue, stale/partial roster, missing reagents/cooldown, no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord читает отдельные player/target aura facts, но не имеет подтверждённого общего memberGUID-based group-buff coverage, family equivalence и адресной рекомендации «кого баффать».
+
+**Архитектурные ссылки:** GR-01, GR-02, GR-03, SP-01, SP-02, SP-08, SP-14. Обратные ссылки внесены в перечисленные предыдущие задачи в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
