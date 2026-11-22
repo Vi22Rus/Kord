@@ -316,14 +316,16 @@ function S:ReadSignal(field,spellID,snapshot)
         -- establish false. A failed scan is UNKNOWN, never false.
         local cheetah=self:ReadSignal("player.buff",5118,snapshot)
         if cheetah.status=="READY" and cheetah.value==true then
-            if KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
+            if cheetah.source~="AuraEvidence.own_or_live_positive"
+                and KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
                 KR.AuraEvidence:ObserveLive(5118)
             end
             return {status="READY",value=true,source="TravelAspectAuras"}
         end
         local pack=self:ReadSignal("player.buff",13159,snapshot)
         if pack.status=="READY" and pack.value==true then
-            if KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
+            if pack.source~="AuraEvidence.own_or_live_positive"
+                and KR.AuraEvidence and KR.AuraEvidence.ObserveLive then
                 KR.AuraEvidence:ObserveLive(13159)
             end
             return {status="READY",value=true,source="TravelAspectAuras"}
