@@ -1,3 +1,14 @@
+## KR-20261122-006 — аудит UI-05: режимы видимости основной панели
+- Дата: 2026-11-22; SHA — `git log --grep KR-20261122-006`.
+- Тип: docs only. Статус: SPEC DOCUMENTED / IMPLEMENTATION PARTIAL / CLIENT NOT RUN.
+- Изменены: `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не менялся.
+- Изучены `AGENTS.md`, полный `REQUIREMENTS.md`, `Settings.lua`, `RotationDisplay.lua`, UI, семь ZIP референсов.
+- Зафиксированы три взаимоисключающих режима, `DisplayVisibilityPolicy`, различие gameplay combat/protected lockdown, независимый defensive, conflict-safe migration всех legacy-флагов, причины UNKNOWN, 10 задач реализации и тестовая матрица.
+- Ретроактивные ссылки: UI-01, UI-02, UI-03, UI-04, DA-07, DA-08. Старый текст сохранён.
+- PASS: структурная проверка раздела, семь референсов, шесть обратных ссылок, документационный diff. NOT RUN: Lua 5.1, CI, клиент WoW Forever.
+- Вердикт: частично реализовано, P1; runtime доработка требует отдельного согласования.
+
+
 ## KR-20261122-005 — аудит UI-04: пресеты спека/контента и безопасный импорт/экспорт
 - Дата/время: 2026-11-22 (UTC; точное время коммита — GitHub).
 - Коммит: определяется по `git log --grep KR-20261122-005`.

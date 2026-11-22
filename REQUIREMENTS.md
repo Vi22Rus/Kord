@@ -7573,6 +7573,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-04:** сохранение/миграция/сброс именованных пресетов, версии export envelope и атомарное применение импорта относятся к общему механизму DA-07; UI-04 добавляет безопасный transport и content/spec binding без отдельной миграционной системы.
 
+**Ретроактивное уточнение UI-05:** миграция legacy-флагов `showInCombat/showOutOfCombat/requireTarget` в канонический `visibilityMode` и откат при конфликте — часть общего версионированного механизма DA-07; не затирать несовместимые сочетания молча. См. UI-05.
+
 ### DA-08 — Реакция на смену спека, талантов, уровня, панели, привязок
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7635,6 +7637,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-04:** при изменении спека/уровня пересчитывать привязку именованного пресета UI-04 после подтверждения identity и схемы; при неопределённости не переключать профиль и не переносить overrides между class/spec. Не менять профиль при обновлении actionbar/bindings.
 
+**Ретроактивное уточнение UI-05:** combat/target visibility инвалидируется по EventBus (UI-05), независимо от пересмотра spec/level и actionbar/bindings; смена спека не должна менять общий режим показа без явного применения пресета настроек.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -7692,6 +7696,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-04:** смена пресета настроек должна инвалидировать presentation/recommendation revision UI-01 и очистить устаревшие иконки/клавиши до нового проверенного результата; не считать пресет источником READY.
 
+**Ретроактивное уточнение UI-05:** видимость оболочки главной панели и подтверждённая рекомендация — разные состояния. Все три режима показа вычисляются единым `DisplayVisibilityPolicy` (UI-05); скрытие не создаёт READY/PREDICTED, не переносит defensive в main и не сохраняет устаревшие иконки/клавиши.
+
 ### UI-02 — Подсветка кнопки на панели (если разрешено), показ клавиши привязки
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -7743,6 +7749,8 @@ Burst — отдельная типизированная настройка п�
 **Изменения Lua:** отсутствуют. Только документация.
 
 **Ретроактивное уточнение UI-03:** `glowEnabled`, стиль, интенсивность и `showKeybind` должны иметь однозначные ключи/владельцев CFG и показ источника значения. Различать `panel.highlightMain` (рамка иконки) и `indicators.actionHighlight` (намерение подсвечивать actionbar): два разных контракта, без автосинхронизации. См. UI-03.
+
+**Ретроактивное уточнение UI-05:** подсветка текущей actionbar-кнопки и отображение клавиши должны учитывать итоговую видимость main по `DisplayVisibilityPolicy` (UI-05); скрытая main-панель не должна оставлять stale glow, но видимость не меняет eligibility и не разрешает protected операции.
 
 ### UI-03 — Окно настроек из схемы CFG: группы, подсказки, конфликты источников
 
@@ -7814,6 +7822,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-04:** именованные пресеты для спека/контента и импорт/экспорт должны использовать единый CFG resolver UI-03 и его provenance/conflict policy; UI-04 управляет только снимками валидированных пользовательских overrides, не создаёт второй schema-driven интерфейс и не обходит UNKNOWN при конфликте.
 
+**Ретроактивное уточнение UI-05:** три пользовательских режима `COMBAT_ONLY|TARGET_ONLY|ALWAYS` отображаются в общем окне настроек через существующий Settings-владелец и единый CFG/UI контракт; legacy `showInCombat/showOutOfCombat/requireTarget` мигрируются с явной обработкой неоднозначностей. Не создавать вторую независимую панель настройки видимости.
+
 ### UI-04 — Профили настроек для спека и контента, импорт, экспорт
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P2.**
@@ -7877,4 +7887,68 @@ Kord Rotation должен позволять создавать, именова
 **Архитектурные ссылки:** UI-03 (единый CFG UI resolver и source conflicts), EN-A5 (типизированная immutable schema), EN-A7 (режимы/категории), DA-07 (storage/migration/reset/transaction), DA-08 (spec/level switching), DA-01/DA-02/DA-05/DA-06 (revisions, invalidation, performance), UI-01/UI-02 (stale presentation), AC-07/EN-A4 (UNKNOWN→STOP), `RotationSettings`, `RotationProfiles`, `RotationEngine`, `AppearanceProfiles`, `Settings`, `Configuration_Registry.md`. **Обратные уточнения внесены в UI-03, EN-A5, DA-07, DA-08, EN-A7, UI-01 в том же коммите.** Не вводится новый универсальный механизм для UI-02 и независимых индикаторов, поэтому ложные обратные ссылки не добавляются.
 
 **Изменения Lua:** отсутствуют. Только документация. Статический аудит ZIP/source выполнен; Lua 5.1/CI/WoW Forever не запускались.
+
+**Ретроактивное уточнение UI-05:** `visibilityMode` — глобальная пользовательская UI-настройка, не поле исполняемого rotation Config. Пресеты UI-04 не переносят её неявно; если в будущем разрешён экспорт UI-настроек, требуется отдельный явный whitelist и scope. Единый resolver видимости остаётся в UI-05.
+
+### UI-05 — Режимы показа: только в бою, только с целью, всегда
+
+**Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
+
+#### Требование
+
+Пользователь выбирает ровно один режим видимости **основной панели рекомендаций**: `COMBAT_ONLY` («Только в бою»), `TARGET_ONLY` («Только с целью»), `ALWAYS` («Всегда»). Режим `COMBAT_ONLY` показывает основную панель только при достоверном `playerCombat=true`; `TARGET_ONLY` — при достоверном `UnitExists("target")==true` независимо от того, в бою ли игрок, без обязательной враждебности цели (режим называется «с целью», а не «с врагом»); `ALWAYS` — не накладывает фильтр combat/target, но сохраняет независимые ограничения master `showPanel`, `hideWhenDead`, `hideMounted` и безопасный режим тестирования. При `UNKNOWN` необходимого combat/target-факта условный режим не должен угадывать `true` и показывать панель по старому состоянию; в `ALWAYS` отсутствие combat/target не препятствует показу оболочки. Не использовать `InCombatLockdown()` как безусловный эквивалент `UnitAffectingCombat("player")`: protected lockdown и gameplay combat — разные факты; выбирать проверенный client-compatible provider и явно сохранять provenance.
+
+**Канонический контракт:** `DisplayVisibilityPolicy(mode,showPanel,combatStatus,targetStatus,deadStatus,mountedStatus,testMode,settingsRevision,combatRevision,targetRevision,identityRevision)` возвращает `mainVisible=true|false`, `status=READY|BLOCKED|UNKNOWN`, `reason`, `source`, `revisions`. `READY` означает только проверенное решение о **видимости**, не READY способности. `BLOCKED` при выключенном master switch или доказанном запрещающем условии, `UNKNOWN` при отсутствии обязательного достоверного факта. `reason=visibility_disabled|visibility_combat_required|visibility_target_required|visibility_combat_unknown|visibility_target_unknown|visibility_dead|visibility_mounted|visibility_condition_unknown|visibility_invalid_mode|visibility_legacy_conflict|visibility_stale_revision`. Для обязательного условия `UNKNOWN` применять fail-closed к видимости; для независимых `hideWhenDead/hideMounted` не подменять неопределённость ложным «жив/не верхом»: документировать политику и не выдавать старую подтверждённую рекомендацию за новую. Не опрашивать состояние без ограничений по времени.
+
+**Граница ответственности:** режим регулирует **только видимость main UI**, а не вычисление ротации, её приоритеты, eligibility, READY/PREDICTED, боевые cooldowns, категорию defensive или возможность применять заклинания. При отсутствии READY основная панель может показывать пустую оболочку согласно UI-01, но не фальшивую иконку. Отдельный `defenseFrame` должен использовать **свою** политику `IndicatorSettings.defensiveEnabled/defensiveCombatOnly` и настройки маршрутизации defensive, а не автоматически наследовать или переносить main `visibilityMode`; при скрытии main defensive не превращается в main. Interrupt/resource placeholder и тестовые слоты имеют отдельные ограничения и не считаются доказанной рабочей функцией. При изменении режима/события скрывать/очищать stale UI и actionbar glow, не вызывать protected действия. При выборе `ALWAYS` до первой цели панель видна по пользовательскому выбору (если master разрешает), но **не обязана** показывать реальную рекомендацию без подтверждённых данных; после потери цели оболочка остаётся видимой, рекомендация очищается/переоценивается.
+
+**Сохранение и миграция:** каноническое поле `KR.db.panel.visibilityMode` с enum `COMBAT_ONLY|TARGET_ONLY|ALWAYS`, один контрол выбора и локализованные названия/подсказки на `ruRU/enUS/frFR/deDE/ptBR/esES`. Legacy `showInCombat/showOutOfCombat/requireTarget` не должны продолжать конкурировать с новым полем: миграция DA-07 определяет точное преобразование `true,false,false→COMBAT_ONLY`, `true,true,true→TARGET_ONLY`, `true,true,false→ALWAYS`. Комбинации `false,true,false` (только вне боя), `true,false,true` (боевой режим + цель), `false,false,*`, `false,true,true` не представимы одним из трёх режимов без потери смысла: **не выбирать молча**; сохранить legacy до явного подтверждения нового режима или пометить `visibility_legacy_conflict` и не перезаписывать. Миграция выполняется однократно по версии схемы, без потери независимых master/dead/mounted/test флагов. При недостоверной версии схемы — fail-closed и диагностический reason. `visibilityMode` — UI-настройка, а не `RotationProfiles.Config`.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/Settings.lua:8–22`: `panel.showPanel=true`, `showInCombat=true`, `showOutOfCombat=true`, `requireTarget=false`, `hideWhenDead=true`, `hideMounted=false`; default соответствует будущему `ALWAYS` только при стандартном наборе legacy-флагов.
+- `Settings.lua:84–103,148–167`: `normalize(panel)` валидирует старые boolean флаги, `SetPanelFlag/GetPanelFlag` читают и пишут их независимо. Нет подтверждённого enum `visibilityMode`, одноточечного setter и versioned migration с конфликтами.
+- `KordRotation/UI/RotationDisplay.lua:267–287`: `ShouldShow()` уже проверяет master, combat, target, death, mounted. Combat берётся **сначала из `InCombatLockdown`**, fallback `UnitAffectingCombat("player")`; в результате protected lockdown может ошибочно трактоваться как боевое состояние. При неизвестном combat и двух включённых legacy-флагах панель видима, при требовании target неизвестность скрывает её. Это функционально близко, но не строгий контракт трёх режимов.
+- `RotationDisplay.lua:90–153`: `PLAYER_REGEN_ENABLED/DISABLED`, `PLAYER_TARGET_CHANGED`, `UNIT_FLAGS` и другие события вызывают refresh; EventBus подписки и ограниченный fallback 0.4 секунды. Проверить двойные обновления, stale revisions и event storm; не добавлять второй poller.
+- `RotationDisplay.lua:253–268,494–500`: `ShouldShowDefensive()` отдельно проверяет `IndicatorSettings.defensiveEnabled/defensiveCombatOnly`; `Refresh()` отдельно вызывает `frame:SetShown(ShouldShow())` и `defenseFrame:SetShown(ShouldShowDefensive())`. Разделение **частично есть**, но согласование с новым enum и всеми режимами не проверено.
+- `RotationDisplay.lua:383–425`: расчёт рекомендаций может выполняться при `showPanel=true`, даже когда `ShouldShow()` скрывает main из-за combat/target. Это не автоматически ошибка (defensive/подготовка), но требуется отдельная политика затрат DA-04/DA-05 и гарантированная очистка stale отображения; UI-05 не должен менять критерии Eligibility.
+- `KordRotation/UI/Pages/RotationAbilities.lua`: `cooldownsOnlyInCombat` относится к применению cooldowns в ротации, **не** к видимости панели; не смешивать. Интерфейс panel-флагов использует `Settings`, не schema CFG.
+- **Пробел:** нет строгого взаимоисключающего режима `COMBAT_ONLY/TARGET_ONLY/ALWAYS`, нет явного разделения combat vs lockdown, migration policy для конфликтных legacy-флагов и полного regression QA. Визуальная видимость не доказывает работоспособность движка рекомендаций.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Engine.lua` подписывается на `PLAYER_TARGET_CHANGED`, а `Sonah/Core/Organisms/Profiles.lua` обеспечивает профильную модель. Полезна реакция на изменение контекста и разделение логики/представления; в проверенных участках не подтверждён идентичный трёхрежимный enum, не переносить без проверки.
+2. **JustAC:** `JustAC/Options/StandardQueue.lua` использует проверку `InCombatLockdown` для защищённых UI операций. Это пример отдельного **protected UI gate**, не доказательство, что lockdown является gameplay combat для выбора видимости. Готовый трёхрежимный переключатель в проверенном файле не подтверждён.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua` обрабатывает `PLAYER_TARGET_CHANGED`; `ForeverAurasOptions/ForeverAurasOptions.lua` содержит защищённые UI проверки. Полезна реакция display на смену цели и отдельная охрана UI; aura visibility не равна rotation visibility.
+4. **MaxDps:** `MaxDps/Core.lua` реагирует на `PLAYER_TARGET_CHANGED`. Заимствовать событийный refresh без самостоятельного постоянного target poll; не приписывать этому обработчику готовую семантику всех трёх режимов.
+5. **ForeverRotation:** `ForeverRotation/Display.lua` обрабатывает `PLAYER_TARGET_CHANGED`; `ForeverRotation/Core.lua` использует `InCombatLockdown`. Сравнивать отдельные события/lockdown guards; не считать подтверждённым переносимый трёхрежимный policy без изучения контекста использования.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua` регистрирует `PLAYER_TARGET_CHANGED`; `RotationGuide/Core/State.lua` использует `InCombatLockdown`. Полезно отделение event-driven state и protected guard; в проверенных файлах нет доказательства аналогичного enum.
+7. **RotationMaster:** `RotationMaster/Core/assisted_highlight.lua` и `Core/forecast.lua` содержат `InCombatLockdown` для защищённого поведения. Это подтверждает необходимость разделять защиту actionbar/glow и видимость main, но не даёт права выводить состояние combat из lockdown без проверки.
+
+**Границы доказательств:** референсы исследованы в предоставленных ZIP по указанным файлам/символам. Обнаружение события или API не означает, что проект реализует идентичные три режима. Отсутствие найденного режима в проверенном файле не доказывает его отсутствия во всём ZIP. Lua 5.1/Forever API совместимость должна подтверждаться отдельно.
+
+#### Выбранный путь Kord
+
+**Единый `DisplayVisibilityPolicy` как чистый логический resolver внутри существующего `RotationDisplay` (либо общего UI policy, только если он реально переиспользуется) + один enum `Settings.panel.visibilityMode`.** Не создавать второй runtime state machine, EventBus, профильный CFG или отдельный combat provider. Использовать DA-01/DA-02 revision и event invalidation, UI-03 для контролов/подсказок, DA-07 для migration. `ShouldShow()` должен быть единственным consumer результата policy для main; defensive имеет отдельный consumer и не зависит от скрытия main. Изменение видимости не заменяет READY/STOP. Если одновременно присутствуют legacy и новое значение, после успешной миграции **новое** каноническое значение является единственным источником; конфликт до миграции — UNKNOWN, не silently override.
+
+#### Требуемые изменения
+
+1. В `Settings.lua` добавить типизированный `visibilityMode` с валидацией и единым getter/setter; исключить прямую конкурентную запись legacy-флагов после миграции.
+2. Реализовать DA-07 migration table для всех восьми сочетаний трёх legacy boolean; явно конфликтные комбинации не переводить автоматически с потерей смысла, хранить исходные значения до выбора пользователем.
+3. В `RotationDisplay.lua` централизовать `DisplayVisibilityPolicy`, разделить `playerCombat` и `InCombatLockdown`, fail-closed при UNKNOWN обязательных фактов и сохранять независимые master/dead/mounted/test gates.
+4. Согласовать событийные invalidations combat/target/death/mount с EventBus, без второго poller; исключить stale видимость после `PLAYER_TARGET_CHANGED`, `PLAYER_REGEN_*`, `UNIT_FLAGS`, смены настроек.
+5. В существующем окне настроек создать один enum selector с тремя вариантами, подсказками, статусом migration/conflict и переводами на шесть языков; не дублировать ручные boolean controls.
+6. Сохранить независимость `ShouldShowDefensive`, маршрутизации defensive, interrupt/resource/test UI и UI-01 прогнозов; при скрытии main не переносить defensive в основной frame.
+7. При смене видимости очистить старый glow и недостоверные keybinds (UI-02), не делать actionbar protected writes и не выдавать пустые placeholder за READY.
+8. Добавить DevTools-only `visibility_mode_changed`, `visibility_combat_unknown`, `visibility_target_unknown`, `visibility_legacy_conflict`, `visibility_stale_revision`, `visibility_main_hidden` с mode/reason/revision без персональных данных и без production recorder.
+9. Тесты: три режима × combat true/false/UNKNOWN × target true/false/UNKNOWN; target дружественная/враждебная/мертвая/потерянная; начало боя без цели; цель вне боя; `ALWAYS` до первого target и после потери target; mount/death/test/master flags; defensive независимо от main; hidden main без переноса иконок; READY/PREDICTED/UNKNOWN, stale glow; legacy все 8 комбинаций, conflict/rollback, reload; смена спека и UI-04 presets; coalescing/event storm; six locales; Lua 5.1 и WoW Forever in-game.
+10. Зафиксировать политику затрат: скрытая main не вызывает дополнительную полную оценку движка только ради оболочки; defensive и другие действительно активные потребители могут запрашивать независимую оценку через общий engine без дублирования. Измерить DA-04 и DA-05, проверить обе сборки.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО / P1 / ТРЕБУЕТ УНИФИКАЦИИ.** Kord уже умеет скрывать/показывать основную панель по combat/target через сочетание boolean-флагов, а defensive имеет отдельную политику. Но взаимоисключающий трёхрежимный контракт, migration конфликтов, корректное разделение combat/lockdown и end-to-end QA **не подтверждены**. Аудит документальный; Lua/CI/WoW Forever не запускались.
+
+**Архитектурные ссылки:** UI-01, UI-02, UI-03, UI-04, DA-01/DA-02/DA-04/DA-05/DA-06/DA-07/DA-08, EN-A5, AC-07, `Settings`, `RotationDisplay`, `IndicatorSettings`. **Обратные уточнения внесены в UI-01, UI-02, UI-03, UI-04, DA-07, DA-08.** Не изменяется контракт `RotationEngine`/Eligibility и не создаётся второй движок.
+
+**Изменения Lua:** отсутствуют. Только документация. Референсы проверены статически, runtime NOT RUN.
 
