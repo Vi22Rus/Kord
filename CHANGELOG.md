@@ -1,3 +1,12 @@
+## 2026-11-22 — Independent Defensive window and Hunter travel-aspect routing fix
+
+- `RotationDisplay`: Defensive is now an independent `UIParent` sibling frame, anchored below the main panel but no longer hidden together with it. It ignores main-only `requireTarget`, `showInCombat`, `showOutOfCombat`, and `showPanel` visibility gates. Defensive own `defensiveEnabled` and `defensiveCombatOnly` settings control its visibility; normal death/mount preferences remain relevant.
+- Hunter BM: Aspect of the Hawk is **not** recommended outside combat while Cheetah/Pack is confirmed active. On entering combat, if Hawk is missing or not directly readable and travel aspect is confirmed, it becomes a valid combat recommendation. The global `buffsInCombatMain` flag controls whether it appears in main (ON) or Defensive (OFF). An unverified travel-aspect state cannot cause a precombat Hawk recommendation.
+- Main and Defensive continue to use `RotationEngine:EvaluateBoth()` with one game-state snapshot. Disabling the main panel clears its displayed recommendation without suppressing separately enabled Defensive.
+- Added pull-only, spell-ID-free Defensive state to `CoreObservation:ReadDisplay()` and explicit v14 DevTools DISPLAY flags: `defensive_enabled`, `defensive_combat_only`, `aura_promotion`, `defensive_engine_status`, `defensive_recommendation`, `defensive_frame_created`, `defensive_frame_shown`, `defensive_visibility_allowed`.
+- Extended Hunter Cheetah regression and UI mock to cover precombat suppression, combat Hawk, unknown travel state, absence of target, main hidden outside combat, and independent Defensive visibility.
+- **Verification:** Changes are present in GitHub; manual Lua 5.1 / WoW game validation is still required. No external addon code was copied.
+
 ## 2026-11-22 — Fix Indicators tab crash on numeric controls
 
 - Fixed malformed `UI:StepRow` arguments in `UI/Pages/IndicatorsProfiles.lua`, where the minimum was passed as the `formatter` and `maximum` remained nil. This triggered `Missing numeric bounds for IND_HIGHLIGHT_STRENGTH` on opening Indicators.
