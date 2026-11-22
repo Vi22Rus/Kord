@@ -26,7 +26,7 @@ local spec={
  {"Explosive","Explosive Trap",13813,"damage","none"},
  {"Immolation","Immolation Trap",13795,"damage","none"},
  {"Volley","Volley",1510,"damage","enemy"},
- {"Mend","Mend Pet",136,"buffs","friendly"},
+ {"Mend","Mend Pet",136,"buffs","none"},
  {"CallPet","Call Pet",883,"buffs","none"},
  {"Revive","Revive Pet",982,"buffs","none"},
  {"AspectHawk","Aspect of the Hawk",13165,"buffs","none"},
