@@ -381,6 +381,18 @@ for name in pairs(traceMethods) do
                 else
                     methodName="GameAPI.unsupported"
                 end
+            elseif name=="ReadField" then
+                -- Only the field KEY is shown, never the field value.
+                -- Generic bounded metadata keeps future API fields
+                -- diagnosable without extending a fixed reason dictionary.
+                local key=select(2,...)
+                if type(key)=="string" and #key>0 and #key<=40
+                    and self:IsSafeValue(key)
+                    and key:match("^[A-Za-z_][A-Za-z0-9_]*$") then
+                    methodName="GameAPI.ReadField."..key
+                else
+                    methodName="GameAPI.ReadField"
+                end
             else
                 methodName="GameAPI."..name
             end
