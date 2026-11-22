@@ -1,3 +1,13 @@
+## KR-20261122-098 — IT-02/2.8: one item cooldown read per evaluation
+- Дата/время: 2026-11-22 UTC, exact time Git log; SHA: `git log --grep KR-20261122-098`.
+- ID/этап: IT-02 P0, 2.8, feature/test/docs; SOURCE IMPLEMENTED / CLIENT NOT RUN.
+- Контекст и причина: `RotationConditions:value` отдельно кэшировал `items.cooldownActive` и `items.cooldownRemaining`, но оба вызывали один `GameState:ReadItemCooldownObservation(itemID)`. На одной оценке было два API-наблюдения вместо одного, подтверждено исходником и существующими assertions; клиентский дефект не заявлен.
+- Изменено: `KordRotation/Core/RotationConditions.lua` использует `ctx.cooldownReads` на itemID/groupID и сохраняет только безопасный снимок или fail-closed UNKNOWN. Для следующей оценки кэш создаётся заново. Переписаны ожидания числа вызовов в `tests/item_cooldown_conditions_mock.lua` и `tests/item_cooldown_integration_mock.lua`. `REQUIREMENTS.md` и поэтапный план обновлены с исходным ID. `CHANGELOG.md` включён атомарно.
+- WoW API/референсы: новых API нет; существующий общий GameState, source-механизм per-evaluation из Profile Contract и сравнение IT-02. Нет внешней магии с protected values.
+- Проверки: PASS — статическая сверка точных исходных методов и тестовых assertions; NOT RUN — Lua 5.1 mock/полная регрессия, GitHub Actions (manual only), WoW Forever. Без runtime PASS.
+- Тестировщику: одна пара active/remaining для itemID должна вызывать GameState один раз, новый Create повторяет read; ранее неизвестное не становится false/0. До общего QA не требуется отдельной установки.
+- Ограничения: клиенты Forever не подтверждены, групповая корреляция и TTL ещё частичны; IT-02 общий PARTIALLY IMPLEMENTED. Связи IT-01, IT-02/2.6–2.10, KR-20261122-093/095–097.
+
 ## KR-20261122-097 — test: correct IT-02/2.7 coalesced Flush assertion
 - Дата/время: 2026-11-22 UTC, фактическое время по git; SHA: `git log --grep KR-20261122-097`.
 - Этап: IT-02/2.7 P0, тип test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

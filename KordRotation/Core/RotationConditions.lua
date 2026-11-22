@@ -150,7 +150,7 @@ end
 -- IT-02/2.8: read the existing canonical observations on demand.
 -- A cooldown fact is not overall item eligibility. UNKNOWN is represented
 -- as nil, including incomplete shared-member evidence or untrusted fields.
-local function readCooldownFact(field,id)
+local function readCooldownFact(ctx,field,id)
  local state=KR.GameState
  local shared=field=="items.sharedCooldownRemaining"
  local reader=shared and "ReadSharedItemCooldownObservation"
@@ -158,9 +158,20 @@ local function readCooldownFact(field,id)
  if not state or type(state[reader])~="function" then
   return nil,"item_cd_provider_missing"
  end
- local ok,record=pcall(state[reader],state,id)
- if not ok or type(record)~="table" or not safe(record) then
-  return nil,"item_cd_provider_error"
+ -- IT-02/2.8: both per-item predicates share one bounded observation
+ -- inside this evaluation. A new Create() starts with a fresh read.
+ -- Store a local failure token as UNKNOWN, never a game payload.
+ ctx.cooldownReads=ctx.cooldownReads or {}
+ local key=(shared and "group:" or "item:")..tostring(id)
+ local record=ctx.cooldownReads[key]
+ if record==nil then
+  local ok,fresh=pcall(state[reader],state,id)
+  if not ok or type(fresh)~="table" or not safe(fresh) then
+   record={status="UNKNOWN",reason="item_cd_provider_error"}
+  else
+   record=fresh
+  end
+  ctx.cooldownReads[key]=record
  end
  local valid,answer,reason=pcall(function()
   if not safe(record.status) or record.status~="READY" then
@@ -239,7 +250,7 @@ local function value(ctx,field,id)
   answer,failure=readItemFact(field,id)
  elseif field=="items.cooldownActive" or field=="items.cooldownRemaining"
      or field=="items.sharedCooldownRemaining" then
-  answer,failure=readCooldownFact(field,id)
+  answer,failure=readCooldownFact(ctx,field,id)
  else
   local state=KR.GameState
   if state and type(state.ReadSignal)=="function" then

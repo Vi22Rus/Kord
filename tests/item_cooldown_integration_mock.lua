@@ -41,7 +41,7 @@ assert(S.items:cooldownActive(118)==true)
 assert(S.items:cooldownRemaining(118)==20)
 assert(S.items:sharedCooldownRemaining("POTION_SHARED")==nil)
 assert(S.items:cooldownActive(118)==true)
-assert(callCount==2)
+assert(callCount==1) -- active/remaining share one observation per evaluation
 local first=KR.GameState:ReadItemCooldownObservation(118)
 assert(first.status=="READY" and first.revision==0)
 assert(first.gcdStatus=="UNKNOWN" and first.usabilityStatus=="UNKNOWN")
