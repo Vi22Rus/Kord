@@ -265,19 +265,24 @@ function E:EvaluateBoth()
  -- channels. Each condition and Blizzard API fact is read at most once,
  -- even when a recommendation is evaluated for both windows.
  local prepared
- local currentID=identity()
- if currentID and KR.RotationProfiles and KR.RotationSettings and
-     KR.RotationConditions and type(KR.RotationConditions.Create)=="function" then
+ -- Preparation is optional: a protected/invalid dependency must never
+ -- explode the paired evaluation or leak a half-built context.
+ local preparedOK,preparedValue=pcall(function()
+  local currentID=identity()
+  if not currentID or not KR.RotationProfiles or
+      not KR.RotationSettings or not KR.RotationConditions or
+      type(KR.RotationConditions.Create)~="function" then return nil end
   local saved=KR.RotationSettings:GetProfile(false)
+  if not saved or not safe(saved) then return nil end
   local level=levelOf(snapshot)
-  if saved and level then
-   local profile=KR.RotationProfiles:ResolveForEngine(currentID,level)
-   if profile then
-    local ctx=KR.RotationConditions:Create(profile,snapshot)
-    if ctx then prepared={conditions=ctx,config=config(profile,saved)} end
-   end
-  end
- end
+  if not level then return nil end
+  local profile=KR.RotationProfiles:ResolveForEngine(currentID,level)
+  if not profile or not safe(profile) then return nil end
+  local ctx=KR.RotationConditions:Create(profile,snapshot)
+  if not ctx then return nil end
+  return {conditions=ctx,config=config(profile,saved)}
+ end)
+ if preparedOK then prepared=preparedValue end
  local mainOK,main=pcall(run,"main",snapshot,prepared)
  local defOK,def=pcall(run,"defensive",snapshot,prepared)
  if not mainOK or type(main)~="table" then main=unknown("engine_exception") end
