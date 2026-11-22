@@ -71,7 +71,7 @@ local modeOptions = {
 -- License notice (2/3): UI-only settings editor, never executes or auto-casts abilities.
 -- An unavailable class/tree must never be mistaken for a valid profile.
 function KR.Pages:Rotation(parent)
-    local body = scroller(parent, 1070)
+    local body = scroller(parent, 2470)
     local summary = card(body, -14, 158)
     label(summary, "ROT_PROFILE_TITLE", 16, -14, 500, true)
     local status = rawLabel(summary, 16, -48, 510)
@@ -117,14 +117,116 @@ function KR.Pages:Rotation(parent)
         12, -172, 500,
         function() return S:GetFlag("allowUnverifiedProfiles") or false end,
         function(value) S:SetFlag("allowUnverifiedProfiles", value) end)
+    -- Schema-driven per-module configuration. Switching class, tree or
+    -- level replaces these rows, never reuses another module's values.
+    local moduleCard=card(body,-1075,1170)
+    label(moduleCard,"ROT_MODULE_OPTIONS_TITLE",16,-13,510,true)
+    local moduleName=rawLabel(moduleCard,16,-40,510)
+    local moduleRows={}
+    local displayedModule
+    local function rebuildModule(module)
+        local selected=module and (module.id..":"..module.version) or ""
+        if selected==displayedModule then
+            for _,row in ipairs(moduleRows) do row.refresh() end
+            return
+        end
+        displayedModule=selected
+        for _,row in ipairs(moduleRows) do row.frame:Hide() end
+        moduleRows={}
+        moduleName:SetText(module and module.id or KR:L("ROT_NO_PROFILE"))
+        if not module then return end
+        for index,def in ipairs(module.Config or {}) do
+            local definition=def
+            local line=CreateFrame("Frame",nil,moduleCard)
+            line:SetPoint("TOPLEFT",16,-69-(index-1)*45)
+            line:SetSize(508,41)
+            local caption=UI:Label(line,
+                KR:L("BM_CFG_"..definition.key),nil,C.text)
+            caption:SetPoint("TOPLEFT",0,-5)
+            caption:SetWidth(320)
+            caption:SetWordWrap(true)
+            local function tip(self)
+                if GameTooltip then
+                    GameTooltip:SetOwner(self,"ANCHOR_RIGHT")
+                    GameTooltip:SetText(KR:L("TIP_BM_CFG_"..definition.key))
+                    GameTooltip:Show()
+                end
+            end
+            local function untip()
+                if GameTooltip then GameTooltip:Hide() end
+            end
+            local refreshRow
+            if definition.type=="number" then
+                local editor=CreateFrame("EditBox",nil,line,"InputBoxTemplate")
+                editor:SetPoint("TOPLEFT",350,-5)
+                editor:SetSize(130,27)
+                editor:SetAutoFocus(false)
+                editor:SetMaxLetters(8)
+                editor:SetScript("OnEnter",tip)
+                editor:SetScript("OnLeave",untip)
+                refreshRow=function()
+                    local n=S:GetModuleConfigValue(definition.key)
+                    if not editor:HasFocus() then
+                        editor:SetText(tostring(n or definition.default))
+                    end
+                end
+                editor:SetScript("OnEnterPressed",function(self)
+                    S:SetModuleConfigValue(definition.key,
+                        tonumber(self:GetText()))
+                    self:ClearFocus()
+                    refreshRow()
+                end)
+                editor:SetScript("OnEscapePressed",function(self)
+                    self:ClearFocus()
+                    refreshRow()
+                end)
+            else
+                local control=CreateFrame("Button",nil,line,"UIPanelButtonTemplate")
+                control:SetPoint("TOPLEFT",335,-4)
+                control:SetSize(165,27)
+                control:SetScript("OnEnter",tip)
+                control:SetScript("OnLeave",untip)
+                refreshRow=function()
+                    local v=S:GetModuleConfigValue(definition.key)
+                    local text=type(v)=="boolean"
+                        and KR:L(v and "UI_ENABLED" or "UI_DISABLED")
+                        or KR:L("BM_CHOICE_"..tostring(v))
+                    control:SetText(text)
+                end
+                control:SetScript("OnClick",function()
+                    local previous=S:GetModuleConfigValue(definition.key)
+                    if definition.type=="bool" then
+                        S:SetModuleConfigValue(definition.key,not previous)
+                    else
+                        local choices=definition.values or {}
+                        for i,v in ipairs(choices) do
+                            if v==previous then
+                                S:SetModuleConfigValue(definition.key,
+                                    choices[i%#choices+1])
+                                break
+                            end
+                        end
+                    end
+                    refreshRow()
+                end)
+            end
+            moduleRows[#moduleRows+1]={frame=line,refresh=refreshRow}
+            refreshRow()
+        end
+    end
     local function refresh()
         local p, id = profileRead()
         local state = KR.characterState
+        local module=S:GetActiveModule()
+        rebuildModule(module)
         local counts = state and state.talents and state.talents.counts
         local total = counts and table.concat(counts, "/") or "-"
         if p then
             status:SetText(KR:Format("ROT_PROFILE_SUMMARY", id, total))
-            notes:SetText(KR:L("ROT_PROFILE_UNAVAILABLE"))
+            notes:SetText(module and
+                KR:Format("ROT_MODULE_SELECTED",module.id,
+                    state and state.level or 0, module.version)
+                or KR:L("ROT_PROFILE_UNAVAILABLE"))
         else
             status:SetText(KR:L("ROT_NO_PROFILE"))
             notes:SetText(KR:L("ROT_PROFILE_UNAVAILABLE"))
