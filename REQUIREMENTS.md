@@ -1530,3 +1530,51 @@
 7. Тесты на нескольких классах: без цели/неверная цель, behind/facing, stealth и выход из stealth, смена формы/стойки, требуемый/запрещённый баф/дебаф, разные цели, override/ранги, secret API, ложная блокировка из-за отсутствия записи в каталоге, UNKNOWN без ложного READY.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-14.
+
+
+## 3. Приводимый в действие каст и каналы
+
+### CA-01 — Игрок кастует / ведёт канал: заклинание, оставшееся время, можно ли прервать
+
+**Приоритет: P0.**
+
+#### Требование
+
+Наблюдать текущее действие игрока: `active`, `kind=cast/channel/none`, `spellID`, `name`, `startTimeMs`, `endTimeMs`, `remainingSeconds`, `durationSeconds`, `interruptible` с **независимой достоверностью каждого поля**. `interruptible` означает подтверждённое свойство игрового каста (обычно `notInterruptible` инвертируется), **не команду отменить каст** и не решение, выгодно ли прерывание. Различать техническую возможность отмены собственного каста и способность врага прервать его: клиентский флаг `notInterruptible` не доказывает, что игрок может или не может отменить своё действие. Kord остаётся read-only.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 159–172: `castingSnapshot("player")` читает только первый строковый результат `UnitCastingInfo`/`UnitChannelInfo`; комментарий 161 прямо откладывает полные тайминги. Не сохраняет spellID, start/end, remaining или interruptibility.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 240–255, 348: политика `cast="idle"` блокирует новую рекомендацию при подтверждённом касте/канале; `cast="allow"` не даёт данных об оставшемся времени и прерываемости. Не путать policy `allow` с правом отмены каста.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строка 17: `UnitCastingInfo` и `UnitChannelInfo` в allowlist; требуется типизированное безопасное чтение полного кортежа, не только строки.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 27–30: подписаны START/STOP/INTERRUPTED/FAILED/SUCCEEDED и CHANNEL_START/STOP; проверить наличие DELAYED, CHANNEL_UPDATE, INTERRUPTIBLE/NOT_INTERRUPTIBLE, EMPOWER и других событий конкретного Forever клиента.
+
+#### Семь референсов (фактически проверены локальные Lua ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Units.lua:1117–1134` читает оба Unit*Info через `Secret.CallMulti` и вычисляет remaining для игрока; `Core/Atoms/Casts.lua:26–34` читает флаг `notInterruptible`. Разделяет время и свойство прерывания.
+2. **JustAC** — `JustAC/UI/UIRenderer.lua:766–792` читает endMs и spellID текущего player cast/channel, отдельно учитывает empowered channel и оставшееся время для визуального поведения; `PrecombatEngine.lua:185–186` проверяет факт текущего каста/канала.
+3. **ForeverAuras** — `ForeverAuras/ForeverAuras/Types.lua:1215–1227` получает endTime текущего player cast/channel и вычисляет отображаемое оставшееся время; `Prototypes.lua` поддерживает поля cast/channel triggers, включая interruptible. Это мощная схема триггеров, не готовый прямой Kord API.
+4. **MaxDps** — `MaxDps/MaxDps/Helper.lua:1799–1802` читает endTime и spellID из UnitCastingInfo/UnitChannelInfo для заданного unit; в профилях отдельно проверяет interruptible цели. Требуется защита от secret и разделение игрок/цель.
+5. **ForeverRotation** — `ForeverRotation/ForeverRotation/Engine.lua:167–191` читает cast/channel цели и флаг прерываемости, включая скрытое значение; `Engine.lua:439` проверяет канал игрока. Целевой interrupt-gate не является полноценным player cast observation.
+6. **RotationGuide** — в `RotationGuide/Core/State.lua` найдены event-based cast ID/rank и логика состояния, но в проверенных Core Lua нет подтверждённого полного player cast/channel reader с remaining/interruptible. Не приписывать несуществующий универсальный таймер.
+7. **RotationMaster** — `RotationMaster/Platform/casting.lua:130–170` предоставляет `GetUnitCastObservation(unit,kind)`: независимо `active/name/remainingSeconds/durationSeconds/interruptible/spellID` с отдельными reason при недоступности; `Conditions/channeling.lua` кэширует наблюдение на проход. Наиболее близкий архитектурный образец.
+
+#### Сравнение и рекомендация
+
+**Основа — RotationMaster + Sonah + JustAC, сохранив Kord.** RotationMaster — типизированные независимые факты и причины; Sonah — secret-safe чтение; JustAC — особенности Forever player channel/empower и неиспользование кастбара UI как источника истины. Ввести **общеклассовый логический контракт** `PlayerCastObservation` в существующих `GameState`/`GameAPI`, без отдельного файла под класс или без необходимости нового файла вообще. `AbilityEligibility` остаётся единственным арбитром READY.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Факт каста/канала и базовая блокировка есть, но spellID, достоверный остаток и свойство interruptible отсутствуют в текущем контракте Kord.
+
+#### Требуемые изменения
+
+1. Расширить общую `GameState.castingSnapshot` с защищённым кортежем `UnitCastingInfo("player")`/`UnitChannelInfo("player")`: `active/kind/spellID/name/startTimeMs/endTimeMs/remainingSeconds/durationSeconds/notInterruptible/interruptible` и отдельными `status/reason/source` каждого поля.
+2. Верифицировать порядок полей `UnitCastingInfo` vs `UnitChannelInfo` на Forever; не переносить без проверки retail индексы. `notInterruptible` для cast/channel находится в разных позициях. `nil` или secret → UNKNOWN.
+3. Вычислять remaining только из подтверждённых endTime и `GetTime`; отрицательные значения нормализовать лишь после безопасных числовых проверок; различать отсутствие каста, скрытый каст и недоступный API.
+4. Не трактовать `notInterruptible` как `canCancelOwnCast`. Если требуется именно добровольная отмена игроком, выделить самостоятельный факт `canCancelOwnCast` с UNKNOWN до подтверждения игровым контрактом. Никаких `SpellStopCasting`, `SpellStopChanneling` или защищённых действий.
+5. Сверять spellID с SP-02 (ранг) и SP-11 (override), не подменяя фактический ID ожидаемым из профиля. При channel/empower корректно отличать канал от обычного каста.
+6. Инвалидировать и обновлять при cast/channel событиях, включая delay/update/interruptibility где доступны; вычисляемое remaining должно обновляться по времени, а не только при старте/конце.
+7. Тесты: обычный каст, канал, empower, прерывание/отмена, pushback/delay, нулевой/отрицательный остаток, разные индексы кортежа, secret time/ID/flag, отсутствующий API, быстрый переход cast→channel, смена ранга/override, подтверждённое отсутствие каста. Диагностика не должна раскрывать secret значения.
+
+**Изменения кода:** не выполнялись; внесён аудит CA-01.
