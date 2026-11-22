@@ -24,6 +24,23 @@ function D:RefreshUI()
     local s=self.active and self:L("STATE_ON") or self:L("STATE_OFF")
     self.ui.status:SetText(self:Format("STATUS",s,#(self.records or {}),self.dropped or 0))
 end
+-- Optional public UI-only entry point for KordRotation's Diagnostics tab.
+-- Never starts a recording, probes APIs, or mutates rotation settings.
+function D:OpenUI()
+    local frame=self.ui and self.ui.frame
+    if not frame and type(self.CreateUI)=="function" then
+        local ok,value=pcall(self.CreateUI,self)
+        if ok then frame=value end
+    end
+    if not frame or type(frame.Show)~="function" then return false end
+    local ok=pcall(frame.Show,frame)
+    if not ok then return false end
+    if type(self.RefreshUI)=="function" then
+        pcall(self.RefreshUI,self)
+    end
+    return true
+end
+
 function D:CreateUI()
     if self.ui then return self.ui.frame end
     local frame=CreateFrame("Frame","KordRotationDevToolsWindow",UIParent,"BasicFrameTemplateWithInset")
