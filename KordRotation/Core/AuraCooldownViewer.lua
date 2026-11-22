@@ -77,6 +77,19 @@ function V:ReadItem(item)
   tracked[id][unit]=present
  end
 end
+-- RM Core/aura_conditions.lua remembers the last readable player aura.
+-- Kord keeps only independently verified observations, never infers an
+-- initial negative from a hidden no-value response.
+local observed={}
+function V:Observe(id,present)
+ if not safe(id) or type(id)~="number" or
+     (present~=true and present~=false) then return end
+ observed[id]=present
+end
+function V:GetObserved(id)
+ if not safe(id) or type(id)~="number" then return nil end
+ return observed[id]
+end
 function V:GetPresence(id,unit)
  if not safe(id) or type(id)~="number"
      or (unit~="player" and unit~="target") then return nil end
@@ -124,6 +137,10 @@ function V:Initialize()
   "PLAYER_SPECIALIZATION_CHANGED"}
  for _,event in ipairs(events) do pcall(frame.RegisterEvent,frame,event) end
  frame:SetScript("OnEvent",function(_,event)
+  if event=="PLAYER_ENTERING_WORLD" then
+   observed={}
+   tracked={}
+  end
   if event=="PLAYER_TARGET_CHANGED" then
    for _,record in pairs(tracked) do record.target=nil end
    for _,item in ipairs(items) do V:ReadItem(item) end
