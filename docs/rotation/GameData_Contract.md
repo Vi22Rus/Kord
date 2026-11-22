@@ -119,3 +119,19 @@ BM сегодня использует snake_case и названия спосо
 Опциональное `rule.requires` — список до 8 уникальных объектов `{field="context.inGroup",equals=false}`; только булевы поля утверждённого прямого GameData: `player.moving`, `target.isPlayer`, `pet.exists`, `pet.dead`, `context.inGroup`, `context.inRaid`, `context.inInstance`. `READY` с совпадающим обычным boolean пропускает проверку; доказанное несовпадение = BLOCKED; любое недоступное, защищённое или неопределённое поле = UNKNOWN. Неизвестные имена отвергаются при регистрации, без alias-mapping. Это не реализация произвольных предусловий профилей.
 
 `Eligibility` должен возвращать ровно `READY/BLOCKED/UNKNOWN` и тот же `spellID`; противоречие = UNKNOWN. CI: [run 44888049693](https://github.com/Vi22Rus/Kord/actions/runs/44888049693) на SHA `28104bbb9920fdba46170426e8c6eb621a243b17`, 9/9 Lua mock suites PASS. Клиентская проверка Forever = NOT RUN. Highest learned rank #20 открытый.
+
+## Реализация провайдеров после диагностических тестов 2026-11-22
+
+Следующие записи описывают **наличие кода**, не утверждают CLIENT PASS матрицы v14.
+
+| Сигнал | Источник / способ | Ограничения | Состояние |
+|---|---|---|---|
+| `target.classification` | `UnitClassification("target")` в `GameState` | неизвестное/незнакомое значение → UNKNOWN | SOURCE IMPLEMENTED; в пользовательском trace при наличии цели READY |
+| `player.travelAspect` | `ReadSignal("player.buff",5118)` (Cheetah) и `ReadSignal("player.buff",13159)` (Pack) | false только при двух достоверных отсутствиях; иные случаи UNKNOWN | SOURCE IMPLEMENTED; отдельный trace READY |
+| `player.buff`, `target.debuff` | адресный SpellID lookup → проверенный `C_UnitAuras.GetUnitAuras` batch → `C_UnitAuras.GetAuraDataByIndex` (до 64) | snapshot target GUID; защищённые/неполные/неплотные данные → UNKNOWN; отрицательная полнота API ещё не доказана в игре | SOURCE IMPLEMENTED; новейший batch CLIENT NOT RETESTED |
+| `pet.health.percent`, `resources.percent` | `UnitHealth/Max`, `UnitPower/Max` typed snapshot | секретные значения не оборачивать в число; на последнем игровом trace UNKNOWN | PARTIAL / NEEDS CLIENT RESEARCH |
+| `target.melee` | `AbilityEligibility.Fact(2973,"inRange")` | подтверждение зависит от цели, слота/ранга API и клиентских ограничений | PARTIAL; иногда READY, иногда UNKNOWN |
+| `target.ttd`, `hawk.count`, `hawk.oldestRemaining`, `aoe.safe` | подтверждённого провайдера нет | не выводить из уровня/отсутствия данных | NOT IMPLEMENTED |
+
+`ActionBarScanner` — самостоятельный контракт: подтверждённая видимая кнопка + актуальный action slot + **точный SpellID**, с повторной проверкой. Совпадение локализованного имени допускается лишь для причины `visible_spell_rank_mismatch`, **не** для READY. Последний пользовательский тест показывает `action_slot_unconfirmed` для Hawk при видимой Ctrl+3 кнопке; до независимого подтверждения ID/слота исправление этого случая остаётся открытым.
+
