@@ -95,7 +95,15 @@ function D:CreateUI()
         D:RefreshUI()
     end)
     button(frame,"EXPORT",20,-116,190,function()
-        report:SetText(D:Export())
+        -- Each click advances one complete export page. After the final
+        -- page, start again at 1. Pages are bounded for the WoW EditBox.
+        local page=(D.exportPage or 0)+1
+        local output,current,total=D:Export(page)
+        if page>total then
+            output,current,total=D:Export(1)
+        end
+        D.exportPage=current
+        report:SetText(output)
         report:SetFocus()
         report:HighlightText()
         D:RefreshUI()
