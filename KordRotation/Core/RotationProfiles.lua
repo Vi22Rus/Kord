@@ -24,6 +24,9 @@ local maintenanceKinds={
 -- An enemy debuff, a potion or a utility action is NOT inferred as upkeep.
 function P:RecommendationKind(rule,effectiveCategory)
  if type(rule)~="table" then return "spell",false end
+ -- The maintenance channels only present verified spell recommendations.
+ -- Commands/other action kinds remain separate, regardless of category.
+ if rule.type~="SPELL" then return "utility",false end
  local kind=rule.recommendationType
  if not recommendationTypes[kind] then
   if kind~=nil then return "spell",false end
