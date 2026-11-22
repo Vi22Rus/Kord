@@ -288,4 +288,30 @@ eq(fact("notSupported").status,"UNKNOWN","invalid fact kind closed")
 eq(KR.AbilityEligibility:Fact(secretSpellId,"inRange").status,
  "UNKNOWN","secret spellID rejected")
 eq(KR.AbilityEligibility:Initialize(),true,"initialization")
+-- UNKNOWN retains all six attempted checks; a proven BLOCKED remains lazy.
+nilRange=true; missingGcdField=true
+local six=eval()
+eq(six.status,"UNKNOWN","multiple unknowns never yield READY")
+eq(six.reason,"gcd_activity_unknown","first unknown remains canonical")
+eq(#six.checks,6,"all six checks evaluated in UNKNOWN case")
+eq(six.checks[5].name,"gcd","GCD is fifth check")
+eq(six.checks[5].reason,"gcd_activity_unknown","GCD specific reason retained")
+eq(six.checks[6].name,"range","range is sixth check")
+eq(six.checks[6].reason,"range_unavailable","additional unknown reason retained")
+nilRange=false; missingGcdField=false
+casting="Frostbolt"
+local lazy=eval()
+eq(lazy.reason,"already_casting","cast blocked before other checks")
+eq(#lazy.checks,1,"BLOCKED remains lazy")
+eq(lazy.checks[1].name,"cast","cast check recorded")
+casting=nil
+local originalFind=KR.ActionBarScanner.FindSpell
+KR.ActionBarScanner.FindSpell=function()
+ return {status="UNKNOWN",reason="button_action_info_unconfirmed"}
+end
+local barFailure=eval()
+eq(barFailure.reason,"action_slot_unconfirmed","public reason stays stable")
+eq(barFailure.barReason,"button_action_info_unconfirmed",
+ "specific scanner cause attached to core diagnostic")
+KR.ActionBarScanner.FindSpell=originalFind
 print("PASS stage 2.7 eligibility mock: "..count.." checks")
