@@ -1,3 +1,13 @@
+## KR-20261122-007 — аудит UI-06: причины отсутствия иконки
+- Дата: 2026-11-22 (точный timestamp — GitHub); SHA через `git log --grep KR-20261122-007`.
+- Файлы: `REQUIREMENTS.md`, `CHANGELOG.md`. Lua не изменён.
+- Контекст: пользовательская причина отсутствия иконки должна быть точной и безопасной, отдельно от developer trace.
+- Аудит: изучены `RotationEngine`, `RotationDisplay`, `Diagnostics`, `AdvancedDiagnostics`, `KordRotationDevTools/Trace` и `UI`, семь ZIP и существующие требования.
+- Изменения: спецификация `RecommendationAbsenceExplanation`, reason priority, user vs DevTools boundary, 6 локалей, stale revisions, 10 шагов реализации/тестов; обратные ссылки UI-01, UI-02, UI-03, UI-05, DA-03, AC-07.
+- PASS: раздел, семь референсов, сохранение старых требований и ссылки. NOT RUN: Lua 5.1, CI, WoW Forever.
+- Вердикт: частично реализовано, P1; исходники не изменялись.
+
+
 ## KR-20261122-006 — аудит UI-05: режимы видимости основной панели
 - Дата: 2026-11-22; SHA — `git log --grep KR-20261122-006`.
 - Тип: docs only. Статус: SPEC DOCUMENTED / IMPLEMENTATION PARTIAL / CLIENT NOT RUN.

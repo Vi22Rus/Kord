@@ -6460,6 +6460,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение EN-A11:** EN-A11: исключение UNKNOWN требует доказанного теста и причины, не может отключать обязательные проверки пригодности/безопасности. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-06:** STOP/UNKNOWN объяснять исходным безопасным reason из AC-07 и приоритетом остановившего правила; UI-06 не заменяет UNKNOWN на BLOCKED или READY и не продолжает вычислять более низкие правила ради красивого объяснения.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -7347,6 +7349,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-08:** DA-08: после смены спека/талантов/уровня разрешения Needs и профиль переопределяются без доступа к старому контексту. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-06:** пользовательское краткое объяснение отсутствия иконки строится из того же snapshot/status/reason, что DevTools диагностика DA-03; подробные traces, запись и экспорт остаются исключительно в DevTools, без второго логгера в пользовательской сборке.
+
 ### DA-04 — Бюджет времени на оценку, замер, предупреждение при превышении
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P1.**
@@ -7698,6 +7702,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-05:** видимость оболочки главной панели и подтверждённая рекомендация — разные состояния. Все три режима показа вычисляются единым `DisplayVisibilityPolicy` (UI-05); скрытие не создаёт READY/PREDICTED, не переносит defensive в main и не сохраняет устаревшие иконки/клавиши.
 
+**Ретроактивное уточнение UI-06:** отсутствие текущей иконки и пустая/неподтверждённая PREDICTED очередь должны объясняться через единый `RecommendationAbsenceExplanation` (UI-06), не подменяя результат движка. Пустая оболочка не означает `no_eligible_rule` без подтверждённого engine reason.
+
 ### UI-02 — Подсветка кнопки на панели (если разрешено), показ клавиши привязки
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -7751,6 +7757,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-03:** `glowEnabled`, стиль, интенсивность и `showKeybind` должны иметь однозначные ключи/владельцев CFG и показ источника значения. Различать `panel.highlightMain` (рамка иконки) и `indicators.actionHighlight` (намерение подсвечивать actionbar): два разных контракта, без автосинхронизации. См. UI-03.
 
 **Ретроактивное уточнение UI-05:** подсветка текущей actionbar-кнопки и отображение клавиши должны учитывать итоговую видимость main по `DisplayVisibilityPolicy` (UI-05); скрытая main-панель не должна оставлять stale glow, но видимость не меняет eligibility и не разрешает protected операции.
+
+**Ретроактивное уточнение UI-06:** отсутствие keybind/glow при существующей READY-иконке — отдельная причина `binding_unverified|button_not_visible|glow_blocked`, а не «нет рекомендации». UI-06 отображает explanation из существующего UI-02 observation, не дублирует поиск кнопок.
 
 ### UI-03 — Окно настроек из схемы CFG: группы, подсказки, конфликты источников
 
@@ -7823,6 +7831,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-04:** именованные пресеты для спека/контента и импорт/экспорт должны использовать единый CFG resolver UI-03 и его provenance/conflict policy; UI-04 управляет только снимками валидированных пользовательских overrides, не создаёт второй schema-driven интерфейс и не обходит UNKNOWN при конфликте.
 
 **Ретроактивное уточнение UI-05:** три пользовательских режима `COMBAT_ONLY|TARGET_ONLY|ALWAYS` отображаются в общем окне настроек через существующий Settings-владелец и единый CFG/UI контракт; legacy `showInCombat/showOutOfCombat/requireTarget` мигрируются с явной обработкой неоднозначностей. Не создавать вторую независимую панель настройки видимости.
+
+**Ретроактивное уточнение UI-06:** поддержка объяснений «почему нет иконки» использует существующую локализацию/tooltip UI-03 и типизированный `reason` registry; diagnostic presentation не создаёт второй CFG editor и не меняет owner настроек.
 
 ### UI-04 — Профили настроек для спека и контента, импорт, экспорт
 
@@ -7951,4 +7961,68 @@ Kord Rotation должен позволять создавать, именова
 **Архитектурные ссылки:** UI-01, UI-02, UI-03, UI-04, DA-01/DA-02/DA-04/DA-05/DA-06/DA-07/DA-08, EN-A5, AC-07, `Settings`, `RotationDisplay`, `IndicatorSettings`. **Обратные уточнения внесены в UI-01, UI-02, UI-03, UI-04, DA-07, DA-08.** Не изменяется контракт `RotationEngine`/Eligibility и не создаётся второй движок.
 
 **Изменения Lua:** отсутствуют. Только документация. Референсы проверены статически, runtime NOT RUN.
+
+**Ретроактивное уточнение UI-06:** при скрытой main-панели первым объяснять проверенную причину `DisplayVisibilityPolicy` (UI-05), а не ошибочно сообщать «ротация не работает». `RecommendationAbsenceExplanation` UI-06 соединяет готовые статусы видимости, engine и presentation без повторного опроса API.
+
+### UI-06 — Индикация причины: почему нет иконки (для отладки и поддержки)
+
+**Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
+
+#### Требование
+
+При отсутствии основной рекомендуемой иконки Kord должен объяснить **почему именно нет иконки**, разделяя пользовательскую видимость, доступность профиля, результат движка, eligibility и ошибки presentation. Объяснение — отображение **уже полученных** проверенных статусов, не новая оценка ротации. Нельзя выдавать неизвестное за «нет подходящего заклинания», пустой слот за READY или сообщение «нет цели» без подтверждённого факта. Не показывать технический текст постоянно поверх игрового экрана: компактный пользовательский статус/tooltip или команда поддержки по запросу, расширенная история и экспорт — исключительно в отдельном `KordRotationDevTools`.
+
+**Канонический контракт:** `RecommendationAbsenceExplanation(channel,displayStatus,engineStatus,eligibilityStatus,presentationStatus,reason,profileID,rulePriority,source,revision,observedAt,stale)` возвращает `kind=HIDDEN_BY_USER|HIDDEN_BY_CONTEXT|PROFILE_UNAVAILABLE|ROTATION_DISABLED|NO_ELIGIBLE_RULE|ELIGIBILITY_BLOCKED|DATA_UNKNOWN|PRESENTATION_UNVERIFIED|ENGINE_ERROR|NOT_EVALUATED|READY_NOT_VISIBLE`, `status=READY|BLOCKED|UNKNOWN|NOT_APPLICABLE`, `primaryReason`, `secondaryReasons` (только уже наблюдённые), `messageKey`, `technicalReason`, `source`, `revisions`. `READY` здесь означает достоверное объяснение, **не** готовую способность. Причины выбираются по **достоверной иерархии**: (1) main скрыт master/mode/death/mount (UI-05) → не объявлять engine failure; (2) не было оценки → `NOT_EVALUATED`; (3) отсутствует/отключён профиль → профильный reason; (4) engine `UNKNOWN`/STOP/exception → конкретный fail-closed reason; (5) engine `BLOCKED`/нет пригодного правила → подтверждённая причина, с указанием первой решающей проверки; (6) engine READY, но иконки нет → presentation/texture/binding reason; (7) нет сведений → `DATA_UNKNOWN`, не угадывать. Secondary reasons не должны маскировать primary. При независимом defensive-канале — отдельный `channel=DEFENSIVE`; скрытый main не означает скрытый defensive и наоборот.
+
+**Примеры точных причин:** `visibility_disabled`, `visibility_combat_required`, `visibility_target_required` (UI-05); `rotation_disabled`, `specialization_unknown`, `profile_not_registered`, `profile_for_level_missing`, `profile_unverified`, `rotation_settings_unavailable`, `auto_target_count_unverified`, `game_state_unavailable`, `player_level_unverified`, `condition_unknown`, `condition_error`, `condition_false`, `category_disabled`, `rule_disabled`, `routed_to_other_channel`, `defensive_disabled`, `no_eligible_rule`, `spell_visual_data_unverified`, `engine_exception` (уже присутствующие или вытекающие из `RotationEngine.lua`). Для eligibility добавлять **исходный** проверенный `reason` из AbilityEligibility, а не придумывать универсальное «мало маны»; когда ресурс/дистанция/GCD/cooldown неизвестны, писать «невозможно проверить», а не «не хватает». Если READY есть, но glow/keybind нет, это **не отсутствие иконки**: показывать отдельную информацию UI-02 без подмены причины. `UNKNOWN→STOP` AC-07 сохраняется.
+
+**Пользовательский UI:** компактное «Почему нет иконки?» на странице состояния/в подсказке к пустой панели, когда панель видима; если панель скрыта — доступ через окно настроек или команду поддержки без принудительного показа скрытой панели. Показывать краткое объяснение на шести языках `ruRU/enUS/frFR/deDE/ptBR/esES`, технический reason code для копирования, статус и время/ревизию последней достоверной оценки. Отдельно обозначать «ещё не оценивалось», «состояние устарело» и «проверка недоступна». Не выводить названия целей/игроков, текст SavedVariables, spell names из секретных значений или developer trace. Отладочный подробный список evaluated priorities/blocked reasons — DevTools по явному Start; production содержит только bounded last-summary без постоянного recorder, event history и экспорта. Объяснение должно обновляться по тем же ревизиям, что recommendation/visibility, не вызывать полный движок на каждый hover.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:6–12`: `unknown(reason,...)` и `blocked(reason,...)` возвращают `status`, `reason`, `queue={}`, `source`, `profileID`, `diagnostics`. `:119–152` выдаёт точные причины `engine_dependency_missing`, `specialization_unknown`, `profile_not_registered`, `rotation_disabled`, `auto_target_count_unverified`, `game_state_unavailable`, `profile_for_level_missing`. Не требуется новый evaluator для UI.
+- `RotationEngine.lua:153–255`: собирает bounded диагностические записи `priority/status/reason`; `UNKNOWN` обычно останавливает обход, документированный `condition_unknown_skipped` — исключение; `no_eligible_rule` возвращается только после проверки. Для UI нельзя вычислять остальные правила, чтобы заполнить «все причины».
+- `KordRotation/UI/RotationDisplay.lua:319–359`: `summarizeOutcome(result)` считает `eligibilityReady/Blocked/Unknown` и агрегированный `profileStatus`, но **теряет подробные reason**; `:367–374,401–413` сохраняет `lastEngineStatus/lastEngineReason/lastSummary`; `:452–474` отдельно сохраняет `lastDefensiveStatus/lastDefensiveReason`. Это реальная основа поддержки, но не полноценный пользовательский `RecommendationAbsenceExplanation`.
+- `RotationDisplay.lua:267–287,494–500`: `ShouldShow()` и `ShouldShowDefensive()` управляют видимостью; причины скрытия сейчас не выдаются единым типизированным результатом. UI-05 вводит канонический policy; UI-06 обязан **использовать его**, а не второй набор проверок `UnitExists/InCombatLockdown`.
+- `RotationDisplay.lua:383–425`: engine result обрабатывается отдельно от показа; пустая main-иконка может быть результатом скрытия, отсутствия READY или отказа presentation. Сейчас нет доказанной пользовательской сквозной причины именно «почему нет иконки».
+- `KordRotation/Core/Diagnostics.lua:6–10,14–31`: production `Log` не хранит developer events, `Snapshot` выдаёт ограниченное состояние персонажа/панели. Это **намеренная граница** пользовательской сборки; нельзя превращать её в полный recorder.
+- `KordRotation/UI/Pages/AdvancedDiagnostics.lua:70–...`: есть пользовательская вкладка состояния/совместимости; она не является полноценным DevTools trace. `KordRotationDevTools/Trace.lua:4–54,76–95` реализует явный Start/Stop и event observation; `KordRotationDevTools/UI.lua:22–42,44–95` содержит отдельное диагностическое окно. Детальный журнал должен оставаться в DevTools, а user-facing explanation — в общем KordRotation.
+- **Пробел:** нет единой приоритетной типизированной причины отсутствия иконки, стабильного localized reason registry, различия `NOT_EVALUATED` vs `UNKNOWN` vs `HIDDEN`, проверенной защиты от stale reason после смены target/spec/settings, и доказанного UI copy/support workflow. Игровой QA не проводился.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Classes/Hunter.lua` содержит `reason` у некоторых рекомендаций (например, `Call Pet`), `Sonah/Classes/Priest.lua` поясняет reason для `Renew`; `Sonah/Core/Organisms/Profiles.lua` управляет профилями. Полезна смысловая причина **выбранного** действия, но это не доказанный общий контракт «почему нет иконки»; не смешивать explanatory action text и блокирующий reason.
+2. **JustAC:** `JustAC/DebugCommands.lua` предоставляет отдельный debug/inspect workflow; `JustAC/Options/Core.lua` ссылается на `/jac inspect <topic>` и поясняет недоступные элементы. Заимствовать разделение поддержки/подробного inspect и user-facing текста, не копировать зависимости/команды без проверки.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua` содержит диагностические заметки и защиту отчётов через `pcall`; `ForeverAurasOptions/InformationOptions.lua` имеет Debug Log UI. Полезны bounded безопасные отчёты и отделение пользовательского интерфейса от debug, но aura cell причины не эквивалентны eligibility ротации.
+4. **MaxDps:** `MaxDps/Options.lua` содержит `debugMode`; `MaxDps/Modules/Window.lua` имеет debug options, `MaxDps/Modules/SpellIDToolTip.lua` проверяет debugMode. Это подтверждает наличие диагностического режима, но не полноценную классификацию engine `UNKNOWN/BLOCKED`; в Kord developer trace должен остаться в отдельном аддоне.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:702–...` принимает параметр `trace` при рекомендации; `ForeverRotation/Rotations/Signals.lua:18` документирует `note = source / reason (shown in /fr why)`. Полезен отдельный пользовательский запрос `why` и trace только по запросу; не запускать полный повторный обход правил и не считать note доказанным блокирующим eligibility reason.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:217` печатает status класса/ротации/талантов/числа врагов, `RotationGuide/Locales/enUS.lua:25,147` локализует status/command. Полезен компактный support summary, но status сам по себе не объясняет остановившее правило.
+7. **RotationMaster:** `RotationMaster/Core/rotation_scope.lua`, `RotationMaster/Core/forecast.lua` и `RotationMaster/Locales/deDE.lua` используют reason/status и локализованные технические причины (включая invalid-owner). Полезны структурные коды причины, provenance и разделение прогноза/состояния; не переносить большой engine/editor/forecast ради простой диагностики.
+
+**Границы доказательств:** проверены указанные файлы и найденные участки семи предоставленных ZIP; отсутствие найденного универсального контракта в проверенном фрагменте не доказывает отсутствие во всём аддоне. Ни один референс не подтверждает доступность всех API на WoW Forever без теста клиента.
+
+#### Выбранный путь Kord
+
+**Канонический путь — единый read-only `RecommendationAbsenceExplanation` как presentation adapter существующих `RotationDisplay.lastEngineStatus/Reason`, `RotationEngine.diagnostics`, `DisplayVisibilityPolicy` UI-05 и `AbilityEligibility`/UI-02, с разделением user support summary и DevTools trace.** Не создавать второй evaluator, Eligibility, EventBus, combat/target provider, собственный журнал в пользовательской сборке или новую причину без подтверждённого источника. Данные потреблять из **одного актуального результата оценки**, не вызывать движок заново для tooltip. Критический UNKNOWN должен оставаться UNKNOWN. Объяснение при скрытой панели берётся из UI-05; при engine READY и отсутствии texture — presentation failure; при disabled profile — profile reason. Один registry reason→locale keys, source/revision; unknown code отображать как безопасное «Причина пока не определена» плюс буквальный ограниченный technical code.
+
+#### Требуемые изменения
+
+1. Ввести типизированный `RecommendationAbsenceExplanation` и единую таблицу приоритета причин `visibility→not_evaluated→profile→engine→eligibility→presentation` с явным `channel` и bounded secondary reasons. Не изменять структуру/порядок вычисления правил движка.
+2. Использовать уже имеющиеся `RotationEngine.status/reason/diagnostics` и `RotationDisplay.lastEngineStatus/lastEngineReason/lastSummary`; дополнить только недостающий bounded snapshot, не хранить сырые GameState/secret/protected values.
+3. Подключить UI-05 `DisplayVisibilityPolicy` как единственный источник причин скрытия main; независимый defensive channel и его `lastDefensiveReason` не переносить в main.
+4. В user UI добавить доступное при скрытой панели «Почему нет иконки?», короткую причину и копируемый технический код; при видимой пустой панели разрешить tooltip без навязчивого overlay. Различать `HIDDEN`, `NOT_EVALUATED`, `UNKNOWN`, `BLOCKED`, `READY_NOT_VISIBLE`.
+5. Создать versioned reason registry и `label/tooltip` на шести языках `ruRU/enUS/frFR/deDE/ptBR/esES`, fallback на безопасный общий текст и технический код, без фиктивных переводов. Причины GCD, ресурса, дистанции, cooldown, LOS и цели показывать только при реально подтверждённом eligibility reason.
+6. Привязать snapshot к `settings/identity/target/combat/actionbar/bindings` revisions (DA-01/DA-02/DA-08), сбрасывать stale reason на смене профиля/спека/цели/режима и при `UNKNOWN` не оставлять старое «нет маны».
+7. Для UI-01 и UI-02 различать «нет main recommendation» и «READY есть, но не удалось показать texture/keybind/glow»; не объявлять отсутствие keybind причиной отсутствия spell icon.
+8. В DevTools добавить opt-in trace корреляции `evaluationID/revision/channel/priority/status/reason/source`, ограниченный размер/частоту и экспорт без персональных данных; пользовательская сборка содержит только последний безопасный summary, без Start/Stop и скрытого recorder.
+9. Тесты: нет профиля, выключена ротация, неизвестный spec/level, auto AoE UNKNOWN, приоритетное condition UNKNOWN→STOP, condition_false, no_eligible_rule, категория disabled, недостаток ресурса подтверждённый/неподтверждённый, spell_visual_data_unverified, engine_exception, defensive независимо, 3 режима UI-05, target loss, смена спека, stale snapshot, READY без texture, glow/keybind missing, event storm, no repeated evaluation on tooltip, 6 locales, safe copy code, отсутствие секретных значений.
+10. Проверить производительность DA-04/DA-05, отсутствие повторных API-read и двойных логгеров, совместимость Lua 5.1/WoW Forever, обе ZIP-сборки с побайтово общим `KordRotation/`, и то, что user addon не получает DevTools-only export/recording.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО / P1 / НЕТ ПОЛНОГО USER-FACING EXPLANATION.** Engine уже выдаёт reason/status, RotationDisplay хранит последнюю причину и агрегаты, DevTools умеет opt-in trace. Не доказаны единая приоритетная причина отсутствия иконки, шесть локалей для reason registry, поддержка скрытой панели и защита от stale explanation. Документация аудита завершена; Lua/CI/WoW Forever NOT RUN.
+
+**Архитектурные ссылки:** UI-01 (пустая иконка/очередь), UI-02 (keybind/glow), UI-03 (локализация/UI), UI-05 (видимость), DA-01/DA-02/DA-03/DA-04/DA-05/DA-06/DA-08, AC-07 (STOP), EN-A2/EN-A3/EN-A4, `RotationEngine`, `RotationDisplay`, `AbilityEligibility`, `Diagnostics`, `KordRotationDevTools/Trace.lua`. **Обратные ссылки добавлены в UI-01, UI-02, UI-03, UI-05, DA-03, AC-07** там, где старые механизмы должны переиспользовать новый presentation adapter; нет замены Eligibility или engine.
+
+**Изменения Lua:** отсутствуют. Только документация.
 
