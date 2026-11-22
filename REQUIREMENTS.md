@@ -1530,6 +1530,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-04:** **См. TG-04: type-limited spell requirements reuse a common CreatureTypeObservation and AbilityEligibility, not class-specific readers.**
+
+
 **Архитектурная актуализация TG-03:** **См. TG-03: требования к типу/уровню цели должны читать единый TargetObservation, а не отдельные class-specific boss/elite checks.**
 
 
@@ -2293,6 +2296,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-04:** **См. TG-04: creature type is an additional fact on the same targetGUID and TargetObservation, not a separate scanner.**
+
+
 **Архитектурная актуализация TG-03:** **См. TG-03: уровень и классификация используют тот же targetGUID и существующий GameState unitSnapshot; не создавать отдельный target scanner.**
 
 
@@ -2398,6 +2404,9 @@
 
 ### TG-03 — Уровень относительно игрока, классификация (обычная, элита, босс, редкая)
 
+
+**Архитектурная актуализация TG-04:** **См. TG-04: creature type (Beast/Undead/etc.) is distinct from UnitClassification (elite/rare/boss); do not conflate.**
+
 **Раздел: 5. Цель. Приоритет: P1.**
 
 #### Требование
@@ -2443,3 +2452,53 @@
 **Архитектурные ссылки:** TG-01 — target identity; PL-02 — player level; SP-14 — target restrictions. Обратные сноски добавлены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-03.
+
+
+### TG-04 — Тип существа (нежить, зверь, гуманоид, демон…) для способностей с условиями
+
+**Раздел: 5. Цель. Приоритет: P1.**
+
+#### Требование
+
+Общеклассовое `CreatureTypeObservation(unit)` предоставляет `creatureTypeID`, `localizedName`, `canonicalType`, `unitGUID`, `status/reason/source`. Подтверждённые типы (beast, dragonkin, demon, elemental, giant, undead, humanoid, critter, mechanical, и другие поддерживаемые клиентом) используются в декларативных требованиях заклинаний. `UnitClassification` (elite/rare/boss) **не** заменяет `UnitCreatureType`. `UnitCreatureFamily` (например, семейство питомца) — иной факт. Secret/unavailable → UNKNOWN, а не «humanoid», «not specified» или совпадение с соседним мобом.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155: `unitSnapshot("target")` уже содержит GUID, exists, attackable, isPlayer, classification, но не читает `UnitCreatureType` и не хранит тип существа.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9–20: `UnitCreatureType`/`C_CreatureInfo.GetCreatureTypeInfo` отсутствуют в проверенном allowlist. Требуется сначала подтвердить доступность/секретность Forever, затем включить безопасное чтение.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 12–21: `target.classification` есть, `target.creatureType`/type-match нет.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–209,353: target policy и range есть, но нет универсального type restriction (например, Shackle Undead или Hibernate).
+- TG-01/TG-03 и SP-14 — общие механизмы target identity, classification и spell restrictions.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Units.lua:171–205` secret-safe `UnitCreatureType`, перевод локализованного имени через `C_CreatureInfo.GetCreatureTypeInfo`. **Не переносить** pack-memory подстановку типа другого моба как READY при скрытом текущем типе.
+2. **JustAC** — `JustAC.lua:1496,1916` явно описывает secreted `UnitCreatureType` в бою и обновление при доступности; `BlizzardAPI/StateHelpers.lua` читает тип. Полезно разделение видимого и скрытого наблюдения.
+3. **ForeverAuras** — `Prototypes.lua:2679–2682` использует второй возврат `UnitCreatureType(unit)` как `creatureTypeIndex`; `Types.lua:3043+` содержит типизированную таблицу ID/имён. Хороший образец language-independent ID.
+4. **MaxDps** — `MaxDps_Warlock/Specialization/TBC/Demonology.lua:75,85` и другие используют `UnitCreatureFamily("pet")` для выбора демона; это **семейство питомца**, не доказательство типа текущей цели.
+5. **ForeverRotation** — `CC.lua:7,46+` читает `UnitCreatureType("target")` для подсказок CC (Hibernate, Shackle Undead, Banish и др.), `Engine.lua:398–399` защищённо читает тип; разбор текста spell tooltip для типов требует локализации и не является надёжным универсальным источником.
+6. **RotationGuide** — в проверенных Lua-модулях прямой `UnitCreatureType`/`UnitCreatureFamily` reader не обнаружен; не утверждать, что готовый универсальный механизм есть.
+7. **RotationMaster** — `Platform/creature_type.lua:3–29` отдельный `GetUnitCreatureTypeID` по **второму возврату** native `UnitCreatureType`; `Core/creature_conditions.lua:49+` использует общий cached typed ID, `Platform/unit_metadata.lua:14–36` отделяет локализованную строку. Лучший образец безопасного канонического ID.
+
+#### Рекомендация
+
+**Основа — Kord GameState + RotationMaster (numeric creatureTypeID and conditions) + ForeverAuras (type ID) + Sonah (secret/localization handling).** Логический `CreatureTypeObservation(unit)` — расширение общего `TargetObservation`, не отдельный классовый scanner. Приоритет native numeric ID второго результата `UnitCreatureType`, если Forever подтверждает его доступность и не-secret; иначе локализованная строка + проверенное отображение `C_CreatureInfo`; если сопоставление недостоверно, UNKNOWN. Проверенные `allowedCreatureTypeIDs` задаются декларативно в метаданных способности/профиля, а финальное READY только `AbilityEligibility`. Условия вида «нежить или демон» работают для любого класса; правила конкретных заклинаний остаются данными.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ТИПИЗИРОВАННЫЙ ТИП ЦЕЛИ — ДОРАБОТАТЬ (P1).** Существуют target snapshot и classification, но `creatureType` отсутствует.
+
+#### Требуемые изменения
+
+1. Проверить native `UnitCreatureType(unit)` на Forever: число/локализованное имя, второй результат, secret restrictions, отсутствие/невалидные unit. Добавить allowlist `GameAPI` только после подтверждения.
+2. Привязать `creatureTypeID` к текущему `targetGUID`, проверить идентичность до/после чтения. Нет цели/смена GUID → не переносить тип с прежней цели.
+3. Использовать подтверждённый numeric ID как каноническое сравнение; строковые переводы — только отображение или проверенный fallback, не hardcoded английские `lower():find` для шести локалей.
+4. `UnitCreatureFamily` хранить отдельно при необходимости; `UnitClassification` TG-03 и тип существа не смешивать.
+5. Декларативный `allowedCreatureTypeIDs` и `typeRestrictionObservation` в SP-14/AbilityEligibility, с независимыми READY(true/false)/UNKNOWN. Проверять и максимальный изученный ранг, если ограничения отличаются.
+6. При secret creature type в бою UNKNOWN; ранее виденный тип можно сохранить как историческую подсказку с GUID+TTL, но **не** выдавать как свежий READY, особенно после смены цели. Не наследовать тип от соседнего моба/pack.
+7. Инвалидация PLAYER_TARGET_CHANGED, смена GUID, unit changes, выход из restricted identity, heartbeat fallback; кэш по GUID+revision, не глобальная переменная типа.
+8. Диагностика `creature_type_secret`, `creature_type_unavailable`, `creature_type_mapping_unknown`, `creature_type_guid_changed`, `spell_creature_restriction_unknown`; тесты undead/beast/humanoid/demon/dragonkin/elemental/mechanical, type vs classification, pet family, локали, combat secret, target swap, no target, restricted spell Shackle/Hibernate/Banish.
+
+**Архитектурные ссылки:** TG-01 — target identity, TG-03 — classification, SP-14 — ограничения заклинаний. Обратные сноски добавлены в старые требования.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-04.
