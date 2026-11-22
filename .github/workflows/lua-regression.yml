@@ -50,6 +50,7 @@ jobs:
             tests/hunter_bm_leveling_contract.lua \
             tests/hunter_bm_aspect_switch.lua \
             tests/combat_aura_routing.lua \
+            tests/indicator_slider_bounds.lua \
             tests/hunter_bm_aspect_bar_rank.lua \
             tests/rotation_module_config.lua \
             tests/bm_full_audit.lua \
