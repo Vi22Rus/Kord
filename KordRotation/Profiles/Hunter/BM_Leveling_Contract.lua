@@ -137,6 +137,8 @@ local function makeRules(spells,is60)
    category=category or (data and data[4] or "damage"),
    target=data and data[5] or "enemy",
    cast="idle",chargesRequired=false,mode=mode or "any",
+   recommendationType=(key=="AspectHawk" or key=="AspectMonkey"
+       or key=="Trueshot") and "aura" or nil,
    reason="BM leveling v2.3: "..id,
    when=function(S,cfg)
     -- Honor a disabled module option before any spellbook/provider read.
@@ -207,9 +209,10 @@ local function makeRules(spells,is60)
   if enabled~=true then return enabled end
   return S:isNot("target.debuff",spells.Mark)
  end
+ -- Long-running aspects are useful before the pull even without a target.
+ -- The individual aspect conditions still protect travel forms.
  local function maintenance(S,c)
-  return S:any(function()return target(S)end,
-    function()return combat(S)end)
+  return true
  end
  -- Original BM.Next priority: Feign -> aspect -> pet upkeep -> target.
  add("feign","Feign",function(S,c)
