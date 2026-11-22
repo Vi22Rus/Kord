@@ -5,7 +5,7 @@ local _,KR=...
 local M={}
 KR.BMLeveling=M
 local spec={
- {"Mark","Hunter's Mark",1130,"buffs","enemy"},
+ {"Mark","Hunter's Mark",1130,"buffs","enemy","debuff"},
  {"Sting","Serpent Sting",1978,"damage","enemy"},
  {"Arcane","Arcane Shot",3044,"damage","enemy"},
  {"Hawk","Summon Hawk",1293241,"damage","enemy"},
@@ -26,9 +26,9 @@ local spec={
  {"Explosive","Explosive Trap",13813,"damage","none"},
  {"Immolation","Immolation Trap",13795,"damage","none"},
  {"Volley","Volley",1510,"damage","enemy"},
- {"Mend","Mend Pet",136,"buffs","none"},
- {"CallPet","Call Pet",883,"buffs","none"},
- {"Revive","Revive Pet",982,"buffs","none"},
+ {"Mend","Mend Pet",136,"buffs","none","utility"},
+ {"CallPet","Call Pet",883,"buffs","none","utility"},
+ {"Revive","Revive Pet",982,"buffs","none","utility"},
  {"AspectHawk","Aspect of the Hawk",13165,"buffs","none"},
  {"AspectMonkey","Aspect of the Monkey",13163,"buffs","none"},
  {"Trueshot","Trueshot Aura",19506,"buffs","none"},
@@ -137,8 +137,8 @@ local function makeRules(spells,is60)
    category=category or (data and data[4] or "damage"),
    target=data and data[5] or "enemy",
    cast="idle",chargesRequired=false,mode=mode or "any",
-   recommendationType=(key=="AspectHawk" or key=="AspectMonkey"
-       or key=="Trueshot") and "aura" or nil,
+   -- Category-driven by default; only deviations carry semantic metadata.
+   recommendationType=data and data[6] or nil,
    reason="BM leveling v2.3: "..id,
    when=function(S,cfg)
     -- Honor a disabled module option before any spellbook/provider read.
