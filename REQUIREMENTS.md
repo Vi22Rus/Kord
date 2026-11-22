@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 threshold observation only gates candidates; a display-only secret alpha must not be branched on or treated as READY, and final READY belongs to AbilityEligibility.**
+
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 recommendations (use/create/apply) must pass sole AbilityEligibility READY; class gating and UNKNOWN never bypass it.**
 
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 selects a candidate and does not grant READY; only canonical AbilityEligibility can grant final READY.**
@@ -4693,6 +4695,8 @@
 
 ### SW-04 — Следующий удар усиливается способностью — запас
 
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 resource threshold and SW-04 next-swing reserve are different policies over the same typed player resource; no numeric inference from hidden values.**
+
 **Архитектурная актуализация IT-02:** **См. IT-02: IT-02 shared potion cooldown is independent of SW-04 next-swing resource reserve; do not treat item group cooldown as spell GCD.**
 
 **Архитектурная актуализация IT-01:** **См. IT-01: IT-01 inventory reserve and SW-04 player power reserve are distinct typed resources; do not mix item counts and rage/mana budget.**
@@ -4752,6 +4756,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
+
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 consumes IT-01 typed mana/resource consumable family and bag counts; no duplicate inventory scanner.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 reuses IT-01 bag-only counts and healthstone/soulstone/shard family catalog; no duplicate bag scanner.**
 
@@ -4813,6 +4819,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 uses IT-02 item and potion shared cooldown, including shared lockout with health potions; no false fallback to another potion.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 reuses item cooldown/shared healthstone group observation; creation spell cooldown is a distinct spell gate.**
 
@@ -4876,6 +4884,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 delegates in-combat/out-of-combat item usability and zone/level/target restrictions to IT-03; combat context is not itself an item-use permission.**
+
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 use eligibility for stones and creation spell eligibility must remain separate; no item READY inferred from create spell READY.**
 
 **Архитектурная актуализация IT-04:** **См. IT-04: IT-04 delegates level, zone, combat, target and item usability gates to IT-03; highest item level is not required player level.**
@@ -4936,6 +4946,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
 
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 reuses IT-04 highest usable tier selector with family=MANA_POTION; no second ranked item selector.**
+
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 uses IT-04 ranked family selector for best owned stone and highest learned creation rank; do not create second tier selector.**
 
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P0.**
@@ -4994,6 +5006,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-05 — Камни здоровья и камни души чернокнижника: наличие, кулдаун, необходимость создания
 
+**Архитектурная актуализация IT-06:** **См. IT-06: IT-06 resource consumables and warlock stone creation are separate policies, sharing only IT-01–IT-04 and common class/resource context.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
 
 #### Требование
@@ -5042,5 +5056,61 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ SPELL/CLASS API — ДОРАБОТАТЬ (P1).** В Kord есть class/spellbook/cast/cooldown primitives, но нет подтверждённого stone inventory/cooldown/creation lifecycle, reagent check и Soulstone applied-aura policy.
 
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, SP-14, GR-05, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-06 — Зелья маны и ресурса: порог процента, отличие боя и вне боя
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
+
+#### Требование
+
+Для `MANA_POTION` и **только подтверждённых** расходников, восстанавливающих конкретный `powerType`, определять необходимость применения при настраиваемых порогах **отдельно в бою и вне боя**: `inCombatThresholdPct`, `outOfCombatThresholdPct`, `enabledInCombat`, `enabledOutOfCombat`, `resourceType`, `playerResourcePct`, `thresholdBelow=TRUE/FALSE/UNKNOWN`, `mode=COMBAT/OUT_OF_COMBAT/UNKNOWN`, `decision=RECOMMEND/SUPPRESS/UNKNOWN/NOT_APPLICABLE`, `reason/source/revision`. Порог 0–100% — пользовательская/профильная политика, **не** hardcoded 20% для всех классов; начальные значения требуют отдельного UX-решения, а не выдуманного клиентского факта. `powerType=MANA` проверять явно: переключение друида в bear/cat или другой ресурс не должно приводить к ложной рекомендации mana potion. При желании проверять **дефицит абсолютного ресурса** относительно ожидаемого восстановления, чтобы не тратить сильное зелье при небольшом дефиците; только при подтверждённых числах, иначе UNKNOWN/отдельная менее строгая политика. Отличать `low resource`, `OOM (spell noPower)`, `need potion` и `potion usable`: это разные наблюдения. Вне боя приоритет питья/еды/классового восстановления и сохранения зелий определяется декларативной политикой, а не предположением, что любое низкое значение маны требует зелья. Общий cooldown зелий и боевые ограничения проверяются через IT-02/IT-03.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:12–16,257–266`: `UnitPowerPercent`, `UnitPowerType`, `UnitPower`, `UnitPowerMax` allowlisted; `ReadPowerPercent(unit,powerType,curve)` требует подтверждённую curve и возвращает только безопасное `validatedPercent`. **Это не доказывает, что secret-curve output доступен для Lua-ветвления**.
+- `KordRotation/Core/GameState.lua:81–90,126–127,224–243,793–797`: есть typed player power snapshot, combat state и `ReadPowerPercent` delegation, но нет отдельной политики порогов расходников по бою/вне боя.
+- `KordRotation/Core/RotationConditions.lua:27`: `resources.percent` зарегистрирован, но не реализованы `resource.belowThreshold(powerType,mode)`, `manaPotion.need` и связка с item family.
+- `KordRotation/Core/AbilityEligibility.lua:175–184`: `C_Spell.IsSpellUsable`/noPower относится к **заклинаниям**, не к item use или точному проценту ресурса.
+- `KordRotation/Core/EventBus.lua:25–26,31–32`: `UNIT_POWER_*` и `PLAYER_REGEN_*` уже меняют resource/combat revisions; item-specific inventory/cooldown events пока не подтверждены.
+- **IT-01–IT-04** задают count/cooldown/usability/ranked family selection; IT-06 только формирует resource need policy, не заменяет их.
+
+#### Сравнение семи референсов (проверенные Lua из ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Engine.lua:524–529,535–568` отслеживает **факт OOM** через `noPower` у значимых заклинаний, `PLAYER_REGEN_ENABLED` сбрасывает latch, `:575–579` предлагает mana potion **только в бою**, при наличии и OOM; `Sonah/Core/Atoms/Units.lua:333–351` вычисляет процент из читаемых `UnitPower/UnitPowerMax`, иначе пробует `UnitPowerPercent`; `Sonah/UI/Alerts.lua:553` имеет настройку Low Mana %, но это **отдельный alert**, не доказанный порог mana potion. Перенять OOM evidence и combat scope, не подменять им точный процент.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:692–717,720–756` делает `UnitPowerPercent` через step-curve и проверку secret-zero, с коротким memo и `nil` для unknown; `JustAC/Data/Forever/Consumables.lua:3–9` разделяет out-of-combat food/drink и healing potions, не подтверждает готовую mana-potion policy; `JustAC/Data/SpellCooldowns.lua:1529,1573` содержит IDs mana potion spells для других эпох, **не** Forever itemID. Перенять проверенный boolean threshold adapter **только после client capability validation**, не считать любой secret curve сравнимым в Lua.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua:554–560` передаёт `UnitPowerPercent` результат через `Curve` в UI property; `ForeverAuras/Prototypes.lua:3937–3941` включает `secretCurve` для Power %. Перенять идею UI-only threshold visibility, но **не** выводить из alpha UI право принимать Lua decision.
+4. **MaxDps:** `MaxDps/Helper.lua:1684–1689,1713` содержит каталог consumables, включая современный `Algari Mana Potion` 431418, без подтверждённого универсального combat/out-of-combat mana potion threshold для Forever. **Не переносить Retail IDs или potion policy в Forever**.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Signals.lua:1–19,31–40,53–54` выводит secret percent через alpha UI, `Evocation`/`Life Tap`/`Innervate` с per-action thresholds и combat flags; `ForeverRotation/Engine.lua:89–95` пытается читать числовой mana percent. **Перенять раздельные threshold и combat policy**, но signals прямо не участвуют в порядке ротации и **не** доказывают возможность Lua branch на скрытом ресурсе.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:257–271` считает `LowMana` как mana/max <20%, иначе пытается вывести недостаток маны из `C_Spell.IsSpellUsable` базового заклинания; `RotationGuide/Core/Engine.lua:69` использует `lowMana` gate. **Перенять fallback OOM as distinct signal**, но `Clean(noPower)` и отсутствие проверенного mana-percent не дают числовой порог; fail-closed при secret.
+7. **RotationMaster:** `RotationMaster/init.lua:62–63,136–142` содержит `Mana Potions` item family; `RotationMaster/Conditions/stats.lua:320–337,470–505` читает mana/power percent и возвращает `nil,reason` при неизвестном; `RotationMaster/Platform/gates.lua:3–7,120–150` **строго разделяет** readable Lua gate и secret curve **display alpha**, который Lua не может ветвить; `RotationMaster/Core/item_sets.lua:125–159` переиспользует общий bag snapshot. **Основной референс** для границы между вычислимым условием и display-only secret; не объявлять визуальный gate основанием для final READY.
+
+#### Выбранный путь Kord
+
+**Один логический `ResourceConsumableNeedObservation` и `ResourceConsumablePolicy` поверх общего typed `PlayerResourceObservation` из GameState, IT-01 `ItemFamilyCatalog`/`InventoryObservation`, IT-02 `ItemCooldownObservation`, IT-03 `ItemUseEligibilityObservation`, IT-04 `ItemFamilySelectionObservation`.** Никакого второго resource scanner, item scanner, ranked selector или отдельного cooldown engine. `ResourceThresholdObservation(powerType,thresholdPct)` предоставляет **два явно разных режима**: (A) `BRANCHABLE` — подтверждённый обычный процент или **клиентом доказанно branchable** boolean threshold; (B) `DISPLAY_ONLY` — secret curve/alpha, который разрешено передавать только в безопасный UI setter, **не сравнивать, не приводить к bool, не использовать для принятия решения в Lua**. Для `DISPLAY_ONLY` `thresholdBelow=UNKNOWN` в logic и отдельный `displayGate` для UI, если разрешён client API. При невозможности доказать boolean gate на Forever — не обещать пороговую рекомендацию в combat. Не переносить unsafe workaround, не превращать secret в readable через UI.
+
+`ResourceConsumablePolicy` хранит `combatThresholdPct`, `oocThresholdPct`, `enabledInCombat`, `enabledOutOfCombat`, `powerType`, `minimumMissingResource` (только при readable numbers), `preferOOCDrink`, `potionConservation`, `oomFallbackEnabled` (явная настройка), `combatUrgency` и `recoveryPriority`. Для mana potion требуется **именно mana** или подтверждённый relevant typed mana pool; low rage/energy не является доказательством, что mana potion восстановит этот ресурс. `OOMObservation` на основе проверенного `noPower` при **изученном и релевантном** spellID может быть отдельным boolean signal для `OOM_FALLBACK`, но **не** эквивалентом `mana < X%`; при неизвестном noPower — UNKNOWN. Учитывать power type switch, player level, item effect/rank and cooldown; отсутствие предмета, shared potion lockout и forbidden combat use блокируют независимо от threshold. Вне боя low mana → преимущественно drink/food/class regeneration, если доступно и разрешено, potion only if explicit policy; не выдумывать наличие питья или его эффект без IT-01/03 и aura/cast observation.
+
+`decision=RECOMMEND` только при доказанном `need` (`BRANCHABLE` threshold либо отдельно включённый подтверждённый OOM fallback), допустимом combat/ooc mode, IT-04 выбранном предмете, IT-01 count, IT-02 item+shared cooldown, IT-03 usability/level/zone/target, и итоговом `AbilityEligibility READY`. При secret/display-only и без OOM evidence → UNKNOWN; если UI-only подсказка возможна, её статус `DISPLAY_ONLY` и она **не** подменяет READY или основную ротацию. Lazy `Needs.items.resourceConsumable`, memo `powerType+threshold+mode+resourceRevision+combatRevision+bagRevision+itemCooldownRevision+worldRevision+catalogRevision`, bounded refresh. Конфликт OOM vs threshold, thresholds 0/100, power max=0, raw/curve scale 0..1 vs 0..100, stale observations и client secrets диагностируются, не интерпретируются оптимистично.
+
+#### Требуемые изменения
+
+1. Ввести `ResourceConsumableNeedObservation` и `ResourceConsumablePolicy` с разными combat/ooc thresholds, mode, powerType и typed statuses.
+2. Реиспользовать общий GameState typed player resource; валидировать на Forever числовой percent и branchable boolean threshold отдельно от UI-only secret alpha.
+3. Если доступен только `DISPLAY_ONLY` secret curve, хранить logic UNKNOWN и визуальный gate отдельно; не использовать UI alpha для обхода secret restrictions.
+4. Ввести опциональный `OOMObservation` по изученному релевантному spell noPower, с отдельным OOM_FALLBACK policy; не считать OOM точным процентом.
+5. Реиспользовать IT-01 `MANA_POTION` и другие **проверенные** resource item families, без Retail-only IDs и дублирования каталога.
+6. Реиспользовать IT-04 highest usable tier, IT-02 item/shared potion cooldown и IT-03 combat/level/zone/target eligibility; не предлагать другую potion при shared lockout.
+7. Реализовать явную out-of-combat policy: drink/food/class recovery vs potion conservation, без выдуманного drink availability и без автокаста.
+8. EventBus и lazy RotationConditions `resource.belowThreshold(powerType,mode)`, `items.resourcePotionNeed(family)`, per-evaluation memo, invalidate power/combat/bag/itemCD/zone/level.
+9. DevTools-only диагностика: `resource_potion_power_type_mismatch`, `resource_potion_threshold_unknown`, `resource_potion_curve_display_only`, `resource_potion_oom_fallback`, `resource_potion_oom_unknown`, `resource_potion_mode_unknown`, `resource_potion_ooc_conserve`, `resource_potion_no_eligible_item`, `resource_potion_shared_cd_blocked`, `resource_potion_resource_max_invalid`, `resource_potion_percent_scale_unknown`, `resource_potion_ready_confirmed`.
+10. Тесты: mana 0/19/20/21/100%, separate combat/ooc thresholds, threshold boundaries, 0/100 config, resource secret, display-only curve vs branchable boolean, powerType mana/rage/energy, druid form switch, warlock Life Tap, OOM noPower true/false/unknown, spell unlearned, out-of-combat drink available/unavailable, combat potion allowed/blocked, no item, multiple potion tiers, shared potion CD with health potion, zone/level restriction, raw max=0, scale 0..1 vs 0..100, stale power after combat switch, no false READY/protected item use.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ RESOURCE/COMBAT API — ДОРАБОТАТЬ (P1).** Kord имеет typed player power, combat snapshot и `ReadPowerPercent`, но не имеет подтверждённого универсального mana/resource potion threshold policy, combat/ooc split, OOM fallback и item eligibility integration. Secret UI alpha **не** является доказательством branchable percent.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-05, SP-14, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
