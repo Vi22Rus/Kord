@@ -213,6 +213,13 @@ eq(KR.AuraEvidence:Read(13165),nil,"switch invalidates old aspect")
 eq(KR.AuraEvidence:Read(13163).value,true,"new aspect cast tracked")
 KR.AuraEvidence:Reset()
 eq(KR.AuraEvidence:Read(13163),nil,"world/death reset removes evidence")
+KR.AuraEvidence:ObserveLive(5118)
+eq(KR.AuraEvidence:ReadTravel().value,true,"verified travel remembered")
+KR.AuraEvidence:ObserveCast("player",14318)
+eq(KR.AuraEvidence:ReadTravel(),nil,"combat aspect consumes travel")
+eq(KR.AuraEvidence:Read(13165).value,true,"Hawk ranks normalized")
+KR.AuraEvidence:Reset()
+
 -- ForeverAuras uses the generic known-ID lookup in hidden-aura mode;
 -- it can return a readable self aura even if the specialized lookup misses.
 C_UnitAuras.GetUnitAuraBySpellID=function(unit,id)
