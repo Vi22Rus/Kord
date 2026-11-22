@@ -5120,6 +5120,8 @@
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
 
+**Коррекция тестового ожидания, KR-20261122-111 (2026-11-22):** после искусственной revision race первый snapshot UNKNOWN/нет aggregate, но следующий публичный вызов при уже стабилизированной ревизии может вернуть валидное `groupLockoutConfidence="UNKNOWN"` (не `nil`). Исправлен только assertion; runtime код без изменений. PASS static; Lua 5.1/mock/full regression и WoW Forever NOT RUN.
+
 **Реализация Kord — IT-02/2.6, KR-20261122-110 (2026-11-22; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - `GameState:ReadSharedItemCooldownObservation` теперь переиспользует существующий `ReadSharedItemCooldownMemberEvidence` после guarded чтения observed use, валидирует identity/count/revisions/confidence и раскрывает три confidence поля, не превращая source-only корреляцию в готовность группы или group remaining. Тест public aligned/mixed/race добавлен к `tests/shared_item_cooldown_member_evidence_mock.lua`.
 - PASS: статическая проверка исходников и Git-публикация. NOT RUN: Lua 5.1/mock/full regression, manual GitHub Actions и WoW Forever. Shared cooldown rule на Forever не подтверждён исходниками, поэтому `groupStatus=UNKNOWN` и `groupRemaining=nil`. SHA по `git log --grep KR-20261122-110`.

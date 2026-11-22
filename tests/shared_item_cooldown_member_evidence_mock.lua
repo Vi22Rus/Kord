@@ -144,7 +144,8 @@ local raced=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(raced.status=="UNKNOWN" and raced.reason=="item_cd_revision_changed")
 assert(raced.candidateCount==nil and raced.candidateMaxRemaining==nil)
 local publicRace=S:ReadSharedItemCooldownObservation("POTION_SHARED")
-assert(publicRace.groupLockoutConfidence==nil)
+-- The first read changed the revision; a subsequent stable read remains UNKNOWN.
+assert(publicRace.groupLockoutConfidence=="UNKNOWN")
 assert(publicRace.groupStatus=="UNKNOWN" and publicRace.remaining==nil)
 bus.cooldown=5
 mode="partial"

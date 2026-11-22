@@ -1,3 +1,10 @@
+## KR-20261122-111 — IT-02/2.6: correct post-race mock expectation
+- Дата/время: 2026-11-22 UTC (точное время по Git), SHA через `git log --grep KR-20261122-111`; IT-02 P0, шаг 2.6, test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: статический разбор KR-20261122-110 выявил неправильное ожидание `nil` при втором вызове public group reader в race mock. Первый вызов уже изменил revision, поэтому следующий снимок может быть согласованным, но его group confidence остается UNKNOWN.
+- Причина: тест смешивал первую ревизионную гонку с последующим стабильным вызовом. Изменён `tests/shared_item_cooldown_member_evidence_mock.lua` (ожидается строка `UNKNOWN`), исходный Lua engine не изменялся.
+- PASS: статическая проверка сценария и Git публикация. NOT RUN: Lua 5.1/mock/full regression, manual CI и WoW Forever. Тестировщику: различать race-at-read и stable-after-race; часть итогового IT-02 QA.
+- REQUIREMENTS.md и поэтапный план обновлены атомарно; связи KR-20261122-110, IT-02/2.6. Реальные group ACTIVE/READY и remaining сохраняют UNKNOWN без доказанной Forever group semantics.
+
 ## KR-20261122-110 — IT-02/2.6: single guarded evidence pipeline for public group cooldown observation
 - Дата/время: 2026-11-22 UTC (точное время по Git); SHA: `git log --grep KR-20261122-110`. IT-02 P0, этап 2/2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: публичный group reader не использовал уже реализованный confidence evidence reader. Обнаружен исходниковый пробел, не клиентский дефект.
