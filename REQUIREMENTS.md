@@ -5104,6 +5104,13 @@
 1. Ввести `ItemCooldownObservation(itemID)` и `SharedItemCooldownObservation(groupID)` с active/remaining/enabled/status/source/revision.
 2. Валидировать Forever `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, legacy, типы enabled, secret/nil/finite, epoch и `GetTime`; добавить GameAPI read-only allowlist.
 3. Реализовать cooldown adapter с `UNKNOWN` для missing/secret/disabled/invalid; не считать `duration<=1.5` универсальным доказательством отсутствия собственного CD.
+
+**Реализация Kord — уточнение IT-02/2.3, KR-20261122-099 (2026-11-22, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- В `KordRotation/Core/GameState.lua` `itemCooldownTuple` отвергает смешанные нули `startTime=0,duration>0` и `startTime>0,duration=0` как `item_cd_invalid_tuple`/UNKNOWN. Только валидированный `(0,0)` может подтвердить отсутствие *собственного* cooldown; никакая группа, GCD или usability не становится READY.
+- `tests/item_cooldown_adapter_mock.lua` дополнен обоими отрицательными сценариями; fallback не срабатывает для READY-ответа с нарушенным контрактом.
+- Используются прежние `C_Item.GetItemCooldown/GetItemCooldown/GetTime` через существующий GameAPI; новых WoW API нет. Основание — правило нулевого tuple из полного IT-02; семантика реального клиента остаётся NOT VERIFIED.
+- PASS: исходниковая проверка единственной нормализации и тестовых assertions; NOT RUN: Lua 5.1 execution/mock/full regression, manual CI и WoW Forever.
+
 4. Отделить item-specific cooldown от GCD, combat-use restriction, item count, charges и item usability.
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.

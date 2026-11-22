@@ -1,3 +1,13 @@
+## KR-20261122-099 — IT-02/2.3: mixed-zero cooldown tuple fails closed
+- Дата/время: 2026-11-22 UTC, точные timestamp и SHA по Git: `git log --grep KR-20261122-099`.
+- ID: IT-02 P0, этап 2 шаг 2.3, тип fix/test/docs, статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: `itemCooldownTuple` допускал `(start=0,duration>0)` и `(start>0,duration=0)`, из которых `ReadItemCooldownObservation` мог вычислить отсутствие активного собственного cooldown. Исходный контракт разрешает нулевой cooldown только при паре `(0,0)`; потенциальный ложный READY подтверждён исходной веткой, но не воспроизводился на клиенте.
+- Исправлено: `GameState.lua:itemCooldownTuple` возвращает UNKNOWN/invalid для mixed-zero; сохранены fallback policy и разделение GCD/shared/own CD. Два отрицательных сценария добавлены в `tests/item_cooldown_adapter_mock.lua`, документы REQUIREMENTS и план обновлены рядом с IT-02/2.3, CHANGELOG в том же коммите.
+- API/референсы: новых WoW API нет, используются ранее выбранные read-only вызовы IT-02 из GameAPI; типы и семантика Forever ещё не подтверждены.
+- Проверки: PASS — статическая сверка patch/test assertions. NOT RUN — Lua 5.1 mock execution/full regression, GitHub Actions manual-only, WoW Forever. Не выдавать source-check за real game PASS.
+- Для тестировщика: на общем IT-02 QA проверить mixed-zero tuples, disabled, false/0, secret, no fallback on invalid и `(0,0)` validity; промежуточная установка не нужна.
+- Остаток: group inference, client API verification, CI/test execution. Связи IT-02/2.3, 2.6, 2.10, KR-20261122-081/095/098.
+
 ## KR-20261122-098 — IT-02/2.8: one item cooldown read per evaluation
 - Дата/время: 2026-11-22 UTC, exact time Git log; SHA: `git log --grep KR-20261122-098`.
 - ID/этап: IT-02 P0, 2.8, feature/test/docs; SOURCE IMPLEMENTED / CLIENT NOT RUN.

@@ -1081,6 +1081,11 @@ local function itemCooldownTuple(api,raw)
     if not finite(start,0) or not finite(duration,0) then
         return nil,"item_cd_invalid_tuple"
     end
+    -- Only the exact (0,0) tuple supports a confirmed idle cooldown.
+    -- A mixed-zero tuple does not prove the previous cooldown expired.
+    if (start==0) ~= (duration==0) then
+        return nil,"item_cd_invalid_tuple"
+    end
     local usable=itemCooldownEnabled(enabled)
     if usable==nil then return nil,"item_cd_invalid_tuple" end
     if not usable then return nil,"item_cd_disabled" end

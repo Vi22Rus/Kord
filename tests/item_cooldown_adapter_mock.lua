@@ -28,6 +28,12 @@ local function readValues(_,name,id)
     if mode=="zero" then
         return {status="READY",value={0,0,1}}
     end
+    if mode=="mixed_zero_start" then
+        return {status="READY",value={0,30,1}}
+    end
+    if mode=="mixed_zero_duration" then
+        return {status="READY",value={90,0,1}}
+    end
     if mode=="struct" then
         return {status="READY",value={{startTime=90,duration=30,isEnabled=true}}}
     end
@@ -75,7 +81,8 @@ local expired=observe("zero")
 assert(expired.status=="READY" and expired.active==false and expired.remaining==0)
 local structured=observe("struct")
 assert(structured.status=="READY" and structured.remaining==20)
-for _,selected in ipairs({"secret","broken","invalid","disabled","bad_enabled","future","clock_unknown"}) do
+for _,selected in ipairs({"secret","broken","invalid","disabled","bad_enabled","future",
+        "clock_unknown","mixed_zero_start","mixed_zero_duration"}) do
     local got=observe(selected)
     assert(got.status=="UNKNOWN" and got.active==nil and got.remaining==nil,
         selected.." must remain UNKNOWN")
