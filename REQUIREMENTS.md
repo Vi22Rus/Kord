@@ -5482,6 +5482,8 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 
 **Ретроактивное уточнение CL-04:** CL-04: яды разбойника и их обновление должны использовать общий WeaponEnchantProvider с mainhand/offhand, remaining/charges, spell/item rank, а не отдельный сканер Rogue.
 
+**Ретроактивное уточнение CL-06:** CL-06: Windfury/Flametongue/Frostbrand/Rockbiter weapon imbues используют общий WeaponEnchantProvider из IT-10 с per-hand и duration/charges, без shaman-only сканера.
+
 ### Требование и результат
 
 Перед рекомендацией действия движок должен определить, требуются ли **обязательные** расходуемые компоненты и хватает ли их в действительности: реагенты для заклинаний, боеприпасы совместимого типа для дальнобойного оружия, и только действительно обязательные символы/руны/модификаторы. Разделить `NOT_REQUIRED`, `AVAILABLE`, `MISSING`, `UNKNOWN` в наблюдении; на уровне eligibility `READY/BLOCKED/UNKNOWN`. `UNKNOWN` нельзя повышать до `READY`. Установленный символ, изменяющий эффект, **не является расходуемым реагентом** и его отсутствие само по себе не запрещает обычную версию заклинания.
@@ -6581,6 +6583,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение CL-04:** CL-04: Rogue Needs и action policies расширяются версионированно; combo, energy tick, poison и stealth данные поставляют только общие providers.
 
 **Ретроактивное уточнение CL-05:** CL-05: Priest Needs и target/action policies только через versioned Profile_Contract; profile не читает WoW API.
+
+**Ретроактивное уточнение CL-06:** CL-06: Shaman Needs/Spells/Rules только через версионированный Profile_Contract, lazy providers, без прямых API в профилях.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -8550,6 +8554,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-05:** CL-05: проверить WoW Forever Shadowform restrictions, shield/Weakened Soul, wand Shoot toggle, group unit tokens, dispel types, resurrection restrictions и group reagent rules.
 
+**Ретроактивное уточнение CL-06:** CL-06: подтвердить WoW Forever totem slot/position/radius/expiry, shock shared cooldown, weapon enchant, dispel capabilities, Ancestral Spirit и Reincarnation mechanics; UNKNOWN при неподтверждённом API.
+
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8784,6 +8790,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение CL-05:** CL-05: сценарии Priest Shadowform, Power Word: Shield/Weakened Soul, DoT/mana, wand Shoot, party heal, friendly/hostile dispel, Resurrection и group buffs обязательны для каждого реального профиля.
 
+**Ретроактивное уточнение CL-06:** CL-06: Shaman scenario manifest обязателен для totem slots/expiry/range, shock shared CD, weapon imbue MH/OH, poison/disease dispel, Ancestral Spirit и Reincarnation.
+
 ### CL-01 — Воин: стойки, ярость, очередь удара, крики, добивание, рывок/перехват и прерывание
 
 **Раздел: 18. Специфика классов (девять классов). Приоритет: P0 как базовая способность движка выражать механики класса; отдельные игровые способности требуют подтверждения клиента.**
@@ -9003,6 +9011,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-05:** CL-05: Priest Resurrection использует ту же universal friendly_dead eligibility, FriendlyUnitSelectionProvider и DispelStateProvider; нельзя создавать priest-only альтернативы.
 
+**Ретроактивное уточнение CL-06:** CL-06: Shaman cleanse и Ancestral Spirit должны переиспользовать DispelStateProvider, FriendlyUnitSelectionProvider и friendly_dead eligibility; Reincarnation — отдельная self-resurrection policy, не friendly_dead.
+
 ### CL-03 — Охотник: аспекты, ловушки, питомец, боеприпасы, автострельба, мёртвая зона, метка и имитация смерти
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это **требования к данным и действиям**, а не приоритеты BM/MM/SV ротаций. Для Leveling/60/PVE/PVP — только отдельные утверждённые профили. Никакого автоматического выполнения действий: аддон рекомендует и диагностирует.
@@ -9112,6 +9122,8 @@ CL-01 описывает **данные, условия и действия**, �
 
 **Ретроактивное уточнение CL-05:** CL-05: Priest wand Shoot и Hunter Auto Shot требуют общего типизированного AutoAttackStateProvider, но отдельной семантики wand/ranged и проверки остановки; swing timings не угадываются.
 
+**Ретроактивное уточнение CL-06:** CL-06: shared shock cooldown должен использовать тот же универсальный CooldownGroupProvider, что trap shared cooldown; не создавать отдельный таймер шоков.
+
 ### CL-04 — Разбойник: очки комбо, финишеры, скрытность, яды, энергия и такты, прерывания, уход и срыв каста
 
 **Раздел 18. Специфика классов (девять классов). Приоритет: P0.** Это требования к данным, условиям и действиям, **не готовые приоритеты** Assassination/Combat/Subtlety, Leveling/60/PVE/PVP. Ротации — отдельные утверждённые профили; новых Rogue профилей в реестре нет.
@@ -9214,6 +9226,8 @@ CL-01 описывает **данные, условия и действия**, �
 **Ретроактивные ссылки:** CL-01, CL-03, IT-10, QA-07, QA-04, EN-A1, AC-07.
 
 **Ретроактивное уточнение CL-05:** CL-05: Priest Shadowform и Rogue Stealth используют общие StateTransition/ModeProvider с разными restrictions; mana resource отдельно от energy ticks.
+
+**Ретроактивное уточнение CL-06:** CL-06: Shaman weapon imbues и Rogue poisons используют один WeaponEnchantProvider, раздельные MH/OH slots, duration/charges и UNKNOWN.
 
 ### CL-05 — Жрец: Shadowform, щит и Weakened Soul, DoT/мана, палочка, групповое лечение, диспел, воскрешение, баффы группы
 
@@ -9322,3 +9336,108 @@ CL-01 описывает **данные, условия и действия**, �
 **ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / PRIEST-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Общие health, mana, target, aura, spell Eligibility существуют, но нет доказанного full party heal/dispel target selection, shield+Weakened Soul, Shadowform restriction, wand toggle и group buff contracts. Priest профилей нет. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** CL-02, CL-03, CL-04, QA-07, QA-04, EN-A1, AC-05, AC-07.
+
+**Ретроактивное уточнение CL-06:** CL-06: Shaman party cleansing и resurrection используют общие friendly unit selection, dispel types и dead-target policies; не копировать Priest реализацию.
+
+### CL-06 — Шаман: тотемы, шоки и общий кулдаун, усиления оружия, очищение и воскрешение
+
+**Раздел 18. Специфика классов (девять классов). Приоритет P0.** Требование описывает **выразимость данных, условий и действий**, не приоритеты Elemental/Enhancement/Restoration, Leveling/60/PVE/PVP. Отсутствующий Shaman-профиль не считать реализованным. Движок только рекомендует действия, не вызывает защищённые способности.
+
+#### Подробные механики и конкретные заклинания
+
+| Механика | Примеры способностей / сущностей | Наблюдения и безопасное решение |
+|---|---|---|
+| Тотемы четырёх стихий | Earth: Strength of Earth Totem, Stoneskin Totem, Tremor Totem, Earthbind Totem; Fire: Searing Totem, Magma Totem, Fire Nova Totem; Water: Healing Stream Totem, Mana Spring Totem, Poison Cleansing Totem, Disease Cleansing Totem; Air: Windfury Totem, Grace of Air Totem, Grounding Totem, Tranquil Air Totem; другие — по spellbook клиента | per-element slot, totem spellID/rank, **exists vs UNKNOWN**, remaining duration, world position if API reliable, distance from player/party member, actual effect radius, destroyed/expired/replaced, cooldown/GCD/mana, active party buffs, combat/target conditions. Один видимый buff **не доказывает** существование и расположение тотема. |
+| Общий КД шоков | Earth Shock, Flame Shock, Frost Shock | per-spell cooldown **плюс** shared `shock` cooldown group, verified duration, remaining, talents/rank modifications, GCD, mana, target/range; Flame Shock DoT ownership/duration, Earth Shock interrupt/cast disruption только при подтверждённой клиентской механике, Frost Shock slow/debuff. UNKNOWN shared cooldown → STOP для обязательного shock rule. |
+| Усиления оружия | Windfury Weapon, Flametongue Weapon, Frostbrand Weapon, Rockbiter Weapon; Earthliving Weapon (если существует в клиенте) | mainhand/offhand separately, equipped weapon, imbue family/ID, remaining duration, charges if applicable, rank, cooldown/mana, mutually exclusive enchants, class/spec policy, refresh threshold. Нельзя считать unknown enchant «отсутствует» или слепо перезаписывать яд. |
+| Очищение | Cure Poison, Cure Disease, Poison Cleansing Totem, Disease Cleansing Totem, Cleanse Spirit (только если подтверждён в версии) | dispel type `Poison|Disease` и дополнительные типы **только по подтверждённой spell capability**, friendly recipient, debuff identity/remaining, per-target range, mana, combat; тотемное периодическое очищение **не равно** instant dispel, не считать дебафф снятым до наблюдения. |
+| Воскрешение союзника | Ancestral Spirit | dead friendly target, `friendly_dead` policy, OOC/combat restriction, range, mana, cast time, spell rank, cooldown; alive BLOCKED, unknown life STOP. |
+| Самовоскрешение | Reincarnation (passive/active mechanics and reagents as verified) | player dead/ghost state, availability, cooldown, reagent/Ankh requirement if client requires, combat/instance restrictions, action actually recommendable vs automatic client UI; **отдельная self-resurrection eligibility policy**, не обычный Ancestral Spirit на себя. Если клиент не предоставляет безопасного рекомендательного действия, выводить диагностический факт, не фиктивную иконку READY. |
+
+**Существенные различия:** totem slot не равен buff на игроке; totem radius — радиус действия, не дистанция к вражеской цели; шоки делят cooldown family, но имеют разные эффекты; weapon imbue — enchant на конкретной руке, не обычная aura; Ancestral Spirit и Reincarnation имеют разные цели и условия. Названия заклинаний — кандидаты, **не доказательство** наличия spellID/rank/эффекта в WoW Forever. Не переносить retail/TBC/Wrath свойства автоматически. UNKNOWN/secret ≠ false/READY.
+
+#### Аудит текущего Kord (main)
+
+- `KordRotation/Core/GameState.lua`: имеются target/combat, ресурсы `UnitPowerType/UnitPower/UnitPowerMax`, чтение aura evidence, но нет подтверждённого `totemSlots` с position/radius/remaining и per-hand weapon imbue state.
+- `KordRotation/Core/RotationConditions.lua`: `Needs` и `spell.range` / `player.buff` / `target.debuff` поддерживают общие условия, но нет подтверждённых `totem.slot`, `totem.inRange`, `shock.sharedCooldown`, `weapon.imbue`, `ally.dispel` и `self.reincarnation` как v1 фактов.
+- `KordRotation/Core/AbilityEligibility.lua`: проверяет индивидуальный `C_Spell.GetSpellCooldown`/legacy cooldown и ресурс, но **не доказывает** общий cooldown шоков. `friendly` отклоняет dead target; Ancestral Spirit требует общего `friendly_dead` из CL-02/CL-05.
+- `KordRotation/Core/RotationProfiles.lua`: `Needs={auras,ranges,enemyCount,ttd,swing}` и `target=enemy|friendly|self|none`; нет Shaman-specific typed totem/cooldown group/imbue/resurrection policies в v1.
+- `docs/rotation/Canonical_API_Matrix.md`: #6 mana, #10 range, #11 cooldown, #12/#13 aura, #17 group, #21 cost, #27/#28 duration, #35 dispel, #47 weapon enchant, #53 resource cost. Это **кандидаты и доказательства методов**, не клиентское подтверждение totem radius и shock group.
+- `docs/rotation/Profile_Registry.md`: Shaman профили не зарегистрированы; только исторические Hunter PvE. Ни MOCK, ни CLIENT PASS по Shaman не заявляются.
+
+#### Семь предоставленных референсов: сравнение архитектурных подходов
+
+| Референс | Что изучать при реализации | Ограничение |
+|---|---|---|
+| Sonah | Shaman class rules, totem uptime, shocks, imbues | Приоритеты не переносить в общий движок |
+| JustAC | Forever Shaman rotations, cooldowns, friendly support | Forever и SimC контракты разделять |
+| ForeverAuras | Totem/weapon aura triggers, remaining, secret-safe reads | Aura ≠ подтверждённый тотем в радиусе |
+| MaxDps | Shaman specialization modules, cooldown groups | Retail механика не гарантирует Forever |
+| ForeverRotation | Shaman totem/imbue signals и class rules | Signal не заменяет actual totem position |
+| RotationGuide | State, totem/shock/imbue conditions | Проверять на совпадающих snapshots |
+| RotationMaster | Totem/cooldown conditions, replay and forecast | Forecast не подтверждает реальные позиции |
+
+**Статус сверки:** перечислены семь предоставленных архивов и конкретные механизмы для последующей проверки. Полный построчный аудит ZIP **в этом проходе не проводился**; наличие конкретных Shaman-функций не утверждается.
+
+#### Выбранная архитектура — единые провайдеры для всех классов
+
+1. **`TotemStateProvider`** — typed slots `Earth/Fire/Water/Air`, spellID, exists/UNKNOWN, remaining, position, radius, per-member coverage, replaced/destroyed events; **универсальный deployable-unit provider** пригоден для других временных объектов, без отдельного движка шамана. Не выводить позицию из наличия баффа.
+2. **`CooldownGroupProvider`** — `shock` shared cooldown family, тот же универсальный механизм, что `trap` из CL-03; per-spell + group status, event revision, no guessed timer.
+3. **`WeaponEnchantProvider`** — общий модуль IT-10/CL-04: mainhand/offhand imbues, duration/charges, inventory/equipment, rank, conflict; никакого shaman-only сканера.
+4. **`DispelStateProvider`** — общий с CL-02/CL-05: poison/disease types, per-spell capabilities, friendly recipient, group target, instantaneous vs periodic totem dispel distinction.
+5. **`FriendlyUnitSelectionProvider`** — конкретный player/party/raid recipient, alive/dead, assistable, range; общий Ancestral Spirit через `friendly_dead`.
+6. **`SelfResurrectionStateProvider`** — отдельный typed status Reincarnation: dead/available/reagent/cooldown/client UI action; общий контракт для других self-resurrection mechanics, без имитации активной способности.
+7. **`ResourceStateProvider`** — typed MANA, current/cost/reserve, totem/shock/imbue/dispels; thresholds принадлежат профилю.
+8. **`AbilityEligibility`** — единственный final READY, per-spell rank/target/range/cooldown group/resource/recipient/equipment/reagent; `UNKNOWN→STOP` при критическом неизвестном факте. Все новые `Needs`/action types только через versioned `Profile_Contract`, QA-06 purity, lazy reads.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (спецификация, NOT RUN)
+
+| ID | Состояние | Ожидаемое решение |
+|---|---|---|
+| `SHA-TOTEM-01` | нужный totem стоит и не истекает | не обновлять |
+| `SHA-TOTEM-02` | слот занят другим totem | replacement только по profile policy и Eligibility |
+| `SHA-TOTEM-03` | totem exists UNKNOWN | STOP для зависящего правила |
+| `SHA-TOTEM-04` | totem существует, ally вне подтверждённого радиуса | не считать ally покрытым buff |
+| `SHA-TOTEM-05` | position/radius UNKNOWN | не утверждать coverage |
+| `SHA-TOTEM-06` | totem уничтожен/истёк | re-evaluate после revision, не stale READY |
+| `SHA-SHOCK-01` | Earth Shock применён, shared CD активен | Flame/Frost Shock BLOCKED |
+| `SHA-SHOCK-02` | per-spell CD ready, shared CD UNKNOWN | STOP |
+| `SHA-SHOCK-03` | shared CD ready, конкретный shock blocked | BLOCKED по per-spell Eligibility |
+| `SHA-SHOCK-04` | Flame Shock DoT активен и срок достаточен | не обновлять без profile threshold |
+| `SHA-IMBUE-01` | MH Windfury есть, OH отсутствует | оценивать только OH |
+| `SHA-IMBUE-02` | OH remaining UNKNOWN | не перезаписывать вслепую |
+| `SHA-IMBUE-03` | нет совместимого оружия | imbue BLOCKED |
+| `SHA-IMBUE-04` | другой enchant на слоте | replacement только по утверждённой policy |
+| `SHA-DISPEL-01` | ally имеет подтверждённый Poison | Cure Poison eligible после gate |
+| `SHA-DISPEL-02` | ally имеет подтверждённый Disease | Cure Disease eligible после gate |
+| `SHA-DISPEL-03` | dispel type UNKNOWN | STOP, не гарантировать очищение |
+| `SHA-DISPEL-04` | Poison Cleansing Totem стоит, дебафф ещё есть | не считать dispel уже завершённым |
+| `SHA-REZ-01` | dead friendly OOC, Ancestral Spirit eligible | `friendly_dead` READY |
+| `SHA-REZ-02` | alive friendly | Ancestral Spirit BLOCKED |
+| `SHA-REINC-01` | player alive | Reincarnation не рекомендовать |
+| `SHA-REINC-02` | player dead, availability confirmed | показывать только если клиентский action contract разрешает |
+| `SHA-REINC-03` | reagent/cooldown UNKNOWN | STOP, не фиктивный READY |
+| `SHA-REVISION-01` | totem/shock/weapon/party/death changed | invalidate stale state, reevaluate |
+
+Каждый сценарий должен иметь `profileID`, spellID/rank, evidence, expected action/status/reason/channel, reads и статусы MOCK/CLIENT отдельно. **Все сценарии пока NOT RUN**; это не тестовое покрытие реальных Shaman профилей.
+
+#### Требуемые работы
+
+1. Подтвердить Shaman spell IDs/ranks/families, totem API, shock group, weapon imbues, dispel capabilities и resurrection по WoW Forever QA-04.
+2. Реализовать универсальный TotemStateProvider с per-element slot, remaining, destroyed/replaced и UNKNOWN.
+3. Проверить position/radius API и per-party member coverage; если источник недоступен — UNKNOWN, не эвристика по buff.
+4. Подключить shock shared CD через **существующую запланированную общую задачу CL-03 CooldownGroupProvider**; никакого отдельного shaman cooldown таймера.
+5. Подключить imbues через **IT-10 WeaponEnchantProvider** и per-hand equipment eligibility.
+6. Подключить Cure Poison/Disease через общий DispelStateProvider и FriendlyUnitSelectionProvider; тотемное очищение учитывать отдельно.
+7. Подключить Ancestral Spirit через **CL-02/CL-05 friendly_dead**, не изменять live-only healing gate.
+8. Спроектировать SelfResurrectionStateProvider для Reincarnation и проверить, допускает ли клиент показ рекомендуемого действия.
+9. Добавить 24 QA-07 scenarios, reason codes, QA-06 purity, unit/mock tests Lua 5.1, затем client QA, без GitHub Actions до ручного финального этапа.
+10. Синхронизировать Profile Registry, Test/Priority Matrix и API Matrix при реализации, провести регрессию CooldownGroup/WeaponEnchant/Dispel/FriendlyUnit на Hunter/Rogue/Paladin/Priest.
+
+**Диагностика:** `shaman_totem_unknown`, `shaman_totem_slot_replaced`, `shaman_totem_expired`, `shaman_totem_radius_unknown`, `shaman_totem_ally_out_of_range`, `shaman_shock_shared_cd_active`, `shaman_shock_shared_cd_unknown`, `shaman_imbue_mh_missing`, `shaman_imbue_oh_unknown`, `shaman_imbue_weapon_missing`, `shaman_dispel_type_unknown`, `shaman_dispel_target_unavailable`, `shaman_resurrection_target_alive`, `shaman_reincarnation_unavailable`, `shaman_reincarnation_state_unknown`, `shaman_snapshot_stale`. Secret payload не логировать.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ОБЩИМ ПРИМИТИВАМ / SHAMAN-SPECIFIC КОНТРАКТ НЕ РЕАЛИЗОВАН / P0.** Базовые cooldown, mana, auras, target, Eligibility существуют, но нет доказанного TotemStateProvider, shared shock group, imbue per-hand, group dispel, friendly_dead и Reincarnation contract. Shaman профили отсутствуют. **SOURCE/DOC AUDIT PASS; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Только документация; Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** CL-02, CL-03, CL-04, CL-05, IT-10, QA-07, QA-04, EN-A1.

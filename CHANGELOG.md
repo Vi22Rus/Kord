@@ -1,3 +1,14 @@
+## KR-20261122-022 — аудит CL-06: Shaman totems, shock shared cooldown, weapon imbues, cleanse and resurrection
+- Дата: 2026-11-22; timestamp/SHA — GitHub commit `KR-20261122-022`.
+- Тип: docs / CL-06 / P0; `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP не менялись.
+- Контекст: Shaman требует totem slots/radius/remaining, shock shared cooldown, weapon imbues, poison/disease dispel, Ancestral Spirit и Reincarnation.
+- Причина: отсутствуют подтверждённые TotemState, CooldownGroup shock, per-hand imbue и self-resurrection contracts; friendly target policy отклоняет dead target.
+- Решение: общий TotemStateProvider, CooldownGroupProvider из CL-03, WeaponEnchantProvider из IT-10, DispelState/FriendlyUnitSelection из CL-02/CL-05, отдельный SelfResurrectionStateProvider, 24 QA-07 сценария, fail-closed UNKNOWN.
+- Семь ZIP: указаны направления сопоставления, полного построчного ZIP-аудита не проводилось.
+- Ретроактивные ссылки: CL-02, CL-03, CL-04, CL-05, IT-10, QA-07, QA-04, EN-A1.
+- Проверки: SOURCE/DOC PASS; Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101.
+- Итог: CL-06 документирован, реализация и клиентская проверка не выполнялись.
+
 ## KR-20261122-021 — аудит CL-05: Priest Shadowform, shield, wand, group heal/dispel, resurrection
 - Дата: 2026-11-22; точные timestamp/SHA — GitHub commit `KR-20261122-021`.
 - Тип: docs / CL-05 / P0; только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua/TOC/ZIP без изменений.
