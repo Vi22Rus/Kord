@@ -5617,6 +5617,9 @@ HP ниже порога и доступен камень; HP ниже поро�
 
 ### CC-01 — Игрок под контролем: оглушён, испуган, обездвижен, обезмолвлен, не может кастовать
 
+**Архитектурная актуализация CC-05:** после успешного прерывания проверять блокировку **школы заклинаний противника** через `EnemySchoolLockoutObservation` (см. CC-05); не путать с блокировкой школы самого игрока из CC-01 и не выводить длительность только из события прерывания.
+
+
 **Архитектурная актуализация CC-04:** проверка прерываемости вражеского каста и доступности собственного прерывания выполняется через общий `InterruptOpportunityObservation` и `InterruptSelection` (см. CC-04); не подменять прерывание эффектом снятия контроля CC-02 и не создавать отдельный сканер каста.
 
 
@@ -5797,6 +5800,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### CC-04 — Прерывания: можно ли прервать цель, какая способность у меня есть, готова ли она
 
+**Архитектурная актуализация CC-05:** после успешного прерывания проверять блокировку **школы заклинаний противника** через `EnemySchoolLockoutObservation` (см. CC-05); не путать с блокировкой школы самого игрока из CC-01 и не выводить длительность только из события прерывания.
+
+
 **Раздел: 12. Состояния контроля и помехи. Приоритет: P1.**
 
 #### Требование
@@ -5848,5 +5854,62 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 **НЕ ПОДТВЕРЖДЕНО КАК ПОЛНАЯ УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** Базовые cast и spell-API уже есть, но единый безопасный выбор готового interrupt под конкретный каст не подтверждён.
 
 **Архитектурные ссылки:** CC-01, CC-02, SP-01, SP-14, EventBus/AbilityEligibility; обратные ссылки внесены в CC-01 и CC-02.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### CC-05 — Школа заблокирована после моего прерывания
+
+**Раздел: 12. Состояния контроля и помехи. Приоритет: P2.**
+
+#### Требование
+
+После успешного прерывания **игроком** вражеского каста определять, заблокирована ли у **противника** соответствующая школа заклинаний, какая именно школа и сколько действует блокировка, если это подтверждено доступными данными. Не путать с `SCHOOL_INTERRUPT` **на игроке** из CC-01. Различать факт `CAST_INTERRUPTED`, доказанную `SCHOOL_LOCKOUT`, `INTERRUPT_WITHOUT_LOCKOUT` и `UNKNOWN`: успешное прерывание не доказывает, что конкретная способность накладывает school lockout, а длительность нельзя выводить из одного события.
+
+Наблюдение: `targetGUID`, `interrupterGUID`, `interruptedSpellID`, `interruptedSchoolMask`, `interruptSpellID`, `lockoutSchoolMask`, `lockoutStart/End`, `remainingSeconds` (только подтверждённые branchable значения), `state=ACTIVE/INACTIVE/UNKNOWN`, `confidence=OBSERVED/VERIFIED_INFERRED/UNKNOWN`, `reason/source/revision`. Учитывать multi-school spell и пересечение school masks, разные способности с разными длительностями, PvP/PvE модификаторы и повторные прерывания. Смена цели не переносит lockout на нового врага. Только рекомендации и наблюдение, без protected actions.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:17`: `UnitCastingInfo` и `UnitChannelInfo` доступны как базовые read-only источники, но не предоставляют сами по себе таймер уже наложенной блокировки школы на врага.
+- `KordRotation/Core/GameState.lua:162–163`: есть чтение cast/channel, но не подтверждён `EnemySchoolLockoutObservation` с привязкой к GUID, школе и окончанию.
+- `KordRotation/Core/EventBus.lua:27–29,39–42`: `UNIT_SPELLCAST_INTERRUPTED` присутствует; это событие не доказывает, что прервал **именно игрок**, и не содержит гарантированного полного lockout payload. Надёжность и доступность `COMBAT_LOG_EVENT_UNFILTERED`/альтернативного источника на Forever необходимо отдельно проверить.
+- `KordRotation/Core/RotationConditions.lua`: не найдено универсального `target.schoolLocked`/`target.lockoutRemaining` и `Needs.enemySchoolLockout`.
+- `KordRotation/Core/AbilityEligibility.lua`: проверяет доступность собственных способностей, но не подтверждает, что школа противника заблокирована после interrupt.
+- **Итог:** универсальное отслеживание lockout школы врага после прерывания игроком в проверенном ядре не подтверждено.
+
+#### Сравнение семи референсов (проверенные Lua-файлы ZIP)
+
+1. **Sonah:** `Sonah/Classes/Mage.lua:319–321` комментирует PvP Counterspell и школьную блокировку, `Sonah/Classes/Shaman.lua:249` использует Earth Shock для interrupt. Классовые правила полезны для перечня прерываний, но комментарий о длительности **не является** надёжным runtime-таймером цели.
+2. **JustAC:** `JustAC/Data/InterruptAbilities.lua` — перечень прерывающих способностей; `JustAC/BlizzardAPI/StateHelpers.lua:1991,2051` наблюдает `UNIT_SPELLCAST_INTERRUPTED` на target; `JustAC/DebugCommands.lua:5162–5174` предупреждает, что payload interrupter может быть `nil` или secret. Не делать вывод «это мой interrupt» по одному событию.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:8473–8494,8524–8571` содержит school-mask `lockoutSchool` и `SCHOOL_INTERRUPT` из loss-of-control; это референс **локального LoC** и проверки secret, но не доказательство доступности enemy lockout через тот же API.
+4. **MaxDps:** в просмотренных Lua не найдено прямого `SPELL_INTERRUPT`/school lockout tracker. Наличие cooldown/interrupt recommendations не означает наблюдение блокировки школы врага.
+5. **ForeverRotation:** `ForeverRotation/Announce.lua:4,49` использует `UNIT_SPELLCAST_INTERRUPTED` на target для объявления события, даже если payload secret. Это подтверждает факт прерывания, но не источник interrupter GUID, школы и длительности.
+6. **RotationGuide:** в проверенных Lua не найден прямой `SPELL_INTERRUPT`/enemy school lockout tracker; не выдавать отсутствие совпадений за полную проверку всей функциональности.
+7. **RotationMaster:** `RotationMaster/Platform/loss_of_control.lua:38–76` безопасно читает `lockoutSchool` из локального LoC; `RotationMaster/Conditions/combat.lua:452` сопоставляет school mask. `RotationMaster/Platform/analytics_casts.lua:989` обрабатывает `UNIT_SPELLCAST_INTERRUPTED`. Перенять secret-safe mask handling и аналитику каста, **не переносить локальный LoC на вражескую цель**.
+
+#### Выбранный путь Kord
+
+Расширить CC-04 единым **`EnemySchoolLockoutObservation`**, привязанным к вражескому GUID и общему cast/event observation. Для подтверждения факта `мой interrupt` использовать **только** надёжный источник, содержащий interrupter/source GUID и interrupted target GUID; если combat log/событие на Forever не предоставляет доступных branchable GUID, сохранить `UNKNOWN`. `UNIT_SPELLCAST_INTERRUPTED` без проверяемого source — лишь `cast interrupted`, не `my interrupt`.
+
+Школу определять по проверенному spellID → school mask или по достоверному payload; длительность — по проверенному **Forever-specific** interrupt spell catalog с поправками только на подтверждённые правила клиента. `VERIFIED_INFERRED` означает вычисленный таймер с явной provenance и сроком жизни, не прямое наблюдение. Если механика, длительность, школа, цель, источник или PvP/PvE modifier неизвестны — `UNKNOWN`, не подставлять retail значения. Несколько прерываний одного GUID/школы обновлять только по доказанным правилам; при новом GUID очищать view, но не переносить старую запись. TTL и bounded storage для GUID; неизвестная/secret school mask не участвует в битовых операциях.
+
+Результат нужен как дополнительный контекст выбора CC-04 и тактических условий: если школа врага уже заблокирована, не рекомендовать бессмысленное повторное прерывание той же школы без нового прерываемого каста; если школа неизвестна, не подавлять interrupt по догадке. Нельзя считать школу заблокированной только потому, что цель перестала кастовать. EventBus: подтверждённые interrupt/combat-log/cast события, target GUID и bounded expiry heartbeat, lazy `Needs.enemySchoolLockout`, per-evaluation memo. DevTools: `interrupt_source_unknown`, `interrupt_target_unknown`, `interrupted_school_unknown`, `lockout_duration_unknown`, `lockout_inferred`, `lockout_active`, `lockout_expired`, `lockout_not_applied`.
+
+#### Требуемые изменения
+
+1. Проверить на Forever фактическую доступность combat-log interrupt source/target GUID, spellID, interrupted school и secret-поведение `UNIT_SPELLCAST_INTERRUPTED`; без этого не заявлять надёжный `my interrupt`.
+2. Добавить в общий CC-04 cast observation GUID-keyed `EnemySchoolLockoutObservation` без второго сканера каста.
+3. Создать проверенные Forever-specific сведения о `interruptSpellID → effectKind/schoolLockoutDuration` и `interruptedSpellID → schoolMask`; не переносить retail длительности без проверки.
+4. Различать подтверждённый факт прерывания, доказанную блокировку, вычисленную по проверенным данным блокировку и `UNKNOWN`.
+5. Учитывать multi-school masks, разные классовые interrupt, PvP/PvE, повторные прерывания, смену target/GUID, окончание таймера и неизвестные данные.
+6. Добавить `RotationConditions` `target.schoolLocked(schoolMask)`, `target.schoolLockoutRemaining`, `Needs.enemySchoolLockout`; использовать для контекста CC-04, не подменять `target.castInterruptible`.
+7. EventBus revision/invalidation и ограниченное хранение по GUID, DevTools причины и provenance, без secret coercion.
+8. Тесты: interrupt игроком/союзником/другим врагом, direct interrupt без lockout, lockout на 1 школу и multi-school, школа неизвестна, 2 противника, смена цели, прерван channel, повторный interrupt, PvP/PvE, истечение времени, nil/secret payload, недоступный combat log, отсутствие ложного `ACTIVE` и protected actions.
+
+#### Вердикт
+
+**НЕ ПОДТВЕРЖДЕНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Базовые события прерывания есть, но достоверное определение именно моего interrupt, школы противника и времени lockout не подтверждено.
+
+**Архитектурные ссылки:** CC-01 (собственный school lockout — другое состояние), CC-04 (interrupt observation/selection), SP-14, EventBus. Обратные ссылки внесены в CC-01 и CC-04.
 
 **Изменения Lua:** отсутствуют. Только документация.
