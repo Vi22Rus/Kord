@@ -63,8 +63,8 @@ KR.GameAPI={
   end
   if name=="C_SpellBook.IsSpellKnown" then return r(spellKnownByApi) end
   if name=="C_Spell.GetSpellCooldown" then
-   if id==61304 and missingGcdField then return r({isOnGCD=true}) end
-   return r({isActive=id==61304 and gcdActive or active,isOnGCD=false})
+   if id==29515 and missingGcdField then return r({isOnGCD=true}) end
+   return r({isActive=id==29515 and gcdActive or active,isOnGCD=false})
   end
   if name=="C_Spell.GetSpellCharges" then
    local chargeInfo={isActive=chargeIsActive}
@@ -155,7 +155,19 @@ end
 eq(eval().status,"BLOCKED","isOnGCD not authoritative outside event")
 eq(eval().reason,"cooldown_active_unclassified","active cannot be categorized")
 KR.GameAPI.Read=previousRead
-gcdActive=true;eq(eval().reason,"global_cooldown");gcdActive=false
+gcdActive=true;eq(eval().reason,"global_cooldown","Forever 29515 GCD active")
+gcdActive=false
+-- Retail dummy 61304 is not authoritative on Forever: only 29515
+-- must decide whether the engine blocks a shared GCD.
+local rememberedRead=KR.GameAPI.Read
+KR.GameAPI.Read=function(self,name,typ,...)
+ if name=="C_Spell.GetSpellCooldown" and (...)==61304 then
+  return r({isActive=true})
+ end
+ return rememberedRead(self,name,typ,...)
+end
+eq(eval().status,"READY","retail 61304 dummy never drives Forever GCD")
+KR.GameAPI.Read=rememberedRead
 -- v14 #25: secret/missing GCD isActive must not become ready,
 -- even when isOnGCD=true or timing fields are present.
 missingGcdField=true
@@ -212,7 +224,57 @@ KR.GameAPI.ReadValues=function(self,name,...)
  return oldMulti(self,name,...)
 end
 eq(eval().status,"READY","legacy APIs")
+-- Legacy GCD reference must be 29515 and start/duration must be coherent.
+local fallbackSpellId
+KR.GameAPI.ReadValues=function(self,name,...)
+ if name=="GetSpellCooldown" then
+  fallbackSpellId=(...)
+  return {status="READY",value={now-0.3,1.5,1}}
+ end
+ return oldMulti(self,name,...)
+end
+eq(eval().reason,"global_cooldown","legacy 29515 GCD active")
+eq(fallbackSpellId,29515,"legacy reads Forever Classic GCD reference")
+KR.GameAPI.ReadValues=function(self,name,...)
+ if name=="GetSpellCooldown" then
+  return {status="READY",value={0,0,1}}
+ end
+ return oldMulti(self,name,...)
+end
+eq(eval().status,"READY","legacy 29515 idle")
+KR.GameAPI.ReadValues=function(self,name,...)
+ if name=="GetSpellCooldown" then
+  return {status="UNKNOWN",reason="no_value"}
+ end
+ return oldMulti(self,name,...)
+end
+eq(eval().reason,"gcd_unavailable","missing legacy GCD fails closed")
 KR.GameAPI.ReadValues=oldMulti;KR.GameAPI.Probe=oldProbe
+-- A temporary modern-API read failure can use independently verified
+-- legacy cooldown fields. A secret modern result cannot be bypassed.
+local modernRead=KR.GameAPI.Read
+local modernMulti=KR.GameAPI.ReadValues
+KR.GameAPI.Read=function(self,name,typ,...)
+ if name=="C_Spell.GetSpellCooldown" and (...)==29515 then
+  return {status="UNKNOWN",reason="no_value"}
+ end
+ return modernRead(self,name,typ,...)
+end
+KR.GameAPI.ReadValues=function(self,name,...)
+ if name=="GetSpellCooldown" then
+  return {status="READY",value={0,0,1}}
+ end
+ return modernMulti(self,name,...)
+end
+eq(eval().status,"READY","safe legacy GCD fallback after nonsecret missing modern data")
+KR.GameAPI.Read=function(self,name,typ,...)
+ if name=="C_Spell.GetSpellCooldown" and (...)==29515 then
+  return {status="UNKNOWN",reason="protected_value"}
+ end
+ return modernRead(self,name,typ,...)
+end
+eq(eval().reason,"gcd_unavailable","protected modern GCD cannot be bypassed")
+KR.GameAPI.Read=modernRead;KR.GameAPI.ReadValues=modernMulti
 -- Contract v1 Fact: typed, fail-closed observations, not final spell readiness.
 local function fact(kind,id)
  return KR.AbilityEligibility:Fact(id or 101,kind,{stateSnapshot=KR.GameState:GetSnapshot()})
