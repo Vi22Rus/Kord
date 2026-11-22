@@ -230,6 +230,7 @@ function D:Start()
     self.sequence=0
     self.dropped=0
     self.journalPart=0
+    self.exportPage=0
     self.evictedParts=0
     local nextID=type(self.settings.nextSessionID)=="number"
         and self.settings.nextSessionID or 0
@@ -356,6 +357,7 @@ function D:Clear()
     self.sequence=0
     self.dropped=0
     self.settings.sessions={}
+    self.exportPage=0
     KordRotationDevToolsDB=self.settings
     return true
 end
