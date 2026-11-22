@@ -1,3 +1,13 @@
+## KR-20261122-103 — docs(IT-02/2.3,2.6): restore requirements and phased-plan records
+- Дата/время: 2026-11-22 UTC (полный timestamp по Git); SHA: `git log --grep KR-20261122-103`.
+- Этап/требование: 2, IT-02 P0; документационное восстановление обязательных записей после кодовых KR-20261122-100, -101, -102. Статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст и причина: при предыдущих коммитах GitHub contents connector вернул пустой текст больших файлов; ошибочно не были использованы доступные `fetch_blob(blob_sha)`. Это нарушение правил проекта, не проблема или ограничение GitHub API. Содержимое обоих документов теперь прочитано целиком через Git blob API.
+- Изменены `REQUIREMENTS.md` (рядом с первичными требованиями IT-02/2.3 и IT-02/2.6), `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` (шаги 2.3 и 2.6), `CHANGELOG.md`. Старые статусы, аудиты, требования и текст плана не удалены; добавлены отдельные фактические записи со ссылками на SHA, функции, API и исходники тестов.
+- Код в ЭТОМ коммите не менялся. Подтверждённые кодовые работы: `GameState:ReadItemCooldownObservation` guarded nested tuple/time reads (100), `GameState:ReadSharedItemCooldownObservation` protected group-field access (101), `SharedCooldownGroupCatalog:GetCandidateMembers` + aggregate candidateCount (102).
+- Проверки: PASS — получение обоих полных blob-текстов GitHub API, точные уникальные якоря вставки, сохранение всего исходного текста вне вставок, публикация коммита. NOT RUN — Lua 5.1, mock execution, full regression, manual CI, WoW Forever (данный docs-коммит не проводит runtime-тестов).
+- Выдано тестировщику: использовать ранее добавленные mocks как непрогнанные сценарии итогового IT-02 QA; никаких заявлений CLIENT PASS.
+- Незавершённое: item-use attribution, correlated shared cooldown confirmation/estimates, Lua 5.1 mocks, игровая проверка. Связи: KR-20261122-100/101/102, IT-01/02/03/04, AC-02.
+
 ## KR-20261122-102 — IT-02/2.6: bounded source-only candidate member resolution
 - Дата/время: 2026-11-22 UTC (точное время по Git); SHA: `git log --grep KR-20261122-102`.
 - Этап/ID: 2/2.6; IT-02 P0; feature/test; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
