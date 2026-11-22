@@ -2156,6 +2156,9 @@
 ### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
 
 
+**Архитектурная актуализация EN-03:** **См. EN-03: multi-target aura GUID index shares identity and alias lifecycle with enemy observations, avoiding independent conflicting deduplication.**
+
+
 **Архитектурная актуализация EN-01:** **См. EN-01: shared bounded multi-target GUID index may feed aura counts and enemy counts, but aura visibility does not establish proximity.**
 
 
@@ -2369,6 +2372,9 @@
 
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
+
+
+**Архитектурная актуализация EN-03:** **См. EN-03: existing target GUID guard becomes part of shared UnitIdentityObservation, including token recycling and identity unknown.**
 
 
 **Архитектурная актуализация EN-01:** **См. EN-01: hostile/attackable and GUID verification must reuse TargetObservation for each observed unit.**
@@ -2924,6 +2930,9 @@
 ### TG-11 — Фокус-цель и мышь-цель (если профиль их использует)
 
 
+**Архитектурная актуализация EN-03:** **См. EN-03: focus/mouseover/target are aliases to a canonical GUID, not independent enemies; recipient checks remain token-specific.**
+
+
 **Архитектурная актуализация EN-02:** **См. EN-02: generic UnitObservation(unitToken) applies to nameplate and party/raid tokens only with explicit Needs and GUID safety.**
 
 **Раздел: 5. Цель. Приоритет: P2.**
@@ -2978,6 +2987,9 @@
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
 
+**Архитектурная актуализация EN-03:** **См. EN-03: canonical GUID-based UnitIdentityIndex deduplicates target/focus/mouseover/nameplate and other sources before radius counting; unknown GUID never treated as distinct enemy.**
+
+
 **Архитектурная актуализация EN-02:** **См. EN-02: reuse one GUID-indexed observed enemy registry/nameplate lifecycle; radius membership and combat-with-party relationship are independent filters, never separate scans.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
@@ -3030,6 +3042,9 @@
 
 ### EN-02 — Число врагов, находящихся в бою с группой
 
+
+**Архитектурная актуализация EN-03:** **См. EN-03: group-engaged count consumes the same deduplicated GUID index; multiple engagement evidence records for one enemy contribute once.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
 #### Определение
@@ -3078,5 +3093,60 @@
 **НЕ РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** В Kord есть combat/group/threat API-факты и allowlist nameplates, но нет доказательного подсчёта уникальных врагов, взаимодействующих с нашей группой.
 
 **Архитектурные ссылки:** EN-01 — общий индекс врагов; TG-05 — threat/target-of-target; PL-07 — группа/рейд; TG-11 — generic unit tokens. Обратные ссылки добавлены в прежние задачи.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Требование
+
+Единый `UnitIdentityIndex` для всех доступных источников (`target`, `focus`, `mouseover`, `nameplateN`, `partyNtarget`, `raidNtarget`, `pettarget` и подтверждённые combat-log GUID). Канонический ключ — **достоверный GUID**, а не имя, номер nameplate, unit token, координата или `UnitIsUnit` без проверки. Несколько токенов с одним GUID дают **одну сущность и один вклад в каждый счётчик**; разные GUID никогда не объединяются по одинаковому имени. GUID UNKNOWN означает **неподтверждённую идентичность**, а не новую отдельную цель. У combat-log GUID без живого unit token не утверждать текущие health/range/combat/visibility.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameState.lua:120`: `unitSnapshot(unit)` читает `UnitGUID`; `:155` учитывает identity в snapshot status. `:191` сравнивает `pettarget` и `target` через `UnitIsUnit`.
+- `KordRotation/Core/GameState.lua:312–329,474–499,575–576,691–692,730–756`: для текущей цели используются GUID guards перед/после отдельных чтений. Это защищает от смены цели, **но не является общим индексом** разных unit tokens.
+- `KordRotation/Core/GameAPI.lua:10,56`: `UnitGUID`, `UnitIsUnit` и `C_NamePlate.GetNamePlates` разрешены; это исходные API, а не дедуплицирующий provider.
+- `KordRotation/Core/RotationConditions.lua:73`: `enemy.count` объявлен, но достоверного подсчёта и общей дедупликации нет.
+- EN-01 и EN-02 уже рекомендуют общий bounded GUID-index; EN-03 делает его **единственным каноническим контрактом идентичности**, не отдельным третьим сканером.
+
+#### Семь референсов: архитектурные ориентиры
+
+1. **Sonah** — общий unit reader и nameplate iteration полезны как источники токенов; наличие канонического межисточникового GUID-index в данном проходе не подтверждено.
+2. **JustAC** — unit comparison и nameplate lifecycle полезны для token aliasing; полного общего индекса не подтверждено.
+3. **ForeverAuras** — unit-token/nameplate aura lifecycle полезен для согласования токенов; ауры не определяют идентичность без GUID.
+4. **MaxDps** — AoE count потребляет список противников; не подтверждён общий межисточниковый identity registry.
+5. **ForeverRotation** — nameplate counting показывает необходимость дедупликации; не подтверждён единый GUID registry для target/focus/mouseover.
+6. **RotationGuide** — nameplate-based counting; не подтверждена сквозная GUID identity модель.
+7. **RotationMaster** — unit observation и GUID-aware data могут служить ориентиром; полный cross-source index в данном проходе не подтверждён.
+
+**Граница проверки:** референсы здесь сопоставлены по ранее исследованным механизмам, но точные реализации дедупликации во всех семи ZIP в этом проходе отдельно не верифицированы. Не выдавать отсутствие подтверждения за доказанное отсутствие реализации.
+
+#### Рекомендуемая архитектура
+
+**Расширить единый `ObservedEnemyIndex` из EN-01/EN-02 до `UnitIdentityIndex` как общей службы идентичности; `ObservedEnemyIndex` — фильтр/представление, не второй владелец идентичности.** `GUID → {aliases: token/source, lastVerified, provenance, revision}`, `token → {GUID, observedAt, revision}`. Атомарно проверять `UnitGUID(token)` до/после связанных чтений, отвергать stale token, ограничивать TTL/размер и инвалидировать при `PLAYER_TARGET_CHANGED`, `PLAYER_FOCUS_CHANGED`, `UPDATE_MOUSEOVER_UNIT`, `NAME_PLATE_UNIT_ADDED/REMOVED`, `GROUP_ROSTER_UPDATE` (после проверки событий на Forever). Не объединять неизвестные GUID; не считать их автоматически отдельными. При token recycling немедленно отвязать старый alias, но не уничтожать подтверждённые наблюдения того же GUID из других источников.
+
+`UnitIsUnit` — дополнительная доказательная проверка совпадения **двух живых unit tokens**, но не универсальный заменитель GUID; при secret/UNKNOWN статус остаётся UNKNOWN. Исторические combat-log GUID можно связывать с существующим GUID, но не превращать в доказательство текущей близости или присутствия. EN-01/EN-02/AU-06 потребляют один identity index, сохраняя разные независимые фильтры радиуса, группового боя и аур.
+
+#### Требуемые изменения
+
+1. Создать/расширить один канонический GUID-based identity provider в существующем общем ядре, без отдельных индексов для каждой категории врагов.
+2. Сохранять множественные alias tokens одного GUID и происхождение фактов; один GUID — один вклад в EN-01 и EN-02.
+3. При secret/nil GUID возвращать UNKNOWN identity и не включать в подтверждённый count, даже если есть имя или token.
+4. Проверять GUID до/после чтений, token recycling, target/focus/mouseover switch и nameplate lifecycle.
+5. При исчезновении одного alias сохранять сущность, если другие alias всё ещё достоверны; устаревшие combat/range facts не сохранять как текущие.
+6. Поддержать одинаковые имена разных GUID, один GUID с разными unit tokens, missing GUID, combat-log-only GUID, несколько sources с разными timestamp.
+7. Развести identity и engagement/radius: один GUID может иметь несколько evidence sources, но один count contribution.
+8. Добавить lazy Needs gating, bounded TTL/cache, event revisions, secret-safe diagnostics `identity_guid_unknown`, `identity_alias_conflict`, `identity_token_recycled`, `identity_stale`, `identity_deduplicated`.
+9. Тесты: target=nameplate, focus=target, mouseover=nameplate, все 4 совпадают, одинаковое имя с разными GUID, stale alias, recycled nameplate, secret GUID, combat-log-only, multiple group-threat relations, rapid target switch, hidden nameplate.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** В Kord есть локальные GUID guards и `UnitIsUnit`, но нет единого cross-source identity/deduplication contract.
+
+**Архитектурные ссылки:** EN-01, EN-02, TG-01, TG-11, AU-06. Обратные ссылки добавлены в каждую затронутую старую задачу.
 
 **Изменения Lua:** отсутствуют. Только документация.
