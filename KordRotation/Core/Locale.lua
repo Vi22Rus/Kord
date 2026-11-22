@@ -3734,17 +3734,17 @@ end
 
 -- Combat-aura routing belongs to Kord's original recommendation UI, not to an external engine.
 local combatAuraTranslations={
- enUS={"Show combat buffs, aspects, auras and stances in the main rotation",
+ enUS={"Combat buffs in main rotation",
    "When enabled, missing offensive auras/aspects/stances move from Defensive to the main recommendation only during combat. Off: they remain in Defensive. Does not cast spells."},
- ruRU={"Боевые бафы, аспекты, ауры и стойки — в основном окне",
+ ruRU={"Боевые усиления в основном окне",
    "Включено: во время боя необходимые боевые усиления переносятся из Defensive в основное окно. Выключено: остаются в Defensive. Вне боя всегда Defensive. Не применяет заклинания."},
- deDE={"Kampfbuffs, Aspekte, Auren und Haltungen im Hauptfenster",
+ deDE={"Kampfbuffs im Hauptfenster",
    "Aktiv: offensive Verstärkungen werden nur im Kampf von Defensive ins Hauptfenster verschoben. Inaktiv: sie bleiben in Defensive. Außerhalb des Kampfes immer Defensive. Wirkt keine Zauber."},
- frFR={"Bonus, aspects, auras et postures de combat dans la fenêtre principale",
+ frFR={"Bonus de combat dans la fenêtre principale",
    "Activé : les bonus offensifs passent de Defensive à la rotation principale uniquement en combat. Désactivé : ils restent dans Defensive. Hors combat, toujours Defensive. Ne lance aucun sort."},
- esES={"Beneficios, aspectos, auras y posturas en la ventana principal",
+ esES={"Beneficios de combate en la ventana principal",
    "Activado: los beneficios ofensivos pasan de Defensive a la rotación principal solo durante el combate. Desactivado: permanecen en Defensive. Fuera de combate, siempre Defensive. No lanza hechizos."},
- ptBR={"Bônus, aspectos, auras e posturas em combate na janela principal",
+ ptBR={"Bônus de combate na janela principal",
    "Ativado: efeitos ofensivos passam de Defensive à rotação principal somente em combate. Desativado: ficam em Defensive. Fora de combate, sempre Defensive. Não lança feitiços."}
 }
 for locale,values in pairs(combatAuraTranslations) do
