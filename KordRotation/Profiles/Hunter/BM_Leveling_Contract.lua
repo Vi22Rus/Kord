@@ -229,7 +229,17 @@ local function makeRules(spells,is60)
   local active=maintenance(S,c)
   if active~=true then return active end
   local travel=signal(S,"player.travelAspect")
-  if travel==true then return false end
+  if travel==true then
+   -- Sonah/Classes/Hunter.lua:147-170: keep travel aspect while
+   -- out of combat, but recommend switching to Hawk DURING combat.
+   -- A verified Hawk aura always wins; do not spam an active aspect.
+   local hawkMissing=S:isNot("player.buff",spells.AspectHawk)
+   if hawkMissing==false then return false end
+   local fighting=combat(S)
+   if fighting==true then return true end
+   if fighting==false then return false end
+   return nil
+  end
   return S:isNot("player.buff",spells.AspectHawk)
  end)
  add("aspect_monkey","AspectMonkey",function(S,c)
