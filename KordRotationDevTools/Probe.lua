@@ -46,12 +46,24 @@ function D:ProbeAll()
         end
         if outcome.status=="READY" then present=present+1 end
         entries[#entries+1]={name=item.method or "no_safe_probe",
-            matrix=item.id,status=outcome.status}
+            matrix=item.id,status=outcome.status,reason=outcome.reason}
+        -- All 101 canonical matrix rows are accounted for in the
+        -- persisted journal. Presence is NOT execution or client PASS.
+        -- Each row has a stable numeric matrix ID and bounded reason.
+        if self.active then
+            local diagnostic=type(item.method)~="string"
+                and "no_single_safe_probe"
+                or (outcome.status=="READY" and "presence_only"
+                    or outcome.status=="UNAVAILABLE" and "api_missing"
+                    or outcome.reason or "unknown")
+            self:Record("API",outcome.status,"matrix_probe",item.id,
+                nil,diagnostic)
+        end
     end
     self.lastProbe={entries=entries,present=present,total=#entries,
         evidence="presence_only_not_client_pass"}
-    -- One bounded record, never serialize game values.
-    if self.active then self:Record("API","READY","presence_only") end
+    -- The 101 row-specific scalar records above replace the old
+    -- single aggregate marker, which concealed missing methods.
     return self.lastProbe
 end
 
