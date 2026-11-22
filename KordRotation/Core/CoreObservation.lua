@@ -282,6 +282,11 @@ function O:ReadActionBar()
         end
     end
     local rank=nil
+    local arcaneChosenID=nil
+    local rankIDs={
+        [3044]=1,[14281]=2,[14282]=3,[14283]=4,
+        [14284]=5,[14285]=6,[14286]=7,[14287]=8
+    }
     local profileModule=KR.RotationProfiles
     local identity=KR.characterState
     if type(profileModule)=="table"
@@ -301,11 +306,19 @@ function O:ReadActionBar()
                 if okProfile and safe(p) and type(p)=="table" then
                     local spells=field(p,"Spells")
                     if type(spells)=="table" then
-                        for i=8,1,-1 do
-                            local id=field(spells,"ArcaneShotR"..i)
-                            if type(id)=="number" and detected[id] then
-                                rank=i
-                                break
+                        local selected=field(spells,"Arcane")
+                        if type(selected)=="number" and detected[selected]
+                            and rankIDs[selected] then
+                            rank=rankIDs[selected]
+                            arcaneChosenID=selected
+                        else
+                            for i=8,1,-1 do
+                                local id=field(spells,"ArcaneShotR"..i)
+                                if type(id)=="number" and detected[id] then
+                                    rank=i
+                                    arcaneChosenID=id
+                                    break
+                                end
                             end
                         end
                     end
@@ -323,9 +336,7 @@ function O:ReadActionBar()
         local levelRec=field(field(levelSnapshot,"player"),"level")
         local levelValue=field(levelRec,"value")
         if type(levelValue)=="number" and levelValue>=1 and levelValue<=100 then
-            local okProfile,p=pcall(profileModule.ResolveForEngine,
-                profileModule,"HUNTER_TREE_1",levelValue)
-            local id=okProfile and field(field(p,"Spells"),"ArcaneShotR"..rank)
+            local id=arcaneChosenID
             if type(id)=="number" and safe(id) then
                 local okFound,found=pcall(scanner.FindSpell,scanner,id)
                 if okFound and safe(found) and type(found)=="table" then
