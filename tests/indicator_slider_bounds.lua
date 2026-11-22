@@ -30,8 +30,8 @@ function KR.UI:StepRow(_,key,x,y,width,getter,setter,step,formatter,minimum,maxi
  recorded[key]={minimum,maximum}
  return frame()
 end
-assert(loadfile("KordRotation/UI/Pages/IndicatorsProfiles.lua"))
- ("KordRotation",KR)
+local loadPage=assert(loadfile("KordRotation/UI/Pages/IndicatorsProfiles.lua"))
+loadPage("KordRotation",KR)
 KR.Pages:Indicators(frame())
 local expected={
  IND_HIGHLIGHT_STRENGTH={0,100},
