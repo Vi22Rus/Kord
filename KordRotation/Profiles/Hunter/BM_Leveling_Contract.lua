@@ -29,9 +29,9 @@ local spec={
  {"Mend","Mend Pet",136,"buffs","none","utility"},
  {"CallPet","Call Pet",883,"buffs","none","utility"},
  {"Revive","Revive Pet",982,"buffs","none","utility"},
- {"AspectHawk","Aspect of the Hawk",13165,"buffs","none"},
- {"AspectMonkey","Aspect of the Monkey",13163,"buffs","none"},
- {"Trueshot","Trueshot Aura",19506,"buffs","none"},
+ {"AspectHawk","Aspect of the Hawk",13165,"buffs","none","aspect"},
+ {"AspectMonkey","Aspect of the Monkey",13163,"buffs","none","aspect"},
+ {"Trueshot","Trueshot Aura",19506,"buffs","none","aura"},
 }
 local defaults={
  {"mark","enum","all",{"all","elite","instance","elite_or_instance","smart","off"},"debuffs","Hunter's Mark"},
@@ -240,7 +240,7 @@ local function makeRules(spells,is60)
   if travel==true then
    -- Preserve Cheetah / Pack while travelling outside combat. Once
    -- combat is confirmed, a missing/hidden Hawk is a valid safety switch.
-   if fighting==false then return false end
+   if fighting==false then return hawkMissing end
    if fighting==true then return true end
    return nil
   end
