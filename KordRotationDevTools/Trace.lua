@@ -158,8 +158,12 @@ function D:ObserveDetails(diagnosis,force,summary)
         add("CHECK",diag.decisiveStatus,"engine_decisive_reason",
             diag.decisiveReason)
         add("CHECK",diag.firstStatus,"priority_1_rule",diag.firstReason)
-        add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
-            diag.arcaneR4Reason)
+        -- The rank-4 fixed-position test belongs ONLY to the old pilot.
+        -- For the full BM 1–59 module, use the generic RULE/SIGNAL/STAGE
+        -- audit instead; its Arcane priority is no longer number five.
+        if diag.arcaneR4Status~=nil then
+            add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
+                diag.arcaneR4Reason)
         if diag.arcaneR4BarReason~=nil then
             add("CHECK",diag.arcaneR4Status,
                 "arcane_rank_4_bar_failure",diag.arcaneR4BarReason)
@@ -189,6 +193,7 @@ function D:ObserveDetails(diagnosis,force,summary)
                 "arcane_check_"..name,
                 check and check.reason or "not_evaluated")
         end
+        end -- pilot-only fixed priority snapshot
     end
     -- Full-profile audit: evaluate every registered rule independently
     -- and journal the signal / eligibility cause. Each key is stable and
