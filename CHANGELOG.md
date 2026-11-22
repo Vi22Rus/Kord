@@ -1,3 +1,13 @@
+## KR-20261122-074 — IT-02/2.2: разрешённые read-only item cooldown API (часть шага)
+- Дата/время: 2026-11-22 UTC; точные время и SHA см. [кодовый коммит 424e1f9f73517d9a67ca86fb9d2ad4842f88b75a](https://github.com/Vi22Rus/Kord/commit/424e1f9f73517d9a67ca86fb9d2ad4842f88b75a). Этап 2, шаг 2.2, IT-02 P0, тип feature/docs, статус PARTIALLY IMPLEMENTED.
+- Контекст: GameAPI не допускал read-only item cooldown getters, поэтому общая модель IT-02 не могла даже безопасно исследовать их наличие. Это исходное несоответствие, не подтверждённый баг игрового клиента; причина подтверждена таблицей allowed в GameAPI.
+- Изменён `KordRotation/Core/GameAPI.lua`: добавлены только три канонических имени из IT-02 — `C_Item.GetItemCooldown`, `C_Container.GetItemCooldown`, `GetItemCooldown`. Не добавлены игровые действия, item-use, сканеры и непроверенные сигнатуры. Существующие `API:Read`, `ReadTuple`, `ReadValues`, `Probe` и их nil/secret/finite/fail-closed guards сохранены.
+- Основание: исходный IT-02 и обозначенные в нём reference candidates; исходники референсов в этом коммите повторно не верифицированы. Наличие методов, параметры, boolean/0/1 enabled, epoch и значения на WoW Forever остаются NOT VERIFIED. Это **не** завершение валидации API.
+- PASS: статическая сверка трёх записей allowed и отсутствие путей выполнения предметов в diff. NOT RUN: Lua 5.1 mock/local regression, ручной GitHub Actions, WoW Forever (клиент недоступен). Новые автотесты в этом частичном коммите не добавлены.
+- Выдано тестировщику: источник изменения по ссылке выше; итоговые проверки API-подписей, protected values и времён отложить до общего IT-02 QA, промежуточную установку не требовать.
+- Ограничения: полноценная валидация методов и типизированный adapter остаются 2.2–2.3; absent/secret/disabled/invalid обязаны fail-closed, item-specific CD нельзя смешивать с GCD. Связи IT-01, IT-02, KR-20261122-073.
+- Прозрачность коммитов: доступный GitHub Contents API создал кодовый коммит без одновременного CHANGELOG; эта запись добавлена следующим документационным коммитом. Это отклонение от атомарного правила `docs/CHANGELOG_RULES.md`, не выдаётся за соответствие и не исправляется переписыванием опубликованного коммита.
+
 ## KR-20261122-073 — IT-02/2.1: typed item cooldown observation contracts
 - Дата/время: 2026-11-22 UTC, точное время и SHA по Git `git log --grep KR-20261122-073`. Тип feature/test/docs, IT-02 P0, этап 2 шаг 2.1.
 - Проблема: после IT-01 item eligibility ожидает типизированные отдельные item/shared cooldown facts, но GameState не имел этих методов. Это подтверждено исходником, не игровой баг.
