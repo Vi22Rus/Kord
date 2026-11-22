@@ -5617,6 +5617,9 @@ HP ниже порога и доступен камень; HP ниже поро�
 
 ### CC-01 — Игрок под контролем: оглушён, испуган, обездвижен, обезмолвлен, не может кастовать
 
+**Архитектурная актуализация CC-02:** способы выхода из контроля подбираются по типу подтверждённого LoC из CC-01 через единый `ControlBreakSelection`, с обязательной проверкой применимости конкретного заклинания/предмета и без предположения, что всякий иммунитет снимает уже наложенный контроль (см. CC-02).
+
+
 **Раздел: 12. Состояния контроля и помехи. Приоритет: P0.**
 
 #### Требование
@@ -5665,5 +5668,61 @@ HP ниже порога и доступен камень; HP ниже поро�
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** Есть базовая проверка пригодности заклинания, но нет подтверждённой typed LoC observation, per-school lockout и условий контроля.
 
 **Архитектурные ссылки:** SP-01, SP-14, EventBus/AbilityEligibility; обратные ссылки внесены непосредственно в SP-01 и SP-14 в этом коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### CC-02 — Каким способом можно разорвать контроль (способность, предмет)
+
+**Раздел: 12. Состояния контроля и помехи. Приоритет: P1.**
+
+#### Требование
+
+Для подтверждённого типа контроля из CC-01 определить **действительно доступный сейчас** способ освободиться: собственная способность, расовая способность, PvP-аксессуар, инженерный/расходуемый предмет либо иной подтверждённый эффект. Различать `BREAK_ACTIVE_CC` (снимает уже наложенный контроль), `IMMUNITY_PREVENTION` (защищает от будущего), `DISPEL_ALLY` (снимает контроль с другой цели) и `MOVEMENT_ESCAPE` (снимает root/snare, но не stun/fear). Не рекомендовать профилактическую иммунность как гарантированное освобождение из уже действующего контроля без подтверждённой механики. При нескольких эффектах выбирать действие, устраняющее нужный набор ограничений, а не только первый обнаруженный.
+
+Результат наблюдения: `controlType`, `activeEffects`, `candidateKind=SPELL/ITEM/EQUIPMENT`, `spellID/itemID/slot`, `breaksMechanics`, `effectKind`, `usableUnderControl`, `cooldown`, `resource/itemCount`, `decision=READY/BLOCKED/UNKNOWN`, `reason/source/revision`. Итоговое `READY` остаётся за общим `AbilityEligibility`; отсутствие подтверждённого средства — `NONE_CONFIRMED`, а не доказательство, что средств вообще нет. Рекомендация не выполняет protected cast/use.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:26,35`: есть read-only `IsUsableSpell`/`C_Spell.IsSpellUsable`, но не подтверждён отдельный источник `CCBreakerCatalog` и capability для точного сопоставления LoC mechanics с эффектами снятия.
+- `KordRotation/Core/GameState.lua` и `RotationConditions.lua`: при проверке CC-01 не найдено общего typed `PlayerControlObservation` и `Needs.playerControl`; CC-02 зависит от этой незавершённой возможности.
+- `KordRotation/Core/AbilityEligibility.lua:175–177`: общий spell usability сам по себе не доказывает, что способность **снимет текущий контроль** или разрешена во время stun/fear.
+- `KordRotation/Core/EventBus.lua:22–42`: есть aura, cooldown/usability, spellcast events; подтверждённой специфической invalidation для loss-of-control и повторного отбора breaker пока нет.
+- **Вывод:** в проверенных основных файлах не подтверждён универсальный подбор способа выхода из контроля; наличие обычных защитных заклинаний не эквивалентно breaker catalog. Для полной реализации отдельно проверить профили, настройки и item DB Kord.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Classes/Mage.lua:222,285–292` отдельно рассматривает stun/root, Blink и Ice Block; комментарий предупреждает, что Ice Block нельзя автоматически считать доступным под stun. Перенять **механикоспецифичный приоритет**, не переносить порядок без проверки Forever.
+2. **JustAC:** `JustAC/Data/CCBreakers.lua:3–11` — генерируемая таблица `MECHANIC_BREAKERS` и отдельная `FOREVER_BREAKERS` из данных WoW Forever 1.60.1.70245; `:127–155` содержит Forever-specific эффекты и предметы, в том числе racial, fear и PvP trinkets. **Основной референс каталога mechanic → spell/item**, но исходные данные содержат и иммунитеты: каждую запись классифицировать как `BREAK_ACTIVE_CC` либо `IMMUNITY_PREVENTION` по эффектам и возможности использования под контролем. `JustAC/BlizzardAPI/StateHelpers.lua:188–236` — LoC/per-spell lockout.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:3095–3096,3390–3391` реагирует на `LOSS_OF_CONTROL_ADDED/UPDATE` и читает `GetSpellLossOfControlCooldownInfo`. Это референс обновления/отображения, **не** готовый breaker selector.
+4. **MaxDps:** `MaxDps/Buttons.lua:298` поддерживает рекомендации trinkets/potions; `MaxDps/Helper.lua:2669–2711` проверяет кулдауны/готовность trinket. Это **только часть item eligibility**; универсальный mechanic-to-breaker selector в просмотренных файлах не подтверждён.
+5. **ForeverRotation:** `ForeverRotation/Sync.lua:37–58` читает `C_LossOfControl` и нормализует контроль; `ForeverRotation/Rotations/Signals.lua:33,71–73` содержит защитные сигналы. Полной проверенной связи mechanic → конкретный breaker в этих местах нет.
+6. **RotationGuide:** `RotationGuide/Data/Mage.lua:71–75` содержит Ice Block, `RotationGuide/Data/Paladin.lua:64` — Divine Shield, но наличие в ротации не подтверждает применимость при конкретном CC. Универсального селектора в просмотренных 20 Lua-файлах не найдено.
+7. **RotationMaster:** `RotationMaster/Conditions/combat.lua:311–343,409–443` — условия `LOC_TYPE` и `LOC_BLOCKED`; `RotationMaster/Platform/loss_of_control.lua:11–85` — capability/secret-safe LoC observation. Использовать как основу условий и безопасного чтения, но breaker catalog и решение о пригодности нужно добавлять отдельно.
+
+#### Выбранный путь Kord
+
+Расширить CC-01 **единым `ControlBreakSelection`** (политика, а не второй движок и не второй LoC scanner) и проверенным `CCBreakerCatalog`. Каталог строить по Forever-specific mechanic/effect data из JustAC с `mechanicID/locType`, `spellID`, `itemID`, `effectKind`, `canUseWhileControlled`, `class/race/spec/level`, `target/self`, `source/verified`; не копировать автоматически все retail ID. Для предметов пользоваться IT-01–IT-04, IT-11–IT-14 (количество, экипировка, cooldown, shared cooldown, выбор игрока, разрешённость в бою), для заклинаний — SP-01/SP-14 и CC-01 per-spell lockout. Не использовать один `IsUsableSpell=false` как доказательство, что breaker невозможен, но и не повышать сомнительный кандидат до READY.
+
+Сначала получить текущие эффекты CC-01 и их типы. Для каждого подтверждённого активного эффекта отобрать **снимающие текущий контроль** кандидаты, проверить известность/наличие, ресурсы, кулдауны, ограничения школы/контроля, цели и подтверждённую возможность использовать **именно под текущим CC**. При нескольких эффектах учитывать coverage и оставшиеся запреты после одного применения. Сохранить пользовательский приоритет/экономию PvP trinket и редких предметов; не рекомендовать дорогой breaker при кратком оставшемся CC без учёта настраиваемого `minimumRemainingSeconds`, если время достоверно. Не угадывать время при secret. В спорных случаях `UNKNOWN` с reason, а не ложный READY.
+
+EventBus инвалидирует по подтверждённым Forever `LOSS_OF_CONTROL_*`, cooldown, equipment, bag, spellbook, talent/race/spec и config revisions; lazy `Needs.controlBreakers`, per-evaluation memo, bounded budget. Диагностика DevTools: active mechanics, candidate list, effect kind, usable-under-control, cooldown/item reason, final selection, unknown source, no secret coercion. Не рекомендовать предметы, которые дают лишь **иммунитет перед контролем**, как способ разорвать уже наложенный stun/fear.
+
+#### Требуемые изменения
+
+1. Завершить CC-01 typed LoC observation и capability-probed Forever API; использовать один общий источник активных эффектов.
+2. Ввести `CCBreakerCatalog` с Forever-specific mechanic/effect mappings и разделением снятия действующего контроля, профилактической иммунности, dispel союзника и escape root/snare.
+3. Ввести `ControlBreakSelection` с фильтрацией по активным эффектам, классу/расе/спеку, известности, предмету, кулдауну, ресурсу, типу цели, school lockout и возможностью применения под CC.
+4. Подключить общий `AbilityEligibility` и IT-01–IT-04/IT-11–IT-14, без отдельного item scanner, второго cooldown engine и автоприменения.
+5. Добавить пользовательские настройки приоритета и экономии PvP trinket/редких расходников, минимального остатка контроля для расхода, явные значения по умолчанию.
+6. Добавить в `RotationConditions` `player.hasBreakableControl`, `player.breakerAvailable`, `Needs.controlBreakers` и EventBus revisions только по подтверждённым событиям.
+7. Добавить DevTools-only reasons: `breaker_not_known`, `breaker_item_missing`, `breaker_on_cooldown`, `breaker_wrong_mechanic`, `breaker_prevention_only`, `breaker_cannot_use_while_controlled`, `breaker_school_locked`, `breaker_unknown`, `breaker_ready`.
+8. Тесты: stun/fear/root/snare/silence/incapacitate/charm/polymorph, school interrupt, 2 одновременных CC, racials, class breaker, PvP trinket equipped/unequipped/on cooldown, расходуемый предмет, иммунитет-only, мгновенный/почти закончившийся CC, secret/nil, config conserve, смена экипировки/класса, отсутствие ложного READY и protected use.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** Базовые usability и cooldown checks существуют, но подтверждённого mechanic-aware подбора освобождающей способности/предмета нет.
+
+**Архитектурные ссылки:** CC-01, SP-01, SP-14, IT-01–IT-04, IT-11–IT-14. Обратная ссылка на CC-02 внесена в CC-01 в этом коммите; для прочих общих модулей связь зафиксирована здесь, без создания дублирующих провайдеров.
 
 **Изменения Lua:** отсутствуют. Только документация.
