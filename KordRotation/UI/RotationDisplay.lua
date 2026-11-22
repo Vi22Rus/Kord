@@ -347,10 +347,21 @@ function KR.RotationDisplay:Refresh(skipLayout)
             slot:ClearDisplayData()
         end
     else
-        local result
-        if p.showPanel and KR.RotationEngine and KR.RotationEngine.Evaluate then
-            local ok,read=pcall(KR.RotationEngine.Evaluate,KR.RotationEngine)
-            if ok and type(read)=="table" then result=read end
+        local result,sharedDefensive
+        if p.showPanel and KR.RotationEngine then
+            local engine=KR.RotationEngine
+            if type(engine.EvaluateBoth)=="function" then
+                local ok,main,defensive=pcall(engine.EvaluateBoth,engine)
+                if ok then
+                    if type(main)=="table" then result=main end
+                    if type(defensive)=="table" then
+                        sharedDefensive=defensive
+                    end
+                end
+            elseif type(engine.Evaluate)=="function" then
+                local ok,read=pcall(engine.Evaluate,engine)
+                if ok and type(read)=="table" then result=read end
+            end
         end
         -- Even the shape of an addon/plugin supplied record may be protected.
         -- No bad payload can escape the UI refresh path.
@@ -399,12 +410,14 @@ function KR.RotationDisplay:Refresh(skipLayout)
         if defenseEnabled and (not defensiveOnlyCombat or combat==true)
             and KR.RotationEngine
             and type(KR.RotationEngine.EvaluateDefensive)=="function" then
-            local ok,defResult=pcall(KR.RotationEngine.EvaluateDefensive,
-                KR.RotationEngine)
-            if ok then
-                local checked,record=pcall(verifiedRecommendation,defResult)
-                if checked then defensiveItem=record end
+            local defResult=sharedDefensive
+            if not defResult then
+                local ok,read=pcall(KR.RotationEngine.EvaluateDefensive,
+                    KR.RotationEngine)
+                if ok then defResult=read end
             end
+            local checked,record=pcall(verifiedRecommendation,defResult)
+            if checked then defensiveItem=record end
         end
         local mainID=item and item.spellID
         if defensiveItem and defensiveItem.spellID==mainID then
