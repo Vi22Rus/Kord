@@ -276,3 +276,13 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 | In-session retention evicts segments | `evicted_parts>0` explicit; never claim complete archive when limited | SOURCE IMPLEMENTED; MOCK/CLIENT NOT RUN |
 | Full 101 scenarios successfully executed in WoW | Must establish runtime scenarios individually; presence census does not prove this | NOT PROVEN / CLIENT NOT RUN |
 
+
+## DevTools paged export regression (2026-11-22)
+
+| Scenario | Expected | Result |
+|---|---|---|
+| 32-KiB text export exceeded | `page=1/M`; further Export clicks return all remaining pages in order | SOURCE IMPLEMENTED; MOCK NOT RUN |
+| Repeated export after Stop | no duplicates, every retained `sequence` exactly once across pages | SOURCE IMPLEMENTED; MOCK NOT RUN |
+| Diagnostic source records within 12 retained segments | `dropped=0`, `evicted_parts=0`, `truncated=1` means page 1 of multi-page journal, not lost entries | SOURCE IMPLEMENTED; CLIENT NOT RETESTED |
+| SavedVariables actually evicted older segments | `evicted_parts>0`; missing records cannot be reconstructed via export pagination | SOURCE IMPLEMENTED; CLIENT NOT RETESTED |
+
