@@ -1,3 +1,11 @@
+## 2026-11-22 — Production routing by the rotation's recommended action type
+
+- Removed all spell-name/ID-dependent routing from the **runtime engine**. A single `RotationProfiles:RecommendationKind(rule,effectiveCategory)` method classifies each actual profile rule's action generically as `buff`, `aura`, `aspect`, `stance`, `form`, `potion`, `consumable`, `debuff`, `utility`, or `spell`.
+- Existing `buffs` category recommendations for non-enemy targets are automatically recognized as maintenance effects without individually annotating every rule; a rule's explicit semantic type can override this inference. Consumables, hostile debuffs and utility actions are not silently treated as aura upkeep.
+- `RotationEngine` uses this shared classification and existing live recommendation eligibility to route any valid maintenance recommendation to Defensive outside combat, or according to the global toggle in combat. The active profile continues to choose what to recommend; the router never makes that choice based on a spell name.
+- Corrected routing to use the **effective category after per-spell category preferences**, so classification and category enablement cannot disagree.
+- Updated the existing regression mock to exercise the same production classifier rather than adding a separate fake rotation. **In-game outcome is still awaiting verification.**
+
 ## 2026-11-22 — Universal category-driven routing for recommended buffs/aspects/auras/stances
 
 - Removed the explicit Hunter-name whitelist from the BM profile. **The display/engine never recognizes specific names or SpellIDs** as eligibility for the Defensive lane.
