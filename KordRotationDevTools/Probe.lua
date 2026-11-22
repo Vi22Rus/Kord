@@ -110,6 +110,75 @@ function D:InventoryDiagnostic(kind,id)
     return {status=status,code=code}
 end
 
+
+-- IT-02: user-initiated, aggregate-only evidence collection for Forever.
+-- No persistent itemIDs, names, raw API results or automated polling.
+function D:SharedCooldownDiagnostic()
+    local fallback={status="UNKNOWN",code="item_cd_group_partial",
+        itemConfidence="UNKNOWN",lockoutConfidence="UNKNOWN",
+        readyConfidence="UNKNOWN",useCorrelation="UNKNOWN",
+        propagation="UNKNOWN"}
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table" or type(bridge.SharedCooldownDiagnostic)~="function" then
+        return fallback
+    end
+    local ok,record=pcall(bridge.SharedCooldownDiagnostic)
+    if not ok or type(record)~="table" or not self:Safe(record) then
+        return fallback
+    end
+    local valid,clean=pcall(function()
+        local allowed={item_cd_group_partial=true,
+            item_cd_group_estimated=true,item_cd_group_conflict=true}
+        local conf={UNKNOWN=true,CONFIRMED=true,ESTIMATED=true}
+        local propagation={UNKNOWN=true,ALIGNED_CANDIDATES=true,
+            SINGLE_CANDIDATE=true,MIXED_CANDIDATES=true}
+        local function number(v)
+            return self:Safe(v) and type(v)=="number"
+                and v==math.floor(v) and v>=0 and v<=32
+        end
+        if record.status~="UNKNOWN" or not self:Safe(record.code)
+            or not allowed[record.code] or not self:Safe(record.itemConfidence)
+            or not conf[record.itemConfidence] or not self:Safe(record.lockoutConfidence)
+            or not conf[record.lockoutConfidence]
+            or record.lockoutConfidence=="CONFIRMED"
+            or not self:Safe(record.readyConfidence)
+            or record.readyConfidence~="UNKNOWN"
+            or not self:Safe(record.useCorrelation)
+            or (record.useCorrelation~="UNKNOWN"
+                and record.useCorrelation~="ESTIMATED")
+            or not self:Safe(record.propagation)
+            or not propagation[record.propagation] then return nil end
+        local values={"candidates","active","inactive","unknown"}
+        local any=record.candidates~=nil
+        if any then
+            for _,name in ipairs(values) do
+                if not number(record[name]) then return nil end
+            end
+            if record.candidates<1
+                or record.active+record.inactive+record.unknown
+                    ~=record.candidates then return nil end
+        end
+        if record.lockoutConfidence=="ESTIMATED"
+            and (record.useCorrelation~="ESTIMATED"
+                or record.propagation~="ALIGNED_CANDIDATES"
+                or record.code~="item_cd_group_estimated") then return nil end
+        local out={status="UNKNOWN",code=record.code,
+            itemConfidence=record.itemConfidence,
+            lockoutConfidence=record.lockoutConfidence,
+            readyConfidence="UNKNOWN",useCorrelation=record.useCorrelation,
+            propagation=record.propagation}
+        if any then
+            for _,name in ipairs(values) do out[name]=record[name] end
+        end
+        return out
+    end)
+    if not valid or not clean then return fallback end
+    if self.active and type(self.RecordItemCooldownDiagnostic)=="function" then
+        self:RecordItemCooldownDiagnostic(clean.code)
+    end
+    return clean
+end
+
 -- Manual, bounded diagnostic report. No game-state mutation, cast, or
 -- uncontrolled logging. Main addon exposes only sanitized read-only data.
 function D:Why()

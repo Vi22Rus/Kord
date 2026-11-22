@@ -1,3 +1,11 @@
+## KR-20261122-114 — IT-02/2.6+2.9: manual DevTools shared cooldown evidence probe
+- Дата/время: 2026-11-22 UTC (точное время Git commit). SHA по `git log --grep KR-20261122-114`. IT-02 P0, 2.6/2.9, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: есть bounded individual/member evidence, но не было manual client-facing агрегированного вывода для проверки реальной shared cooldown семантики Forever. Без клиентского доказательства group ACTIVE/READY нельзя повышать из UNKNOWN. Причина: отсутствие DevTools-only manual bridge к существующему evidence reader, не подтверждённый игровой баг.
+- Изменения: `KordRotation/Core/CoreObservation.lua` добавляет sanitized read-only `SharedCooldownDiagnostic`, без itemID, raw API objects, group remaining/READY; `KordRotationDevTools/Probe.lua` валидирует bounded scalar enum/счётчики; `UI.lua` добавляет ручную команду `/krdev cooldown`. Журнал только при явной записи, фиксированные диагностические reasons. Нет второго движка и фоновых сканеров.
+- Тесты: новый `tests/shared_cooldown_devtools_mock.lua` для aligned/secret/mixed/exception и запрета передачи itemIDs. PASS: структурная проверка исходников, атомарная Git транзакция. NOT RUN: Lua 5.1/mock/full regression (среда без исполняемого Lua 5.1), GitHub Actions (manual-only), WoW Forever (client unavailable).
+- Для итогового тестирования: вручную `/krdev cooldown` до/после применения health и mana potion, после zone/death, на разных ranks, с отсутствующим member; фиксировать три confidence и counts, не считать диагностический ESTIMATED доказанным group READY.
+- Требования и план обновлены в том же коммите. Риск: actual group semantics клиента не доказана, подтверждённые group active/ready/remaining остаются UNKNOWN. Связи KR-20261122-102–113, IT-02/2.6/2.9.
+
 ## KR-20261122-113 — IT-02/2.6+2.7: expire item-use correlation on zone/death boundaries
 - Дата: 2026-11-22 UTC (время Git commit); SHA: `git log --grep KR-20261122-113`. ID IT-02 P0, этап 2/2.6, 2.7. Тип fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: `EventBus` инвалидировал item cooldown на `ZONE_CHANGED`, но оставлял последнюю оценку item-use в памяти. На `PLAYER_DEAD` наблюдение не очищалось и item cooldown revision не повышалась. Это source-level defect, не подтверждённый баг WoW Forever.

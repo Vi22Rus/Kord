@@ -139,6 +139,26 @@ function D:CreateUI()
             end
             return
         end
+        if message=="cooldown" and type(D.SharedCooldownDiagnostic)=="function" then
+            local result=D:SharedCooldownDiagnostic()
+            if D.ui and D.ui.report then
+                local counts=result.candidates and (tostring(result.active)
+                    .."/"..tostring(result.inactive).."/"
+                    ..tostring(result.unknown)) or "UNKNOWN"
+                D.ui.report:SetText("POTION_SHARED: "..result.status
+                    .." / "..result.code
+                    .."\nItem / Lockout / Ready: "..result.itemConfidence
+                    .." / "..result.lockoutConfidence
+                    .." / "..result.readyConfidence
+                    .."\nUse / propagation: "..result.useCorrelation
+                    .." / "..result.propagation
+                    .."\nKnown active / inactive / unknown: "..counts
+                    .."\nDiagnostic only: not proof of shared READY")
+                D.ui.frame:Show()
+                D:RefreshUI()
+            end
+            return
+        end
         if message=="why" then
             if D.ui and D.ui.report and type(D.Why)=="function" then
                 local ok,report=pcall(D.Why,D)

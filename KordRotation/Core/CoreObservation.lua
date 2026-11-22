@@ -540,6 +540,60 @@ function O:ReadInventoryDiagnostic(kind,id)
     return {status="UNKNOWN",code=diagnostic}
 end
 
+
+-- IT-02/2.6+2.9: explicit manual client evidence. Only scalar aggregate
+-- diagnostics pass this bridge; no itemID, player data or raw API object.
+function O:ReadSharedCooldownDiagnostic()
+    local fallback={status="UNKNOWN",code="item_cd_group_partial",
+        itemConfidence="UNKNOWN",lockoutConfidence="UNKNOWN",
+        readyConfidence="UNKNOWN",useCorrelation="UNKNOWN",
+        propagation="UNKNOWN"}
+    local state=KR.GameState
+    if not state or type(state.ReadSharedItemCooldownMemberEvidence)~="function" then
+        return fallback
+    end
+    local ok,record=pcall(state.ReadSharedItemCooldownMemberEvidence,
+        state,"POTION_SHARED")
+    if not ok or type(record)~="table" or not safe(record) then
+        return fallback
+    end
+    local candidate=field(record,"candidateCount")
+    local active=field(record,"knownActiveCount")
+    local inactive=field(record,"knownInactiveCount")
+    local unknown=field(record,"unknownCount")
+    local function bounded(v)
+        return nonnegativeInt(v) and v<=32
+    end
+    if not bounded(candidate) or candidate<1 or not bounded(active)
+        or not bounded(inactive) or not bounded(unknown)
+        or active+inactive+unknown~=candidate
+        or field(record,"status")~="UNKNOWN"
+        or field(record,"groupStatus")~="UNKNOWN" then return fallback end
+    local item=field(record,"itemCooldownConfidence")
+    local lockout=field(record,"groupLockoutConfidence")
+    local ready=field(record,"groupReadyConfidence")
+    local use=field(record,"useCorrelation")
+    local propagation=field(record,"propagationEvidence")
+    if (item~="CONFIRMED" and item~="UNKNOWN")
+        or (lockout~="ESTIMATED" and lockout~="UNKNOWN")
+        or ready~="UNKNOWN"
+        or (use~="ESTIMATED" and use~="UNKNOWN")
+        or (propagation~="ALIGNED_CANDIDATES"
+            and propagation~="MIXED_CANDIDATES"
+            and propagation~="SINGLE_CANDIDATE"
+            and propagation~="UNKNOWN")
+        or (lockout=="ESTIMATED" and (use~="ESTIMATED"
+            or propagation~="ALIGNED_CANDIDATES")) then return fallback end
+    local code=lockout=="ESTIMATED" and "item_cd_group_estimated"
+        or propagation=="MIXED_CANDIDATES" and "item_cd_group_conflict"
+        or "item_cd_group_partial"
+    return {status="UNKNOWN",code=code,
+        itemConfidence=item,lockoutConfidence=lockout,
+        readyConfidence="UNKNOWN",useCorrelation=use,
+        propagation=propagation,candidates=candidate,
+        active=active,inactive=inactive,unknown=unknown}
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
@@ -577,6 +631,11 @@ _G.KordRotationCoreObservation = {
     InventoryDiagnostic=function(_,kind,id)
         local ok,result=pcall(O.ReadInventoryDiagnostic,O,kind,id)
         if not ok then return {status="UNKNOWN",code="item_count_unknown"} end
+        return result
+    end,
+    SharedCooldownDiagnostic=function()
+        local ok,result=pcall(O.ReadSharedCooldownDiagnostic,O)
+        if not ok then return {status="UNKNOWN",code="item_cd_group_partial"} end
         return result
     end,
     BeginAPITrace=function()
