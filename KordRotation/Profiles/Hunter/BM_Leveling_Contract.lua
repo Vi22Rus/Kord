@@ -488,7 +488,7 @@ function M:Register()
      testID="BM_LEVELING_DIAG_"..rule.id}
   end
  end
- return KR.RotationProfiles:Replace("HUNTER",1,{
+ local ok,why=KR.RotationProfiles:Replace("HUNTER",1,{
   contractVersion=1,id="HUNTER_BM_LEVELING_PVE",version="2.3.0-contract1",
   classToken="HUNTER",specIndex=1,levelMin=1,levelMax=59,
   status="experimental",Spells=spells,Rules=rules,
@@ -497,6 +497,10 @@ function M:Register()
       enemyCount=true,ttd=true,swing=true},
   Config=cfgTable(false),SkipExceptions=skips
  })
+ if not ok then return false,why end
+ local success,reason=self:Register60()
+ if not success then return false,reason end
+ return true,"HUNTER_BM_LEVELING_PVE"
 end
 function M:Register60()
  if not KR.RotationProfiles or not KR.RotationProfiles.Replace then
