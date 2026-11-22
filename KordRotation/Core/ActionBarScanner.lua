@@ -203,7 +203,13 @@ function S:ReadNow()
     local entries,private={},{}
     if candidates then
         for _,candidate in ipairs(candidates) do
-            local found=inspect(candidate.button,candidate.source)
+            local found,why=inspect(candidate.button,candidate.source)
+            if KR.GameAPI and type(KR.GameAPI.ObserveDiagnostic)=="function" then
+                KR.GameAPI:ObserveDiagnostic(
+                    "GameAPI.ActionBarScanner.inspect",
+                    found and "READY" or "UNKNOWN",
+                    found and "none" or why or "reason_unavailable")
+            end
             if found then
                 private[#private+1]=found
                 entries[#entries+1]=shallowCopy(found)
@@ -303,6 +309,10 @@ function S:FindSpell(id)
         end
     end
     if selected then
+        if KR.GameAPI and type(KR.GameAPI.ObserveDiagnostic)=="function" then
+            KR.GameAPI:ObserveDiagnostic(
+                "GameAPI.ActionBarScanner.findspell","READY","none")
+        end
         -- Do not force a full rescan solely because a SECOND duplicate button
         -- was stale. A verified button is enough; normal TTL/revisions still
         -- refresh the complete set.
@@ -382,9 +392,14 @@ function S:FindSpell(id)
             end
         end
     end
-    return {status="UNKNOWN",
-        reason=candidates>0 and (failureReason or "button_revalidation_unknown")
-            or (mismatch and "visible_spell_rank_mismatch"
-                or "spell_not_confirmed_on_visible_bar")}
+    local reason=candidates>0 and
+        (failureReason or "button_revalidation_unknown")
+        or (mismatch and "visible_spell_rank_mismatch"
+            or "spell_not_confirmed_on_visible_bar")
+    if KR.GameAPI and type(KR.GameAPI.ObserveDiagnostic)=="function" then
+        KR.GameAPI:ObserveDiagnostic(
+            "GameAPI.ActionBarScanner.findspell","UNKNOWN",reason)
+    end
+    return {status="UNKNOWN",reason=reason}
 end
 -- Copyright notice: see root LICENSE.
