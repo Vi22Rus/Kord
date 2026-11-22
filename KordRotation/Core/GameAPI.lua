@@ -295,6 +295,7 @@ end
 function API:BeginDiagnosticTrace()
     self.traceActive=true
     self.traceEntries={}
+    self.traceIndex={}
     self.traceCount=0
     self.traceOverflow=0
     return true
@@ -302,6 +303,7 @@ end
 function API:EndDiagnosticTrace()
     self.traceActive=false
     self.traceEntries=nil
+    self.traceIndex=nil
     self.traceCount=nil
     self.traceOverflow=nil
     return true
@@ -334,9 +336,11 @@ local function observe(self,name,result)
     if status=="READY" then why="none" end
     local entries=self.traceEntries
     if type(entries)~="table" then return end
-    for _,entry in ipairs(entries) do
-        if entry.method==method and entry.status==status
-            and entry.reason==why then
+    local key=method.."|"..status.."|"..why
+    local index=self.traceIndex and self.traceIndex[key]
+    if index then
+        local entry=entries[index]
+        if entry then
             entry.count=math.min(entry.count+1,1000000000)
             return
         end
@@ -346,6 +350,17 @@ local function observe(self,name,result)
         return
     end
     entries[#entries+1]={method=method,status=status,reason=why,count=1}
+    self.traceIndex=self.traceIndex or {}
+    self.traceIndex[key]=#entries
+end
+-- Fixed internal checkpoints for scanners that use frame methods
+-- outside the GameAPI getter allowlist. No raw frame or slot is logged.
+function API:ObserveDiagnostic(name,st,why)
+    if type(name)~="string" or
+       (name~="GameAPI.ActionBarScanner.inspect"
+       and name~="GameAPI.ActionBarScanner.findspell") then return end
+    if not traceStatuses[st] then st="UNKNOWN" end
+    observe(self,name,{status=st,reason=why})
 end
 for name in pairs(traceMethods) do
     local original=API[name]
