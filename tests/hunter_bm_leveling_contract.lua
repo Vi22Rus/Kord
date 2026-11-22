@@ -29,6 +29,7 @@ eq(p.Spells.Arcane,14283,"actual highest learned rank4 preferred")
 eq(p.levelMin,1,"start level1")
 eq(p.levelMax,59,"end level59")
 eq(#p.Config,22,"all original BM leveling settings preserved")
+eq(#KR.RotationProfiles:Get("HUNTER_TREE_1",60).Config,26,"BM60 has separate 26-option schema")
 eq(#p.Rules>25,true,"full strategic priority list present")
 eq(p.Rules[1].spell,"Feign","defensive opener")
 eq(p.Rules[2].spell,"AspectHawk","aspect next")
@@ -46,7 +47,7 @@ end
 eq(KR.RotationProfiles:Get("HUNTER_TREE_1",59).id,
  "HUNTER_BM_LEVELING_PVE","level59 selects leveling")
 eq(KR.RotationProfiles:Get("HUNTER_TREE_1",60).id,
- "HUNTER_BM_PILOT_EXPERIMENTAL","level60 does not select leveling")
+ "HUNTER_BM_60_PVE","level60 selects separate BM 60 module")
 local duplicates=0
 local seen={}
 for _,id in pairs(p.Spells) do
