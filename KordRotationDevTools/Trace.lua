@@ -153,6 +153,10 @@ function D:ObserveDetails(diagnosis,force,summary)
     end
     local diag=diagnosis or fetch("Diagnose")
     if diag then
+        add("CHECK",diag.decisiveStatus,"engine_decisive_priority",
+            diag.decisivePriority)
+        add("CHECK",diag.decisiveStatus,"engine_decisive_reason",
+            diag.decisiveReason)
         add("CHECK",diag.firstStatus,"priority_1_rule",diag.firstReason)
         add("CHECK",diag.arcaneR4Status,"arcane_rank_4_rule",
             diag.arcaneR4Reason)
