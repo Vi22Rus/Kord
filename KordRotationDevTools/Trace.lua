@@ -209,6 +209,10 @@ function D:ObserveDetails(diagnosis,force,summary)
                 if type(rule)=="table" and D:Safe(rule)
                     and rule.priority==index then
                     add("RULE",rule.status,"bm_rule_"..index,rule.reason)
+                    if rule.barReason~=nil then
+                        add("BAR",rule.status,"bm_bar_"..index,
+                            rule.barReason)
+                    end
                     local inputs=rule.signals
                     if type(inputs)=="table" and D:Safe(inputs)
                         and #inputs<=24 then
