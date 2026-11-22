@@ -11,7 +11,7 @@ local categories = {
 }
 local defaults = {
     enabled = false, allowUnverifiedProfiles = false, targetMode = "auto", cooldownsOnlyInCombat = true,
-    conserveResources = false, prebuffs = false,
+    conserveResources = false, prebuffs = false, buffsInCombatMain = true,
     categories = {
         damage = true, cooldowns = true, buffs = true, racial = false,
         trinkets = false, consumables = false, defensive = false,
@@ -100,6 +100,9 @@ function KR.RotationSettings:SetFlag(key, value)
         or type(value) ~= "boolean" then return false end
     profile[key] = value
     if KR.UpdateHomeStatus then KR:UpdateHomeStatus() end
+    if KR.RotationDisplay and KR.RotationDisplay.Refresh then
+        KR.RotationDisplay:Refresh(true)
+    end
     return true
 end
 
