@@ -233,8 +233,10 @@ function O:ReadFullAudit()
                     local inp=field(inputs,j)
                     local name=field(inp,"field")
                     if BM_SIGNALS[name] then
+                        local encoded=field(inp,"booleanValue")
                         item.signals[#item.signals+1]={
                             name=name,status=status(field(inp,"status")),
+                            booleanValue=(encoded==0 or encoded==1) and encoded or nil,
                             reason=reason(field(inp,"reason")) or "unknown"}
                     end
                 end
