@@ -6620,6 +6620,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение UI-01:** UI-01: UI получает только проверенный результат RotationEngine и не выполняет собственную оценку пригодности или прямые игровые сканы. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-02:** UI-02: только AbilityEligibility/RotationEngine выдаёт READY; UI glow и keybind не являются альтернативным решателем пригодности. Исторический аудит сохранён.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -7273,6 +7275,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-01:** UI-01: predicted next нельзя повторно использовать после изменения revision-vector; snapshot и cache для текущего READY и будущего PREDICTED имеют разную семантику. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-02:** UI-02: кеш button→spellID и binding labels должен учитывать actionbar/bindings/identity/talents revisions; защищённые или непроверенные кнопки не подсвечиваются. Исторический аудит сохранён.
+
 ### DA-03 — Провайдеры данных подключаются через список Needs; без разрешения профиль данные не получит
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7447,6 +7451,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-06:** DA-06: шторм событий не должен запускать непрерывные полные сканы аур/cooldowns; только demand-driven bounded reads. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-02:** UI-02: glow обновляется по изменению подтверждённой рекомендации и revision, без непрерывного полного сканирования кнопок. Исторический аудит сохранён.
+
 ### DA-06 — Защита от «шторма» событий (кулдаун, ауры)
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P1.**
@@ -7611,6 +7617,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-01:** UI-01: смена спека/уровня/actionbar/bindings немедленно очищает устаревшие иконки и клавиши; defensive не является next slot. Исторический аудит сохранён.
 
+**Ретроактивное уточнение UI-02:** UI-02: смена actionbar page/slot/override/bindings/спека немедленно инвалидирует кнопку подсветки и keybind; нельзя сохранять glow на прежней кнопке. Исторический аудит сохранён.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -7661,3 +7669,55 @@ Burst — отдельная типизированная настройка п�
 **Архитектурные ссылки:** EN-A9, EN-A2, DA-02, DA-08, RotationEngine, RotationDisplay, SpellIcon, AbilityEligibility. Ретроактивные уточнения добавлены в EN-A9, EN-A2, DA-02, DA-08.
 
 **Изменения Lua:** отсутствуют. Только аудит и документация.
+
+**Ретроактивное уточнение UI-02:** UI-02 использует только текущую подтверждённую queue[1] READY для подсветки реальной кнопки; queue[2] PREDICTED не может запускать glow как текущий action. Клавиша выводится из проверенного BindingResolver. Исторический аудит сохранён.
+
+### UI-02 — Подсветка кнопки на панели (если разрешено), показ клавиши привязки
+
+**Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
+
+#### Требование
+
+Для **текущего** подтверждённого `RotationEngine.queue[1]` со статусом `READY` (UI-01) отображать безопасно подтверждённую клавишу и, **только если API и защищённый режим клиента разрешают**, подсвечивать соответствующую **реальную видимую** кнопку панели. Логический контракт `ActionButtonPresentationObservation(spellID,actionType,actionID,profileID,actionbarRevision,bindingRevision,identityRevision)` выдаёт `buttonStatus=VERIFIED/UNBOUND/UNKNOWN/NOT_VISIBLE`, `buttonRef` только внутри UI runtime (не сохранять в SavedVariables), `bindingCommand`, `keybindLabel`, `bindingStatus`, `glowPermission=ALLOW/BLOCK/UNKNOWN`, `glowStatus=ACTIVE/INACTIVE/BLOCKED/UNKNOWN`, `reason/source/revisions`. Нельзя выводить клавишу из имени способности, фиксированного номера слота, старой страницы, неверного ранга или неподтверждённого макроса. Отсутствующая привязка `UNBOUND` отличается от `UNKNOWN`; не выдавать неверную клавишу. Не нажимать кнопку, не менять protected attributes/bindings и не обходить combat lockdown/secret. `PREDICTED` (UI-01/EN-A9) и независимый defensive канал не должны подсвечиваться как текущий main READY. При смене рекомендации/профиля/панели/привязок/видимости немедленно убрать прежний glow, даже если новый путь неизвестен. Подсветка — необязательный визуальный эффект: недоступность glow **не блокирует** саму проверенную рекомендацию, но скрывает неподтверждённую клавишу.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/ActionBarScanner.lua:2,6–22`: read-only discovery, лимиты `MAX_SLOT=180`, `MAX_BUTTONS=1200`, `TTL=0.6`; источники Blizzard, Bartender4, Dominos, EllesmereUI, ElvUI, LibActionButton. `:63–127` проверяет реальный action slot, видимость, `GetActionInfo`, spellID; `:267–323` `GetVerifiedButtons` revalidates live buttons; `:360–396` обрабатывает особые отображения/rank uncertainty.
+- `KordRotation/Core/BindingResolver.lua:2,6–15`: read-only resolver; `:68–113` проверяет command через button API/attribute с защитой secret; `:128–154` `GetBindingKey` и обратная проверка `GetBindingAction`; `:161–199` subscriptions и revision-aware cache; `:202–240` выбирает подтверждённую видимую кнопку, отличает `READY/UNBOUND/UNKNOWN`.
+- `KordRotation/Core/RotationEngine.lua:89–103,245–252`: запрашивает `BindingResolver:Resolve(spellID)`, передаёт `keybind` и `bindingSource` в единственный READY record; `queue[2]` не вычисляется.
+- `KordRotation/UI/RotationDisplay.lua:135–148`: подписки на actionbar/bindings/identity/talents и другие каналы; `:287–317` валидирует READY; `:414–422` передаёт `item.keybind` в основной слот, `:430–484` defensive отдельно.
+- `KordRotation/UI/SpellIcon.lua:27–28,58–77`: создаёт и отображает подпись клавиши; `:88–95` `highlightMain` меняет **рамку собственной иконки Kord**, а не подсвечивает кнопку на игровой actionbar; `:125–126` очищает данные.
+- **Пробел:** в проверенных модулях нет `ActionButtonGlow`/`ButtonGlow_Start/Stop` интеграции, независимого glow permission probe, lifecycle tracked highlighted button и запрета stale glow на page/visibility changes. Клавиша уже поддерживается, но полное покрытие всех кастомных панелей/макросов и protected-state в игре не доказано. Нельзя объявлять подсветку реальной кнопки реализованной из-за `highlightMain`.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/ActionSlots.lua:80` читает `GetBindingKey` через `Secret.Call/Plain`; `Sonah/UI/ActionBars.lua:379–390,507` учитывает Dominos/LAB и button-derived bindings; `Sonah/UI/Display.lua:172,257,1549` применяет `glowFrame` к собственной рамке. Перенять secret-safe binding и источники кнопок, **не** считать glow собственной иконки подтверждённой подсветкой игровой кнопки.
+2. **JustAC:** `JustAC/ActionBarScanner.lua:155,203,220,228–254` использует `GetBindingKey`, `button:GetAction()`, `button:GetBindingAction()`; `:66–102,379–415` содержит кэш и раздельную инвалидацию hotkeys. Перенять verified command и revision invalidation, но не копировать рискованный stale fast path или raw unverified key.
+3. **ForeverAuras:** `ForeverAuras/AuraEnvironment.lua:174–175,707–708` экспортирует `LibCustomGlow.ButtonGlow_Start/Stop` как glow API; `ForeverAuras/ForeverAuras.lua:4677–4702` создаёт attached `__WAGlowFrame` и запускает/останавливает glow. Перенять lifecycle start/stop поверх визуального overlay, не использовать чужую sandbox environment или protected mutations.
+4. **MaxDps:** `MaxDps/Buttons.lua:1345` `GlowNextSpell(spellId)`; `:1363–1371` читает button HotKey; `MaxDps/SpellFrame.lua:185–202,230–236` сопоставляет клавиши; `MaxDps/Core.lua:859` вызывает glow текущего spell. Перенять связь текущей рекомендации и кнопки; не копировать глобальное переопределение чужих glow функций (`Buttons.lua:153–172`).
+5. **ForeverRotation:** `ForeverRotation/Bars.lua:56–85` читает видимые button hotkeys, `:109,122` вызывает `LCG.ButtonGlow_Stop/Start`; `ForeverRotation/Display.lua:192,370,395` выводит клавиши. **Основной визуальный референс:** минимальный glow lifecycle и keybind; но периодическое полное сканирование Bars нельзя переносить вместо demand-driven ActionBarScanner.
+6. **RotationGuide:** в проверенных Lua нет подтверждённого `GetBindingKey`, `ButtonGlow_Start/Stop` или `GlowNextSpell`. Не утверждать, что во всём аддоне подсветка отсутствует; данный референс не даёт подтверждённой реализации UI-02.
+7. **RotationMaster:** `RotationMaster/buttons.lua:313,906` `CustomGlow.ButtonGlow_Start/Stop`, `:3543` `GlowNextSpell(spellId,itemId,hidden)`, `:3844–3866` настройка типа glow; `RotationMaster/main.lua:3726,4641` вызовы при рекомендациях. Перенять lifecycle, обработку смены action и optional item support, но не переносить большой buttons subsystem и глобальные overrides (`buttons.lua:1227–1265`).
+
+#### Выбранный путь Kord
+
+**Расширить существующие `ActionBarScanner`, `BindingResolver` и `RotationDisplay` единым лёгким UI glow-controller (логический контракт, не обязательный отдельный Lua-файл).** Единственный источник текущего действия — `RotationEngine.queue[1]` READY после AbilityEligibility; для кнопки повторно использовать `ActionBarScanner:GetVerifiedButtons(spellID)`, а для подписи — `BindingResolver:Resolve(spellID)`, без параллельного поиска кнопок/клавиш и без новых OnUpdate scans. Glow-controller хранит ссылку на **только ранее проверенную** кнопку и ID/ревизии; при изменении action/profile/revision/visibility останавливает прежний glow, затем (если разрешено) запускает новый. В качестве visual adapter использовать доступный и подтверждённый на WoW Forever `LibCustomGlow.ButtonGlow_Start/Stop` или эквивалентный read-only overlay, только после capability probe; не считать библиотеку обязательной и не модифицировать защищённые свойства кнопки. При combat/protected/secret неопределённости не запускать glow, диагностировать reason и оставить основную рекомендацию. Учитывать несколько кнопок с одним spellID: выбирать детерминированно одну verified visible, предпочтительно с доказанной binding, без подсветки скрытой/неактуальной страницы. Если предметы поддерживаются через AC-02 `actionType=ITEM`, проверять itemID отдельно и не подменять его use-spell ID; не объявлять item glow реализованным до item-aware scanner. Для defensive использовать независимую явную политику glow, по умолчанию не смешивать с main. Для `PREDICTED` glow запрещён. Параметры `glowEnabled`, style/color/intensity и `showKeybind` — типизированные настройки с безопасными defaults/миграцией DA-07; настройки рамки собственной иконки не являются glow игровой панели. Любая смена `actionbar/bindings/identity/talents/spellbook` и рекомендаций немедленно инвалидирует текущий glow; на следующем render — revalidate, без stale READY. Не выполнять protected click, `SetAttribute`, `SetBinding` или автоматическое использование способности.
+
+#### Требуемые изменения
+
+1. Определить `ActionButtonPresentationObservation` и UI glow lifecycle (`activeButton`, `activeSpellID`, `revisions`, `reason`); не сохранять frame refs в SavedVariables.
+2. Повторно использовать `ActionBarScanner:GetVerifiedButtons` и `BindingResolver:Resolve`, верифицировать видимость, action slot, spellID, ранг, macro/override/page и command; не создавать второй scanner.
+3. Проверить capability `LibCustomGlow.ButtonGlow_Start/Stop`/read-only overlay на Forever в бою и вне боя; при неизвестном разрешении fail-closed для glow, не для READY.
+4. Реализовать start/stop при смене текущего READY, страницы/спека/привязки/видимости/настроек, а также при UNKNOWN/BLOCKED; cleanup при disable/reload и отсутствии кнопки.
+5. Сохранить и дополнить показ `keybindLabel` с `READY/UNBOUND/UNKNOWN`, поддержать несколько клавиш/модификаторы при подтверждённых данных; неизвестную клавишу скрывать, не подменять старой.
+6. Подключить типизированные настройки `glowEnabled`, style/color/intensity и showKeybind к Settings/IndicatorSettings с DA-07 миграцией, без конфликта с `highlightMain`.
+7. DevTools reason codes: `glow_disabled`, `glow_api_unavailable`, `glow_protected`, `glow_button_unverified`, `glow_button_not_visible`, `glow_stale_revision`, `glow_start_failed`, `glow_stop_failed`, `binding_unbound`, `binding_unknown`, `binding_reverse_mismatch`, `binding_override_unverified`; логировать transitions без secret/frame refs.
+8. Тесты: verified spell+binding, no key, UNKNOWN key, duplicate buttons, different rank, macro, item action, paging/stance/vehicle/override, Bartender/Dominos/ElvUI/EllesmereUI/LAB, disabled glow, no glow API, combat lockdown, secret/protected, rapid spell changes, reentrant events, 1000 event storm, invalidation mid-evaluation, defensive vs main, predicted next, cleanup on hide/reload, Lua 5.1 и WoW Forever.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО (P1):** отображение клавиши и verified actionbar/binding lookup существуют; `SpellIcon.highlightMain` подсвечивает только собственную иконку. Подсветка реальной кнопки, lifecycle и capability проверка отсутствуют в проверенных модулях; end-to-end in-game совместимость не подтверждена.
+
+**Архитектурные ссылки:** UI-01, EN-A2, DA-02, DA-05, DA-07, DA-08, AC-02, ActionBarScanner, BindingResolver, RotationDisplay, SpellIcon. Обратные ссылки внесены в UI-01, DA-08, DA-05, DA-02, EN-A2.
+
+**Изменения Lua:** отсутствуют. Только документация.
