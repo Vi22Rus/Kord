@@ -1,3 +1,14 @@
+## 2026-11-22 — Runtime API/eligibility integration driven by Rotation Master reference
+
+- Reviewed reference runtime modules for auras, spell cooldowns, range applicability, secret-value gates, condition evaluation, revisions and plan lifetimes. Architecture mapping and remaining limitations: `docs/engine/RotationMaster_Runtime_Adoption.md`.
+- `GameAPI` now supports the read-only `C_Spell.SpellHasRange`; `AbilityEligibility` checks range applicability before numeric in-range status. A verified no-range spell is eligible without a range probe; unavailable/secret facts remain UNKNOWN.
+- Learned and usable spells no longer require an exact matching **visible action-bar button** to be recommended. The scanner remains responsible for keybind and rank mismatch diagnostics but cannot veto spell eligibility. No protected action execution added.
+- `RotationEngine:EvaluateBoth` shares one snapshot **and one cached condition context** for the two recommendation lanes, with protected-value-safe preparation.
+- `CoreObservation` and DevTools now report independent Defensive decisive conditions and confirmed boolean condition outcomes rather than only an ambiguous “READY = fact was readable.”
+- The shared semantic router excludes non-spell commands even when their category is buffs.
+- GitHub Actions Lua 5.1 regression workflow now automatically runs on relevant pushes; all checked-in Lua files are syntax checked and all existing v14 mock tests and ZIP packaging parity tests run. **Green run:** https://github.com/Vi22Rus/Kord/actions/runs/44996000545 (code commit `002e9166`). Live WoW Forever behavior still requires client verification.
+- This adopts and extends Kord's runtime based on observed reference patterns; **not** a claim that all Rotation Master modules or all profile conditions have been transplanted.
+
 ## 2026-11-22 — Production routing by the rotation's recommended action type
 
 - Removed all spell-name/ID-dependent routing from the **runtime engine**. A single `RotationProfiles:RecommendationKind(rule,effectiveCategory)` method classifies each actual profile rule's action generically as `buff`, `aura`, `aspect`, `stance`, `form`, `potion`, `consumable`, `debuff`, `utility`, or `spell`.
