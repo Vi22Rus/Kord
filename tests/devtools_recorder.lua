@@ -109,7 +109,17 @@ for _,why in ipairs({
 end
 eq(D:Record("CHECK","UNKNOWN","arcane_rank_4_rule",nil,nil,
  "unexpected_private_player_name"),true,"unknown detail does not break recording")
-eq(D.records[#D.records].detail,nil,"arbitrary details are never exported")
+eq(D.records[#D.records].detail,"diagnostic_detail_unmapped",
+ "unknown details are visibly rejected without exporting raw content")
+eq(D:Record("CHECK","UNKNOWN","brand_new_internal_reason"),true,
+ "unknown fixed code still records")
+eq(D.records[#D.records].reason,"diagnostic_code_unmapped",
+ "unknown fixed code cannot silently collapse to unknown")
+eq(D:Record("CHECK","UNKNOWN","PrivateName!"),true,
+ "untrusted reason still records a safe contract failure")
+eq(D.records[#D.records].reason,"diagnostic_code_invalid",
+ "untrusted reason is not copied into SavedVariables")
+
 eq(D:Record("CHECK","UNKNOWN","arcane_check_cast",nil,nil,"cast_unknown"),
  true,"cast check can be recorded")
 eq(D:Record("CHECK","UNKNOWN","arcane_check_range",nil,nil,"range_unavailable"),
