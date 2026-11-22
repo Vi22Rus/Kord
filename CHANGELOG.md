@@ -1,3 +1,11 @@
+## KR-20261122-070 — fix: validate manual inventory command and READY diagnostics
+- Дата: 2026-11-22 (точный timestamp по git log); этап IT-01/1.9, P0, тип fix. SHA определяется через `git log --grep KR-20261122-070`.
+- Контекст: статическое ревью KR-20261122-069 выявило две исходные ошибки: Lua patterns не поддерживают альтернативы `(item|family)`, поэтому /krdev inventory item/family не распознавался; CoreObservation мог отдать READY для неполного/mismatched record. Это подтверждено исходником, но игровое воспроизведение НЕ выполнялось.
+- Изменено: `KordRotationDevTools/UI.lua` — вместо недопустимой alternation используется `([a-z]+)` плюс явный allowlist item/family/bag. `KordRotation/Core/CoreObservation.lua` — READY требует совпадение itemID/familyID, полный неотрицательный integer count, bag complete и BAGS_ONLY; иначе UNKNOWN. Ни одна исходная игра/использование предметов не затронуты.
+- Проверки: PASS — статическая проверка Lua pattern и строгих guards; NOT RUN — Lua 5.1 mock/regression, CI (ручной), WoW Forever.
+- Для тестировщика: добавить позитивный /krdev inventory item/family и негативный mismatch/partial READY в итоговый QA; промежуточная установка не требуется.
+- Статус: PARTIALLY IMPLEMENTED, клиент NOT RUN; следующий IT-01/1.10. Связи KR-20261122-069, IT-01.
+
 ## KR-20261122-069 — IT-01/1.9: opt-in DevTools inventory diagnostics
 - Дата: 2026-11-22 UTC (точное время по Git), этап 1 / подшаг 1.9, IT-01 P0. Тип feat/test/docs. SHA определяется по `git log --grep KR-20261122-069`.
 - Контекст: требуется безопасно отличать UNKNOWN/secret/incomplete bag чтения и подтверждённый ноль без записи предметов, содержимого сумок или Protected WoW объектов. Это разработка контракта, не воспроизведённый игровой дефект; подтверждённая первопричина багов не установлена.

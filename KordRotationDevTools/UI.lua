@@ -121,10 +121,11 @@ function D:CreateUI()
     SlashCmdList["KORDROTATIONDEVTOOLS"]=function(message)
         message=type(message)=="string" and message:lower():match("^%s*(.-)%s*$") or ""
         -- Explicit manual item/family/bag diagnosis; no automatic polling.
-        local kind,identifier=message:match("^inventory%s+(item|family)%s+([%w_]+)$")
+        local kind,identifier=message:match("^inventory%s+([a-z]+)%s+([%w_]+)$")
         if not kind then
             if message=="inventory bag" then kind="bag" end
         end
+        if kind~="item" and kind~="family" and kind~="bag" then kind=nil end
         if kind and type(D.InventoryDiagnostic)=="function" then
             local item=identifier
             if kind=="item" then

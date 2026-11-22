@@ -511,14 +511,26 @@ function O:ReadInventoryDiagnostic(kind,id)
     local why=field(record,"reason")
     local scope=field(record,"inventoryScope")
     local count=field(record,"count")
-    if kind~="bag" and st=="READY" and scope~="BAGS_ONLY" then
-        return {status="UNKNOWN",code="item_count_scope_unverified"}
+    if st=="READY" then
+        if kind~="bag" and scope~="BAGS_ONLY" then
+            return {status="UNKNOWN",code="item_count_scope_unverified"}
+        end
+        if kind=="item" or kind=="family" then
+            local identity=field(record,kind=="item" and "itemID" or "familyID")
+            if identity~=id or type(count)~="number" or count~=count
+                or count<0 or count==math.huge or count~=math.floor(count) then
+                return {status="UNKNOWN",code=kind=="family"
+                    and "item_family_unknown" or "item_count_unknown"}
+            end
+        elseif kind=="bag" and (field(record,"complete")~=true
+            or scope~="BAGS_ONLY") then
+            return {status="UNKNOWN",code="item_bag_scan_incomplete"}
+        end
+        if kind=="item" and count==0 then
+            return {status="READY",code="item_count_zero_confirmed"}
+        end
+        return {status="READY",code="none"}
     end
-    if kind=="item" and st=="READY" and scope=="BAGS_ONLY"
-        and type(count)=="number" and count==0 then
-        return {status="READY",code="item_count_zero_confirmed"}
-    end
-    if st=="READY" then return {status="READY",code="none"} end
     local diagnostic=inventoryWhy[why]
     if not diagnostic or not inventoryCodes[diagnostic] then
         diagnostic=kind=="family" and "item_family_unknown"
