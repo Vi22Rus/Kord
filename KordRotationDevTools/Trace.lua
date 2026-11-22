@@ -328,9 +328,23 @@ function D:ObserveDetails(diagnosis,force,summary)
                                 and type(signal.name)=="string" then
                                 local slug=signal.name:lower():gsub(
                                     "[^a-z0-9]","_")
-                                add("SIGNAL",signal.status,
+                                -- A READY read used to conceal whether a
+                                -- confirmed predicate was true or false.
+                                -- Preserve UNKNOWN for secrets; label only
+                                -- explicitly validated public 1/0 evidence.
+                                local factStatus=signal.status
+                                local factReason=signal.reason
+                                if factStatus=="READY"
+                                    and signal.booleanValue==0 then
+                                    factStatus="BLOCKED"
+                                    factReason="fact_false"
+                                elseif factStatus=="READY"
+                                    and signal.booleanValue==1 then
+                                    factReason="fact_true"
+                                end
+                                add("SIGNAL",factStatus,
                                     "bm_signal_"..index.."_"..slug,
-                                    signal.reason)
+                                    factReason)
                             end
                         end
                     end
