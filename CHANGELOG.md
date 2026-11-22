@@ -1,3 +1,21 @@
+## KR-20261122-046 — IT-01/1.5: fail-closed family count over unique item IDs
+- Дата: 2026-11-22 UTC (точный timestamp по Git). Коммит по `git log --grep KR-20261122-046`. IT-01 этап 1 шаг 1.5, P0, InventoryObservation/ItemFamilyCatalog. Тип feature/test.
+### Контекст и причина
+- Ожидалось: семейству назначать подтверждённый count только по всем ID; один UNKNOWN -> UNKNOWN с optional knownMinimum. До изменения `ReadInventoryFamilyObservation` возвращал заглушку `item_family_catalog_unverified`, несмотря на каталог из KR-20261122-045.
+- Первопричина по исходнику: каталог и scalar reader существовали раздельно, их связка ещё не реализована. Игровой баг не утверждается; входное состояние GameState синтетическое до проверки на Forever.
+### Изменено
+- `KordRotation/Core/GameState.lua`: `ReadInventoryFamilyObservation` возвращает уникальные идентификаторы из общего каталога, по одному защищённому scalar read на ID, достоверный полный count либо UNKNOWN; при частичных чтениях возвращается только `knownMinimum`, не полный count. Проверка каталожной ревизии до/после обхода, обработка отсутствующего/изменившегося каталога. Не использует другой сканер, не вызывает защищённых команд.
+- `tests/inventory_family_count_mock.lua`: новые mock-кейсы полного, нулевого, частичного, ошибочного чтения, межсемейного overlap и смены ревизии. Обновлены REQUIREMENTS.md, поэтапный план и CHANGELOG.md.
+- Основания: IT-01 и предыдущий KR-20261122-045, исторические ссылки RotationMaster item_conditions/item_sets. Реальная WoW Forever проверка API не заявлена.
+### Проверки
+- PASS: статическая проверка реализации по тексту, отсутствие второго сканера, сверка вставок в требование/план и создание mock-сценария.
+- NOT RUN: Lua 5.1 runtime и mock suite (в текущем GitHub-инструментальном контексте не выполнялись), Github Actions (ручные перед общим QA), WoW Forever.
+### Выдано тестировщику
+- Новый сценарий в накопительный IT-01 QA: 0/1/N family items, overlapping catalog, partial secret/nil, catalogue revision changes. Промежуточная установка не требуется.
+### Фактический результат и следующие действия
+- Статус SOURCE IMPLEMENTED / AWAITING IN-GAME QA; `bagRevision` и устойчивая snapshot-консистентность остаются на 1.6, весь IT-01 ещё не TESTED.
+- Связи KR-20261122-043/044/045, IT-02–IT-14, AC-02, SP-14, PE-04, PE-05, GR-05, SW-04.
+
 ## KR-20261122-045 — IT-01/1.4: versioned source-backed ItemFamilyCatalog
 - Дата: 2026-11-22 (UTC, точное время Git commit). Коммит: `git log --grep KR-20261122-045`; полный SHA сообщается после записи. IT-01 / 1.4, P0, InventoryObservation / ItemFamilyCatalog.
 - Тип: feat + test. Причина: после C_Item reader (KR-20261122-043) и bag snapshot (KR-20261122-044) отсутствовал единый функциональный каталог предметов с версионированием и дедупликацией.

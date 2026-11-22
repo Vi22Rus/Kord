@@ -917,14 +917,101 @@ function S:ReadInventoryBagSnapshot()
     return result
 end
 
+-- IT-01/1.5: one functional family -> one set of distinct itemID reads.
+-- No independent bag scanner, no bank/equipped item counts, no item-use gate.
+-- Results represent a bounded sequence of reads: atomic inventory revision
+-- checks are deferred to IT-01/1.6, never claimed by this observation.
 function S:ReadInventoryFamilyObservation(familyID)
     local result=inventoryObservation("item_family_catalog_unverified")
     result.source="GameState.InventoryFamilyObservation"
-    if inventorySafeID(familyID,"family") then
-        result.familyID=familyID
-    else
+    if not inventorySafeID(familyID,"family") then
         result.reason="item_family_id_unverified"
+        return result
     end
+    result.familyID=familyID
+    local catalog=KR.ItemFamilyCatalog
+    if not catalog or type(catalog.GetFamily)~="function"
+        or type(catalog.GetRevision)~="function" then
+        result.reason="item_family_catalog_unavailable"
+        return result
+    end
+    local ok,entry=pcall(catalog.GetFamily,catalog,familyID)
+    if not ok or type(entry)~="table" then
+        result.reason="item_family_catalog_unavailable"
+        return result
+    end
+    if entry.status~="READY" then
+        result.reason=entry.reason or "item_family_unknown"
+        return result
+    end
+    local ids=entry.itemIDs
+    if type(ids)~="table" or #ids<1 or #ids>256
+        or not inventorySafeID(entry.familyID,"family")
+        or entry.familyID~=familyID then
+        result.reason="item_family_catalog_invalid"
+        return result
+    end
+    local revisionOK,revision=pcall(catalog.GetRevision,catalog)
+    if not revisionOK or not finite(revision,1)
+        or revision~=math.floor(revision) or revision~=entry.revision then
+        result.reason="item_catalog_revision_changed"
+        return result
+    end
+    result.catalogRevision=revision
+
+    local distinct,seen={},{}
+    for index=1,#ids do
+        local id=ids[index]
+        if not inventorySafeID(id,"item") then
+            result.reason="item_family_catalog_invalid"
+            return result
+        end
+        if not seen[id] then
+            seen[id]=true
+            distinct[#distinct+1]=id
+        end
+    end
+    -- The family members are independently reported even when count is
+    -- incomplete; there is never a fabricated zero for a missing reader.
+    result.knownItemIDs=distinct
+    local knownCounts={}
+    local subtotal,known,unknown=0,0,0
+    for _,itemID in ipairs(distinct) do
+        local readOK,item=pcall(self.ReadInventoryItemObservation,self,itemID)
+        local valid=readOK and type(item)=="table"
+            and item.status=="READY" and item.itemID==itemID
+            and item.inventoryScope=="BAGS_ONLY"
+            and finite(item.count,0) and item.count==math.floor(item.count)
+        if valid then
+            if not finite(subtotal+item.count,0) then
+                result.reason="item_family_count_overflow"
+                return result
+            end
+            knownCounts[itemID]=item.count
+            subtotal=subtotal+item.count
+            known=known+1
+        else
+            unknown=unknown+1
+        end
+    end
+    local stable,newRevision=pcall(catalog.GetRevision,catalog)
+    if not stable or newRevision~=revision then
+        result.reason="item_catalog_revision_changed"
+        return result
+    end
+    result.countsByID=knownCounts
+    result.knownComponents=known
+    result.unknownComponents=unknown
+    if unknown>0 then
+        result.reason="item_family_partial"
+        if known>0 then result.knownMinimum=subtotal end
+        return result
+    end
+    result.status="READY"
+    result.reason=nil
+    result.count=subtotal
+    -- 'READY' here proves only the model's complete scalar observation.
+    -- No item usable/cooldown/combat eligibility follows from family count.
     return result
 end
 
