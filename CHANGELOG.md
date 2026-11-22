@@ -1,3 +1,10 @@
+## 2026-11-22 — Fix Indicators tab crash on numeric controls
+
+- Fixed malformed `UI:StepRow` arguments in `UI/Pages/IndicatorsProfiles.lua`, where the minimum was passed as the `formatter` and `maximum` remained nil. This triggered `Missing numeric bounds for IND_HIGHLIGHT_STRENGTH` on opening Indicators.
+- Added exact min/max mapping for all seven Indicators sliders, matching `Core/IndicatorSettings.lua`, including `interruptSpellID` (0..9999999).
+- Added `tests/indicator_slider_bounds.lua` and included in the manual Lua 5.1 CI regression list.
+- WoW live and GitHub Actions execution are still pending. No changes to rotation/auras were needed.
+
 ## 2026-11-22 — Global combat aura routing and working Defensive aura lane
 
 - Added a **single account-wide checkbox** under **Advanced → General preferences**: `buffsInCombatMain` (default ON, SavedVariables at `KordRotationDB.buffsInCombatMain`). Changing it immediately refreshes the main and Defensive recommendation windows without a reload.
