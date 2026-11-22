@@ -171,6 +171,65 @@ function KR.RotationSettings:ResetSpell(spellID)
     return true
 end
 
+-- The displayed and edited config always belongs to the class/spec/level
+-- module selected by RotationProfiles, not merely to the talent-tree key.
+function KR.RotationSettings:GetActiveModule()
+ local state=KR.characterState
+ if type(state)~="table" or type(state.level)~="number"
+     or state.level~=math.floor(state.level)
+     or state.level<1 or state.level>100 then return nil end
+ local id=self:GetProfileID()
+ local registry=KR.RotationProfiles
+ if not id or not registry or type(registry.Get)~="function" then return nil end
+ return registry:Get(id,state.level)
+end
+local function validOption(def,value)
+ if def.type=="bool" then return type(value)=="boolean" end
+ if def.type=="number" then
+  return type(value)=="number" and value==value
+    and value~=math.huge and value~=-math.huge
+    and value>=def.min and value<=def.max
+ end
+ if def.type=="enum" then
+  for _,v in ipairs(def.values) do if v==value then return true end end
+ end
+ return false
+end
+function KR.RotationSettings:GetModuleConfigValue(key)
+ local module=self:GetActiveModule()
+ if not module then return nil end
+ for _,def in ipairs(module.Config) do
+  if def.key==key then
+   local saved=self:GetProfile(true)
+   local groups=saved and saved.moduleConfigs
+   local values=type(groups)=="table" and groups[module.id] or nil
+   local value=type(values)=="table" and values[key] or nil
+   return validOption(def,value) and value or def.default
+  end
+ end
+ return nil
+end
+function KR.RotationSettings:SetModuleConfigValue(key,value)
+ local module=self:GetActiveModule()
+ if not module then return false end
+ for _,def in ipairs(module.Config) do
+  if def.key==key then
+   if not validOption(def,value) then return false end
+   local saved=self:GetProfile(true)
+   if not saved then return false end
+   saved.moduleConfigs=type(saved.moduleConfigs)=="table"
+      and saved.moduleConfigs or {}
+   local group=saved.moduleConfigs[module.id]
+   if type(group)~="table" then
+    group={}
+    saved.moduleConfigs[module.id]=group
+   end
+   group[key]=value
+   return true
+  end
+ end
+ return false
+end
 -- No combat rotation consumes these settings in stage 1. Settings exist for future contracts.
 
 -- Kord Rotation copyright notice (3/3): see LICENSE in the repository root.
