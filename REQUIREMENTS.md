@@ -785,3 +785,52 @@
 6. Тесты: щит vs оружие/предмет левой руки, двуручное оружие, лук/ружьё/арбалет/жезл, подходящие/неподходящие стрелы и патроны, пустой слот 0, боеприпасы только в сумке, secret, отсутствующий item info, смена оружия в бою, отсутствие потребителя (ноль лишних чтений).
 
 **Изменения кода:** не выполнялись; внесён аудит PL-12.
+
+
+## PL-13 — Таланты
+
+**Приоритет: P1.**
+
+### Требование
+
+Предоставлять профилям достоверное наличие конкретного таланта и его ранг, выбранный вариант choice-node, принадлежность к дереву/конфигурации и актуальность после изменения билда. Не подменять проверку конкретного таланта количеством очков в дереве или наличием заклинания в книге. Учитывать особую `C_Traits`-модель WoW Forever; при недоступности API, secret, неполной карте или смене конфигурации возвращать `UNKNOWN`, не `false`. Чтение ленивое по `Needs.talents`, с кэшем и событийной инвалидацией.
+
+### Аудит Kord (main)
+
+- [`KordRotation/Core/Talents.lua`](KordRotation/Core/Talents.lua), строки 85–166: **реализован** отдельный адаптер `C_Traits`, получение `configID`, `GetConfigInfo`, `GetTreeNodes`, `GetNodeInfo`, рангов и сумм по трём деревьям. При недоступных рангах/конфигурации возвращает `unavailable`. `groupSections` предпочитает группы, `byX` — явно предварительный геометрический fallback (строки 24–81).
+- `Talents.lua`, строки 138–163: узлы сохраняются только как `x,y,rank,groups`, а наружу выдаются `counts/names`; **не сохраняются nodeID, entryID, spellID, индивидуальные ранги и choice-node**. Следовательно, по текущему результату нельзя доказать конкретный талант.
+- [`KordRotation/Core/SpecDetector.lua`](KordRotation/Core/SpecDetector.lua), строки 35–58: использует суммы талантов для определения вероятного дерева; при `position_fallback` статус `provisional`. **Специализация ≠ наличие конкретного таланта**.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 8–11: уже предусмотрены `TRAIT_CONFIG_UPDATED`, `PLAYER_TALENT_UPDATE`, `ACTIVE_TALENT_GROUP_CHANGED`, `PLAYER_SPECIALIZATION_CHANGED`, `CHARACTER_POINTS_CHANGED` для инвалидации.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua): чтения `C_Traits` выполняются в `Talents.lua` через собственный `guarded(pcall)`, а не через канонический `GameAPI`; это противоречит PR-06 и не обеспечивает унифицированный secret-guard для полей таблиц.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua): отсутствуют `talent.rank`/`talent.selected` и `Needs.talents`.
+
+### Как делают семь референсов (проверены локальные ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Talents.lua`: прямо учитывает отсутствие classic `GetTalentInfo` на Forever; получает активный `C_Traits` config и данные entry/node, разделяет статическую карту и живые `NodeState`/`LiveRank`/`LivePointsInTree`, защищает чтения через `Secret`. `Sonah/Core/Molecules/Conditions.lua:1204–1205`: `C.talent(name,rank)` сравнивает индивидуальный ранг с порогом. В реализации условий неизвестный талант может превращаться в rank 0 — этот fallback для Kord не копировать.
+2. **JustAC** — `JustAC/RotationImport.lua:147` получает активную конфигурацию через `pcall(C_ClassTalents.GetActiveConfigID)`; `RotationImport.lua` строит отображение talent/base spell ID и рангов, чтобы условия импорта ссылались на фактические таланты; `SpellQueue.lua:1301` специально отличает статическую `IsPlayerSpell` от реальной проверки таланта/ранга. Подход полезен для соответствия ID, но импортный слой Kord не нужен.
+3. **ForeverAuras** — `ForeverAuras/Prototypes.lua:740–797`: обходит `C_Traits.GetNodeInfo`, `GetEntryInfo`, получает `activeEntry`, `ranksPurchased`, связывает talentID/spellID/ранг и даёт триггеры выбранности. `ForeverAuras/Types_Forever.lua:96–179` адаптирует дерево Forever. Сильная сторона — правильное различение node/entry/выбранного варианта.
+4. **MaxDps** — `MaxDps/Helper.lua:1028–1040,1112–1164`: читает `C_ClassTalents.GetActiveConfigID`, `C_Traits.GetNodeInfo` и на других версиях `GetTalentInfo`; строит талантные данные для профилей. Прямое чтение в профилях/помощниках нельзя переносить без secret-safe адаптера.
+5. **ForeverRotation** — по проверенному поиску Lua не обнаружены `GetTalentInfo`, `C_Traits.GetNodeInfo` и индивидуальный talent-провайдер. Комментарий `Engine.lua:916` упоминает изменение таланта/ранга, но это не реализация чтения талантов.
+6. **RotationGuide** — `RotationGuide/Core/Init.lua:27–65`: классический обход `GetTalentInfo(tab,index)` через `pcall`, суммирование рангов для выбора ветки; **это определение дерева, не индивидуальный Forever C_Traits talent-provider**. На Forever `GetTalentInfo` может отсутствовать.
+7. **RotationMaster** — `RotationMaster/Conditions/talent.lua:3–111`: отдельные условия `TALENT` (ранг/выбор) и другие талантные условия, обращается к платформенным `GetTreeTalentInfo`/`GetGridTalentInfo`/`GetTraitTalents`; выбор узла и выбранного entry отделён от числового ранга, платформенный слой учитывает версии клиента. Это наиболее подходящая архитектура условий и платформенного чтения.
+
+### Моя рекомендация
+
+**Основа — RotationMaster + Sonah + ForeverAuras**. Из RotationMaster взять разделение `talent selected/rank` и платформенных адаптеров; из Sonah — актуальное `C_Traits` наблюдение с secret-safe чтением и отделением статической карты от живых рангов; из ForeverAuras — точную модель `nodeID → entryID → spellID → activeEntry/rank`. Существующий `KordRotation/Core/Talents.lua` **расширить**, не заменять: сохранить вычисление сумм для `SpecDetector`, но добавить независимый ленивый `TalentObservation` для конкретных талантов. Перевести чтения через `GameAPI`, проверять secret каждого поля и стабильность configID. Не копировать classic-only `GetTalentInfo` из RotationGuide, `unknown→rank0` из Sonah и не смешивать талант с `IsPlayerSpell`.
+
+### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ТРЕБУЕТСЯ ДОРАБОТКА (P1).**
+
+Реализовано определение специализации по распределению очков; отсутствует достоверный индивидуальный провайдер талантов/рангов/choice-node для условий ротации.
+
+### Требуемые изменения
+
+1. Расширить `Talents.lua`: сохранять типизированные `nodeID`, `entryID`, `spellID`, `rank`, `maxRank`, `activeEntry`, `configID`, дерево и статус/причину; не терять индивидуальные данные после подсчёта сумм.
+2. Ввести ленивые запросы `talent.selected(id)`, `talent.rank(id)` по `Needs.talents` и кэш на оценку; не сканировать дерево повторно на каждое правило.
+3. Перевести игровые чтения `C_Traits`/`C_ClassTalents` через `GameAPI` с безопасным `ReadField`/multi-return и secret-проверками. Не принимать частичный снимок за подтверждённый.
+4. Сохранить разделение `SpecDetector` (суммы/дерево) и `TalentObservation` (конкретные узлы/ранги); при `provisional` дереве не подтверждать индивидуальные таланты по геометрии.
+5. Инвалидировать кэш по существующим событиям талантов и изменению активного configID, проверять смену конфигурации в рамках чтения.
+6. Тесты: нулевой/максимальный ранг, choice-node, смена конфигурации/спека, переобучение, недоступный API, secret-поля, частичная карта, дублированные spellID и отсутствие потребителей.
+
+**Изменения кода:** не выполнялись; внесён аудит PL-13.
