@@ -59,7 +59,7 @@ KR.RotationProfiles:Register("HUNTER",1,{
     id="HUNTER_BM_PILOT_EXPERIMENTAL",
     version="0.1.2",
     classToken="HUNTER",specIndex=1,
-    levelMin=60,levelMax=100,status="experimental",
+    levelMin=61,levelMax=100,status="experimental",
     Spells=spells,
     Needs={auras={},ranges={},enemyCount=false,ttd=false,swing=false},
     Config={},Rules=rules
