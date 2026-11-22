@@ -115,6 +115,17 @@ function O:ReadEngineDiagnostic()
         profileStatus=profileStatus}
     local diagnostics=field(result,"diagnostics")
     if type(diagnostics)=="table" then
+        -- The engine stops at the first UNKNOWN or READY. Expose only
+        -- the final evaluated priority number and safe status/reason.
+        local count=#diagnostics
+        if count>=1 and count<=64 then
+            local decisive=field(diagnostics,count)
+            if type(decisive)=="table" then
+                out.decisivePriority=count
+                out.decisiveStatus=status(field(decisive,"status"))
+                out.decisiveReason=reason(field(decisive,"reason")) or "unknown"
+            end
+        end
         local first=field(diagnostics,1)
         if type(first)=="table" then
             out.firstStatus=status(field(first,"status"))
