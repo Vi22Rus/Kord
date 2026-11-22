@@ -92,6 +92,10 @@ end
 -- IDs/family names must be dense, unique and bounded; no raw game APIs here.
 local function itemNeeds(value)
  if type(value)~="table" then return false end
+ local api=KR.GameAPI
+ if not api or type(api.IsSafeValue)~="function" then return false end
+ local okTable,safeTable=pcall(api.IsSafeValue,api,value)
+ if not okTable or safeTable~=true then return false end
  for key in pairs(value) do
   if key~="ids" and key~="families" then return false end
  end
@@ -104,12 +108,13 @@ local function itemNeeds(value)
   idSeen[id]=true
  end
  for _,family in ipairs(families) do
-  if type(family)~="string" or #family<1 or #family>96
-      or familySeen[family] then return false end
-  local api=KR.GameAPI
-  if not api or type(api.IsSafeValue)~="function" then return false end
-  local ok,isSafe=pcall(api.IsSafeValue,api,family)
-  if not ok or isSafe~=true then return false end
+  local ok,isValid=pcall(function()
+   if type(family)~="string" then return false end
+   local safeOK,isSafe=pcall(api.IsSafeValue,api,family)
+   return safeOK and isSafe==true and #family>=1 and #family<=96
+       and not familySeen[family]
+  end)
+  if not ok or not isValid then return false end
   familySeen[family]=true
  end
  return true
