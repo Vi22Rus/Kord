@@ -677,6 +677,9 @@
 ## PL-10 — Ориентация лицом к цели и позиция относительно цели
 
 
+**Архитектурная актуализация TG-01:** **См. TG-01: видимость/LoS не эквивалентны facing/behind; использовать общую идентичность targetGUID и отдельные доказательные наблюдения.**
+
+
 **Архитектурная актуализация (перекрёстные ссылки):** **См. SP-14:** позиционные требования способности используют доказательные наблюдения PL-10; не создавать отдельный behind/facing reader.
 
 **Приоритет: P1.**
@@ -1217,6 +1220,9 @@
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
+
+**Архитектурная актуализация TG-01:** **См. TG-01: attackable/visible/LoS и дистанция — разные факты; range не доказывает видимость, общий target snapshot не дублировать.**
+
 **Приоритет: P0.**
 
 #### Требование
@@ -1516,6 +1522,9 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+
+**Архитектурная актуализация TG-01:** **См. TG-01: target exists/alive/hostile/attackable/visible — единые факты GameState/TargetObservation, не отдельные проверки в классовых профилях.**
 
 
 **Архитектурная актуализация AU-08:** **См. AU-08: требования и запреты атаки по защитным эффектам цели используют общий TargetDefenseObservation и итоговый AbilityEligibility; не создавать классовые иммунитет-гейты.**
@@ -2169,6 +2178,9 @@
 
 ### AU-08 — Защитные ауры цели (иммунитет, щит, отражение): не бить впустую
 
+
+**Архитектурная актуализация TG-01:** **См. TG-01: базовая доступность цели для атаки отличается от иммунитета/отражения; TargetDefenseObservation повторно использует тот же targetGUID и не заменяет TargetObservation.**
+
 **Приоритет: P1.**
 
 #### Требование
@@ -2264,3 +2276,53 @@
 **Архитектурные ссылки:** AU-01 — reader, AU-02 — время, AU-05 — match, AU-06 — GUID-index, SP-12 — отдельные reactive windows. Обратные сноски добавлены в связанные требования.
 
 **Изменения кода:** не выполнялись; внесён аудит AU-09 и обратные архитектурные ссылки.
+
+
+### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
+
+**Раздел: 5. Цель. Приоритет: P0.**
+
+#### Требование
+
+Универсальный `TargetObservation(unit="target")` выдаёт **независимые доказательные** поля `exists`, `alive`, `hostile`, `attackable`, `visible`, `lineOfSight` (если отдельно доказуем), `guid` с `READY(true/false)/UNKNOWN` и причинами. Не смешивать: `UnitCanAttack` — право атаковать, не доказательство LoS, видимости, дистанции, неуязвимости или достижимости конкретным spellID; `UnitIsDeadOrGhost` — dead/ghost, а `UnitExists` — existence. Враждебность и attackability не полностью тождественны. Не превращать `nil`/secret API в false. Если visibility/LoS недоступны на Forever, возвращать UNKNOWN, а не изобретать доказательство.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 108–155,183–184: уже читает `UnitExists("target")`, `UnitGUID`, `UnitIsDeadOrGhost`, `UnitCanAttack("player","target")`, `UnitCanAssist`, classification; хранит tri-state поля. Но `hostile` как отдельное поле и `visible` не наблюдаются.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–209: target policy требует подтверждённых exists/dead/attackable или assistable и блокирует отсутствие/смерть/недопустимую связь. Однако нет независимого visible/LoS и отдельного hostile. Range проверяется отдельно, и это правильно.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 10–16: allowlist UnitExists/UnitIsDeadOrGhost/UnitCanAttack/UnitGUID есть, `UnitIsVisible`/`UnitIsEnemy` в проверенном списке нет; перед включением проверить реальную поддержку Forever и secret-safe тип результата.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 20,32,45–46: `PLAYER_TARGET_CHANGED` инвалидирует target, unit events учитывают target; нет подтверждённого независимого visibility/LoS event provider.
+- AU-08 (иммунитет) и SP-08 (дистанция) не являются заменой TG-01.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — `Core/Atoms/Units.lua:20–35` защищённо читает `UnitExists`, `UnitCanAttack`, `UnitIsDeadOrGhost`; `Core/Atoms/Units.lua:129–136` использует `UnitIsVisible` как отдельный признак. Сильный образец независимого visible.
+2. **JustAC** — `Core/TargetResolver.lua:55–80` проверяет `UnitExists`, `UnitCanAttack`, `UnitIsDeadOrGhost`, `UnitIsVisible` (если поддержан); отдельная проверка видимости не доказывает LoS.
+3. **ForeverAuras** — `GenericTrigger.lua` и `BuffTrigger2.lua` используют unit existence/dead/visible в условиях и unit filtering; хороший образец multi-unit жизненного цикла, но не spell-specific attack eligibility.
+4. **MaxDps** — `Core.lua:380+` и `Helper.lua` используют UnitCanAttack/UnitExists/UnitIsDeadOrGhost, иногда UnitIsVisible; не подтверждён универсальный доказательный LoS.
+5. **ForeverRotation** — `Engine.lua:125–150` проверяет UnitExists/UnitCanAttack/UnitIsDeadOrGhost и отдельные проверки дистанции; видимость/LoS нельзя выводить из range.
+6. **RotationGuide** — `Core/State.lua:90–120` читает UnitExists/UnitCanAttack/UnitIsDeadOrGhost; нет подтверждённого универсального независимого LoS для всех способностей.
+7. **RotationMaster** — `Platform/units.lua` и `Conditions/target.lua` имеют общие unit/target observation, разделяют существование/отношение/живость; готовое доказательство LoS на Forever не подтверждено.
+
+#### Рекомендация
+
+**Основа — текущий Kord GameState + Sonah (независимый UnitIsVisible) + RotationMaster (общий unit observation) + JustAC (target resolver).** Не вводить параллельный TargetScanner. Расширить существующий `unitSnapshot("target")` отдельными `hostile`, `visible` при подтверждённом API; `alive` производно от достоверного `dead`. Для `lineOfSight` — отдельное `UNKNOWN` до появления проверенного разрешённого read-only источника. Сохранять один targetGUID для всех наблюдений и повторно проверять GUID при spell-specific reads. Итоговая `AbilityEligibility` — единственный авторитет готовности способности.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Exists/dead/attackable уже есть; самостоятельных hostile/visible/LoS нет.
+
+#### Требуемые изменения
+
+1. Сохранить существующие `exists`, `dead`, `attackable`, `assistable` и GUID в `GameState.unitSnapshot`; нормализовать `alive` без потери UNKNOWN.
+2. Проверить на Forever `UnitIsEnemy` и `UnitIsVisible`, добавить в GameAPI только при поддержке и секретной безопасности; `hostile` не подменять `attackable`.
+3. `visible` не приравнивать к LoS. Если API не позволяет достоверно проверить LoS, оставить `lineOfSight=UNKNOWN`; не использовать `IsSpellInRange` как LoS.
+4. При отсутствии цели `exists=READY(false)` и spell-specific BLOCKED, но остальные поля не читать как значения от предыдущего target.
+5. Сохранять identity guard `targetGUID` для снимка и перед/после асинхронно-неустойчивых API чтений; смена цели → UNKNOWN/новый snapshot.
+6. `AbilityEligibility` использует подтверждённые exists/alive/attackable и дополнительные visibility/LoS только по установленным правилам; UNKNOWN visibility не трактовать как гарантированную невозможность атаки.
+7. Инвалидация `PLAYER_TARGET_CHANGED`, `UNIT_FLAGS`, `UNIT_FACTION`, `UNIT_HEALTH`, `UNIT_CONNECTION` — только если события реально доступны на Forever; heartbeat как fallback, не доказательство.
+8. Диагностика `target_visibility_unknown`, `target_hostility_unknown`, `target_identity_changed`, `target_los_unverified`; тесты нет цели, труп, ghost, нейтральная/враждебная/дружественная, attackable=false при hostile, скрытая цель, target swap, секретный API, дальность есть/нет, LoS blocked, pet target, инстанс/мир.
+
+**Архитектурные ссылки:** SP-08 — range, SP-14 — spell requirements, AU-08 — target defenses, PL-10 — facing. В прежних требованиях внесены обратные сноски на TG-01.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-01 и перекрёстные ссылки.
