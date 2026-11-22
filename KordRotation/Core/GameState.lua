@@ -419,6 +419,14 @@ function S:ReadSignal(field,spellID,snapshot)
             r.reason=="api_call_failed") then
             return unknown("aura_lookup_unverified")
         end
+        -- Sonah Secret.AurasHidden and ForeverAuras BuffTrigger2 establish:
+        -- while auras are secret, enumeration may throw even though the
+        -- direct known-ID lookup returned no aura. This is UNKNOWN, not
+        -- proof of absence. Never call the denied batch/index APIs.
+        local secrecy=api:Read("C_Secrets.ShouldAurasBeSecret","boolean")
+        if secrecy.status=="READY" and secrecy.value==true then
+            return unknown("aura_hidden_by_client")
+        end
         -- Prefer a single validated batch read, as in the ForeverAuras /
         -- JustAC reference implementations. A protected field is UNKNOWN,
         -- never evidence of aura absence. A completed plain list is
