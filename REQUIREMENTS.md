@@ -1435,3 +1435,51 @@
 7. Тесты на разных классах: dodge/parry/crit, появление/исчезновение glow, отсутствие glow при реальном проке, glow при недоступном spell, proc без известной длительности, override spellID, смена панели, secret/недоступный API, прерывание/истечение окна, отсутствие ложного READY.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-12.
+
+
+### SP-13 — Общие кулдауны и общие ресурсы (ловушки, шоки, печати, проклятия и т. п.)
+
+**Приоритет: P1.**
+
+#### Требование
+
+Определять ограничения между несколькими способностями: **shared cooldown** (применение A запускает cooldown B), **shared resource** (общая ёмкость/заряды/стоимость), **mutually exclusive state** (один эффект вытесняет другой), **shared active limit** (ограничение числа одновременно активных эффектов). Это **четыре разных отношения**, их нельзя смешивать под названием «общий кулдаун». Примеры «ловушки/шоки/печати/проклятия» — кандидаты на проверку механики конкретной версии WoW Forever, не доказательство, что каждый класс способностей разделяет cooldown. Отсутствие подтверждения группы → `UNKNOWN` о членстве, но не выдуманная блокировка.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 72–102: `cooldown(spellID)` читает `C_Spell.GetSpellCooldown`/`GetSpellCooldown` и блокирует активный cooldown; комментарий 82–85 прямо признаёт неизвестную категорию `individual/shared/GCD` (`cooldown_active_unclassified`).
+- `AbilityEligibility.lua`, строки 105–141: GCD обрабатывается отдельно, но нет определения shared group и причин, какая другая способность запустила cooldown.
+- `AbilityEligibility.lua`, строки 171–186: `IsSpellUsable` и `noPower` проверяют общую пригодность, но не объясняют общий ресурс/лимит эффектов.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 24, 33: разрешены индивидуальные cooldown API, но нет подтверждённого источника принадлежности к группе.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 27, 52, 277: есть общие `resources.percent` и частное `trap.profitable`, но нет общего `cooldownGroup`/`resourceGroup`/`exclusiveGroup` контракта.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua): наблюдаются ресурсы, ауры и cooldown-события; не обнаружена универсальная карта отношений между способностями.
+
+#### Как делают семь референсов (проверены Lua в локальных ZIP)
+
+1. **Sonah** — `Sonah/Classes/Shaman.lua:184–188` явно учитывает общий 6-секундный cooldown шоков при оценке длительности Flame Shock; `Sonah/Classes/Hunter.lua:106` описывает 6-секундный shared cooldown в правилах способностей. Это **профильные знания механик**, не доказанный универсальный движок групп.
+2. **JustAC** — `JustAC/SpellDB.lua:1828–1845` содержит `HEAL_EMERGENCY_LADDER` и термин «group cooldowns», но здесь **group означает групповые защитные/лечебные способности**, а не общий cooldown нескольких spellID. `BlizzardAPI/SpellQuery.lua` проверяет spell usability; подтверждённого универсального shared-cooldown-group resolver в проверенных местах нет.
+3. **ForeverAuras** — `ForeverAuras/WandCooldown.lua:2,86–99` сохраняет состояние cooldown для Shoot (5019), включая совместно отображаемые варианты; `CooldownViewerCatalog.lua:27` имеет UI-категорию «Shared Cooldowns», **но это название категории, не доказательство взаимного блокирования способностей**. Полного универсального group resolver не подтверждено.
+4. **MaxDps** — `MaxDps/Helper.lua:1915–1931` читает cooldown конкретного spellID отдельно от GCD; классовые профили используют индивидуальные проверки. Общеклассовой доказанной карты `spellID→shared cooldown group` в проверенных местах не обнаружено.
+5. **ForeverRotation** — `ForeverRotation/Display.lua:302–304` читает `C_Spell.GetSpellCooldown(id).isActive`, `CC.lua:61–62` — `C_Spell.IsSpellUsable`. Это текущие проверки каждого spellID, не самостоятельное определение общей группы.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:93–103` читает `C_Spell.GetSpellCooldownDuration` и `C_Spell.GetSpellCooldown` конкретной способности; подтверждённого shared-group каталога в просмотренном коде нет.
+7. **RotationMaster** — `RotationMaster/Platform/spells.lua:462–475,592–621` предоставляет защищённое чтение cooldown конкретного spellID и display cooldown; `Conditions/spell.lua` содержит spell conditions. В проверенных местах не подтверждена универсальная карта shared-групп, которую можно просто перенести.
+
+#### Сравнение и рекомендация
+
+**Основа — существующий Kord + защищённые cooldown-наблюдения RotationMaster + профильные проверенные знания Sonah.** Не переносить `JustAC.HEAL_EMERGENCY_LADDER` или `ForeverAuras.CooldownViewerCatalog.Shared Cooldowns` как список взаимно блокирующих заклинаний: это другая семантика. Реализовать единый **общеклассовый** контракт `AbilityGroupObservation` (логический контракт, не обязательный новый файл), использующий декларативный каталог отношений и независимые наблюдения каждого spellID. Классы определяют **данные**, не отдельные механизмы.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Реальное состояние cooldown/ресурса каждого заклинания проверяется; отношения между способностями, тип группы и источник общей блокировки не определяются.
+
+#### Требуемые изменения
+
+1. В общих существующих модулях добавить декларативные `AbilityGroupDefinitions` (как данные): `groupID`, `relationKind` (`sharedCooldown/sharedResource/mutualExclusion/sharedActiveLimit`), `memberSpellFamilies`, `scope` (player/target/pet), `evidenceSource`, `verifiedForClient`; без отдельных файлов под классы.
+2. Общий `AbilityGroupObservation(spellID,targetGUID)` выдаёт `membership`, `groupState`, `blockingMember`, `remainingSeconds` (только если безопасно), `status/reason/source`. Не считать совместный cooldown доказательством общей группы без проверки причинности или проверенной механики.
+3. Использовать SP-02 (ранги), SP-03/04 (individual/GCD), SP-07 (стоимость), SP-11 (override), PL-04/05 (ресурсы), PL-09 (ауры/формы). Нельзя смешивать GCD, shared cooldown и общий ресурс.
+4. Для shared cooldown читать состояние каждого нужного члена группы лениво; если группа известна, но источник блокировки неизвестен, сохранять факт cooldown и отдельный `blockingMember=UNKNOWN`. Никакого автоматического предположения «A запустила B» по одному совпадению таймеров.
+5. Для shared resource использовать подтверждённый тип ресурса, текущую стоимость и общий пул; для mutual exclusion и shared active limit — проверенные ауры/эффекты, scope и лимит. Печати/проклятия не считать общими кулдаунами без доказательства.
+6. Инвалидация по cooldown/resource/aura/cast/target/talents/form/override, защищённые `UNKNOWN` и объяснимая диагностика. `AbilityEligibility` остаётся единственным арбитром READY.
+7. Тесты для нескольких классов и групп: ловушки, шоки, печати, проклятия; A запускает cooldown B; B не запускает A; разные ранги, override, GCD-only, общий ресурс без общего cooldown, взаимоисключение без cooldown, разные цели, pet, secret и отсутствие подтверждённого членства.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-13.
