@@ -116,9 +116,13 @@ local function gcd()
             if active then return "BLOCKED","global_cooldown" end
             return "READY"
         end
-        -- If the modern read failed, a present legacy function can still
-        -- supply an independently validated signal. Neither source is
-        -- allowed to infer READY from a missing or secret value.
+        -- A protected modern read is not evidence of a clear GCD.
+        -- Do not launder secret data through a second API.
+        if r.reason=="protected_value" or r.reason=="protected_result" then
+            return "UNKNOWN","gcd_unavailable"
+        end
+        -- If the modern read failed without secrecy restrictions, a
+        -- legacy function can supply an independently validated signal.
     end
     local r=multi("GetSpellCooldown",GCD_SPELL_ID)
     if r.status~="READY" then return "UNKNOWN","gcd_unavailable" end
