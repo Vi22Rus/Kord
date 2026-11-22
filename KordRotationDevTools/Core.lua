@@ -5,9 +5,9 @@ D.version = "0.1.0-dev"
 D.matrix = "v14"
 D.active = false
 D.session = nil
-D.maxRecords = 256
+D.maxRecords = 512
 D.maxExport = 32768
-D.maxSessions = 3
+D.maxSessions = 12
 D.maxText = 160
 D.maxDuration = 900
 D.dropped = 0
@@ -56,7 +56,12 @@ function D:Boot()
 end
 local host=CreateFrame("Frame")
 host:RegisterEvent("PLAYER_LOGIN")
+host:RegisterEvent("PLAYER_LOGOUT")
 host:SetScript("OnEvent",function(_,event)
-    if event=="PLAYER_LOGIN" then D:Boot() end
+    if event=="PLAYER_LOGIN" then D:Boot()
+    elseif event=="PLAYER_LOGOUT" and D.active and type(D.Stop)=="function" then
+        -- Finish a manually started session before WoW saves its variables.
+        D:Stop()
+    end
 end)
 _G.KordRotationDevTools=D
