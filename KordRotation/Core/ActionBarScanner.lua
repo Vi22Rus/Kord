@@ -102,17 +102,25 @@ local function visible(button)
     return ok and v==true
 end
 local function inspect(button,source)
-    if not visible(button) then return nil end
+    if not visible(button) then return nil,"button_not_visible" end
     local slot=actionSlot(button)
-    if not slot then return nil end
+    if not slot then return nil,"button_slot_unconfirmed" end
     local presence=read("C_ActionBar.HasAction","boolean",slot)
     if presence.status~="READY" then presence=read("HasAction","boolean",slot) end
-    if presence.status~="READY" or presence.value~=true then return nil end
+    if presence.status~="READY" or presence.value~=true then
+        return nil,"button_action_unconfirmed"
+    end
     local info=KR.GameAPI and KR.GameAPI:ReadTuple("GetActionInfo",{"string","number"},slot)
-    if not info or info.status~="READY" then return nil end
+    if not info or info.status~="READY" then
+        return nil,"button_action_info_unconfirmed"
+    end
     local kind,id=info.value[1],info.value[2]
-    if kind~="spell" and kind~="SPELL" then return nil end
-    if not isInteger(id,99999999) then return nil end
+    if kind~="spell" and kind~="SPELL" then
+        return nil,"button_action_not_spell"
+    end
+    if not isInteger(id,99999999) then
+        return nil,"button_spell_id_unconfirmed"
+    end
     local name
     local ok,n=safeMethod(button,"GetName")
     if ok and type(n)=="string" and #n<=120 then name=n end
@@ -276,23 +284,35 @@ function S:FindSpell(id)
     end
     self:GetSnapshot()
     local selected
+    local failureReason
+    local candidates=0
     for _,item in ipairs(self.entries or {}) do
         if item.spellID==id then
+            candidates=candidates+1
             -- Strict revalidation even before TTL: macro, paging, visibility
             -- and slot reassignment can change without a Blizzard event.
-            local live=inspect(item.button,item.source)
+            local live,why=inspect(item.button,item.source)
             if live and live.slot==item.slot and live.spellID==id then
                 if not selected or live.slot<selected.slot then selected=live end
             else
-                self:Invalidate("button_changed")
+                -- A live slot/ID mismatch can occur after a page change.
+                -- Report only a fixed diagnostic code, never a raw slot/ID.
+                failureReason=failureReason or (live and
+                    "button_mapping_changed" or why or "button_revalidation_unknown")
             end
         end
     end
     if selected then
+        -- Do not force a full rescan solely because a SECOND duplicate button
+        -- was stale. A verified button is enough; normal TTL/revisions still
+        -- refresh the complete set.
         local copy=shallowCopy(selected)
         copy.status="READY"
         return copy
     end
-    return {status="UNKNOWN",reason="spell_not_confirmed_on_visible_bar"}
+    if candidates>0 then self:Invalidate("button_changed") end
+    return {status="UNKNOWN",
+        reason=candidates>0 and (failureReason or "button_revalidation_unknown")
+            or "spell_not_confirmed_on_visible_bar"}
 end
 -- Copyright notice: see root LICENSE.
