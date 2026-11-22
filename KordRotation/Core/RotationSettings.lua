@@ -11,7 +11,7 @@ local categories = {
 }
 local defaults = {
     enabled = false, allowUnverifiedProfiles = false, targetMode = "auto", cooldownsOnlyInCombat = true,
-    conserveResources = false, prebuffs = false, buffsInCombatMain = true,
+    conserveResources = false, prebuffs = false,
     categories = {
         damage = true, cooldowns = true, buffs = true, racial = false,
         trinkets = false, consumables = false, defensive = false,
@@ -88,13 +88,27 @@ function KR.RotationSettings:GetProfile(create)
     return normalize(saved[id]), id
 end
 
+-- Account-wide general preference: one toggle across all class/spec profiles.
+-- The choice does not suppress buffs; it only selects the display channel.
 function KR.RotationSettings:GetFlag(key)
+    if key=="buffsInCombatMain" then
+        if not KR.db then return true end
+        return KR.db.buffsInCombatMain~=false
+    end
     local profile = self:GetProfile(true)
     if not profile or defaults[key] == nil or type(defaults[key]) == "table" then return nil end
     return profile[key]
 end
 
 function KR.RotationSettings:SetFlag(key, value)
+    if key=="buffsInCombatMain" then
+        if not KR.db or type(value)~="boolean" then return false end
+        KR.db.buffsInCombatMain=value
+        if KR.RotationDisplay and KR.RotationDisplay.Refresh then
+            KR.RotationDisplay:Refresh(true)
+        end
+        return true
+    end
     local profile = self:GetProfile(true)
     if not profile or defaults[key] == nil or type(defaults[key]) ~= "boolean"
         or type(value) ~= "boolean" then return false end
