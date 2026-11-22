@@ -100,7 +100,7 @@ local function value(ctx,field,id)
   if #ctx.observations<256 then
    ctx.observations[#ctx.observations+1]={field=field,
     status=cached~=nil and "READY" or "UNKNOWN",
-    booleanValue=type(cached)=="boolean" and cached or nil,
+    booleanValue=type(cached)=="boolean" and (cached and 1 or 0) or nil,
     reason=cached==nil and
      ((ctx.reasonCache or {})[key] or "signal_unverified") or "none"}
   end
@@ -137,7 +137,7 @@ local function value(ctx,field,id)
  if #ctx.observations<256 then
   ctx.observations[#ctx.observations+1]={field=field,
     status=answer~=nil and "READY" or "UNKNOWN",
-    booleanValue=type(answer)=="boolean" and answer or nil,
+    booleanValue=type(answer)=="boolean" and (answer and 1 or 0) or nil,
     reason=answer==nil and (failure or "signal_unverified") or "none"}
  end
  return answer
