@@ -832,6 +832,91 @@ function S:ReadInventoryItemObservation(itemID)
     return result
 end
 
+-- IT-01/1.3: a single bounded, on-demand snapshot of source-supported
+-- player bag indices 0..4; no equipped, bank or reagent bank scanning.
+-- The mapping of those indices to bags on the target Forever build is
+-- still CLIENT NOT RUN. This reader does not issue item-use eligibility.
+local INVENTORY_BAGS={0,1,2,3,4}
+local MAX_INVENTORY_SLOTS_PER_BAG=80
+
+function S:ReadInventoryBagSnapshot()
+    local result=inventoryObservation("bag_reader_unverified")
+    result.source="GameState.InventoryBagSnapshot"
+    result.bagIDs={0,1,2,3,4}
+    result.scopeEvidence="source_supported_bag_ids_pending_forever_qa"
+    result.complete=false
+
+    local api=KR.GameAPI
+    if not api or type(api.Read)~="function"
+        or type(api.ReadField)~="function"
+        or type(api.Probe)~="function" then
+        result.reason="bag_api_adapter_missing"
+        return result
+    end
+    local methods={
+        "C_Container.GetContainerNumSlots",
+        "C_Container.GetContainerItemID",
+        "C_Container.GetContainerItemInfo",
+    }
+    for _,name in ipairs(methods) do
+        local capability=api:Probe(name)
+        if not capability or capability.status~="READY" then
+            result.reason="bag_api_missing"
+            return result
+        end
+    end
+
+    local counts={}
+    local visited=0
+    for _,bagID in ipairs(INVENTORY_BAGS) do
+        local slots=api:Read("C_Container.GetContainerNumSlots","number",bagID)
+        if slots.status~="READY" or not finite(slots.value,0)
+            or slots.value~=math.floor(slots.value)
+            or slots.value>MAX_INVENTORY_SLOTS_PER_BAG then
+            result.reason="item_bag_scan_incomplete"
+            return result
+        end
+        for slot=1,slots.value do
+            visited=visited+1
+            local id=api:Read("C_Container.GetContainerItemID","number",bagID,slot)
+            local info=api:Read("C_Container.GetContainerItemInfo","table",bagID,slot)
+            if id.status=="UNKNOWN" and id.reason=="no_value"
+                and info.status=="UNKNOWN" and info.reason=="no_value" then
+                -- Both independent sources report an empty slot.
+            elseif id.status=="READY" and info.status=="READY" then
+                local itemID=id.value
+                if not finite(itemID,1) or itemID~=math.floor(itemID) then
+                    result.reason="item_bag_scan_incomplete"
+                    return result
+                end
+                local amount=api:ReadField(info.value,"stackCount","number")
+                if amount.status~="READY" or not finite(amount.value,1)
+                    or amount.value~=math.floor(amount.value) then
+                    result.reason="item_bag_scan_incomplete"
+                    return result
+                end
+                local identity=api:ReadField(info.value,"itemID","number")
+                if identity.status~="READY"
+                    or identity.value~=itemID then
+                    result.reason="item_bag_scan_incomplete"
+                    return result
+                end
+                counts[itemID]=(counts[itemID] or 0)+amount.value
+            else
+                result.reason="item_bag_scan_incomplete"
+                return result
+            end
+        end
+    end
+    result.status="READY"
+    result.reason=nil
+    result.complete=true
+    result.countsByID=counts
+    result.visitedSlots=visited
+    -- No events or revisions in 1.3; 1.6 supplies invalidation.
+    return result
+end
+
 function S:ReadInventoryFamilyObservation(familyID)
     local result=inventoryObservation("item_family_catalog_unverified")
     result.source="GameState.InventoryFamilyObservation"

@@ -56,6 +56,10 @@ local allowed = {
     ["C_NamePlate.GetNamePlates"]=true,
     -- IT-01/1.2: shared read-only exact item count (no item use).
     ["C_Item.GetItemCount"]=true,
+    -- IT-01/1.3: one bounded, read-only inventory snapshot source.
+    ["C_Container.GetContainerNumSlots"]=true,
+    ["C_Container.GetContainerItemID"]=true,
+    ["C_Container.GetContainerItemInfo"]=true,
 }
 local validTypes = {boolean=true, number=true, string=true, table=true}
 

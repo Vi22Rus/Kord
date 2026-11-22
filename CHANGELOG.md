@@ -1,3 +1,15 @@
+## KR-20261122-044 — IT-01/1.3: единый bounded C_Container bag snapshot
+- Дата: 2026-11-22 UTC; время/SHA — git log --grep KR-20261122-044. IT-01, этап 1/подшаг 1.3, P0, InventoryObservation. Тип feat/test.
+- Ожидалось: проверяемый bag-only snapshot с C_Container и отказ при неполных/secret слотах. Ранее существовал только exact-ID count через C_Item (KR-20261122-043), без scanner/coverage.
+- Причина: отсутствующий reader снимка сумок, не подтверждённый игровой дефект.
+- Изменено: GameAPI read-only allowlist + три метода `C_Container`; GameState `ReadInventoryBagSnapshot` с единым ограниченным обходом bagIDs 0..4, лимитом 80 слотов/сумку, проверкой ID и stackCount, полным fail-closed UNKNOWN при ошибках, а также scope evidence. Не добавлен OnUpdate, второй bag scanner, item use, bank/equipped/reagent storage.
+- Тест: `tests/inventory_bag_snapshot_mock.lua` для 2 stacks одного ID, разных bag, empty, nil, mismatch, overflow, exception, missing API и независимых повторов; не заявляется запуск Lua.
+- Источники решения: выбранный путь IT-01 и исторические ссылки на ForeverAuras/ItemStatus.lua, RotationMaster/Platform/inventory.lua. ZIP повторно не инспектировались; целевая семантика требует клиентского теста.
+- Документация: REQUIREMENTS.md, поэтапный план и CHANGELOG.md обновлены; исходные формулировки сохранены.
+- Проверки: PASS — проверка статических инвариантов подготовленных исходников, allowlist, ограничений обхода и наличия тестов/документации; NOT RUN — Lua 5.1, полный mock/regression, CI в ручном режиме, WoW Forever.
+- Выдано тестировщику: сценарии в общем IT-01 QA — количество и слоты 0..4, пустые и частичные слоты, банк/экипировка/reagent вне scope, secret in combat, разница с C_Item; отдельная установка после каждого подшага не требуется.
+- Итог: SOURCE IMPLEMENTED / AWAITING IN-GAME QA; следующий IT-01/1.4 — ItemFamilyCatalog. Связи KR-20261122-043, IT-02–IT-14, AC-02, SP-14, PE-04, PE-05, GR-05, SW-04.
+
 ## KR-20261122-043 — IT-01/1.2: source-backed item count API в Lua
 - Дата: 2026-11-22 UTC (точный момент в Git); commit SHA по `git log --grep KR-20261122-043`. Этап 1 / шаг 1.2, InventoryObservation, IT-01 (P0). Тип feature/test.
 - Причина: KR-20261122-041 подготовил только протокол; утверждённый выбранный путь позволяет разрабатывать source-supported C_Item без запущенного игрового клиента (KR-20261122-042).
