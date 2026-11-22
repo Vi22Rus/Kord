@@ -1034,3 +1034,49 @@
 7. Тесты: только GCD; только индивидуальный cooldown; оба активны; shared cooldown; `isOnGCD=nil`; secret duration при известном active; GCD ID 29515 vs 61304; charges/recharge; clock invalid; событие обновления cooldown и устаревший snapshot.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-04.
+
+
+### SP-05 — Заряды: текущее число, максимум, время до следующего
+
+**Приоритет: P1.**
+
+#### Требование
+
+По spellID возвращать независимые типизированные наблюдения `charges.current`, `charges.maximum`, `charges.nextRechargeSeconds`, `charges.recharging`, каждое со своим `status/reason/source`. Текущее число и максимум могут быть защищены независимо от флага перезарядки. `isActive` у charge API означает перезарядку, **не отсутствие доступных зарядов**. Время до следующего — только из достоверных обычных чисел `cooldownStartTime/cooldownDuration/GetTime`, не из secret/duration objects/предположений. Если зарядов максимум, следующей перезарядки нет: это не то же самое, что неизвестный таймер. Разделять charge recharge, индивидуальный КД и GCD.
+
+#### Аудит Kord
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 142–169: реализована `charges(id,required)` с `C_Spell.GetSpellCharges` и legacy `GetSpellCharges`; проверяются `currentCharges/maxCharges`, конечность, целочисленность, `0 ≤ current ≤ max`. Secret/некорректность → `UNKNOWN`, ноль → `BLOCKED/no_charges`. При `required=false` чтение не выполняется.
+- **Пробел:** `charges()` возвращает лишь `READY/BLOCKED/UNKNOWN`, не предоставляет числа текущих/максимальных зарядов, флаг перезарядки или секунды до следующего заряда. Поля `cooldownStartTime/cooldownDuration` не читаются и не проверяются.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 25, 34: оба charge API уже разрешены; `ReadField` позволяет защищённое чтение полей.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 277–282: `chargesAtLeast` намеренно возвращает `nil` (→ `UNKNOWN`), поскольку контракт v1 не содержит числового порога. Следовательно, профиль не может проверить `charges ≥ N`.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строка 22: `SPELL_UPDATE_CHARGES` уже направлен в канал `cooldowns`.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua:804–806`: `C_Spell.GetSpellCharges` через `Secret.Call`; `Secret.FieldNumber` отдельно извлекает `currentCharges` и `maxCharges`, возвращая `nil` при недостоверности. Подтверждённого чтения времени следующей перезарядки в этой функции нет.
+2. **JustAC** — `JustAC/BlizzardAPI/CooldownTracking.lua:16,33,41–42,100–101`: централизует `C_Spell.GetSpellCharges` через `pcall`, различает recharge `isActive` и cooldown; `JustAC/DebugCommands.lua:3294–3308` содержит специальные диагностические пробы secret-полей в бою. Подход особенно полезен для проверки контракта WoW Forever.
+3. **ForeverAuras** — `ForeverAuras/GenericTrigger.lua:2560–2561,2982,3417–3418,3569–3572`: собственный `GetSpellCharges`/SpellDetails возвращает `currentCharges`, `maxCharges`, `cooldownStartTime`, `cooldownDuration`; используется в cooldown/charge-триггерах. Наличие полей в триггере **не гарантирует**, что их числовые значения доступны в бою.
+4. **MaxDps** — `MaxDps/Helper.lua:1906–1913,2024–2027`: modern `C_Spell.GetSpellCharges` и legacy `GetSpellCharges`, читает current/max/start/duration для расчётов. Прямое использование чисел требует отдельной secret-валидации для Kord.
+5. **ForeverRotation** — при поиске `GetSpellCharges/currentCharges/chargeStart/chargeDuration` по Lua архива прямого charge-провайдера не обнаружено. Нельзя приписывать ему покрытие SP-05.
+6. **RotationGuide** — при том же поиске прямого charge-провайдера не обнаружено; подтверждённой поддержки числа зарядов и следующей перезарядки нет.
+7. **RotationMaster** — `RotationMaster/Conditions/anyspell.lua:310,394–396` и `Conditions/petspell.lua:329,418`: через `Platform.GetSpellCharges` и кэш получает структурированные данные и сравнивает `currentCharges` с заданным порогом; причины недоступности передаются платформенным слоем. Это полезный образец условия `charges ≥ N`, не доказательство безопасного таймера в любом боевом контексте.
+
+#### Моя рекомендация
+
+**Основа — RotationMaster + Sonah + JustAC**, дополнить структурой полей ForeverAuras. Из RotationMaster взять платформенный провайдер, кэш и числовой порог; из Sonah — независимое secret-safe чтение current/max; из JustAC — проверку в бою, что `isActive` означает recharge и какие timer-поля реально доступны; из ForeverAuras — разделение start/duration как возможных, но не гарантированно безопасных источников. Не копировать прямое чтение таймеров MaxDps без secret-guard. **Только подтверждённый безопасный таймер** даёт `nextRechargeSeconds`; иначе `UNKNOWN`.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Бинарное наличие хотя бы одного заряда уже проверяется; нет доступного профилям количества/максимума, порога и безопасного времени следующего заряда.
+
+#### Требуемые изменения
+
+1. Добавить ленивый `ChargeObservation(spellID)` с раздельными `current`, `maximum`, `recharging`, `nextRechargeSeconds` и `status/reason/source` у каждого факта.
+2. Использовать `GameAPI` для modern/legacy чтений; проверять каждое поле отдельно, secret не превращать в ноль. Не выводить `current=0` из `isActive=true`.
+3. Вычислять остаток следующего заряда только при проверенных `start/duration/now` и `0 ≤ current < max`; проверять конечность, диапазон, устаревание и возможность особого API-контракта. При `current=max` возвращать «перезарядка не требуется», а не фиктивный таймер.
+4. Расширить контракт условий для `chargesAtLeast(spellID,N)` с явным `N`; сохранить исключительное право `AbilityEligibility` на итоговое READY.
+5. Кэшировать по оценке, инвалидировать по `SPELL_UPDATE_CHARGES`, `SPELL_UPDATE_COOLDOWN`, смене конфигурации/способности; секунды пересчитывать по времени только из подтверждённых исходных чисел.
+6. Тесты: `0/N`, `1/N`, `N/N`, `isActive=true` при `current>0`, secret current при известном max, secret start/duration, legacy tuple, таймер уже истёк, charges с GCD, отсутствие API, порог 2, смена числа зарядов в бою.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-05.
