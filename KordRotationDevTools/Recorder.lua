@@ -25,6 +25,7 @@ local reasons={aura_batch_fields_unverified=true,
     player_level_unverified=true,spellbook_unavailable=true,
     target_present=true,target_absent=true,target_unverified=true,
     player_target_changed=true,update_bindings=true,spell_update_cooldown=true,
+    bag_update_cooldown=true,
     actionbar_slot_changed=true,spells_changed=true,player_regen_enabled=true,
     player_regen_disabled=true,player_entering_world=true,
     unit_spellcast_succeeded=true,unit_spellcast_start=true,
@@ -62,6 +63,35 @@ for _,code in ipairs({
     "item_bag_revision_changed","item_soulwell_refresh_missing_event",
     "item_count_zero_confirmed",
 }) do reasons[code]=true end
+
+-- IT-02/2.9: a fixed vocabulary only. Never export itemIDs,
+-- inventory contents, player data, raw game results or arbitrary strings.
+local itemCooldownReasons={
+ item_cd_api_missing=true,item_cd_secret=true,
+ item_cd_disabled=true,item_cd_invalid_tuple=true,
+ item_cd_gcd_only=true,item_cd_remaining_unknown=true,
+ item_cd_group_unknown=true,item_cd_group_partial=true,
+ item_cd_group_estimated=true,item_cd_group_conflict=true,
+ item_cd_use_attribution_unknown=true,item_cd_ready_confirmed=true,
+ item_cd_revision_changed=true,item_cd_group_catalog_missing=true,
+ item_cd_group_catalog_invalid=true,item_cd_identity_unverified=true,
+ item_cd_scope_unverified=true,item_cd_activity_unverified=true,
+ item_cd_unverified=true,item_cd_provider_error=true,
+ item_cd_provider_missing=true,item_cd_group_unverified=true,
+}
+for reason in pairs(itemCooldownReasons) do reasons[reason]=true end
+
+-- Called explicitly by developer-only diagnostics; currently no polling
+-- or implicit item-read bridge. READY is possible ONLY for an explicit
+-- confirmed-ready reason, not for estimated or partial evidence.
+function D:RecordItemCooldownDiagnostic(reason)
+ if type(reason)~="string" or not self:Safe(reason)
+     or not itemCooldownReasons[reason] then
+  return false,"item_cd_diagnostic_invalid"
+ end
+ local status=reason=="item_cd_ready_confirmed" and "READY" or "UNKNOWN"
+ return self:Record("CHECK",status,reason)
+end
 
 local fixedRefusals={
     spell_known_unverified=true,cooldown_activity_unknown=true,

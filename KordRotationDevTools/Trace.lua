@@ -3,7 +3,8 @@
 local _,D=...
 local tracked={
  PLAYER_TARGET_CHANGED=1, UPDATE_BINDINGS=33,
- SPELL_UPDATE_COOLDOWN=25, ACTIONBAR_SLOT_CHANGED=32,
+ SPELL_UPDATE_COOLDOWN=25, BAG_UPDATE_COOLDOWN=25,
+ ACTIONBAR_SLOT_CHANGED=32,
  SPELLS_CHANGED=19, PLAYER_REGEN_ENABLED=17,
  PLAYER_REGEN_DISABLED=17, PLAYER_ENTERING_WORLD=18,
  UNIT_SPELLCAST_SUCCEEDED=25, UNIT_SPELLCAST_START=25,
@@ -13,6 +14,7 @@ local reasons={
  PLAYER_TARGET_CHANGED="player_target_changed",
  UPDATE_BINDINGS="update_bindings",
  SPELL_UPDATE_COOLDOWN="spell_update_cooldown",
+ BAG_UPDATE_COOLDOWN="bag_update_cooldown",
  ACTIONBAR_SLOT_CHANGED="actionbar_slot_changed",
  SPELLS_CHANGED="spells_changed",
  PLAYER_REGEN_ENABLED="player_regen_enabled",
@@ -40,7 +42,9 @@ function D:TraceStart()
         if not D.active or not tracked[event] then return end
         -- Do not record other units' spellcasts or any spell ID/name.
         if playerOnly[event] and (not D:Safe(unit) or unit~="player") then return end
-        D:Record("EVENT","READY",reasons[event],tracked[event])
+        -- Event presence is not proof that an item or a group is ready.
+        local eventStatus=event=="BAG_UPDATE_COOLDOWN" and "UNKNOWN" or "READY"
+        D:Record("EVENT",eventStatus,reasons[event],tracked[event])
         if event=="PLAYER_TARGET_CHANGED" then D.nextDetailedAt=nil end
         D:ObserveTransition()
     end)

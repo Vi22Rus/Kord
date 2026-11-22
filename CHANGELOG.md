@@ -1,3 +1,14 @@
+## KR-20261122-094 — IT-02/2.9: guarded DevTools cooldown diagnostics (partial)
+- Дата/время: 2026-11-22 UTC (Git history exact timestamp), SHA по `git log --grep KR-20261122-094`.
+- Этап 2/2.9 IT-02 P0; feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: DevTools Recorder имел фиксированную диагностику предметов, но не был настроен на 12 cooldown reason codes; event Trace не включал `BAG_UPDATE_COOLDOWN`. Это source gap, не доказанный runtime defect.
+- Изменено: `KordRotationDevTools/Recorder.lua` whitelist фиксированных item cooldown причин и `RecordItemCooldownDiagnostic` (без IDs и raw payload); `KordRotationDevTools/Trace.lua` opt-in event mapping, статус UNKNOWN для BAG_UPDATE_COOLDOWN; `tests/item_cooldown_devtools_mock.lua` защитные и позитивные проверки. REQUIREMENTS и план содержат partial record; CHANGELOG обновлён атомарно.
+- Референсы/API: исходная IT-02 справка ForeverAuras/RotationMaster; новых WoW API нет, только optional event и имеющийся `pcall RegisterEvent`. Оригинальная игра не подтверждена.
+- Проверки: PASS — статическая сверка соответствия reason vocabulary и guards, исходные Lua mock assertions в репозитории. NOT RUN — настоящий Lua 5.1, mock/full regression, ручной GitHub Actions, WoW Forever (клиент недоступен).
+- Для тестировщика: проверить запись фиксированных причин, отключённый recorder, защиту secret/invalid, event-only UNKNOWN, отсутствие itemID в логах после итогового IT-02 QA. Промежуточная установка не нужна.
+- Осталось: автоматическое подключение защищённого cooldown observation bridge, UI, реальное подтверждение групп и полная QA. IT-02 остаётся PARTIALLY IMPLEMENTED; следующий 2.10 и незавершённые зависимости 2.6/2.7.
+- Связи: IT-01/02/03, AC-02, KR-20261122-090–093.
+
 ## KR-20261122-093 — IT-02/2.8: lazy item cooldown conditions and declared Needs
 - Дата/время: 2026-11-22 UTC, точный timestamp по Git; SHA `git log --grep KR-20261122-093`.
 - Этап: 2/2.8, IT-02 P0, feature/test/docs; SOURCE IMPLEMENTED, CLIENT NOT RUN.

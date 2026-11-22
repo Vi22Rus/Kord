@@ -5137,6 +5137,15 @@
 - Статус SOURCE IMPLEMENTED, полный IT-02 PARTIALLY IMPLEMENTED из-за 2.6/2.7/2.9/2.10 и игровых тестов.
 
 9. DevTools-only диагностика: `item_cd_api_missing`, `item_cd_secret`, `item_cd_disabled`, `item_cd_invalid_tuple`, `item_cd_gcd_only`, `item_cd_remaining_unknown`, `item_cd_group_unknown`, `item_cd_group_partial`, `item_cd_group_estimated`, `item_cd_group_conflict`, `item_cd_use_attribution_unknown`, `item_cd_ready_confirmed`.
+
+**Реализация Kord — фактическое состояние IT-02/2.9 (2026-11-22, P0, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- `KordRotationDevTools/Recorder.lua`: фиксированный whitelist cooldown reasons, `D:RecordItemCooldownDiagnostic(reason)` с единственным статусом READY для `item_cd_ready_confirmed`, остальные строго UNKNOWN, без itemID/сырых payload. Нельзя записывать произвольную строку или данные о персонаже.
+- `KordRotationDevTools/Trace.lua`: опциональный обработчик `BAG_UPDATE_COOLDOWN`; событие записывается со статусом UNKNOWN (само событие не подтверждает индивидуальную/групповую готовность). Только DevTools, пользовательское ядро не приобретает logger.
+- `tests/item_cooldown_devtools_mock.lua`: все 12 обязательных кодов, запрет raw item ID/неизвестного кода, READY только на подтверждённом диагнозе, inactive recorder.
+- API/референсы: новых WoW API нет; event candidate из исходного сравнения ForeverAuras/RotationMaster в IT-02, регистрация события protected через существующий Trace pcall; клиент NOT RUN.
+- PASS: статическая сверка исходников; NOT RUN: Lua 5.1 mock/full regression, manual CI, WoW Forever. Не добавлены скрытые source-side recorder или item scans.
+- Осталось: автоматический безопасный сбор reason/status/source/revision из cooldown observations и DevTools-view, проверка client signal semantics; без них шаг 2.9 частичный.
+
 10. Тесты: cooldown zero/active/expired, enabled bool/0/1/false, nil/secret/invalid numbers, own CD vs GCD, health/mana potion shared cooldown, healthstone independence, bandage and food, multiple ranks, absent item but active group lockout, item moved/split, cooldown starts after use, use-spell collision, combat secret, estimated last-use timer, reload/zone/clock discontinuity, missed BAG_UPDATE_COOLDOWN, API fallback, no false ready/no protected uses.
 
 #### Вердикт
