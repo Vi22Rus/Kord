@@ -919,6 +919,9 @@
 
 ### SP-02 — Ранги: найти максимально выученный ранг по семейству ID
 
+
+**Архитектурная актуализация AU-05:** **См. AU-05:** family/rank resolver для аур должен повторно использовать проверенные семейства заклинаний SP-02, но не приравнивать автоматически ID каста к ID наложенной ауры.
+
 **Приоритет: P0.**
 
 #### Требование
@@ -1804,6 +1807,9 @@
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
 
 
+**Архитектурная актуализация AU-05:** **См. AU-05:** поиск ауры по локализованному имени и по семейству рангов — варианты запроса к **тому же** общему AuraPresenceObservation. Не создавать отдельные name/rank aura scanners; точный ID, имя и семейство должны иметь разные критерии совпадения и статусы.
+
+
 **Архитектурная актуализация (перекрёстные ссылки):** **См. PL-09:** классовые ауры из PL-09 должны использовать общий AuraPresenceObservation. **См. SP-14:** проверки required/forbidden aura в SP-14 должны потреблять общий aura provider.
 
 **Приоритет: P0.**
@@ -1858,6 +1864,9 @@
 
 ### AU-02 — Длительность, остаток времени, число стаков
 
+
+**Архитектурная актуализация AU-05:** **См. AU-05:** длительность/остаток/стаки берутся только из конкретной подтверждённой AuraData, найденной общим AU-01 reader по ID, имени или семейству; при нескольких совпадениях не смешивать поля разных рангов.
+
 **Приоритет: P0.**
 
 #### Требование
@@ -1906,6 +1915,9 @@
 
 ### AU-04 — Тип: магия, яд, болезнь, проклятие, кровотечение; можно ли снять
 
+
+**Архитектурная актуализация AU-05:** **См. AU-05:** dispelType/bleedClassification берутся из той же конкретной ауры, найденной универсальным поиском AU-01; поиск по имени/семейству не оправдывает второй сканер.
+
 **Приоритет: P1.**
 
 #### Требование
@@ -1950,3 +1962,51 @@
 **Архитектурная ссылка:** AU-01 — общий reader, AU-02 — его duration/stacks, AU-04 — его dispel/bleed свойства; SP-14 и AbilityEligibility — проверка применимости способности. Не создавать отдельные aura scanners.
 
 **Изменения кода:** не выполнялись; внесён аудит AU-04 и сноска в AU-01.
+
+
+### AU-05 — Поиск ауры по имени и семейству рангов, а не только по одному ID
+
+**Приоритет: P1.**
+
+#### Требование
+
+Один универсальный `AuraPresenceObservation(unit,query,filter,casterFilter)` поддерживает типизированные запросы `query={kind="spellID",id}`, `{kind="localizedName",name}`, `{kind="rankFamily",familyID|verifiedIDs}`. Точный spellID означает **точный ID**, поиск по имени — локализованное совпадение с проверкой идентичности и возможной неоднозначностью, семейство — только **подтверждённый набор ID аур** (не автоматически семейство ID применяемых заклинаний). При нескольких совпадениях сохранять конкретный `matchedSpellID`, `auraInstanceID` (только если безопасен), `matchKind`, `matches`/ambiguity, GUID/caster/filter и индивидуальную достоверность; не смешивать duration/stacks/dispelType от разных аур.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 443–761: `ReadSignal(field,spellID,snapshot)` работает от одного числового ID; сначала `GetPlayerAuraBySpellID`/`GetUnitAuraBySpellID`, затем уже **есть** локализованный name fallback через `C_Spell.GetSpellInfo`/`GetSpellInfo` и `C_UnitAuras.GetAuraDataBySpellName` (строки 532–567), с проверкой `aura.spellId == запрошенному spellID`. Это **не полноценный самостоятельный запрос по имени** и **не семейство рангов**. При другом ранге правильно выдаёт `aura_identity_unverified`, а не ложное совпадение.
+- [`KordRotation/Core/SpellCatalogue.lua`](KordRotation/Core/SpellCatalogue.lua), строки 48–66, 194–195: каталог хранит отдельные spellID и rankNumber, сортирует ранги; имя не уникальный идентификатор и каталог изученных спеллов не является полным каталогом аур, наложенных чужими.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 66–67, 117–119: `Needs.auras` и `ReadSignal` требуют числовой ID; нет типизированного name/family query.
+- AU-01/02/04 задают единый multi-unit aura reader, duration/stacks и dispelType; AU-05 расширяет **способ адресации**, а не создаёт новый reader.
+
+#### Сравнение семи референсов (фактически проверенные локальные ZIP)
+
+1. **Sonah** — `Core/Atoms/Auras.lua:234–237` использует `C_UnitAuras.GetAuraDataBySpellName(unit,name,filter)` под `pcall`; `Core/Atoms/Spells.lua:5+` явно учитывает ранги Forever. Сильный пример name lookup и защищённого чтения; family match требует отдельной верификации.
+2. **JustAC** — `Options/SpellSearch.lua:41,119` умеет искать заклинания по имени/ID в интерфейсе, `PrecombatEngine.lua:412+` использует aura by spellID. UI-поиск spellbook **не равен** универсальному aura family lookup; готовая реализация не подтверждена.
+3. **ForeverAuras** — `CDMAuraProgress.lua:81` перебирает `Private.GetAuraSpellRanks(id)`; `BuffTrigger2.lua` и `Prototypes.lua` поддерживают гибкие фильтры аур по именам/ID. Наиболее подходящий референс семейства **именно аур**, но требуется подтверждение источника `GetAuraSpellRanks` и secret-safe negative.
+4. **MaxDps** — классовые ротации используют `C_UnitAuras.GetAuraDataBySpellName`; нет подтверждённого общего механизма объединения всех рангов ауры по проверенному семейству.
+5. **ForeverRotation** — `Engine.lua:152–159` читает ауры по имени и `HARMFUL`/`HARMFUL|PLAYER`; имя удобное, но совпадение по имени без ID не доказывает конкретный ранг.
+6. **RotationGuide** — `Core/State.lua:180+` защищённо ищет по имени/фильтру; проверенное универсальное family rank resolution не подтверждено.
+7. **RotationMaster** — `Libs/LibClassicDurations/core.lua:114,147–149` и `Help/conditional.lua` учитывают spell names/ranks; общий aura conditions layer существует, но готовый точный family-aware multi-unit aura query в проверенных местах не подтверждён.
+
+#### Сравнение и рекомендация
+
+**Основа — существующий Kord AU-01 + ForeverAuras (списки рангов аур) + Sonah (защищённый поиск по имени), с SP-02 (общий проверенный family resolver).** Сохранять три семантики `exactID`, `name`, `rankFamily`; не превращать все запросы по имени в точное совпадение и не предполагать, что каст и его аура всегда имеют один ID. Никаких отдельных `AuraByNameProvider` или `AuraRankScanner`: только варианты запроса к одному `AuraPresenceObservation` для player/target/pet/focus/party/raid.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Name fallback существует, но самостоятельного name query и verified family match нет.
+
+#### Требуемые изменения
+
+1. Расширить интерфейс AU-01 до типизированного `query` без ломания `ReadSignal(field,spellID)`; совместимость через адаптер `kind="spellID"`.
+2. `localizedName`: использовать локаль клиента и точный фильтр/caster, подтверждать `spellId` возвращённой AuraData; при одинаковом имени нескольких эффектов не выдавать неподтверждённый точный ID.
+3. `rankFamily`: формировать набор **aura spellID** из проверенного каталога/связей SP-02/ForeverAuras, дедуплицировать, не включать посторонние ID по совпадению имени. Если семейство неполное, положительный результат допустим для подтверждённого члена, но отрицание всего семейства — UNKNOWN.
+4. Сохранять `matchedSpellID` и matched AuraData; AU-02 duration/stacks и AU-04 dispelType должны относиться к тому же экземпляру. Для нескольких одновременно активных рангов предусмотреть явную стратегию `allMatches`/ambiguity, не выбирать «максимальный» без правила.
+5. Секретный name/ID/instance/список, ошибка enumeration, смена GUID → UNKNOWN; nil name lookup в secret combat не доказывает отсутствия. `READY(false)` для family только при полном достоверном отрицательном наблюдении всех подтверждённых членов и полноте семейства.
+6. Lazy `Needs` и кэш `unitGUID+queryKind+normalizedQuery+filter+caster`, инвалидировать `UNIT_AURA`, изменение unitGUID, каталога рангов и локали; не сканировать все ауры группы каждый тик.
+7. Тесты: разные ранги одного баффа, одинаковое имя у разных эффектов, разные локали, чужая/своя аура, castID≠auraID, отсутствующий член семейства, неполное семейство, несколько совпадений, secret и GUID switch, duration/stacks/dispel на matched instance.
+
+**Архитектурные ссылки:** AU-01 — единый reader; AU-02 — поля matched aura; AU-04 — тип matched aura; SP-02 — проверенные rank families. Соответствующие старые требования обновлены сносками на AU-05.
+
+**Изменения кода:** не выполнялись; внесён аудит AU-05 и актуализированы AU-01, AU-02, AU-04, SP-02.
