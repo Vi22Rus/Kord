@@ -6426,6 +6426,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Изменения Lua:** отсутствуют. Только документация.
 
 
+**Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
+
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6490,6 +6493,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Изменения Lua:** отсутствуют. Только документация.
 
 
+**Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
+
+
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6550,6 +6556,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Изменения Lua:** отсутствуют. Только документация.
 
 
+**Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
+
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6602,5 +6611,56 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **ЧАСТИЧНО РЕАЛИЗОВАНО, НАЙДЕН P0-ДЕФЕКТ:** `any` корректно ленив, `all` неверно останавливается на UNKNOWN до потенциального FALSE. Исправить текущий комбинатор, не создавать второй механизм. Lua-изменения и игровые тесты в рамках аудита не выполнялись.
 
 **Архитектурные ссылки:** EN-A1, EN-A2, AC-07, `RotationConditions`, `RotationEngine`, `AbilityEligibility`. Обратные ссылки внесены в EN-A1, EN-A2 и AC-07.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
+
+
+### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
+
+**Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
+
+#### Требование
+
+Любой UNKNOWN по умолчанию означает STOP (AC-07), без оценки нижестоящих правил. Только UNKNOWN причины `condition_unknown` может быть пропущен при одновременном выполнении двух условий: `rule.onUnknown=="skip"` и подтверждённое разрешение `profile.SkipExceptions[rule.id]`. Разрешение содержит `reason`, `testID`, `safeOptional=true` и доказательство безопасности именно этого необязательного условия. Ошибки `condition_error`, `condition_invalid`, неизвестная пригодность способности, обязательные safety-facts и неизвестные/secret API не могут обходиться. UNKNOWN не превращать в false, BLOCKED или READY. Политика общая для всех классов и каналов, STOP ограничивается зависимым scope.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:203–210`: `pcall(rule.when,S,cfg)` различает condition_error, condition_false, condition_unknown, condition_invalid.
+- `RotationEngine.lua:235–238`: UNKNOWN останавливает проход, кроме `reason=="condition_unknown" and rule.onUnknown=="skip"`. При пропуске фиксируется `condition_unknown_skipped`. **Прямой проверки `SkipExceptions[rule.id]` в этой runtime-ветке нет.**
+- `KordRotation/Core/RotationProfiles.lua:153–156,179–195`: валидатор допускает stop/skip, запрещает skip категории interrupts, проверяет `SkipExceptions` по rule.id и поля `reason`, `testID`, `safeOptional`, отклоняет отсутствующие/лишние записи.
+- `KordRotation/Core/AbilityEligibility.lua` (`Evaluate`): READY/BLOCKED/UNKNOWN остаются отдельными статусами; UNKNOWN eligibility не пропускается `RotationEngine`.
+- `RotationEngine.lua:265–306`: main/defensive оцениваются независимо при общем снимке. **Не доказаны** неизменяемость Rules/SkipExceptions после регистрации и безопасность каждого разрешённого исключения; игровые тесты не выполнялись.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:25–28` документирует true/false/nil, где nil означает неизвестность. Переносим различение неизвестного и ложного; централизованная skip-таблица не подтверждена данным участком.
+2. **JustAC:** `JustAC/JustAC.lua:1180–1193` отличает смену управления от временно непригодных кнопок. Полезно различать причины отказа, но решение UI не является разрешением пропуска UNKNOWN.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua:14–21` содержит реестры динамических и проверяемых условий. Разделение условий полезно; fail-closed приоритеты и SkipExceptions этим участком не доказаны.
+4. **MaxDps:** `MaxDps/Core.lua:760–772` защищает NextSpell через xpcall и логирует ошибки. Это не tri-state UNKNOWN-policy и не разрешение skip.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:1–18` прямо описывает ограничения наблюдаемости WoW Forever (в частности боевые ауры). Нельзя превращать недоступный факт в достоверный false; реестр исключений не подтверждён.
+6. **RotationGuide:** `RotationGuide/Core/Engine.lua:65–75` отсеивает правила boolean-сравнениями; `S.InMelee()==nil` при сравнении с boolean может исключить правило. Для Kord такое сворачивание UNKNOWN недопустимо.
+7. **RotationMaster:** `RotationMaster/Core/conditions.lua:222–236` возвращает `nil,why` при невозможности разрешить group unit. Полезно сохранять причину неизвестности, но skip-реестр по rule.id данным участком не доказан.
+
+**Ограничение:** сравнение подтверждает только указанные участки семи ZIP, не отсутствие аналогичных механизмов во всех остальных файлах. Не копировать чужую Lua truthiness, secret-небезопасные API и неограниченный polling.
+
+#### Выбранный путь Kord
+
+**Расширить существующие общие `RotationProfiles` и `RotationEngine`; отдельный UNKNOWN-движок не создавать.** Канонический источник исключений — валидированный `SkipExceptions` с ключом `rule.id`. При регистрации создать неизменяемую нормализованную авторизацию либо обеспечить повторную безопасную проверку при выполнении. Мутация исходной таблицы после регистрации не должна разрешать skip. Разрешать продолжение только после подтверждения ruleID, reason, области optional condition и разрешения. UNKNOWN обязательного факта всегда STOP. Диагностика: ruleID, priority, исходная причина, решение STOP/SKIPPED, reason/testID исключения, scope, фактически вызванные правила; без secret payload и без оценки последующих правил ради лога. Eligibility остаётся единственным арбитром READY.
+
+#### Требуемые изменения
+
+1. Формализовать проверяемую и неизменяемую авторизацию `SkipExceptions[rule.id]` и запретить runtime skip по одному `rule.onUnknown`.
+2. Проверять соответствие исключения конкретному optional condition; запрещать смешанные обязательные safety-facts, interrupts, condition_error/invalid и eligibility UNKNOWN.
+3. Проверить все профили и будущие typed actions на общий контракт, не создавать class-specific обработчики UNKNOWN.
+4. Добавить DevTools-трассу STOP/SKIPPED, ruleID, reason, testID, scope и счётчики реально вызванных условий.
+5. Тесты: UNKNOWN→STOP; разрешённый optional condition_unknown→SKIP; нет/невалидная запись→STOP; mutation после регистрации не повышает права; condition_error/invalid→STOP; eligibility UNKNOWN→STOP; interrupts→STOP; независимые каналы; отсутствие вычисления нижних правил; Lua 5.1 и in-game.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО (P0):** default STOP и реестр SkipExceptions уже существуют. Runtime-проверка пока зависит от `rule.onUnknown`, а неизменяемость и безопасность исключений не доказаны. Требуется усилить текущий общий контракт; игровые тесты не проводились.
+
+**Архитектурные ссылки:** PR-PR-01, PR-07, EN-A1, EN-A2, EN-A3, AC-07, RotationProfiles, RotationEngine, RotationConditions, AbilityEligibility. Обратные ссылки на EN-A4 добавлены в EN-A1, EN-A2, EN-A3 и AC-07.
 
 **Изменения Lua:** отсутствуют. Только документация.
