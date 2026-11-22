@@ -196,4 +196,22 @@ D:Refresh(true)
 eq(pairReads,1,"display requests a single atomic two-channel snapshot")
 eq(D.defensePreview[1].data.name,"Aspect of the Hawk",
  "display consumes paired defensive recommendation without extra scan")
+opts.showOutOfCombat=false
+opts.requireTarget=true
+UnitExists=function()return false end
+D:Refresh()
+eq(D.frame.visible,false,"main respects out-of-combat/target restriction")
+eq(D.defenseFrame.visible,true,
+ "Defensive frame remains visible when main frame is hidden")
+eq(D.defensePreview[1].data.name,"Aspect of the Hawk",
+ "Defensive content survives main visibility restrictions")
+opts.showPanel=false
+D:Refresh(true)
+eq(D.frame.visible,false,"main panel remains hidden")
+eq(D.defenseFrame.visible,true,
+ "Defensive remains separately visible when main is disabled")
+opts.showPanel=true
+opts.showOutOfCombat=true
+opts.requireTarget=false
+UnitExists=function()return true end
 print("PASS 2.8.5 display mock: "..n.." assertions")
