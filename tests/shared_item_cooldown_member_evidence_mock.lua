@@ -39,9 +39,12 @@ end
 function S:ReadItemCooldownObservation(id)
     calls=calls+1
     if mode=="race" and calls==2 then bus.cooldown=bus.cooldown+1 end
+    local sampleAt=100
+    if mode=="stale_sample" and id==858 then sampleAt=104 end
+    if mode=="backward_sample" and id==858 then sampleAt=98 end
     if mode=="all_zero" then
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
-            active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown}
+            active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown,observedAt=sampleAt}
     end
     if id==118 or id==858 then
         if mode=="single" and id==858 then
@@ -49,22 +52,22 @@ function S:ReadItemCooldownObservation(id)
         end
         if mode=="secret" and id==118 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
-                active="SECRET",remaining=20,revision=bus.cooldown}
+                active="SECRET",remaining=20,revision=bus.cooldown,observedAt=sampleAt}
         end
         if mode=="divergent" and id==858 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
                 active=true,remaining=20,startTime=70,duration=50,
-                revision=bus.cooldown}
+                revision=bus.cooldown,observedAt=sampleAt}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
-            active=true,remaining=20,startTime=90,duration=30,revision=bus.cooldown}
+            active=true,remaining=20,startTime=90,duration=30,revision=bus.cooldown,observedAt=sampleAt}
     end
     if id==929 then
         if mode=="aligned_only" or mode=="single" then
             return {status="UNKNOWN",reason="item_cd_unverified"}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
-            active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown}
+            active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown,observedAt=sampleAt}
     end
     return {status="UNKNOWN",reason="item_cd_unverified"}
 end
@@ -120,6 +123,14 @@ assert(publicMixed.groupLockoutConfidence=="UNKNOWN")
 assert(publicMixed.useCorrelation=="ESTIMATED")
 assert(publicMixed.propagationEvidence=="MIXED_CANDIDATES")
 assert(publicMixed.groupReadyConfidence=="UNKNOWN")
+mode="stale_sample"
+local staleSample=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(staleSample.reason=="item_cd_sample_time_incoherent")
+assert(staleSample.groupLockoutConfidence==nil and staleSample.candidateCount==nil)
+mode="backward_sample"
+local backwardSample=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(backwardSample.reason=="item_cd_sample_time_incoherent")
+assert(backwardSample.groupLockoutConfidence==nil)
 mode="spoofed_source"
 local forged=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(forged.useCorrelation=="UNKNOWN" and forged.propagationEvidence=="UNKNOWN")

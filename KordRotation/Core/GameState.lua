@@ -1454,9 +1454,13 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     local originStart,originDuration=nil,nil
     local activeTuples={}
     local starts={}
+    -- A stable revision does not ensure these sequential cooldown reads
+    -- describe the same instant. Bound the sampled monotonic clock span.
+    local firstSampleAt,lastSampleAt=nil,nil
+    local sampleTimeIncoherent=false
     for _,id in ipairs(ids) do
         local readOK,record=pcall(self.ReadItemCooldownObservation,self,id)
-        local good,isActive,remaining,start,duration=pcall(function()
+        local good,isActive,remaining,start,duration,sampledAt=pcall(function()
             if not readOK or type(record)~="table"
                 or not api:IsSafeValue(record)
                 or record.status~="READY"
@@ -1468,15 +1472,28 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 or not finite(record.remaining,0)
                 or record.active~=(record.remaining>0)
                 or not api:IsSafeValue(record.revision)
-                or record.revision~=before[1] then
+                or record.revision~=before[1]
+                or not api:IsSafeValue(record.observedAt)
+                or not finite(record.observedAt,0) then
                 return nil
             end
             local start,duration=record.startTime,record.duration
             local tupleSafe=api:IsSafeValue(start) and api:IsSafeValue(duration)
                 and finite(start,0) and finite(duration,0)
             return true,record.active,record.remaining,
-                tupleSafe and start or nil,tupleSafe and duration or nil
+                tupleSafe and start or nil,tupleSafe and duration or nil,
+                record.observedAt
         end)
+        if good and isActive~=nil then
+            if lastSampleAt and sampledAt<lastSampleAt then
+                sampleTimeIncoherent=true
+            end
+            firstSampleAt=firstSampleAt or sampledAt
+            lastSampleAt=sampledAt
+            if sampledAt-firstSampleAt>2 then
+                sampleTimeIncoherent=true
+            end
+        end
         if not good or isActive==nil then
             unknown=unknown+1
         elseif isActive then
@@ -1506,6 +1523,10 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
         end
     end
     local after=revisions()
+    if sampleTimeIncoherent then
+        result.reason="item_cd_sample_time_incoherent"
+        return result
+    end
     if not after or before[1]~=after[1] or before[2]~=after[2]
         or before[3]~=after[3] then
         result.reason="item_cd_revision_changed"

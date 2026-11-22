@@ -1,3 +1,13 @@
+## KR-20261122-117 — IT-02/2.6: reject temporally incoherent member cooldown snapshots
+- Дата/время: 2026-11-22 UTC (точное время в Git); SHA: `git log --grep KR-20261122-117`.
+- ID/этап: IT-02 P0, этап 2 шаг 2.6; fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Причина: `GameState:ReadSharedItemCooldownMemberEvidence` контролировал revision race, но совместимость времени чтения нескольких member cooldown не проверял; даже при стабильной ревизии устаревшая или обратная метка наблюдения могла попасть в ESTIMATED propagation. Source-code risk, не подтверждённый игровой дефект.
+- Реализация: `KordRotation/Core/GameState.lua` проверяет guarded `record.observedAt`, последовательную монотонность и общий интервал <=2 секунды для подтверждённых индивидуальных cooldown; нарушение => UNKNOWN без confidence/counts. Используется существующий `GetTime` через `ReadItemCooldownObservation`; новые WoW API и protected actions отсутствуют.
+- Тесты: `tests/shared_item_cooldown_member_evidence_mock.lua` — добавлены валидные observedAt в fixture, stale/backwards timestamp с fail-closed проверками; старые сценарии сохранены. Референсы: RotationMaster `Platform/items.lua` и JustAC `BlizzardAPI/StateHelpers.lua`.
+- Проверки: PASS exact source anchors, структурные assertions и атомарная Git transaction; NOT RUN Lua 5.1/mock/full regression (runtime недоступен), GitHub Actions (manual-only), WoW Forever (нет клиента).
+- Выдано тестировщику: итоговый IT-02 QA дополнить запаздывающим/обратным snapshot и убедиться, что ложный group ACTIVE/READY/remaining не выдается; промежуточную установку не запрашивать.
+- Документы: REQUIREMENTS/поэтапный план/CHANGELOG в одном коммите; исходные разделы сохранены. Следующее: завершить клиентскую верификацию group lockout semantics и безопасные group state transitions. Связи IT-01/IT-02, KR-20261122-116.
+
 ## KR-20261122-116 — IT-02/2.6: require observed player spell provenance for shared cooldown correlation
 - Дата/время: 2026-11-22 UTC (точное время — Git commit); SHA по `git log --grep KR-20261122-116`.
 - Этап/ID: 2/2.6, IT-02 P0, fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
