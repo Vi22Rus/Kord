@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 observations and refresh policy never issue final READY; AbilityEligibility remains the sole spell gate.**
+
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 time estimates and pet care need are observations, not final READY; only AbilityEligibility authorizes recommendation readiness.**
 
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 pet-slot cooldown/usability/autocast are input facts; final ability READY stays with AbilityEligibility, protected pet commands never execute.**
@@ -3221,6 +3223,8 @@
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 GUID dedup and summon ownership should reuse the common enemy/entity identity index where a summon GUID is actually observable.**
+
 **Архитектурная актуализация TH-03:** **См. TH-03: TH-03 uses canonical GUID identity and addressable aliases for enemy/tank/pet, with recycled-token invalidation.**
 
 **Архитектурная актуализация TH-01:** **См. TH-01: TH-01 threat observations use the shared GUID identity index and validated actor/target aliases; no independent nameplate scanner.**
@@ -4066,6 +4070,8 @@
 
 ### GR-06 — Число целей в группе в радиусе для AoE-лечения
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 effect coverage/radius must reuse GR-06 verified geometry semantics: spell cast range and active totem status do not prove allies are within aura radius.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
 
 #### Требование
@@ -4118,6 +4124,8 @@
 
 
 ### PE-01 — Питомец существует, жив, в зоне видимости, активен
+
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 distinguishes the single controlled pet from totems and guardians, reusing owner identity but never inventing a pet unit token for summons.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 uses PE-01 confirmed petGUID, life and active status; disappearance alone is not proof of completed Dismiss Pet or death.**
 
@@ -4233,6 +4241,8 @@
 
 ### PE-03 — Что атакует питомец, режим (атака, защита, пассив)
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 guardian attack/target state cannot be inferred from PE-03 pettarget; summons may lack addressable unit tokens.**
+
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 dismiss/revive/heal timing is independent of PE-03 pet attack state and stance; shared petGUID revisions invalidate stale timing.**
 
 **Архитектурная актуализация PE-04:** **См. PE-04: PE-04 shares the same GetPetActionInfo slot scan as PE-03 stance, preserving autocast and command tokens without a duplicate actionbar scan.**
@@ -4287,6 +4297,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 summon spell cooldown is distinct from summoned-unit remaining lifetime and range; reuse the common spell eligibility gate.**
+
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 reuses PE-04 spell/action cooldown and learned spell evidence but distinguishes cooldown, cast time, aura duration and postcast suppression.**
 
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P1.**
@@ -4340,6 +4352,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация PE-06:** **См. PE-06: PE-06 reuses validated time and event-revision conventions, but a totem lifetime is not pet heal/revive/dismiss cast duration.**
+
 **Раздел: 9. Питомцы и призванные существа. Приоритет: P2.**
 
 #### Требование и смысл «времени»
@@ -4388,5 +4402,58 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Kord имеет player cast/cooldown events, базовый pet health/life и API для spell information, но не подтверждён единый pet-care timing для Dismiss/Revive/Mend, live cast remaining, Mend aura remaining и доказательное различение pet transitions.
 
 **Архитектурные ссылки:** PE-01, PE-02, PE-03, PE-04, SP-14, GR-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### PE-06 — Тотемы и стражи: какие стоят, оставшееся время, в радиусе ли
+
+**Раздел: 9. Питомцы и призванные существа. Приоритет: P2.**
+
+#### Требование
+
+Определять для **собственных** активных тотемов и призванных стражей `kind` (`TOTEM/GUARDIAN/TEMP_SUMMON/UNKNOWN`), `ownerGUID`, `slot` (если применимо), `spellID/familyID`, `summonGUID` (только если реально наблюдаем), `active`, `startTime`, `duration`, `remaining`, `effectRadius` и **отдельное** `targetInEffectRange` для заданного unit/GUID. Каждое поле имеет `status/source/reason/observedAt/revision`. Тотемный слот ≠ GUID призванного существа; у guardian может не быть unit token и totem slot. `GetTotemInfo` и истечение времени доказывают **только** соответствующие сведения о слоте, а не то, что цель получает эффект. `IsSpellInRange` определяет дальность применения, **не** расстояние от установленного тотема до цели. Если нет подтверждённого положения тотема/стража и цели или проверяемого aura-effect evidence, `targetInEffectRange=UNKNOWN`, не false/true. Secret значения и отсутствие доступного API не интерпретировать как «тотема нет». Не подменять призыв питомцем PE-01 и не выполнять защищённые действия.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–10,24,43,96`: `GetTime`, `UnitGUID`, spell metadata доступны через allowlist; `GetTotemInfo`, `GetNumTotemSlots`, `GetTotemDuration`, `UnitIsMinion`, `UnitPosition`/позиционные API в проверенном allowlist не подтверждены.
+- `KordRotation/Core/GameState.lua:108–124,177,184–197`: есть snapshots player/target/pet, валидированное время, но нет slot-based `TotemObservation`, `GuardianObservation` и time-left/coverage.
+- `KordRotation/Core/EventBus.lua:23–24,35–36`: есть `UNIT_AURA`, `UNIT_PET`, но `PLAYER_TOTEM_UPDATE` и per-slot revision в проверенном mapping не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:72–100`: spell cooldown не является временем жизни уже установленного тотема.
+- `PE-01`–`PE-05` содержат canonical pet identity/time/action conventions; `GR-06` содержит политику **невыдуманной пространственной проверки**.
+
+#### Сравнение семи референсов (все предоставленные ZIP, конкретные Lua)
+
+1. **Sonah:** `Sonah/Classes/Shaman.lua:83–101` перечисляет слоты, семейства рангов и ожидаемые длительности Searing/Magma/Strength of Earth/Stoneskin/Earthbind/Tremor/Grounding/Mana Spring/Healing Stream/Mana Tide; `Sonah/Core/Atoms/Casts.lua:224–274` отслеживает `PLAYER_TOTEM_UPDATE`, читает `GetTotemInfo(slot)` через `Secret.CallMulti` и сопоставляет с недавним кастом. Перенять family/slot mapping, event invalidation и ограниченное event evidence; **не** считать статическую `duration` фактическим remaining или `notRecent` доказательством радиуса.
+2. **JustAC:** `JustAC/BlizzardAPI/CooldownTracking.lua:230–250` проверяет занятость слота через `GetTotemDuration(slot)` и memo; `JustAC/DebugCommands.lua:7834–7837,8309–8317` диагностирует `PLAYER_TOTEM_UPDATE`, `GetTotemInfo`, spellID и duration object; `JustAC/BlizzardAPI/StateHelpers.lua:1592–1595,1648–1651` отличает minion через `UnitIsMinion`. Перенять API probing и раздельную диагностику totem vs guardian, но duration object без проверки не превращать в числовые секунды.
+3. **ForeverAuras:** `ForeverAuras/GenericTrigger.lua:4461–4524` содержит spell family -> slot mapping, `GetTotemInfo(slot)`, secret guard и короткую корреляцию с последним кастом; `:4529–4561` подписывает `PLAYER_TOTEM_UPDATE`, читает `GetTotemDuration` через `pcall`. `ForeverAuras/CooldownViewerCatalog.lua:705` читает `totem.duration`/`expirationTime`. Перенять guarded slot observation и раздельное `duration`/expiration; не выдавать fallback по касту за подтверждённый установленный тотем.
+4. **MaxDps:** `MaxDps_Shaman/Main.lua:39` читает `GetTotemInfo(i)`; `MaxDps/Helper.lua:3198` использует start/duration; `MaxDps_Shaman/Specialization/Mop/Elemental.lua:75–97,123–155` использует totem spellID и наличие для выбора Elemental/Searing/Magma. Перенять spellID/slot matching и проверку уже установленного тотема; не переносить MoP/TWW radius, spellID и механики в Forever без проверки.
+5. **ForeverRotation:** в проверенных Lua нет прямых `GetTotemInfo`, `GetTotemDuration`, `PLAYER_TOTEM_UPDATE` и универсального summon range observation. Не выводить из отсутствия найденных API, что конкретные заклинания призыва не поддерживаются профилями.
+6. **RotationGuide:** в проверенных Lua нет прямых `GetTotemInfo`, `GetTotemDuration`, `PLAYER_TOTEM_UPDATE` и общего summon remaining/range provider. Не объявлять spell suggestion доказательством существующего тотема.
+7. **RotationMaster:** `RotationMaster/Platform/totems.lua:3–12,39–59,151–201` — **основной архитектурный референс**: `GetNumTotemSlots/GetTotemInfo`, secret-safe normalized records, сохранение последнего подтверждённого состояния при combat restrictions и `PLAYER_TOTEM_UPDATE`; `RotationMaster/Conditions/totem.lua:59–109,144–161,284–302` вычисляет active/remaining и варианты slot/spell с reason-rich UNKNOWN; `RotationMaster/Core/condition_support.lua:398–399` проверяет API support. Перенять **единый platform adapter, event-revision и оценку с явным provenance**; cached/estimated remaining нельзя выдавать за подтверждённый live факт, а totem-slot provider не является универсальным guardian tracker.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Единый логический `SummonedEntityObservation(ownerGUID,sourceKind,key)` с двумя адаптерами источника: `TotemSlotObservation(slot)` на основе RotationMaster + ForeverAuras и `GuardianLifecycleObservation(summonGUID/spellFamily)` только при подтверждённых клиентских событиях/identity evidence.** Не создавать отдельный scanner на класс или призыв; слотные тотемы обновлять по `PLAYER_TOTEM_UPDATE(slot)`, guardian lifecycle — по подтверждённым combat-log summon/death/dismiss/zone signals и только при доступных несекретных GUID, с ограниченным TTL. **Не считать каст призыва доказательством появления guardian**, а истечение ожидаемой длительности — подтверждённой смертью: `ESTIMATED`/UNKNOWN отдельно от `CONFIRMED`. Для тотемов хранить `slot,spellID,name,start,duration,expiration,modRate` с проверкой фактического формата Forever; `GetTotemDuration` может возвращать duration object — не использовать арифметику без валидированного извлечения. При secret slot — последний подтверждённый record как `STALE/ESTIMATED`, не как live `PRESENT_CONFIRMED`; если слота нет или его state нечитабелен, `UNKNOWN`. Семейства рангов и slot replacement берутся из проверенного spell catalog, один активный record на slot с атомарной заменой и revision.
+
+**Радиус — отдельный `SummonEffectCoverageObservation(summonKey,targetGUID,effectFamily)`**, переиспользующий GR-06 общий spatial/effect coverage provider. Различать `caster-to-target cast range`, `summon-to-target effect radius`, `summon attack reach`, `guardian pursuit range`, `group buff effect`; они не взаимозаменяемы. Без подтверждённого summon anchor, target location, spell-specific radius/LOS или доказанной aura effect на target возвращать `UNKNOWN(summon_geometry_unavailable)`; aura presence может доказывать **получение эффекта**, но не универсальную геометрическую близость для иных целей. Не вычислять точный радиус по таймеру/имени тотема или факту установки. Не делать вывод о guardian alive/target по `pet` unit token. Общие event coalescing, GUID/slot revision, lazy `Needs.summons` и `Needs.summonCoverage`, per-evaluation memo и bounded slot scans. Финальная рекомендация обновить тотем/призвать стража — только после `AbilityEligibility`.
+
+#### Требуемые изменения
+
+1. Ввести единый `SummonedEntityObservation` и **один** slot adapter для всех тотемов, не дублировать class-specific scans; guardian adapter отдельный источник того же контракта.
+2. Проверить Forever `GetTotemInfo`, `GetNumTotemSlots`, `GetTotemDuration`, duration objects, secret fields, `PLAYER_TOTEM_UPDATE`, spellID/rank/slot/expiration semantics.
+3. Добавить подтверждённые API в GameAPI allowlist с status/source/reason и `ESTIMATED` vs `CONFIRMED`; секретный слот не превращать в absent.
+4. Реализовать slot replacement, spell family mapping, timestamp validation, expiration remaining и bounded per-slot revisions; кэш не считать live proof.
+5. Проверить Forever guardian summon/owner GUID events, lifecycle и despawn evidence; при отсутствии доказательного API возвращать `UNKNOWN`, не использовать `pet` вместо guardian.
+6. Переиспользовать GR-06 spatial coverage contract для spell-specific summon-to-target effect radius, отдельно от cast range/guardian attack reach; без координат/ауры — UNKNOWN.
+7. Интегрировать spell refresh policy с PE-04 cooldown, PE-05 time conventions и SP-14 AbilityEligibility; избегать преждевременного refresh и двойных рекомендаций.
+8. EventBus `PLAYER_TOTEM_UPDATE`, подтверждённые guardian/combat log events, zone/death/identity invalidation, lazy Needs, bounded memo, без per-frame полного сканирования.
+9. DevTools-only диагностика: `totem_slot_unknown`, `totem_slot_secret`, `totem_slot_replaced`, `totem_remaining_estimated`, `totem_duration_object_unverified`, `totem_spell_family_unknown`, `guardian_summon_unconfirmed`, `guardian_guid_unknown`, `guardian_lifecycle_stale`, `summon_effect_radius_unknown`, `summon_target_coverage_confirmed`, `summon_anchor_unavailable`.
+10. Тесты: solo/party/raid, 0/1/4/5 slots, slot replacement, totem recalled/killed/expired, multiple ranks, totem duration secret midcombat, cached estimated vs confirmed, GetTotemDuration object, player death/zone, guardian summon/death/despawn with and without GUID, multiple guardians, totem vs guardian vs pet, target near caster but far from totem, aura present vs unknown geometry, out-of-range/LOS, missing API, event burst, stale revisions, no per-frame scan/protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Kord имеет общие часы, spell metadata и базовые события pet/aura, но не содержит доказанного totem-slot reader, guardian lifecycle observation, оставшегося времени и проверки summon-to-target radius.
+
+**Архитектурные ссылки:** PE-01, PE-03, PE-04, PE-05, GR-06, SP-14, EN-03. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
