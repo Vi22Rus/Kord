@@ -121,5 +121,25 @@ eq(detailedChecks:find("arcane_check_cast",1,true)~=nil,true,
  "cast check label survives export")
 eq(detailedChecks:find("button_action_info_unconfirmed",1,true)~=nil,true,
  "action info failure stage survives export")
+-- Failures found in live game logs must survive the final SavedVariables
+-- sanitizer. The old whitelist silently emptied bm_bar_2 details.
+for _,why in ipairs({
+ "spell_not_confirmed_on_visible_bar",
+ "visible_spell_rank_mismatch",
+ "aura_batch_fields_unverified",
+ "travel_aspect_aura_unverified"
+}) do
+ eq(D:Record("BAR","UNKNOWN","bm_bar_2",nil,nil,why),true,
+  "new refusal recorded "..why)
+ eq(D.records[#D.records].detail,why,
+  "new refusal preserved "..why)
+end
+eq(D:Record("API","READY","matrix_probe",1,nil,"presence_only"),
+ true,"matrix row recorded")
+eq(D.records[#D.records].matrix,1,"matrix index persists")
+eq(D:Record("API","UNKNOWN","matrix_probe",23,nil,
+ "no_single_safe_probe"),true,"composite row recorded")
+eq(D.records[#D.records].detail,"no_single_safe_probe",
+ "unavailable matrix evidence retained")
 eq(D:Stop(),true,"burst session stops")
 print("PASS DevTools recorder mock "..n.." assertions")
