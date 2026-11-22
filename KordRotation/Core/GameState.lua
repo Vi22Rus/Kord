@@ -1236,6 +1236,26 @@ function S:ReadSharedItemCooldownObservation(groupID)
         result.reason="item_cd_group_partial"
         result.catalogSource="SharedCooldownGroupCatalog"
         result.verification="PENDING_FOREVER"
+        -- Candidate item IDs are source data, not shared-lockout evidence.
+        -- Export only bounded aggregate count, never mutable IDs to profiles.
+        if type(catalog.GetCandidateMembers)=="function" then
+            local candidatesOK,candidates=pcall(catalog.GetCandidateMembers,catalog,groupID)
+            if candidatesOK and type(candidates)=="table" then
+                local checked,count=pcall(function()
+                    if candidates.status~="UNKNOWN"
+                        or candidates.reason~="item_cd_use_attribution_unknown"
+                        or candidates.groupID~=groupID
+                        or not api:IsSafeValue(candidates.candidateCount)
+                        or type(candidates.candidateCount)~="number"
+                        or candidates.candidateCount<1 or candidates.candidateCount>32
+                        or candidates.candidateCount~=math.floor(candidates.candidateCount) then
+                        return nil
+                    end
+                    return candidates.candidateCount
+                end)
+                if checked and count then result.candidateCount=count end
+            end
+        end
     elseif reason=="item_cd_group_unknown" then
         result.reason="item_cd_group_unknown"
     else

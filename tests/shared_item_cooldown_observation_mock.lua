@@ -10,6 +10,27 @@ assert(group.reason=="item_cd_group_partial")
 assert(group.catalogSource=="SharedCooldownGroupCatalog")
 assert(group.verification=="PENDING_FOREVER")
 assert(group.remaining==nil and group.active==nil and group.revision==nil)
+assert(group.candidateCount==19)
+local candidateSet=KR.SharedCooldownGroupCatalog:GetCandidateMembers("POTION_SHARED")
+assert(candidateSet.status=="UNKNOWN" and candidateSet.reason=="item_cd_use_attribution_unknown")
+assert(candidateSet.candidateCount==19 and #candidateSet.candidateItemIDs==19)
+assert(candidateSet.familyRevision==KR.ItemFamilyCatalog:GetRevision())
+assert(candidateSet.candidateItemIDs[1]==118)
+for _,itemID in ipairs(candidateSet.candidateItemIDs) do
+    assert(itemID~=5512 and itemID~=1251 and itemID~=159)
+end
+candidateSet.candidateItemIDs[1]=999
+assert(KR.SharedCooldownGroupCatalog:GetCandidateMembers("POTION_SHARED").candidateItemIDs[1]==118)
+assert(KR.SharedCooldownGroupCatalog:GetCandidateMembers("OTHER").candidateItemIDs==nil)
+local previousFamilies=KR.ItemFamilyCatalog
+KR.ItemFamilyCatalog=nil
+local absent=KR.SharedCooldownGroupCatalog:GetCandidateMembers("POTION_SHARED")
+assert(absent.status=="UNKNOWN" and absent.reason=="item_cd_group_family_missing")
+assert(absent.candidateItemIDs==nil)
+KR.ItemFamilyCatalog={GetRevision=function() return 1 end,
+    GetFamily=function() return {status="READY",itemIDs={118}} end}
+assert(KR.SharedCooldownGroupCatalog:GetCandidateMembers("POTION_SHARED").candidateItemIDs==nil)
+KR.ItemFamilyCatalog=previousFamilies
 assert(S:ReadSharedItemCooldownObservation("OTHER").reason=="item_cd_group_unknown")
 assert(S:ReadSharedItemCooldownObservation("SECRET").groupID==nil)
 local old=KR.SharedCooldownGroupCatalog

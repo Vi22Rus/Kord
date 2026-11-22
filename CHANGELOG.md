@@ -1,3 +1,16 @@
+## KR-20261122-102 — IT-02/2.6: bounded source-only candidate member resolution
+- Дата/время: 2026-11-22 UTC (точное время по Git); SHA: `git log --grep KR-20261122-102`.
+- Этап/ID: 2/2.6; IT-02 P0; feature/test; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: групповой cooldown имел только строковые family-кандидаты без безопасного общего списка конкретных itemID. По одному family membership нельзя делать вывод о shared cooldown.
+- Причина/источник: `SharedCooldownGroupCatalog:GetGroup` помечает POTION_SHARED как PENDING_FOREVER, а `ItemFamilyCatalog:GetFamily` содержит SOURCE_ONLY списки health/mana potions; это не клиентское подтверждение.
+- Реализация: `KordRotation/Core/SharedCooldownGroupCatalog.lua` — новый `GetCandidateMembers(groupID)` через единственный существующий ItemFamilyCatalog; проверяются group identity, SOURCE_ONLY, BAGS_ONLY, family revision, уникальность и валидность itemID, ограничение 32. При любом несоответствии возвращается UNKNOWN без IDs; при успехе — UNKNOWN и `candidateItemIDs`, `candidateCount`, `familyRevision`, reason `item_cd_use_attribution_unknown`. Общий cooldown не получает READY/remaining.
+- `KordRotation/Core/GameState.lua` — `S:ReadSharedItemCooldownObservation` по запросу может сообщить только проверенный `candidateCount` как диагностический факт, без передачи IDs профилям и без новых игровых сканов.
+- Тест: `tests/shared_item_cooldown_observation_mock.lua` — 19 source-кандидатов, исключения healthstone/bandage/drink, копия списка, отсутствие семьи, недостоверная семья, UNKNOWN; источник JustAC/Data/Forever/Consumables.lua в каталоге IT-01, наследуемая pending Forever verification.
+- Проверки: PASS — JS exact-anchor/static contract, создание Git-объектов; NOT RUN — Lua 5.1 execution/mock и полный regression, GitHub Actions manual-only, WoW Forever.
+- Для тестировщика: дополнить итоговую IT-02 проверку составом candidate list, его ревизиями, защищёнными/некорректными семейными списками, отсутствием group false READY. Промежуточную установку не запрашивать.
+- Невыполнено: фактическая source-verified item-use attribution, correlated cooldown statuses, проверка Forever, групповой таймер, все остальные подпункты IT-02; общий статус PARTIALLY IMPLEMENTED.
+- Документация: CHANGELOG обновлён; крупные REQUIREMENTS.md и поэтапный план не перезаписывались, так как GitHub connector возвращает пустой content для этих файлов. Связи IT-01, IT-02/2.5–2.10, KR-20261122-089/090/091/101.
+
 ## KR-20261122-101 — IT-02/2.6: guard untrusted shared cooldown catalogue fields
 - Дата/время: 2026-11-22 (Git commit records exact timestamp); SHA: `git log --grep KR-20261122-101`.
 - ID: IT-02 P0, этап 2, шаг 2.6; fix/test; PARTIALLY IMPLEMENTED; CLIENT NOT RUN.

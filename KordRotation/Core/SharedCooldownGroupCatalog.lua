@@ -46,6 +46,82 @@ function C:GetGroup(groupID)
         excludedFamilies=copy(EXCLUDED),
         familyRevision=rev}
 end
+
+-- IT-02/2.6: resolve bounded source-only item candidates, not shared CD proof.
+-- Must never return READY: a functional item family proves no common lockout.
+function C:GetCandidateMembers(groupID)
+    local result={status="UNKNOWN",reason="item_cd_group_unverified",groupID=groupID}
+    local groupOK,group=pcall(self.GetGroup,self,groupID)
+    if not groupOK or type(group)~="table" or not safe(group) then
+        result.reason="item_cd_group_catalog_invalid"
+        return result
+    end
+    local valid,known=pcall(function()
+        return group.groupID==groupID and group.status=="UNKNOWN"
+            and group.reason=="item_cd_group_unverified"
+            and group.verification=="PENDING_FOREVER"
+    end)
+    if not valid or not known then
+        result.reason="item_cd_group_unknown"
+        return result
+    end
+    local families=KR.ItemFamilyCatalog
+    if not families or type(families.GetFamily)~="function"
+        or type(families.GetRevision)~="function" then
+        result.reason="item_cd_group_family_missing"
+        return result
+    end
+    local ok,items,revision=pcall(function()
+        local rev=families:GetRevision()
+        if not safe(rev) or type(rev)~="number" or rev~=math.floor(rev)
+            or rev<1 or rev==math.huge then return nil end
+        local seen,out={},{}
+        for _,familyID in ipairs(CANDIDATES) do
+            local family=families:GetFamily(familyID)
+            if type(family)~="table" or not safe(family)
+                or not safe(family.status) or family.status~="READY"
+                or not safe(family.familyID) or family.familyID~=familyID
+                or not safe(family.verification) or family.verification~="SOURCE_ONLY"
+                or not safe(family.revision) or family.revision~=rev
+                or not safe(family.inventoryScope) or family.inventoryScope~="BAGS_ONLY"
+                or type(family.itemIDs)~="table" or not safe(family.itemIDs) then
+                return nil
+            end
+            local list=family.itemIDs
+            local count=#list
+            if count<1 or count>32 then return nil end
+            for i=1,count do
+                local itemID=list[i]
+                if not safe(itemID) or type(itemID)~="number"
+                    or itemID~=math.floor(itemID) or itemID<1
+                    or itemID>99999999 then return nil end
+                if not seen[itemID] then
+                    if #out>=32 then return nil end
+                    out[#out+1]=itemID
+                    seen[itemID]=true
+                end
+            end
+            for key in pairs(list) do
+                if type(key)~="number" or key~=math.floor(key)
+                    or key<1 or key>count then return nil end
+            end
+        end
+        if families:GetRevision()~=rev then return nil end
+        table.sort(out)
+        return out,rev
+    end)
+    if not ok or not items then
+        result.reason="item_cd_group_members_unverified"
+        return result
+    end
+    result.reason="item_cd_use_attribution_unknown"
+    result.verification="SOURCE_ONLY"
+    result.candidateItemIDs=items
+    result.candidateCount=#items
+    result.familyRevision=revision
+    return result
+end
+
 function C:ListGroups()
     return {"POTION_SHARED"}
 end
