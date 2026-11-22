@@ -96,6 +96,7 @@ local bmSignalNames={
  "context.inInstance","context.instanceType",
  "resources.percent","trap.profitable","need.distance",
  "mongoose.usable","autoShot.active","autoShot.swing",
+ "pull.remaining",
  "intimidation.profitable","aoe.safe","volley.profitable",
  "multi.profitable","enemy.count","hawk.count",
  "hawk.oldestRemaining","aimed.profitable","sting.profitable",
