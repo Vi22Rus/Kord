@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 determines which dispel families are actually learned via the canonical spellbook/rank provider; catalog membership is not proof of known spell.**
+
 **Приоритет: P0.**
 
 #### Требование
@@ -1258,6 +1260,8 @@
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 friendly dispel range is checked for actual member GUID and specific learned spellID via the common range adapter.**
+
 **Архитектурная актуализация GR-01:** **См. GR-01: GR-01 per-member friendly spell range reuses the common spell-range adapter and requires validated unit token, spellID and GUID consistency.**
 
 
@@ -1571,6 +1575,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 identifies dispel candidates, but only AbilityEligibility can issue final READY for a friendly dispel.**
 
 **Архитектурная актуализация GR-01:** **См. GR-01: GR-01 eligibility of a friendly spell remains with AbilityEligibility, not with roster visibility/range predicates.**
 
@@ -2769,6 +2775,8 @@
 
 ### TG-07 — Состояние контроля цели: превращена, заморожена, оглушена, в страхе, и сломается ли от урона
 
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 shares aura observation and CC classification where applicable, but harmful aura is not automatically dispellable or safe to remove.**
+
 
 **Архитектурная актуализация EN-04:** **См. EN-04: break-on-damage control policy is reused for each nearby GUID; add AoE-specific risk without a second CC classifier.**
 
@@ -3722,6 +3730,8 @@
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
 
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 dispel candidates consume the canonical GUID-keyed roster, validated aliases, member visibility/coverage and per-spell range; never create a second party/raid scan.**
+
 **Архитектурная актуализация GR-02:** **См. GR-02: GR-02 consumes the single GUID-keyed GroupRosterObservation and its revision/aliases; do not create a second roster scan for health, power or roles.**
 
 **Раздел: 8. Группа и рейд. Приоритет: P1.**
@@ -3775,6 +3785,8 @@
 
 ### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
 
+**Архитектурная актуализация GR-03:** **См. GR-03: GR-03 consumes canonical member health/life/role evidence for triage, not a duplicate member observation; debuff presence is independent of role.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P1.**
 
 #### Требование
@@ -3820,5 +3832,57 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые health/power adapters для отдельных units, но не общий per-member roster-wide health/resource/role provider.
 
 **Архитектурные ссылки:** GR-01, TH-01, TH-03, TG-02, SP-07. Обратные ссылки внесены в эти ранее существовавшие задачи в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-03 — Дебаффы, которые можно рассеять, у кого они
+
+**Раздел: 8. Группа и рейд. Приоритет: P2.**
+
+#### Требование
+
+На общем roster GR-01 определять **какой конкретный член группы/рейда** (`memberGUID`) имеет **какой подтверждённый harmful aura** (`auraInstanceID`/spellID, если доступны), её тип (`Magic/Curse/Poison/Disease` и другие **только при поддержке клиента**), и **может ли текущий персонаж рассеять именно этот эффект доступной ему способностью**. Разделить `DebuffObservation`, `DispelCapabilityObservation`, `DispelCandidateObservation` и окончательную `AbilityEligibility`. `HARMFUL` не означает dispellable, `HARMFUL|RAID` не обязательно доказывает, что **игрок** может рассеять, `RAID_PLAYER_DISPELLABLE`/native UI classification не следует считать эквивалентом learned spell. Данные о типе, наличии, применимости, приоритете и дальности имеют отдельные READY/UNKNOWN, reason, provenance, freshness. Не рекомендовать снятие опасных/штрафующих за dispel эффектов без явно проверенной политики. Никакого автоматического каста/смены цели.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:17,44–50`: allowlist включает `UnitAura`, `C_Secrets.ShouldAurasBeSecret`, `C_UnitAuras.GetUnitAuras/GetAuraDataByIndex/GetUnitAuraBySpellID` и другие aura calls; наличие API не доказывает roster-wide debuff registry и безопасность чтения secret.
+- `KordRotation/Core/GameState.lua:440–560`: текущая aura логика обслуживает `player.buff` и `target.debuff`, с spellID lookup, fallback и target GUID guard. Это не перечисление harmful debuffs всех `partyN/raidN`.
+- `KordRotation/Core/RotationConditions.lua:66–67`: `Needs.auras` покрывает declared spellIDs для текущих условий; отсутствует подтверждённый `group.dispellableDebuffs`/member-GUID observation.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_AURA` инвалидирует `auras`, но фильтрация unit events `EventBus.lua:39–46` ориентирована на player/target/pet/pettarget, а не весь roster.
+- `KordRotation/Core/AbilityEligibility.lua:187–239,267–278`: проверка friendly target/range опирается на текущий `target`; GR-03 требует отдельную GUID-safe friendly-member eligibility из общего механизма, не собственный READY.
+- `GR-01`/`GR-02` пока документальные контракты, а не реализованный roster provider.
+
+#### Сравнение семи референсов (проверены предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:822–824` определяет `HasDebuffType(unit,dispelType)` через aura API; `Sonah/Classes/Druid.lua:548–550`, `Classes/Paladin.lua:456–457`, `Classes/Priest.lua:256–261` используют `C.healDispellable("Magic"/"Poison"/"Disease"/"Curse")` для выбора классовых способностей. Перенять отделение общей классификации ауры от класса/способности и tri-state; не переносить классовый reader или предполагать, что наличие типа доказывает готовность dispel.
+2. **JustAC:** `JustAC/BlizzardAPI/SecretValues.lua:239–274` оборачивает `GetAuraDataByIndex` и предусматривает альтернативный bounded path при access-denied/secret; `JustAC/Data/SpellCategories.lua:492,569` каталогизирует dispel/purge utility, `Data/InterruptAbilities.lua:115–120` отдельно рассматривает offensive enrage dispel. Перенять secret-safe API boundary и разделение friendly dispel / offensive purge; не переносить retail-специфичный numeric DispelType 9 как проверенную механику Forever.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua:354–365` явно различает `RAID`, `RAID_PLAYER_DISPELLABLE`, `DISPELLABLE` и типы `Magic/Curse/Disease/Poison/Bleed`; `BuffTrigger2.lua:1591–1593,2070–2072,2449–2486` использует bounded aura iteration, обработку restricted access и `UNIT_AURA`. Это основной референс **клиентских фильтров и различия «рассеивается кем-то»/«мной»**, но UI classification не подменяет проверку learned spell и способности.
+4. **MaxDps:** `MaxDps/Helper.lua:223,289–341,485–515` поддерживает `TargetDispels` и хранит aura details по spellID/instanceID, используя `GetAuraDataByIndex`; `:644–665` обновляет записи. Перенять индекс auraInstanceID/spellID и lifecycle, но `TargetDispels` не является доказанным универсальным roster-wide friendly dispel selector; не создавать второй индекс на каждого потребителя.
+5. **ForeverRotation:** в проверенных Lua не обнаружено подтверждённого универсального per-member friendly dispellable-debuff provider. Не выдавать отсутствие подтверждения за доказательство отсутствия всех dispel правил; не использовать target-only aura state как roster coverage.
+6. **RotationGuide:** в проверенных Lua не обнаружено подтверждённого универсального per-member friendly dispellable-debuff provider. Не выводить пригодность dispel из наличия названия способности в профиле.
+7. **RotationMaster:** `RotationMaster/Conditions/debuffs.lua:356–386` объявляет `DISPELLABLE` с типом дебаффа и `dispellable` filter; `Core/aura_conditions.lua:431` выбирает `HARMFUL|RAID`; `Platform/auras.lua:85,102,129–130` содержит общий secret-aware bounded aura reader с validated filter; `Core/condition_runtime.lua:258,342–372` инвалидирует по `UNIT_AURA`. Перенять универсальный platform aura observation, lazy cache, tri-state и event invalidation; не считать `HARMFUL|RAID` доказательством способности текущего персонажа снять эффект.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Выбрать общий `AuraObservation(memberGUID)` по архитектуре RotationMaster, фильтры/разделение типов и секретности по ForeverAuras, spell capability mapping по Sonah, GUID+instanceID индексацию MaxDps и bounded secret-safe reads JustAC.** Источник членов — **только GR-01**, жизненные статусы — GR-02, общий aura reader — существующий Kord GameAPI/сигналы, расширенные до адресуемых friendly units; без второго roster scan и без отдельного классового dispel engine. `UNIT_AURA` инвалидирует только подтверждённый memberGUID; `GROUP_ROSTER_UPDATE`, смена алиаса/GUID и auraInstanceID — revision/TTL invalidation. Чтение `HARMFUL` и `HARMFUL|RAID` допускается лишь при подтверждённой Forever API semantics; ограниченный обход только по `Needs.dispels`/кандидатам, не каждый кадр и не все 40 участников без запроса. На secret/access-denied вернуть `UNKNOWN(aura_secret)`; отсутствие записи не доказывает отсутствие дебаффа, пока не доказаны coverage и полнота фильтра. Способности и dispel families проверяются по реально изученному максимальному рангу, классу, доступным эффектам, cooldown/ресурсам и конкретному member unit через **общую AbilityEligibility**. Отдельная policy допускает приоритет (смертельный/контроль/обычный) только на подтверждённых spellID и явных исключениях (опасный dispel, PvP и т.д.); неизвестный эффект не считать безопасным. Не смешивать defensive friendly dispel с offensive purge/enrage.
+
+#### Требуемые изменения
+
+1. Переиспользовать GR-01 GUID-keyed roster, GR-02 life state, SP-01/02 spellbook и SP-08/14 common eligibility; не создавать дублирующий roster/dispel scanner.
+2. Проверить на Forever фактические `C_UnitAuras.GetUnitAuras/GetAuraDataByIndex`, `UnitAura`, `HARMFUL`, `HARMFUL|RAID`, `RAID_PLAYER_DISPELLABLE`, `dispelName`, `auraInstanceID`, secret и nil; явно документировать различия.
+3. Ввести общий `GroupMemberDebuffObservation(memberGUID)` со статусом полноты/достоверности, spellID/instanceID, dispelType, observedAt, reason; не интерпретировать отсутствие как false при неполном обходе.
+4. Ввести `DispelCapabilityObservation(spellID)` по изученным способностям/рангам и подтверждённым dispel families; отделить offensive purge от friendly dispel.
+5. Вычислять `DispelCandidateObservation(memberGUID,auraID,spellID)` с раздельными `debuffPresent`, `typeKnown`, `canRemove`, `targetAddressable`, `range`, `safety` и UNKNOWN; окончательное READY только AbilityEligibility.
+6. EventBus per-member `UNIT_AURA` invalidation, GUID/roster revision, bounded refresh, per-evaluation memo, lazy `Needs.dispels`; запрет непрерывного 40-player aura polling.
+7. Безопасная политика triage: dispel priority, dangerous-on-dispel exclusions, death/ghost, range, immunity, PvP, mutually exclusive dispels, limited GCD; не заявлять универсальную безопасность без spellID evidence.
+8. DevTools-only диагностика: `group_debuff_unknown`, `group_debuff_secret`, `group_debuff_filter_unverified`, `group_debuff_coverage_partial`, `dispel_type_unknown`, `dispel_spell_unlearned`, `dispel_family_mismatch`, `dispel_target_guid_changed`, `dispel_range_unknown`, `dispel_unsafe_unknown`, `dispel_candidate_ready`.
+9. Тесты: solo/party/raid 40, several debuffs on same member, same spellID on multiple GUIDs, same name/different GUID, auraInstanceID recycled, dispel magic/curse/poison/disease, missing family/unknown rank, secret filter, nil aura, hidden dispelName, restricted API, raid filter vs player-capable, dangerous dispel, dispel immunity, dead/disconnected member, stale roster, GUID swap, cooldown/range/GCD, burst `UNIT_AURA`, no unbounded scans, no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** В Kord есть базовый aura API, обработка player buff/target debuff и события `UNIT_AURA`, но нет подтверждённого roster-wide per-member dispellable-debuff index, capability mapping и безопасной dispel recommendation.
+
+**Архитектурные ссылки:** GR-01, GR-02, SP-01, SP-08, SP-14, TG-07, EN-08. Обратные ссылки внесены в GR-01, GR-02, SP-01, SP-08, SP-14, TG-07; EN-08 остаётся общим бюджетным контрактом без отдельного nameplate scan.
 
 **Изменения Lua:** отсутствуют. Только документация.
