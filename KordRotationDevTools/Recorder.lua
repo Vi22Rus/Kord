@@ -105,6 +105,7 @@ local bmSignalNames={
 local bmCheckStages={"cast","usability","charges","cooldown","gcd","range"}
 for i=1,64 do
  reasons["bm_rule_"..i]=true
+ reasons["bm_bar_"..i]=true
  for _,name in ipairs(bmSignalNames) do
   local fixed=name:lower():gsub("[^a-z0-9]","_")
   reasons["bm_signal_"..i.."_"..fixed]=true
