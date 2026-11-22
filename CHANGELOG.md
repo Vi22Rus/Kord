@@ -1,3 +1,13 @@
+## 2026-11-22 — Universal category-driven routing for recommended buffs/aspects/auras/stances
+
+- Removed the explicit Hunter-name whitelist from the BM profile. **The display/engine never recognizes specific names or SpellIDs** as eligibility for the Defensive lane.
+- Any valid profile rule in category `buffs` with a non-enemy target is now classified as a maintenance `buff` unless its rule explicitly supplies a different `recommendationType`.
+- Supported semantic recommendations are `buff`, `aura`, `aspect`, and `stance`; each is routed **to Defensive outside combat**, to **main during confirmed combat** if the global `buffsInCombatMain` preference is enabled, and to **Defensive during combat** if disabled. The profile's normal `when` condition is still authoritative: active Cheetah outside combat must not trigger Hawk.
+- Explicit `utility` and `debuff` roles prevent classification errors. For the current Hunter profile, Pet Mend/Call/Revive are utility and Hunter's Mark is an enemy debuff rather than a player maintenance buff.
+- Existing per-profile role/category/priority and `AbilityEligibility` retain their responsibilities. Profiles must still define which abilities are appropriate; no generic Blizzard API safely proves that every arbitrary spell should be kept active.
+- Added mock coverage using an otherwise unknown Paladin Retribution Aura spell name and ID, including all four semantic roles and both preference states. It is **not** a playable Paladin rotation.
+- Tests and client behavior require separate execution/verification; GitHub file updates alone are not evidence of successful WoW gameplay.
+
 ## 2026-11-22 — Independent Defensive window and Hunter travel-aspect routing fix
 
 - `RotationDisplay`: Defensive is now an independent `UIParent` sibling frame, anchored below the main panel but no longer hidden together with it. It ignores main-only `requireTarget`, `showInCombat`, `showOutOfCombat`, and `showPanel` visibility gates. Defensive own `defensiveEnabled` and `defensiveCombatOnly` settings control its visibility; normal death/mount preferences remain relevant.
