@@ -46,3 +46,11 @@
 **Boundaries:** counters are grouped by method + status + reason; there is no raw argument/value recording or exact per-cast time sequence for every repeated invocation. One initial observation and final total are retained for each tuple. Client capability certainty still requires client tests, and unsupported composite v14 scenarios remain UNKNOWN. Debugging a result must distinguish `GameAPI.Probe.*` from actual method calls and consult `RULE/SIGNAL/STAGE/BAR` to identify conditional/eligibility semantics.
 
 **QA:** source updated; `tests/stage_02_03_game_state.lua`, `tests/devtools_trace.lua`, and `tests/devtools_recorder.lua` extended. Latest Lua 5.1/Forever testing NOT RUN. GitHub Actions intentionally not invoked before shared QA.
+
+## Complete text export via pages (2026-11-22)
+
+The in-game EditBox has a bounded maximum text length (default `D.maxExport=32768` bytes). The former `D:Export()` silently stopped at the first oversized segment and produced `truncated=1` with no way to copy subsequent journal entries. It now assembles pages of **whole TSV records**, in chronological sequence, from the current session's retained `KordRotationDevToolsDB.sessions` parts and, while active, the in-memory part. Clicking **Export** again advances page `N/M`; after page `M` it wraps to page 1. Copy **every page** to recover the full retained journal; header and footer show the page. `D:Export(page)` returns `text,page,total` and keeps each page below configured max bytes. The original first eight TSV fields remain unchanged, followed by method/count.
+
+`truncated=1` now means *multiple export pages exist*, not lost records. The independent `dropped` and `evicted_parts` counters disclose records rejected by the recorder or parts lost to the bounded SavedVariables retention; pages cannot recover evicted parts. For manual export after Stop, press Export repeatedly until reaching page M. Full SavedVariables journal still depends on normal WoW logout or `/reload` flush.
+
+The 2026-11-22 in-game trace had `dropped=0`, `evicted_parts=0`, `truncated=1` and ended in the middle of the v14 API census. That excerpt cannot confirm what occurred later in combat; the pagination fix enables recovery without adding new per-method diagnostic handlers. **SOURCE IMPLEMENTED / LUA MOCK NOT RUN / CLIENT NOT RETESTED**.
