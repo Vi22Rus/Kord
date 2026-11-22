@@ -37,6 +37,8 @@ local reasons={fact_true=true,fact_false=true,none=true,unknown=true,unavailable
     target_live=true,target_snapshot=true,ui_engine_status=true,
     priority_1_rule=true,eligibility_ready_count=true,
     eligibility_blocked_count=true,eligibility_unknown_count=true,
+    defensive_engine_decision=true,defensive_rule_priority=true,
+    defensive_rule_reason=true,
     defensive_enabled=true,defensive_combat_only=true,
     aura_promotion=true,defensive_engine_status=true,
     defensive_recommendation=true,defensive_frame_created=true,
