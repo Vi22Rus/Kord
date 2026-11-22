@@ -1,3 +1,14 @@
+## KR-20261122-045 — IT-01/1.4: versioned source-backed ItemFamilyCatalog
+- Дата: 2026-11-22 (UTC, точное время Git commit). Коммит: `git log --grep KR-20261122-045`; полный SHA сообщается после записи. IT-01 / 1.4, P0, InventoryObservation / ItemFamilyCatalog.
+- Тип: feat + test. Причина: после C_Item reader (KR-20261122-043) и bag snapshot (KR-20261122-044) отсутствовал единый функциональный каталог предметов с версионированием и дедупликацией.
+- Ожидаемое: семейства healing/mana potion, healthstone ranks, bandages, food/drink и Forever custom IDs без двойного счёта. До изменения: source-каталога в Kord не было.
+- Изменено: `KordRotation/Core/ItemFamilyCatalog.lua` (новый): `GetRevision`, `GetFamily`, `ListFamilies`, `ReplaceFamily`; built-in Forever source IDs и rankVariants; нормализация, дедуп внутри одной семьи, разрешённые overlap между семьями, атомарная замена со сбросом устаревших рангов, монотонная ревизия. `KordRotation/KordRotation.toc` — загрузка перед GameState; `tests/item_family_catalog_mock.lua` — самостоятельные mock-тесты.
+- Реальные источники: JustAC/Data/Forever/Consumables.lua (исходный Lua, RegisterHealingItems/RecoveryItems), исторический аудит IT-01 (RotationMaster, Sonah, ForeverAuras, MaxDps). Дополнительные mana itemIDs — source-only, клиент не проверен. Никаких WoW API или защищённых команд новый каталог не вызывает.
+- Проверки: PASS — статическая проверка структуры Lua/TOC/всех объявленных семейств, наличия тестов и сохранности прежнего читателя; NOT RUN — Lua 5.1/mock execution, GitHub Actions (ручной режим), игровой клиент WoW Forever. Нельзя считать исходные IDs прошедшими игровой тест.
+- Выдано тестировщику: при итоговом QA IT-01 проверить ранги/варианты, Forever IDs, пересечения FOOD/DRINK, поведение custom replacements/revisions, неизвестные ID, без автоматического использования предметов. Промежуточная установка не требуется.
+- Итог: SOURCE IMPLEMENTED / CLIENT NOT RUN. Следующий IT-01/1.5 — familyCount на общих наблюдениях с UNKNOWN и optional knownMinimum; связи IT-01, IT-02–IT-14, AC-02, KR-20261122-044.
+- Документация: синхронизированы REQUIREMENTS.md, поэтапный план и CHANGELOG.
+
 ## KR-20261122-044 — IT-01/1.3: единый bounded C_Container bag snapshot
 - Дата: 2026-11-22 UTC; время/SHA — git log --grep KR-20261122-044. IT-01, этап 1/подшаг 1.3, P0, InventoryObservation. Тип feat/test.
 - Ожидалось: проверяемый bag-only snapshot с C_Container и отказ при неполных/secret слотах. Ранее существовал только exact-ID count через C_Item (KR-20261122-043), без scanner/coverage.

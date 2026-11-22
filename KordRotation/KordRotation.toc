@@ -19,6 +19,7 @@ Core\EventBus.lua
 Core\AuraEvidence.lua
 Core\AuraCooldownViewer.lua
 Core\SpellCatalogue.lua
+Core\ItemFamilyCatalog.lua
 Core\GameState.lua
 Core\ActionBarScanner.lua
 Core\BindingResolver.lua

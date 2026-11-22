@@ -4972,6 +4972,18 @@
 - Следующий шаг IT-01/1.4 — версионированный ItemFamilyCatalog. Итоговая проверка bags-only semantics и client probe остаётся в общем QA этапа.
 
 
+
+#### Реализация Kord — фактическое состояние (IT-01, этап 1, шаг 1.4)
+
+- Дата: 2026-11-22; P0; **SOURCE IMPLEMENTED / LUA 5.1 NOT RUN / FOREVER CLIENT NOT RUN**. Конечный IT-01 не завершён: family count и invalidation относятся к шагам 1.5–1.6.
+- Добавлен общий [`KordRotation/Core/ItemFamilyCatalog.lua`](https://github.com/Vi22Rus/Kord/blob/main/KordRotation/Core/ItemFamilyCatalog.lua), зарегистрирован в [`KordRotation/KordRotation.toc`](https://github.com/Vi22Rus/Kord/blob/main/KordRotation/KordRotation.toc) перед `GameState.lua`: один общеклассовый экземпляр `KR.ItemFamilyCatalog`, без дублирования классовых каталогов.
+- Методы `GetRevision()`, `GetFamily(familyID)`, `ListFamilies()`, `ReplaceFamily(familyID,itemIDs)`. Предопределены `HEALTH_POTION`, `MANA_POTION`, `HEALTHSTONE`, `BANDAGE`, `FOOD`, `DRINK` и source-backed ранговые группы health/mana potions и healthstones. Версия каталога — монотонная `catalogRevision`, начинается с 1 и увеличивается только при изменении содержимого; повтор идентичных данных не создаёт ревизию. Возвращаются независимые копии; внутри семейства ID дедуплицируются, допускаются пересечения между FOOD/DRINK, например 262433.
+- Источники: непосредственно просмотрен публичный файл [JustAC/Data/Forever/Consumables.lua](https://github.com/wealdly/JustAC/blob/main/Data/Forever/Consumables.lua) (generated from Forever client data), включая `RegisterHealingItems` и `RegisterRecoveryItems`; реальные itemID из него: healthstones 5512/19004/19005/.../9421/19012/19013, health potions 118/858/929/1710/3928/13446/223913, bandage 1251/2581/14530, food/drink 262433 и 19301. Для mana potions выделен отдельный source-only набор ID с дополнительной проверкой по источникам Forever; игровая проверка идентичности и полного покрытия рангов не заявлена. Исторические ссылки первичного IT-01 на RotationMaster/ForeverAuras и MaxDps сохранены; архивы непосредственно не проверялись в этом прогоне.
+- Методы выполняют только классификацию идентификаторов и не вызывают игровые API. `GetItemFamily` (тип контейнера) не используется. Изменения семейства целиком валидируются до записи, с fail-closed при secret/invalid/неполных списках, ограничением 256 itemID, без silent-drop неверных ID; после пользовательской замены удаляются старые rankVariants, не подтверждённые новым набором.
+- [`tests/item_family_catalog_mock.lua`](https://github.com/Vi22Rus/Kord/blob/main/tests/item_family_catalog_mock.lua): копирование без алиасов, обязательные семьи, вариации рангов, overlapping FOOD/DRINK, уникальность, атомарная замена, rollback неверных ID, revision, unknown. Проверки: PASS — статическая сверка исходного текста/TOC/плана; NOT RUN — Lua 5.1, полная регрессия, GitHub Actions и игровой клиент Forever.
+- Продолжают использоваться `GameState:ReadInventoryItemObservation` и `ReadInventoryBagSnapshot` без изменения и суммирования; `ReadInventoryFamilyObservation` пока `UNKNOWN` до IT-01/1.5. Item cooldown/eligibility, применение предметов и автоматические действия не добавлены.
+- Коммит KR-20261122-045 (полный SHA по `git log --grep KR-20261122-045`). Связи: IT-01, IT-02–IT-14, AC-02, SP-14, PE-04, PE-05, GR-05, SW-04; следующий этап IT-01/1.5.
+
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
