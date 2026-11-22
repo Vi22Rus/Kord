@@ -356,6 +356,9 @@
 ## PL-03 — Здоровье игрока: текущее, максимальное, процент
 
 
+**Архитектурная актуализация TG-06:** **См. TG-06: health observation and history use shared UnitHealthObservation; estimated time-to-die is a separate derived metric, not a second health provider.**
+
+
 **Архитектурная актуализация TG-02:** **См. TG-02: здоровье игрока и цели использует общий UnitHealthObservation(unit), а не два отдельных health provider; secret-safe current/max/percent и curve policy едины.**
 
 **Приоритет: P0.**
@@ -2099,6 +2102,9 @@
 ### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
 
 
+**Архитектурная актуализация TG-06:** **См. TG-06: multiple target TTD histories reuse the shared GUID index lifecycle, not a parallel multi-target tracker.**
+
+
 **Архитектурная актуализация AU-09:** **См. AU-09: multi-target refresh использует GUID-index AU-06 и отдельную устойчивость состояния для каждого GUID, не общий флаг на всех врагов.**
 
 
@@ -2305,6 +2311,9 @@
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
 
+**Архитектурная актуализация TG-06:** **См. TG-06: TTD history is keyed by confirmed targetGUID and discarded on identity change; do not reuse prior target.**
+
+
 **Архитектурная актуализация TG-05:** **См. TG-05: target combat, target-of-target and threat use the same targetGUID and TargetObservation, not a parallel target scanner.**
 
 
@@ -2365,6 +2374,9 @@
 
 
 ### TG-02 — Здоровье цели: процент, текущее (если не защищено)
+
+
+**Архитектурная актуализация TG-06:** **См. TG-06: TTD consumes only validated TG-02 health observations, with no second secret-health reader; curve threshold does not supply exact numeric history.**
 
 **Раздел: 5. Цель. Приоритет: P0.**
 
@@ -2564,3 +2576,53 @@
 **Архитектурные ссылки:** TG-01 — target identity, PL-02 — player/pet identity, PL-07 — combat/group, SP-14 — target restrictions. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-05.
+
+
+### TG-06 — Время жизни цели (TTD): оценка с границей уверенности, nil если мало данных
+
+**Раздел: 5. Цель. Приоритет: P1.**
+
+#### Требование
+
+`TimeToDieObservation(targetGUID)` возвращает `estimateSeconds` только как **оценку** с `confidence`, `lowerBoundSeconds`, `upperBoundSeconds`, `sampleCount`, `windowSeconds`, `method`, `reason/source`. При недостатке наблюдений, защищённом здоровье, отсутствии подтверждённого отрицательного тренда, смене GUID или неустойчивой модели — `estimateSeconds=nil` и `status=UNKNOWN`. Никаких `0`, `9999`, `infinity` или старого TTD как якобы факта. Интервалы являются **эвристической неопределённостью модели**, не статистически гарантированным доверительным интервалом без калибровки.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 64–76,108–121: `cleanHealth(unit)` читает secret-safe current/max/percent, включая target; истории временных отсчётов и оценки TTD нет. `ReadHealthPercent(unit,curve)` (строки 784–791) поддерживает безопасный порог, **не** выдаёт непрерывную историю точного здоровья из секретных значений.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 55,59,72: `target.ttd` обозначен в `Needs` при `needs.ttd==true`, есть `target.dyingSoon` и `target.willSurviveBurst`, но реального подтверждённого TTD provider и общей модели confidence/interval не обнаружено.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 20,23,35: есть target switch, UNIT_HEALTH и UNIT_MAXHEALTH invalidation; нет общего bounded per-GUID health-history sampler.
+- TG-02/PL-03 — единый источник здоровья, TG-01 — идентичность, AU-06 — жизненный цикл GUID-index.
+
+#### Семь референсов (локальные Lua ZIP)
+
+1. **Sonah** — в проверенных Lua по `ttd/timeToDie/health history` готовый TTD estimator не обнаружен. Его secret-safe unit/health observation полезен как вход, но не как готовая модель TTD.
+2. **JustAC** — в проверенных Lua универсальный TTD estimator с интервалом уверенности не обнаружен; защитная логика не подтверждает прогноз смерти цели.
+3. **ForeverAuras** — триггеры UnitHealth/UnitHealthPercent и наблюдение аур есть; универсальный TTD estimator с confidence/interval в проверенных местах не обнаружен.
+4. **MaxDps** — `MaxDps/TimeToDie.lua:69+` `GetTimeToDie()` и `MaxDps/Core.lua:728` интегрируют TTD в ротацию; образец health-history forecast, но retail-эвристики и числовые fallback не считать достоверным TTD на Forever.
+5. **ForeverRotation** — `Engine.lua` и профили используют health/бой; в проверенных Lua `ttd/timeToDie` универсальный TTD с confidence interval не обнаружен.
+6. **RotationGuide** — `Core/State.lua` содержит health state и эвристики; в проверенных Lua `ttd/timeToDie` универсальный TTD с границами не обнаружен.
+7. **RotationMaster** — `Functions/forecast.lua:3+` содержит `forecast.calculate` по истории damage/heal, `Conditions/stats.lua:922–1135` поддерживает time-to-target и режимы burn rate, `Help/general.lua:225` описывает ограниченное окно наблюдений. Лучший источник bounded-history и signed burn rate; наличие функций не подтверждает готовый calibrated confidence interval.
+
+#### Рекомендация
+
+**Основа — Kord TG-02 + RotationMaster (bounded health/damage history and signed burn rate) + MaxDps (TTD integration).** Логический `TimeToDieObservation(targetGUID)` — производная модель над подтверждёнными health observations, не отдельный health reader. Если абсолютные значения защищены, а процент доступен лишь как дискретная curve threshold, **не** реконструировать непрерывную скорость убывания из ступеней. Использовать только доказательные временные наблюдения и явно обозначать низкую уверенность при малом окне, рывках лечения, фазовых сбросах, смене целей, остановке урона. При нехватке данных — nil/UNKNOWN.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ДОСТОВЕРНАЯ ОЦЕНКА TTD — ДОРАБОТАТЬ (P1).** Есть health primitives и декларация `needs.ttd`, но нет модели истории, границ и правил отказа.
+
+#### Требуемые изменения
+
+1. Ввести ограниченную по размеру/времени историю `(timestamp,confirmedHealth,confirmedMax,GUID)` только из TG-02; хранить по GUID, учитывать смену maxHP и резкие фазы отдельно.
+2. Не смешивать health percentage с absolute без явной нормализации; если известен только точный percent — допускается относительный тренд с явно отдельной моделью, но step-curve threshold не превращать в непрерывные проценты.
+3. Минимальное число независимых отсчётов и минимальная длина окна задаются конфигурацией модели; если недостаточно — `estimateSeconds=nil`, `status=UNKNOWN`, `reason=insufficient_samples`.
+4. Оценить устойчивый отрицательный тренд (например, robust regression/weighted slope) и неопределённость по разбросу/окнам; интервалы описывать как model bounds, не как доказанные 95% CI без калибровки.
+5. Отрицательный или нулевой burn rate, лечение, восстановление здоровья, reset/phase, большая дисперсия, отсутствующие/секретные точки → UNKNOWN, не бесконечный TTD.
+6. Историю и confidence сбрасывать/понижать при target GUID switch, смерти/исчезновении, выходе из боя/сбросе боя, смене maxHP, фазовых скачках. Краткое исчезновение nameplate не доказывает смерть; допускается bounded stale history только как неготовая оценка.
+7. `RotationConditions` поддерживает явные `ttd.estimate`, `ttd.confidence`, `ttd.lowerBound`, `ttd.upperBound` и пороговые условия только если модель готова. Не выдавать `target.dyingSoon` или `willSurviveBurst` из недоказанного TTD.
+8. `AbilityEligibility` остаётся единственным авторитетом READY; TTD влияет на экономическую выгодность/приоритет ротации, не является фактом физической возможности заклинания.
+9. Диагностика `ttd_insufficient_samples`, `ttd_health_secret`, `ttd_no_negative_trend`, `ttd_phase_reset`, `ttd_high_variance`, `ttd_guid_changed`; тесты стабильный DPS, burst, heal, stop DPS, maxHP change, 2 targets, target swap, secret, step curve, percent exact, short fight, death, out of combat, confidence bounds.
+
+**Архитектурные ссылки:** TG-02/PL-03 — здоровье, TG-01 — targetGUID, AU-06 — multi-GUID lifecycle. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-06.
