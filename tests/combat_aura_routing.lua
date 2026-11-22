@@ -9,6 +9,7 @@ KR.SpellCatalogue={Read=function()
  return {status="ready",entries={
   {id=13165,known=true,name="Aspect of the Hawk",texture=13165},
   {id=3044,known=true,name="Arcane Shot",texture=3044},
+  {id=7294,known=true,name="Retribution Aura",texture=7294},
  }}
 end}
 KR.BindingResolver={Resolve=function(_,id)
@@ -88,4 +89,36 @@ local pairMain,pairDefense=E:EvaluateBoth()
 eq(snapshotReads,1,"two channels share one fresh GameState snapshot")
 eq(spell(pairMain),13165,"shared snapshot main recommendation")
 eq(pairDefense.status,"BLOCKED","shared snapshot does not duplicate aura")
+-- A future Paladin aura has NO spell-specific routing code. A profile's
+-- semantics and category alone must route any recommended effect.
+profile.Spells.PaladinAura=7294
+profile.Rules[1].spell="PaladinAura"
+profile.Rules[1].id="arbitrary_paladin_aura"
+profile.Rules[1].recommendationType=nil
+combat=false
+eq(spell(E:EvaluateDefensive()),7294,
+ "unlisted buff category automatically routes Paladin aura to Defensive")
+eq(spell(E:Evaluate()),3044,
+ "unlisted buff category does not displace out-of-combat DPS")
+combat=true
+eq(spell(E:Evaluate()),7294,
+ "unlisted buff category moves to main in combat when enabled")
+eq(E:EvaluateDefensive().status,"BLOCKED",
+ "unlisted aura does not duplicate while promoted")
+S:SetFlag("buffsInCombatMain",false)
+eq(spell(E:EvaluateDefensive()),7294,
+ "unlisted aura remains Defensive when promotion is off")
+eq(spell(E:Evaluate()),3044,
+ "unlisted aura does not block DPS when promotion off")
+S:SetFlag("buffsInCombatMain",true)
+for _,kind in ipairs({"buff","aura","aspect","stance"}) do
+ profile.Rules[1].recommendationType=kind
+ eq(spell(E:Evaluate()),7294,"semantic route supports "..kind)
+end
+for _,kind in ipairs({"utility","debuff"}) do
+ profile.Rules[1].recommendationType=kind
+ eq(spell(E:Evaluate()),7294,"non-maintenance bypasses aura routing: "..kind)
+ eq(E:EvaluateDefensive().status,"BLOCKED",
+  "non-maintenance stays out of Defensive: "..kind)
+end
 print("PASS global combat aura routing and dual engine channels")
