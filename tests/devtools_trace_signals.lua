@@ -79,13 +79,17 @@ _G.KordRotationCoreObservation.Target=function()
 end
 local beforeDetails=#D.entries
 eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
- arcaneR4Reason="action_slot_unconfirmed"},true),true,"detail sample created")
+ arcaneR4Reason="action_slot_unconfirmed",
+ decisivePriority=5,decisiveStatus="UNKNOWN",
+ decisiveReason="action_slot_unconfirmed"},true),true,"detail sample created")
 local matches={}
 for i=beforeDetails+1,#D.entries do
  local entry=D.entries[i]
  matches[entry.reason]=entry.status
 end
 eq(matches.arcane_rank_4_rule,"UNKNOWN","rank four recorded")
+eq(matches.engine_decisive_priority,"UNKNOWN","decisive priority recorded")
+eq(matches.engine_decisive_reason,"UNKNOWN","decisive reason recorded")
 eq(matches.priority_1_rule,"UNKNOWN","priority 1 recorded")
 eq(matches.profile_ui,"UNAVAILABLE","UI profile status recorded")
 eq(matches.eligibility_ready_count,"READY","ready count including zero supported")
@@ -106,7 +110,9 @@ eq(matches.frame_shown,"BLOCKED","frame visibility recorded")
 eq(matches.ui_engine_status,"UNKNOWN","last UI engine recorded")
 local detailsCount=#D.entries
 eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
- arcaneR4Reason="action_slot_unconfirmed"},true),true,"repeat sample available")
+ arcaneR4Reason="action_slot_unconfirmed",
+ decisivePriority=5,decisiveStatus="UNKNOWN",
+ decisiveReason="action_slot_unconfirmed"},true),true,"repeat sample available")
 eq(#D.entries,detailsCount,"unchanged detailed observations not duplicated")
 _G.KordRotationCoreObservation=nil
 D.active=false
