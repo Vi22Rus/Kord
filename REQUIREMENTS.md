@@ -1256,6 +1256,8 @@
 
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 per-member friendly spell range reuses the common spell-range adapter and requires validated unit token, spellID and GUID consistency.**
+
 
 **Архитектурная актуализация TG-11:** **См. TG-11: range checks are unit-specific and GUID-bound; target range must never be reused for focus/mouseover.**
 
@@ -1567,6 +1569,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 eligibility of a friendly spell remains with AbilityEligibility, not with roster visibility/range predicates.**
 
 **Архитектурная актуализация TH-03:** **См. TH-03: TH-03 taunt availability must pass common AbilityEligibility including spell/range/form/cooldown; policy cannot issue READY.**
 
@@ -2400,6 +2404,8 @@
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
 
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 extends existing single-target existence/death/visibility observations to roster members via one shared GroupRosterObservation, not a duplicate per-class implementation.**
+
 
 **Архитектурная актуализация EN-03:** **См. EN-03: existing target GUID guard becomes part of shared UnitIdentityObservation, including token recycling and identity unknown.**
 
@@ -2869,6 +2875,8 @@
 
 ### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
 
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 spell range must be checked for the actual friendly unit and specific spellID; no fabricated distance or reuse of enemy target range.**
+
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 nearest is only a proven partial order from available range evidence, not fabricated exact meters; ability range is checked separately.**
 
 
@@ -2975,6 +2983,8 @@
 
 
 ### TG-11 — Фокус-цель и мышь-цель (если профиль их использует)
+
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 group aliases and target/focus/mouseover must resolve to canonical GUIDs; alias recycling invalidates the member observation.**
 
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 must distinguish currently addressable target/focus/mouseover from an observed GUID requiring manual switch; no protected auto-target.**
 
@@ -3537,6 +3547,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация GR-01:** **См. GR-01: GR-01 shared roster/role index supplies actor aliases for tank threat observation; membership or assigned role does not prove aggro.**
+
 **Архитектурная актуализация TH-03:** **См. TH-03: TH-03 taunt necessity consumes canonical per-actor/per-enemy ThreatObservation, not a new threat reader; taunt readiness is separate from taunt necessity.**
 
 **Архитектурная актуализация TH-02:** **См. TH-02: TH-02 consumes TH-01 per-actor/per-enemy detailed threat evidence; risk prediction and DPS stop policy must not become a second threat reader.**
@@ -3696,5 +3708,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P2).** Общие cooldown/eligibility и player-target threat facts существуют, но нет доказанной actor-specific threat ownership, универсального решения о необходимости таунта, классификации taunt effects и разграничения «враг вне агро»/«агро потеряно».
 
 **Архитектурные ссылки:** TH-01, TH-02, TG-05, EN-02, EN-03, EN-07, EN-08, SP-14. Обратные ссылки добавлены в TH-01, TH-02, TG-05, EN-03, EN-08, SP-14; EN-02/EN-07 остаются потребителями существующих контрактов без их замены.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
+
+**Раздел: 8. Группа и рейд. Приоритет: P1.**
+
+#### Требование
+
+Один канонический общеклассовый `GroupRosterObservation` должен выдавать для каждого подтверждённого члена party/raid (включая player, без двойного счёта) `memberGUID`, актуальный адресуемый unit token, членство, `exists`, `alive/dead/ghost`, `connected`, `visible` и `spellInRange(spellID,memberGUID)` как **независимые** наблюдения с `READY/UNKNOWN`, reason и временем. Не смешивать «состоит в группе», `UnitExists`, `UnitIsConnected`, `UnitIsVisible`, фазу/LOS и `IsSpellInRange`: каждый сигнал доказывает лишь своё. При secret/nil, смене GUID, неполном roster или недоступном API — UNKNOWN; нельзя считать отсутствующим/мёртвым/вне радиуса. `spellInRange` должен зависеть от **конкретного spellID** и unit, а не от общего радиуса «30 м». Готовность/пригодность способности остаётся за общим `AbilityEligibility`.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:10,13,26,36`: allowlist содержит `UnitGUID`, `UnitExists`, `UnitIsDeadOrGhost`, `IsSpellInRange`, `C_Spell.IsSpellInRange`; `UnitIsVisible`, `UnitIsConnected`, `GetNumGroupMembers`, `IsInRaid` и roster-specific calls в проверенном allowlist не подтверждены. Их следует добавить **только после проверки доступности/формата на Forever**.
+- `KordRotation/Core/GameState.lua:108–122,183–196`: `unitSnapshot` собирает existence/GUID/death для player/target/pet, а не roster-wide party/raid. `GameState.lua:209` различает контекст party/raid, но не выдаёт поимённый состав.
+- `KordRotation/Core/AbilityEligibility.lua:187–239,448–488`: текущий spell-range/target gate привязан к `target`, с защитой target GUID; общего friendly `partyN/raidN` spell-range gate нет.
+- `KordRotation/Core/RotationConditions.lua`: подтверждённого `group.memberExists`/`group.memberVisible`/`group.memberSpellInRange` с объявленными `Needs` нет.
+- `KordRotation/Core/EventBus.lua`: событийная архитектура есть, но подтверждённого `GROUP_ROSTER_UPDATE` и per-member GUID invalidation для общего roster нет.
+
+#### Сравнение семи референсов (проверены предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:56,128,632,996,1064,1214` использует secret-safe `UnitIsDeadOrGhost`, `UnitIsVisible`, `UnitIsConnected`, `GetNumGroupMembers` и `GROUP_ROSTER_UPDATE` с `rosterDirty`; `Sonah/Core/Atoms/Spells.lua:594–598` получает spell-specific range для unit с nil=unknown. Перенять разделение фактов, событийную инвалидизацию и secret-safe tri-state; не объявлять `not visible` синонимом `out of spell range`.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:397,431–432,773–774` применяет `C_Spell.IsSpellInRange(spellID,unit)` и `UnitIsDeadOrGhost/UnitIsConnected` с readable-bool guard. Перенять per-spell/per-unit проверку и отказ от вывода false из restricted data; в проверенных местах не доказан общий полный roster registry.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua:726,2640–2651,4593,4643,4673–4675` перечисляет `raidN`, защищённо проверяет `UnitIsConnected`, `UnitIsDeadOrGhost`, `UnitIsVisible` и инвалидирует roster при `GROUP_ROSTER_UPDATE`; отдельно предупреждает о цене `UNIT_IN_RANGE_UPDATE`. Перенять событийный roster и раздельные статусы, не подписываться на дорогое range событие без измерений.
+4. **MaxDps:** `MaxDps/Helper.lua:2169–2190,3004–3006` использует spell range для unit и `GetNumGroupMembers` с корректным solo=0. Перенять правильную solo/group ветвь и spell-specific range; не переносить retail spellbook signatures без проверки Forever.
+5. **ForeverRotation:** `ForeverRotation/Sync.lua:206` слушает `GROUP_ROSTER_UPDATE`; `ForeverRotation/Engine.lua:262–263,297–298` проверяет `C_Spell.IsSpellInRange` для target или конкретного unit, но в проверенных местах нет подтверждённого roster-wide member-health/visibility registry. Перенять event + unit range, не делать вывод, что sync roster сам доказывает доступность для лечения.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:144,161` инвалидирует state при `GROUP_ROSTER_UPDATE`; `RotationGuide/Core/State.lua:248` проверяет `C_Spell.IsSpellInRange` лишь для target в проверенном фрагменте. Перенять общую event invalidation, не использовать target-only проверку как per-member range.
+7. **RotationMaster:** `RotationMaster/Platform/group_units.lua:3–26,52–69,79–105` предоставляет универсальный platform resolver group roles/aliases через roster APIs, `nil,reason` и secret-safe calls, не кэширует unit token при изменяемых назначениях; `RotationMaster/Platform/actions.lua:127–154` реализует native/fallback spell range для конкретного unit. Перенять platform/group resolution и reason-rich observation, дополнив roster-wide member index и жив/видим/connected.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Выбрать универсальный platform/roster resolver RotationMaster + событийный `rosterDirty` Sonah/ForeverAuras + раздельные secret-safe member states ForeverAuras/JustAC + spell-specific range Sonah/RotationMaster.** Один общий `GroupRosterObservation` обслуживает будущие heal/dispel/buff/group/raid, TH-01 tank identity и другие потребители, без отдельного списка для каждого класса. `GROUP_ROSTER_UPDATE` и подтверждённые lifecycle events инвалидируют roster revision, ленивый rebuild по `Needs` выдаёт GUID-keyed snapshot с alias map и `coverage`; per-spell range вычисляется **только по запросу** и memoized на `(revision,memberGUID,spellID)` в рамках оценки, не сканирует весь рейд при каждом кадре. Численный TTL/rate budget измерить на клиенте Forever. `UnitIsVisible` не гарантирует line-of-sight и не доказывает, что spell применим; `IsSpellInRange` не доказывает castability, LOS или отсутствие immunity. При неизвестном результате вернуть UNKNOWN, а не `false`. Смена состава/фазы/алиаса или GUID между чтениями отменяет stale result. В solo учитывать `player` как единственного локального члена для запросов self, не объявлять его party1. Общий `AbilityEligibility` — единственный источник final READY.
+
+#### Требуемые изменения
+
+1. Валидировать на Forever roster API (`GetNumGroupMembers`, `GetNumSubgroupMembers`, `IsInRaid`, `UnitExists`, `UnitGUID`, `UnitIsConnected`, `UnitIsVisible`, `UnitIsDeadOrGhost`, spell range), secret semantics и реальные unit aliases; расширить allowlist только подтверждёнными вызовами.
+2. Ввести один GUID-keyed `GroupRosterObservation` с `player/partyN/raidN` aliases, dedup и snapshot `revision/observedAt/coverage`, без двойного учёта player в рейде.
+3. Независимые tri-state поля existence, life, connected, visible и membership, с причиной/источником; `UNKNOWN` не подменять false.
+4. Реализовать `GroupMemberSpellRangeObservation(memberGUID,spellID)` через общий spell range adapter, с alias+GUID guard, supported target policy и lazy per-evaluation memo; не использовать произвольную фиксированную дальность.
+5. EventBus invalidation: `GROUP_ROSTER_UPDATE`, `PLAYER_ENTERING_WORLD`, смена GUID/phase/connectivity и подтверждённые unit events; bounded coalescing/heartbeat, без roster scans в `OnUpdate`.
+6. Связать TH-01 tank role/actor aliases, TG-01/09/11 и SP-08/14 с новым единым roster provider, без замены их существующих contracts.
+7. DevTools-only диагностика: `roster_api_unavailable`, `roster_secret`, `roster_incomplete`, `member_guid_changed`, `member_exists_unknown`, `member_dead_unknown`, `member_visible_unknown`, `member_connected_unknown`, `member_spell_range_unknown`, `member_spell_range_target_mismatch`, `roster_budget_exceeded`.
+8. Тесты: solo/party/raid, player duplicate in raid, 0/1/40 members, join/leave/reorder, disconnect/reconnect, dead/ghost, visible but out of range, invisible but spell range unknown, same names different GUID, recycled party token, range spell A vs B, target-only spell on friendly, secret/nil, phase/LOS unknown, rapid roster updates, many consumers sharing one snapshot, stale revision, final Eligibility fails despite range true.
+9. UI/DevTools: если добавлены настройки roster refresh, предоставить локализацию и подсказки на шести языках; не добавлять настройку без измеримого эффекта и документированной семантики.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые existence/death/GUID и target spell-range API, но не подтверждён единый roster-wide provider с жизнью/видимостью/connected и spell-specific range по каждому члену группы/рейда.
+
+**Архитектурные ссылки:** TG-01, TG-09, TG-11, SP-08, SP-14, TH-01. Обратные ссылки внесены в перечисленные ранее задачи в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
