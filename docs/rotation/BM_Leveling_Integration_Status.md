@@ -1,41 +1,58 @@
-# BM Hunter 1–59 — перенос существующей ротации v2.3
+# Hunter BM — полный перенос стратегий в Contract v1
 
-**Источник:** `KordRotation/Profiles/Hunter/Kord_Hunter_BM_Leveling_PVE.lua` (legacy `BM.Next(s, cfg)`), уже в репозитории. Это полный стратегический алгоритм, **но не зарегистрированный рабочий профиль** в `Profile Contract v1`. Рабочая рекомендация Arcane Shot сейчас выдаётся через `BM_Pilot_Experimental.lua`.
+**Статус на 2026-11-22: SOURCE INTEGRATED; MOCK/CLIENT NOT VERIFIED для новой версии.**
 
-## Приоритеты оригинальной ротации (сохранять порядок)
+## Модули и автоопределение
 
-1. Feign Death (агро/здоровье/контекст).
-2. Аспект Monkey/Hawk и поддержка питомца: Call Pet, Revive Pet, Mend Pet.
-3. До боя Hunter's Mark, затем Pet Attack.
-4. В ближней зоне: Disengage → ловушки → кулдауны → Immolation → Wing Clip → Mongoose Bite → Raptor Strike.
-5. На дистанции: Auto Shot → Hunter's Mark → Concussive Shot → контрольные ловушки → Bestial Wrath/Rapid Fire/Intimidation → AoE → Summon Hawk → Aimed Shot → Arcane Shot → Serpent Sting → филлеры (Immolation и условный Multi-Shot).
-6. Ранги Arcane Shot выбираются по максимально **действительно изученному** рангу, не по одному уровню. При UNKNOWN от Eligibility — остановка.
-
-Исходный `BM.Next` оперирует именами и `s.ready[name]`, с потенциально ложными допущениями при `nil`. Его нельзя напрямую подключать как `Profile.Rules`: в действующем движке итоговый READY принадлежит исключительно `AbilityEligibility`, при UNKNOWN действует fail-closed.
-
-## Состояние источников для полного переноса
-
-| Группа | Текущий статус | Что необходимо |
+| Класс / специализация / уровень | Выбираемый модуль | Основа |
 |---|---|---|
-| Уровень, наличие цели, игрок в бою, HP/ресурсы игрока | Есть типизированные snapshot/facts | Использовать только статусы READY |
-| Ранги Arcane Shot, бар и проверка доступности | **Работает в игре** (пилот) | Сохранить без регрессии, включая GCD 29515 |
-| Наличие/здоровье питомца | Присутствует в GameState | Обеспечить разрешённый доступ из ограниченного S |
-| Pet Attack | Contract v1: PET_COMMAND **не поддерживается** | Отдельный контракт действия, не превращать в SPELL |
-| Hunter's Mark, Serpent Sting, аспекты, Mend Pet | Aura provider есть для присутствия, **отсутствие ауры не доказано**; полные ранги не зарегистрированы | Подтверждение отсутствия с ревизией цели и максимального изученного ранга |
-| Summon Hawk: количество и оставшееся время | Нет подтверждённого провайдера | События собственного каста и подтверждённый таймер/состояние |
-| Aimed Shot / Multi-Shot (общий кулдаун), Auto Shot swing | Нет подтверждённого swing и объединения кулдаунов | Сверить с WoW Forever API и референсами |
-| Цель elite/boss/TTD/угроза, прибыльность метки/жала и выживание до burst | Частично есть threat, но нет полной TTD/классификации | Поэтапно подтверждать, UNKNOWN не заменять «долго живёт» |
-| AoE/количество противников и безопасность ловушек | Нет подтверждённого enemyCount/aoeSafe | Реализовать читаемые безопасные источники |
-| Ловушки, замедление и мили-контроль | Недостаточно сигналов и рангов | Подтвердить единый cooldown, диапазон и ауры |
+| HUNTER / BM (TREE_1) / 1–59 | `HUNTER_BM_LEVELING_PVE` | `Kord_Hunter_BM_Leveling_PVE.lua`, v2.3 |
+| HUNTER / BM (TREE_1) / 60 | `HUNTER_BM_60_PVE` | экспериментальный адаптер приоритетов BM 60 v1.2, ещё не проверен на полной паритетности |
+| HUNTER / BM (TREE_1) / 61–100 | `HUNTER_BM_PILOT_EXPERIMENTAL` | изолированный fallback Arcane Shot, вне диапазона WoW Forever 1–60 |
 
-**Интеграционный принцип:** каждый пункт переносится как явное `Profile.Rules` с числовыми IDs и `Needs`-allowlist, `Config` из legacy defaults; только после готовности нужных read-only провайдеров. Не объявлять весь исходный алгоритм работающим по факту наличия исходника.
+Оба рабочих профиля регистрируются через `Profiles/Hunter/BM_Leveling_Contract.lua` при PLAYER_LOGIN, PLAYER_LEVEL_UP, SPELLS_CHANGED, LEARNED_SPELL_IN_TAB. Стандартный движок `RotationEngine` выбирает профиль **строго по classToken, specIndex и читаемому уровню**. Неоднозначное дерево талантов или непрочитанный уровень не создаёт вымышленного профиля.
 
-**Текущий live-профиль не заменять** до прохождения mock и WoW Forever validation. При этом весь legacy-файл сохраняется как основной источник порядка приоритетов. Контракт `docs/rotation/Profile_Contract.md` не менять без отдельного согласования.
+## Полный охват стратегии BM 1–59
 
-## Журнал для проверки переноса
+Перенесены все ветки исходного `BM.Next(s,cfg)`, включая **Feign Death, Monkey/Hawk aspect, Call/Revive/Mend Pet, Hunter's Mark, Pet Attack, melee Disengage/Traps/Wing Clip/Mongoose/Raptor, ranged Auto Shot/Concussive, кулдауны Bestial Wrath/Rapid Fire/Intimidation, AoE Explosive/Volley/Multi-Shot, Summon Hawk, Aimed Shot, Arcane Shot, Serpent Sting и филлеры**. Порядок задан `Profile.Rules`; основной движок обрабатывает только разрешённые типы и `AbilityEligibility` решает конечный READY.
 
-В DevTools `KordRotationDevToolsDB.sessions` сохраняет bounded части записи (каждая до 512 событий; до 12 последних частей), с идентификатором сессии, порядковым номером части и финальным маркером. Сохранение происходит на Stop, при заполнении части и при PLAYER_LOGOUT. После выхода или `/reload` WoW записывает данные в:
+Исходные **22 конфигурации** `BM.defaults` перенесены без пропусков в `Profile.Config`. Раздел «Ротация» генерирует controls из схемы активного модуля, а `RotationSettings.moduleConfigs[profile.id]` хранит значения отдельно для каждого модуля. При смене уровня/специализации UI перестраивается. Дополнительные **4 настройки BM 60** делают его схему отдельной (26 элементов); этот 60-адаптер пока экспериментальный и не заявлен как точная паритетная копия стратегии 60.
 
-`WTF/Account/<ACCOUNT>/SavedVariables/KordRotationDevTools.lua`
+ID заклинаний — стабильные базовые числовые ID и **наивысшие действительно известные ранги из `SpellCatalogue`**, если каталог подтверждён (включая Arcane Shot и собственные ID Summon Hawk из Forever). Если корректность ID не подтверждена, конечный `AbilityEligibility` должен вернуть UNKNOWN/BLOCKED, а не автоматически кастовать.
 
-Этот путь — **файл, создаваемый самим клиентом WoW**, а не прямой файловый ввод-вывод аддона. При аварийном завершении/убийстве процесса сброс на диск не гарантирован. Старые сегменты удаляются по лимиту хранения; ручная кнопка «Очистить» удаляет архив. Для загрузки в разговор достаточно прислать `KordRotationDevTools.lua`; Ctrl+C из игрового поля не требуется.
+## Источники сигналов и границы достоверности
+
+| Сигнал | Текущая реализация |
+|---|---|
+| Уровень, бой, здоровье/мана, target existence, pet existence/HP/attack target | типизированный `GameState` snapshot |
+| Класс цели (normal/elite/rareelite/worldboss) | `UnitClassification` через `GameAPI` |
+| Ближняя дистанция | отдельный безопасный `AbilityEligibility.Fact(2973,"inRange")`; неподтверждённое даёт UNKNOWN |
+| Auto Shot active | `GameState.ReadAutoShot(75)`; **не приравнивать к swing timer** |
+| Цель противника / атака игрока | `UnitExists("targettarget")` + `UnitIsUnit("targettarget","player")` |
+| Player buffs / target debuffs | существующая проверка AuraData по spellID; при отсутствии — ограниченное 64-записями сканирование `GetAuraDataByIndex`; `false` только при проверенном завершении списка и стабильном target GUID |
+| Hawk count / remaining | пока UNKNOWN: нет подтверждённого игрового источника |
+| Enemy count, AoE safety, TTD, aimed/multi profitability, traps, travel aspect, sting remaining, movement needs | явные UNKNOWN до проверки соответствующих API |
+| PET_ATTACK | сохранён в списке правил как `PET_COMMAND`, но контракт пока не умеет рекомендовать/исполнять этот тип: `unsupported_action` |
+| Защищённые значения | UNKNOWN, никогда не интерпретируются как false/ready |
+
+**Отдельная запись непроверенных сигналов** не означает, что весь набор способностей уже успешно отображается. Мы осознанно переключили экспериментальный режим на полный профиль ради одного комплексного игрового теста. По появлению очередных `UNKNOWN` будут дорабатываться провайдеры; защитные действия не могут обходить отсутствие подтверждения.
+
+## Полный журнал без Ctrl+C
+
+DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVariables по сегментам до **512** строк, с сохранением **12** последних частей; на Stop и PLAYER_LOGOUT сохраняется финальный сегмент. После `/reload` или выхода WoW записывает файл `WTF/Account/<ACCOUNT>/SavedVariables/KordRotationDevTools.lua`. Нельзя писать произвольные файлы из WoW API.
+
+В режиме ручной записи `CoreObservation.Audit()` запрашивает `RotationEngine:AuditFull()`. Это **диагностическая оценка всех правил независимо от обычной остановки на первом READY/UNKNOWN**. Она проверяет условия и Eligibility каждой применимой способности, не выдаёт рекомендаций и не выполняет кастов. В журнале:
+
+- `PROFILE bm_profile_bm_leveling / bm_profile_bm_60` — выбранный модуль;
+- `RULE bm_rule_N` — результат N-го приоритета, а в detail его причина;
+- `SIGNAL bm_signal_N_<field>` — какая конкретно проверка бафа, дебафа, цели, питомца, ястреба или AoE дала READY/UNKNOWN и почему;
+- `STAGE bm_stage_N_cast/usability/charges/cooldown/gcd/range` — все шесть этапов или `UNAVAILABLE/not_evaluated`;
+- старые `ENGINE`, `TARGET`, `DISPLAY`, `CHECK` и `BAR` остаются.
+
+Записываются **только изменения** безопасных статусных значений, чисел приоритетов и заранее разрешённых причин; ни один SpellID, GUID, имя игрока, имя цели или frame не экспортируется. Аудит активен только при записи DevTools, обычный движок остаётся ленивым. Старые сегменты вытесняются по лимиту.
+
+## QA и дальнейшая работа
+
+Добавлены Lua mock-тесты выбора 1–59/60, регресса на ранг Arcane, per-module Config и полного аудита, а также тесты лога и сохранения SavedVariables. **Не утверждать Lua/mock PASS и клиентский PASS до фактического запуска**. Не изменять без отдельного согласования `docs/rotation/Profile_Contract.md` (формальный документ контракта v1).
+
+Исторические версии `Kord_Hunter_BM_Leveling_PVE.lua` и `Kord_Hunter_BM_60_PVE.lua` сохранены для сравнения при дальнейших уточнениях условий.
