@@ -550,6 +550,9 @@
 ## PL-07 — Боевой статус, группа/рейд/соло и режим подземелья
 
 
+**Архитектурная актуализация EN-02:** **См. EN-02: group roster/context is reused to determine membership; UnitAffectingCombat(player) is not evidence that each enemy fights the group.**
+
+
 **Архитектурная актуализация TG-10:** **См. TG-10: battleground/arena/zone PvP context is distinct from a unit's own PvP flag; share existing instance observation.**
 
 
@@ -2605,6 +2608,9 @@
 
 ### TG-05 — Цель в бою, цель цели (агро на мне / на питомце / на другом)
 
+
+**Архитектурная актуализация EN-02:** **См. EN-02: player/pet/group threat and target-of-target observations are evidence for group engagement, but targettarget alone is not proof of threat leadership.**
+
 **Раздел: 5. Цель. Приоритет: P1.**
 
 #### Требование
@@ -2917,6 +2923,9 @@
 
 ### TG-11 — Фокус-цель и мышь-цель (если профиль их использует)
 
+
+**Архитектурная актуализация EN-02:** **См. EN-02: generic UnitObservation(unitToken) applies to nameplate and party/raid tokens only with explicit Needs and GUID safety.**
+
 **Раздел: 5. Цель. Приоритет: P2.**
 
 #### Требование
@@ -2968,6 +2977,9 @@
 
 ### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
 
+
+**Архитектурная актуализация EN-02:** **См. EN-02: reuse one GUID-indexed observed enemy registry/nameplate lifecycle; radius membership and combat-with-party relationship are independent filters, never separate scans.**
+
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
 
 #### Аудит текущего Kord
@@ -3012,5 +3024,59 @@
 #### Вердикт
 
 **НЕ РЕАЛИЗОВАНО КАК ДОСТОВЕРНЫЙ ПОДСЧЁТ ВРАГОВ В РАДИУСЕ N — ДОРАБОТАТЬ (P1).** Есть API allowlist и имя условия, но нет доказанного полного count provider. Ссылки: TG-01, TG-09, TG-06, AU-06; обратные архитектурные сноски внесены.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### EN-02 — Число врагов, находящихся в бою с группой
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Определение
+
+Считать **уникальные GUID враждебных живых существ, для которых подтверждено боевое взаимодействие хотя бы с одним участником нашей группы/рейда или его питомцем**. Это не то же самое, что все враждебные nameplates с `UnitAffectingCombat=true`, и не то же самое, что враги в радиусе N (EN-01). Вариант без группы должен иметь явную политику `solo=player+pet`. Нельзя объявлять точный count по неполному набору видимых nameplates.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameState.lua:127`: `UnitAffectingCombat("player")` только для игрока; `:148` `UnitThreatSituation("player","target")` только угроза игрока относительно текущей цели; `:200–201` `IsInGroup/IsInRaid` лишь контекст, не реестр боевых врагов.
+- `KordRotation/Core/GameState.lua:423–428`: `targettarget` проверяется относительно игрока, не всех участников группы и не является доказательством того, кто держит угрозу.
+- `KordRotation/Core/GameAPI.lua:13–16,56`: allowlist `UnitAffectingCombat`, `UnitThreatSituation`, `UnitDetailedThreatSituation`, `C_NamePlate.GetNamePlates`, но общего per-enemy/per-party наблюдения нет.
+- `KordRotation/Core/RotationConditions.lua:73`: `enemy.count` declared Needs, но нет отдельного `enemy.engagedWithGroupCount` и достоверного provider.
+- `KordRotation/Core/RotationEngine.lua:130`: `auto_target_count_unverified`; не выдаёт боевую численность группы.
+- `KordRotation/Core/EventBus.lua:26,38`: `UNIT_FLAGS` invalidates combat, но нет подтверждённого полноценного lifecycle nameplates/group threat.
+
+#### Сравнение семи референсов (проверка Lua ZIP)
+
+1. **Sonah:** `Core/Atoms/Units.lua:263–289` `ReadEnemiesNearby` перебирает nameplates, проверяет hostile, `UnitAffectingCombat(unit) ~= false` и близость; **не подтверждает связь именно с нашей группой** и допускает неизвестный combat как потенциально подходящий. Полезна secret-safe структура, не семантика group engagement.
+2. **JustAC:** `UI/UINameplateOverlay.lua` обрабатывает `NAME_PLATE_UNIT_ADDED/REMOVED`; применимо к жизненному циклу nameplates, но подтверждённого общего group-engagement count в проверенных местах нет.
+3. **ForeverAuras:** `BuffTrigger2.lua:2393,2559` использует `NAME_PLATE_UNIT_ADDED`; `Profiling.lua:583` учитывает nameplate и group roster events. Это образец event/lifecycle, не готовый combat-with-party classifier.
+4. **MaxDps:** `MaxDps/Helper.lua:2242+` содержит проверку `UnitAffectingCombat(unit)` в контексте подсчёта противников; в проверенных местах связь каждого врага с членом группы не доказана. Retail-specific механики не переносить без Forever-проверки.
+5. **ForeverRotation:** `Engine.lua:275–295` подсчитывает nameplates через `UnitCanAttack`, `UnitAffectingCombat`, `UnitIsDead`, опционально `CheckInteractDistance`; это **боевые враждебные nameplates**, а не достоверно враги нашей группы.
+6. **RotationGuide:** `Core/State.lua:279–294` `S.Targets()` считает атакуемые nameplates с `UnitAffectingCombat`, минимум 1; **не использовать** этот минимум как точный enemy count и не приравнивать к бою с группой.
+7. **RotationMaster:** `Platform/unit_flags.lua:3–69` даёт secret-safe `GetUnitFlagObservation(unit,"combat")` с UNKNOWN; отдельный combat flag не доказывает group engagement. Подходящий безопасный provider-фундамент.
+
+#### Каноническая архитектура
+
+**Расширить EN-01, а не создавать второй nameplate scanner.** Общий bounded `ObservedEnemyIndex` по GUID получает видимые unit tokens и событие lifecycle; `EnemyCombatObservation(enemyGUID)` хранит `inCombat`, `engagedWithGroup`, `engagementEvidence`, `matchedGroupMemberGUID`, `status/reason/observedAt`. Источники связи: достоверное `enemy target-of-target` в составе группы/питомцев, подтверждённые threat relations с каждым доступным членом группы и, если валидировано на Forever, боевые события с GUID обеих сторон. `UnitAffectingCombat(enemy)` **не** доказывает `engagedWithGroup`; отсутствие видимого target-of-target или угрозы **не** доказывает отсутствие взаимодействия. Сопоставление только по GUID, с учётом смены целей и питомцев; threat status не следует автоматически трактовать как фактического получателя атак.
+
+Выход: `confirmedEngagedCount` (нижняя граница), `possibleEngagedCount` (верхняя граница **среди наблюдаемых**), `observedHostileCount`, `coverage`, `status/reason`; точное `enemy.engagedWithGroupCount=READY(n)` только при доказанной полноте источников и классификации. При неполном охвате `UNKNOWN`, не `READY(0)`. Отдельные запросы `engagedWithGroupCount` и `engagedWithGroupWithinRadius(N)` не смешивать; второй переиспользует TG-09 интервальную дальность EN-01. Все проверки ленивые по `Needs.enemyGroupCount`; нет защищённых действий.
+
+#### Требуемые изменения
+
+1. Обобщить EN-01 `ObservedEnemyIndex` на GUID-indexed enemies, без второго nameplate loop; ограничить TTL и число записей.
+2. Подключить PL-07 group/raid roster и питомцев с достоверной идентичностью; solo policy player+pet.
+3. `UnitAffectingCombat` использовать как **факт боевого состояния**, а не доказательство боя с группой.
+4. Добавить отдельные источники group-engagement evidence: enemy-target member, подтверждённая threat relation, валидированные combat log GUID relations. Непроверенные combat log events не считать источником.
+5. Дедуплицировать GUID, проверять token recycling, death, target swap, pet/party roster changes и reset/evade.
+6. Отдельно хранить `confirmed/possible` и coverage; не выводить точное число при скрытых nameplates или неизвестном engagement.
+7. Добавить типизированное `enemy.engagedWithGroupCount` и `Needs.enemyGroupCount` в общий `RotationConditions`, при UNKNOWN применять PR-01/02.
+8. Инвалидировать по nameplate add/remove, GROUP_ROSTER_UPDATE, UNIT_FLAGS, подтверждённым threat/target events, bounded heartbeat; диагностировать `enemy_engagement_unknown`, `group_roster_unknown`, `enemy_combat_secret`, `nameplate_coverage_partial`, `enemy_guid_recycled`.
+9. Тесты: один враг на игроке, один на питомце, несколько на группе, посторонний бой, нейтральные, enemy in combat but not group, missing nameplates, unknown threat, token recycle, raid roster, solo, reset/evade, duplicates, secret flags, AoE radius filter.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** В Kord есть combat/group/threat API-факты и allowlist nameplates, но нет доказательного подсчёта уникальных врагов, взаимодействующих с нашей группой.
+
+**Архитектурные ссылки:** EN-01 — общий индекс врагов; TG-05 — threat/target-of-target; PL-07 — группа/рейд; TG-11 — generic unit tokens. Обратные ссылки добавлены в прежние задачи.
 
 **Изменения Lua:** отсутствуют. Только документация.
