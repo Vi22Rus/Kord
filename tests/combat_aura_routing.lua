@@ -37,6 +37,7 @@ KR.RotationProfiles={
  Has=function()return true end,
  ResolveForEngine=function()return profile end,
 }
+KR.AbilityEligibility={} -- engine ownership gate; mocked condition Check below
 KR.RotationConditions={
  Create=function()return {} end,
  Check=function()return {status="READY",reason="none",checks={}} end,
