@@ -1672,3 +1672,50 @@
 7. Тесты: успешный каст, ошибка/промах, interrupt собственного каста, отмена, канал, отсутствие события, secret ID/GUID/reason, смена цели, одинаковый spellID при разных исходах, base/rank/override, повторная загрузка, logout/login, DevTools не раскрывает secret.
 
 **Изменения кода:** не выполнялись; внесён аудит CA-03.
+
+
+### CA-04 — Каст цели: что кастует, прерываем ли, оставшееся время
+
+**Приоритет: P1.**
+
+#### Требование
+
+Общеклассово наблюдать текущий `target` cast/channel: `active`, `kind`, `targetGUID`, `spellID`, `name`, `startTimeMs`, `endTimeMs`, `remainingSeconds`, `interruptible` — каждый факт с отдельными `status/reason/source`. **Interruptible target cast** не равно **player can interrupt now**: второе требует отдельной проверки известной interrupt-способности, cooldown, range, ресурсов, формы, GCD/политики. При secret spell/name/time/flag не подменять UNKNOWN выдуманным значением. Не сохранять старый каст после смены GUID.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 159–172: `castingSnapshot(unit)` читает только первый результат `UnitCastingInfo`/`UnitChannelInfo`; строки 232–233 вызывают его **только для player**. `target.casting` в снимке отсутствует.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 10, 17: `UnitGUID`, `UnitCastingInfo`, `UnitChannelInfo` разрешены; защищённое чтение полных кортежей ещё не используется.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 27–30: cast/channel events есть, но обновление для target и задержки/канальные update/interruptible events нужно проверить по клиенту.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 240–255: `castStatus` относится к **игроку**, не к касту цели; отдельного target interrupt observation нет.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua): нет типизированных `target.casting`/`target.castRemaining`/`target.castInterruptible` условий.
+
+#### Сравнение семи референсов (проверены локальные ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Casts.lua:20–55`: `RawCast("target")` читает cast/channel и `notInterruptible` через `pcall`, `Secret.Bool` сохраняет UNKNOWN для скрытого флага; `Poll` обновляет target kind и состояние. Нет подтверждённого полного remaining в этом модуле.
+2. **JustAC** — `JustAC/UI/CastInterruptTracker.lua` реализует отдельное отслеживание кастов и подавление повторной рекомендации прерывания после успешного interrupt; `UI/UIRenderer.lua` читает cast/channel тайминги. Это полезная логика anti-duplicate, не основание считать UI-кастбар источником истины.
+3. **ForeverAuras** — `ForeverAuras/Prototypes.lua` предоставляет cast/channel triggers с duration, remaining и interruptible; `GenericTrigger.lua` обеспечивает общий обработчик событий и состояний. Нужна проверка secret-полей и привязки к GUID при переносе.
+4. **MaxDps** — `MaxDps/Helper.lua:1799–1802` читает endTime/spellID из `UnitCastingInfo(target or "player")`; классовые профили используют `notInterruptible` для цели. Не переносить прямые небезопасные вызовы.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:167–191` `targetCast()` различает cast/channel и читает `notInterruptible`; при скрытом флаге возвращает `nil` для interruptible. Не предоставляет подтверждённый полный target remaining в этом helper.
+6. **RotationGuide** — в локальных Core Lua не найдено прямых `UnitCastingInfo`/`UnitChannelInfo`; подтверждённого полного target cast observation не обнаружено.
+7. **RotationMaster** — `RotationMaster/Platform/casting.lua:130–170`: `GetUnitCastObservation(unit,kind)` для произвольного unit раздельно возвращает active/name/remaining/duration/interruptible/spellID с причинами недоступности. В комментарии отмечены разные индексы `notInterruptible` и spellID для cast/channel и secret значения на target. **Наиболее подходящий контракт.**
+
+#### Сравнение и рекомендация
+
+**Основа — RotationMaster + Sonah + ForeverRotation, плюс антидублирование JustAC.** RotationMaster — полное типизированное наблюдение, Sonah/ForeverRotation — проверенная работа с `target` и скрытой прерываемостью, JustAC — предотвращение повторной рекомендации interrupt после подтверждённого события. Реализовать в общих существующих `GameState`/`GameAPI`/`EventBus` единый логический `UnitCastObservation(unit)` для `player` (CA-01), `target` (CA-04), при необходимости `focus`/boss — **без нового класса-специфичного ядра и без обязательного отдельного файла**.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** API разрешены и есть player cast presence, но нет полного target cast observation.
+
+#### Требуемые изменения
+
+1. Расширить общий reader из CA-01 для `unit="target"` с независимыми `active/kind/spellID/name/start/end/remaining/interruptible`; отдельно защищать каждое поле, не считать скрытый name отсутствием каста.
+2. Сверять `UnitGUID("target")` до/после чтения, учитывать `targetGUID` в кэше и результате; смена цели инвалидирует запись без переноса старого каста.
+3. Проверить реальные Forever индексы `UnitCastingInfo` vs `UnitChannelInfo`: cast `notInterruptible` slot8, spellID slot9; channel `notInterruptible` slot7, spellID slot8 — только после подтверждения на целевом клиенте.
+4. Remaining считать из безопасного endTime и времени; учитывать pushback/delay/channel updates и таймерное обновление. Невалидное/secret время → UNKNOWN.
+5. `interruptible` от игрового API — самостоятельный факт; `canPlayerInterruptNow` — отдельное вычисление через AbilityEligibility/range/cooldown/resource (SP-03, SP-06, SP-08, SP-14), без смешения.
+6. Подписки на target change и unit cast/channel start/stop/update/interruptible события с учётом поддержки Forever; lazy Needs и EventBus revisions. Не считать `UNIT_SPELLCAST_STOP` доказательством успеха.
+7. Диагностика `target_cast_hidden`, `target_cast_time_unknown`, `target_cast_interruptible_unknown`, `target_guid_changed`; тесты cast/channel, hidden ID/name/flag, смена цели, обновление таймера, target absent/dead, каст прерываемый, но player interrupt unavailable, и повторный interrupt после завершения.
+
+**Изменения кода:** не выполнялись; внесён аудит CA-04.
