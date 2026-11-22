@@ -67,10 +67,15 @@ class Variants(unittest.TestCase):
                     self.assertEqual(user.read(name),dev.read(name),name)
                 self.assertFalse(any(x.startswith("KordRotationDevTools/") for x in user.namelist()))
                 self.assertIn("KordRotationDevTools/KordRotationDevTools.toc",dev.namelist())
-                inactive=[name for name in user.namelist()
+                profiles=[name for name in user.namelist()
                           if name.startswith("KordRotation/Profiles/Hunter/")
                           and name.endswith(".lua")]
-                self.assertFalse(inactive,"unregistered Hunter source leaked into install ZIP")
+                toc=(source/"KordRotation/KordRotation.toc").read_text(encoding="utf-8")
+                registered={("KordRotation/"+line.replace("\\","/").strip())
+                            for line in toc.splitlines()
+                            if line.strip().startswith("Profiles\\Hunter\\")}
+                self.assertEqual(set(profiles),registered,
+                    "install ZIP must contain exactly the built-in TOC-listed profiles")
                 self.assertIn("KordRotation/Media/Logo.blp",user.namelist())
 
 if __name__=="__main__":
