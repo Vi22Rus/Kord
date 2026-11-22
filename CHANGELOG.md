@@ -1,3 +1,13 @@
+## KR-20261122-118 — IT-02/2.6: prevent short item GCD from becoming shared lockout evidence
+- Дата/время: 2026-11-22 UTC (точное время из Git); SHA по `git log --grep KR-20261122-118`.
+- Этап/ID: 2/2.6 IT-02 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: исходный group member reader принимал любой active item-specific timer, включая кратковременный возможный GCD overlay, как shared-lockout candidate. Два кратковременных таймера могли совпасть и дать ложное ESTIMATED. Source risk, не воспроизведённый игровой дефект.
+- Причина: отсутствовала граница GCD-like item timer в `GameState:ReadSharedItemCooldownMemberEvidence`.
+- Исправлено: `KordRotation/Core/GameState.lua` исключает активные `duration<=1.5` из group member evidence (UNKNOWN, не готовность). Индивидуальный item cooldown observer и WoW API не меняются. `tests/shared_item_cooldown_member_evidence_mock.lua`: 2 short active cooldown, valid source, no group ESTIMATED/READY; старые примеры сохранены.
+- Референсы: `ForeverAuras/GenericTrigger.lua` отделяет item cooldown от overlay GCD, `Sonah/Core/Atoms/Items.lua` рассматривает короткий GCD, `RotationMaster/Platform/items.lua` guarded GetItemCooldown. Классическую fail-open трактовку не перенесли. Порог — консервативный фильтр недостаточных доказательств, не контракт клиента.
+- Проверки: PASS точные проверенные исходные anchors, подтверждённый Git tree/commit; NOT RUN Lua 5.1 mock/full regression (нет runtime), GitHub Actions (manual-only), WoW Forever (нет клиента).
+- Тестировщику: в общем QA проверить короткие item GCD overlays отдельно от potion lockout, без промежуточной установки. Реальный client group active/ready/remaining пока UNKNOWN. Документы REQUIREMENTS/план и CHANGELOG обновлены одним коммитом. Связи IT-01, IT-02/2.4–2.9, KR-20261122-117.
+
 ## KR-20261122-117 — IT-02/2.6: reject temporally incoherent member cooldown snapshots
 - Дата/время: 2026-11-22 UTC (точное время в Git); SHA: `git log --grep KR-20261122-117`.
 - ID/этап: IT-02 P0, этап 2 шаг 2.6; fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

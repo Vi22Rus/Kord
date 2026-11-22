@@ -1471,6 +1471,13 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 or not api:IsSafeValue(record.remaining)
                 or not finite(record.remaining,0)
                 or record.active~=(record.remaining>0)
+                -- An active short timer can be the item's overlay GCD.
+                -- Keep item-specific fact, but never infer a potion group
+                -- lockout from it without verified Forever group rules.
+                or (record.active and (
+                    not api:IsSafeValue(record.duration)
+                    or not finite(record.duration,0)
+                    or record.duration<=1.5))
                 or not api:IsSafeValue(record.revision)
                 or record.revision~=before[1]
                 or not api:IsSafeValue(record.observedAt)

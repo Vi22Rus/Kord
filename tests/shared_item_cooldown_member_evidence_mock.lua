@@ -54,6 +54,11 @@ function S:ReadItemCooldownObservation(id)
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
                 active="SECRET",remaining=20,revision=bus.cooldown,observedAt=sampleAt}
         end
+        if mode=="short_gcd" then
+            return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+                active=true,remaining=1,startTime=99,duration=1,
+                revision=bus.cooldown,observedAt=sampleAt}
+        end
         if mode=="divergent" and id==858 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
                 active=true,remaining=20,startTime=70,duration=50,
@@ -123,6 +128,11 @@ assert(publicMixed.groupLockoutConfidence=="UNKNOWN")
 assert(publicMixed.useCorrelation=="ESTIMATED")
 assert(publicMixed.propagationEvidence=="MIXED_CANDIDATES")
 assert(publicMixed.groupReadyConfidence=="UNKNOWN")
+mode="short_gcd"
+local shortGcd=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(shortGcd.knownActiveCount==0 and shortGcd.unknownCount==18)
+assert(shortGcd.useCorrelation=="UNKNOWN" and shortGcd.propagationEvidence=="UNKNOWN")
+assert(shortGcd.groupLockoutConfidence=="UNKNOWN" and shortGcd.groupReadyConfidence=="UNKNOWN")
 mode="stale_sample"
 local staleSample=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(staleSample.reason=="item_cd_sample_time_incoherent")
