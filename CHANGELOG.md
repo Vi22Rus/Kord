@@ -1,3 +1,10 @@
+## KR-20261122-028 — аудит NO-02: secret и nil safety
+- Дата: 2026-11-22; время/SHA по GitHub commit metadata.
+- Задача: запрет чтения скрытых значений и подмены nil догадками; P0. В GameAPI есть fail-closed reads, но отсутствие probes и nested secret остаются потенциальными пробелами.
+- Изменения: REQUIREMENTS.md — NO-02, API таблица, Kord audit, семь референсов по ранее изученным файлам, общий SafeObservation, 7 работ, 26 QA-07 сценариев, diagnostics; обратные ссылки в NO-01, AC-07, QA-04/06, DA-02, EN-A3, AU-01, PL-01, UI-01. CHANGELOG.md — эта запись. Lua/TOC/ZIP не менялись.
+- Решение: UNKNOWN/UNAVAILABLE/ERROR вместо nil→0/false/READY; доказанный nil=absent допускается, secretunwrap запрещён, финальный READY только AbilityEligibility.
+- Проверки: SOURCE/DOC AUDIT PASS; FULL STATIC SCAN, Lua 5.1, CI, WoW Forever NOT RUN; CLIENT PASS 0/101. Следующий пункт NO-03 по запросу.
+
 ## KR-20261122-027 — аудит NO-01: запрет автоматического управления персонажем
 - Дата: 2026-11-22; время и UTC — метаданные GitHub commit; ID `KR-20261122-027`, полный SHA по git log.
 - Задача: раздел 19, NO-01. Ожидается абсолютный запрет кнопок, макросов, смены цели, движения; текущий Kord рекомендательный, но полная негативная гарантия по всему коду ещё не проверена.

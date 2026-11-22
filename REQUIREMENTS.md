@@ -305,6 +305,8 @@
 
 ## PL-01 — Существует, жив, призрак, в сознании (CC)
 
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
+
 **Исходное требование:** «Существует, жив, призрак, в сознании (не оглушён, не в страхе, не заколдован — см. CC)».
 
 **Приоритет:** не указан в присланной строке; не назначается произвольно.
@@ -2017,6 +2019,8 @@
 ## 4. Ауры (баффы и дебаффы)
 
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
+
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 
 **Архитектурная актуализация TG-11:** **См. TG-11: aura reads for focus/mouseover use the same canonical AuraPresenceObservation(unit,...) and Needs gating.**
@@ -6442,6 +6446,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 ### AC-07 — STOP: остановка рекомендаций при неизвестном ключевом факте
 
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
+
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
 
 
@@ -6722,6 +6728,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-07:** QA-07 проверяет выбор первого допустимого приоритета и невыполнение нижних правил через `evaluatedPriorities/NOT_EVALUATED` для каждого сценария.
 
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
+
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
 
@@ -7333,6 +7341,8 @@ Burst — отдельная типизированная настройка п�
 
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
 
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
+
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
 
 #### Требование
@@ -7778,6 +7788,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение QA-07:** QA-07 использует event/revision последовательности в сценариях смены цели, спека, уровня, талантов и панели; состояние после события должно проверяться отдельным ожидаемым результатом, без stale snapshot.
 
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
+
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Ретроактивное ограничение → NO-01:** NO-01 constrains recommendation icons/queue to visual information; no OnUpdate action execution, click simulation or automatic macro binding.
 
@@ -8525,6 +8537,8 @@ DevTools должен записывать **все достоверно сфо�
 
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
+
 **Ретроактивная архитектурная ссылка → CL-09:** CL-09 form, typed rage/energy/mana/combo, HoT/dispel, combat resurrection and aura cancellation APIs require separate Forever validation, not inferred CLIENT PASS.
 
 **Ретроактивная архитектурная ссылка → CL-08:** см. CL-08: CL-08 Warlock spellID/rank, shard item/count, Curse+Bane exclusion and ritual must be validated on WoW Forever; source evidence is not client pass.
@@ -8680,6 +8694,8 @@ DevTools должен записывать **все достоверно сфо�
 **Ретроактивное уточнение QA-07:** QA-07 — канонический источник проверенных ожидаемых решений для candidate в дифференциальных тестах. Legacy output остаётся свидетельством, а не oracle; QA-05 привязывает каждое сравнение к `scenarioID` и approved expectation.
 
 ### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
+
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
 
 **Ретроактивное ограничение → NO-01:** NO-01 extends purity/negative checks from profiles to core, UI and DevTools: no protected automation through wrappers, aliases or dynamic dispatch.
 
@@ -9866,6 +9882,8 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 
 ### NO-01 — Запрещено нажимать кнопки, выполнять макросы, менять цель и двигать персонажа
 
+**Ретроактивное ограничение → NO-02:** см. NO-02: защищённые или недоступные игровые значения и nil не заменять false/0/READY; использовать общий SafeObservation, UNKNOWN→STOP, без secret unwrap, guessed cache или UI fallback.
+
 **Раздел 19. Что нельзя и чего не стоит делать. Приоритет: P0 (безусловный запрет).** Действует для обоих аддонов `KordRotation` и `KordRotationDevTools`, всех девяти классов, профилей, режимов PVE/PVP, UI, обработчиков событий, инструментов отладки, тестов и будущих типов действий. **Kord — read-only рекомендательный аддон, а не исполнитель ротации.**
 
 #### Требование
@@ -9950,3 +9968,99 @@ Lazy `Needs`, per-evaluation cache, EventBus revisions `bag/pet/auras/target/res
 **ЧАСТИЧНО ПОДТВЕРЖДЕНО ПО ПРОСМОТРЕННЫМ ИСХОДНИКАМ / ПОЛНАЯ НЕГАТИВНАЯ ГАРАНТИЯ НЕ ПРОВЕРЕНА / P0.** Просмотренные `GameAPI`, `RotationEngine`, `BindingResolver`, `AbilityEligibility` ориентированы на read-only рекомендации; полный source audit всех Lua/XML/ZIP, запрет через динамические алиасы, mocks и WoW Forever не выполнены. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
 
 **Ретроактивные ссылки:** AC-02, AC-03, AC-04, AC-05, EN-A1, QA-06, UI-01; они дополнены ссылкой на NO-01 в этом же коммите. Дополнительно связаны AC-07, CL-01–09, но классовые требования не переписываются: NO-01 действует глобально независимо от локальной ссылки.
+
+
+### NO-02 — Запрещено читать скрытые значения в бою и подставлять догадки вместо nil
+
+**Раздел 19. Что нельзя и чего не стоит делать. Приоритет P0 (безусловный запрет).** Применяется к KordRotation и KordRotationDevTools, всем классам, профилям, UI, провайдерам, кэшу и диагностике. **NO_SECRET_UNWRAP_AND_NO_GUESS:** недоступное игровое значение не превращается в достоверное путём догадки, преобразования, чтения protected Blizzard internals или использования старого snapshot. Это отдельный инвариант от NO-01.
+
+#### Требование
+
+При `secret`, `nil`, недоступном API, ошибке, непроверенном типе или stale revision сохранять `UNKNOWN`/`UNAVAILABLE`/`ERROR` с `source,reason,observedAt,revision` по доступности. **Нельзя** подменять результат на `false`, `0`, пустую таблицу, `""`, отсутствие ауры, отсутствие цели, отсутствие каста, `READY` или last-known. `false` и `0` допустимы только как реальные подтверждённые значения внутри READY. Если контракт конкретного API доказывает, что `nil` означает отсутствие объекта при доступном контексте, допустим явно типизированный `ABSENT`; при неопределённости `nil→UNKNOWN`. Запрет действует и вне боя: `InCombatLockdown=false` не доказывает доступность каждого значения.
+
+| Механизм | Примеры | Нормативное ограничение |
+|---|---|---|
+| Health / resources | `UnitHealth`, `UnitHealthMax`, `UnitPower`, `UnitPowerMax`, `UnitHealthPercent`, `UnitPowerPercent` | Secret value не сравнивать, не форматировать, не использовать в `math.floor`, арифметике, порогах или branch. `LuaCurveEvaluatedResult` не считать обычным Lua числом/5%-band |
+| Auras | `C_UnitAuras.GetAuraDataByIndex`, `GetAuraDataByAuraInstanceID`, `GetAuraDuration`, `auraInstanceID`, `spellId`, `sourceUnit`, `expirationTime` | Не индексировать secret AuraData, не использовать secret instanceID как ключ, не выводить «ауры нет» из недоступности, не превращать `LuaDurationObject` в выдуманные секунды |
+| Target / casting | `UnitGUID`, `UnitExists`, `UnitCastingInfo`, `UnitChannelInfo`, `IsSpellInRange`, combat events | `nil` не доказывает, что цели/каста/дистанции нет. Нельзя считать GUID, TTD, enemyCount, CC, threat или range по догадке |
+| Secret probes | `issecretvalue`, `issecrettable`, `canaccessvalue`, `pcall`, `secretunwrap` | Первые три — только проверка доступа при поддержке клиента; `pcall` не делает secret читаемым; `secretunwrap` из защищённого Blizzard UI не является допустимым обходом |
+| Unsafe fallbacks | `value or 0`, `value or false`, `tonumber(value) or 0`, `not value`, `tostring(secret)`, `table[secret]` | Запрет в путях игровых наблюдений. Проверенные дефолты обычных UI-настроек разрешены, но не как замена игровых фактов |
+| Cache / UI / DevTools | last-known HP, stale targetGUID, predicted aura, secret payload | Не повышать старый или оценочный факт до текущего READY; не печатать/сериализовать secret payload; UI не показывает выдуманную иконку |
+
+**Статусы:** `READY` — доступный типизированный факт текущей ревизии; `BLOCKED` — доказанный отрицательный gate; `UNKNOWN` — необходимый факт неизвестен; `UNAVAILABLE` — API/контракт недоступен; `ERROR` — безопасный вызов неуспешен. Неизвестное обязательное условие → AC-07 STOP, а не `skip`, `WAIT` или `READY`; исключения `skip` возможны только при документированной безопасной семантике, никогда для Eligibility.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:71–92`: функция `secret(value)` использует `issecretvalue`, `issecrettable`, `canaccessvalue` через `pcall`; **потенциальный пробел** — при отсутствии probes она возвращает false. Для API с secret-рискoм требуется capability-aware UNKNOWN, не предположение о доступности.
+- `GameAPI.lua:114–165`: `Read` и `ReadTuple` различают `UNAVAILABLE/ERROR/UNKNOWN/READY`, проверяют `protected_value/no_value/unexpected_type/invalid_number`; nested AuraData и curve objects требуют отдельного подтверждения.
+- `KordRotation/Core/GameState.lua:65–92,178`: `cleanHealth`, `cleanPower` используют typed observations, но потребители не должны заменять их недоступные значения на 0/false.
+- `KordRotation/Core/RotationConditions.lua:79–110`: недоступный field → nil и UNKNOWN; проверить всю трёхзначную композицию на отсутствие `nil→false`.
+- `KordRotation/Core/AbilityEligibility.lua:49–94,187–238`: есть UNKNOWN для недоступного spellbook/cooldown/target/range; нельзя разрешать READY по догадке.
+- `KordRotation/Core/RotationEngine.lua:7–18,40–48`: UNKNOWN и safe(value) существуют, но не доказывают безопасность всех providers, UI и DevTools.
+
+#### Сопоставление семи референсов
+
+1. **Sonah:** `Core/Atoms/Units.lua`, `Core/Atoms/Auras.lua`, `Core/Atoms/Items.lua`: secret-safe обёртки и атомы — ориентир на проверяемые факты, не разрешение обхода.
+2. **JustAC:** `BlizzardAPI/SecretValues.lua`, `StateHelpers.lua`: secret-aware adapters; не копировать `or 0` как замену неизвестному HP/resource.
+3. **ForeverAuras:** `API.lua`, `GenericTrigger.lua`: aura data, duration, instanceID; display string не равен достоверному числу стаков.
+4. **MaxDps:** `Helper.lua` и Forever специализации: starved/percent условия не доказывают доступность secret numeric threshold.
+5. **ForeverRotation:** `Rotations/Signals.lua`, `Engine.lua`: signal provider не подтверждает преобразование secret curve в Lua numeric band.
+6. **RotationGuide:** `Core/State.lua`: nil/отсутствие данных нельзя без Forever evidence считать false/0.
+7. **RotationMaster:** `Platform/auras.lua`, `Platform/world_state.lua`, `Core/condition_support.lua`: capability/observation patterns, не secret unwrap.
+
+**Граница:** использованы ранее документированные адресные сведения семи ZIP; новый полный построчный аудит всех референсов не проводился. Никакой референс не отменяет запрет Kord.
+
+#### Выбранный путь Kord
+
+**Один общий `SafeObservation` contract** поверх GameAPI/GameState/RotationConditions, не второй secret engine: `{status,value?,source,reason,observedAt?,revision?,capability?}`; value только при READY. `secret_detected`, `secret_probe_unavailable`, `api_no_value`, `api_call_failed`, `unexpected_type`, `stale_revision` различаются. `AbilityEligibility` — единственный финальный READY; `DA-02` не сохраняет stale READY; `EN-A3` lazy all/any не читает последующие данные после доказанного результата; `QA-04` проверяет конкретный Forever build. `nil` как подтверждённое отсутствие объекта допускается только при известной и доказанной API семантике.
+
+#### Требуемые изменения
+
+1. Проверить отсутствие secret probes, вложенные таблицы, `ReadTuple`, `LuaCurveEvaluatedResult` и per-API capabilities в GameAPI; никакого `pcall` как обхода.
+2. Статически проверять опасные `or 0`/`or false`/`not value`/`tostring(secret)`/`table[secret]` в gameplay paths, отделяя легальные UI defaults.
+3. Провести UNKNOWN propagation через GameState → S → Engine → AbilityEligibility → UI/DevTools, без `READY`/false/0 по умолчанию.
+4. Добавить Lua 5.1 negative mocks: отсутствующие probes, secret values/tables, inaccessible values, nil, errors, stale revisions, nested aura, curve, log payload.
+5. Проверить v14 API secret flags и допустимые операции на WoW Forever; не объявлять Curve→numeric 5%-band без доказательства.
+6. Логировать только `status/source/reason/revision/capability`, не secret payload; запретить его сохранение в SavedVariables.
+7. Регрессия всех классов и AC-01–07: secret HP/resource/aura/range/TTD/target не дают READY; сохранить NO-01.
+
+**DevTools-only причины:** `no02_secret_detected`, `no02_secret_table`, `no02_secret_probe_unavailable`, `no02_secret_access_denied`, `no02_api_no_value`, `no02_api_call_failed`, `no02_unexpected_type`, `no02_curve_not_numeric`, `no02_aura_field_restricted`, `no02_unknown_not_absent`, `no02_stale_revision`, `no02_fallback_guess_forbidden`, `no02_secret_log_denied`.
+
+#### QA-07: сценарии «состояние → ожидаемое действие» (SPECIFIED / NOT RUN)
+
+| ID | Состояние | Ожидаемый результат |
+|---|---|---|
+| `NO02-01` | issecretvalue=true | UNKNOWN, no formatting |
+| `NO02-02` | issecrettable=true | UNKNOWN, no field access |
+| `NO02-03` | canaccessvalue=false | UNKNOWN, no unwrap |
+| `NO02-04` | probes missing, sensitive API | capability UNKNOWN |
+| `NO02-05` | UnitHealth=nil | UNKNOWN, not HP=0 |
+| `NO02-06` | UnitPower=nil | UNKNOWN, not resource=0 |
+| `NO02-07` | percent Curve not numeric | UNKNOWN, no invented band |
+| `NO02-08` | secret AuraData | UNKNOWN, not aura absent |
+| `NO02-09` | secret auraInstanceID | no table key |
+| `NO02-10` | secret expirationTime | UNKNOWN, no guessed refresh |
+| `NO02-11` | ambiguous UnitCastingInfo nil | UNKNOWN, not idle |
+| `NO02-12` | contract-proven nil=absent | explicit ABSENT allowed |
+| `NO02-13` | API error in pcall | ERROR, not false |
+| `NO02-14` | secret targetGUID | no stale owner inference |
+| `NO02-15` | stale health cache | UNKNOWN, no old READY |
+| `NO02-16` | S:all first false | skip second secret read |
+| `NO02-17` | S:any first true | skip second secret read |
+| `NO02-18` | required fact UNKNOWN | AC-07 STOP |
+| `NO02-19` | secret range | no Eligibility READY |
+| `NO02-20` | secret aura in DevTools | log reason, no payload |
+| `NO02-21` | unknown next action | no fabricated UI icon |
+| `NO02-22` | out of combat secret | UNKNOWN |
+| `NO02-23` | combat readable value | typed READY only if verified |
+| `NO02-24` | UI config nil | validated default allowed |
+| `NO02-25` | unverified nil UnitExists | UNKNOWN, not absent |
+| `NO02-26` | secretunwrap proposed | reject unsupported API |
+
+**QA статус:** это спецификация, тесты не запускались; требуется Lua 5.1 mock и клиентский QA.
+
+#### Вердикт
+
+**ЧАСТИЧНО ПО ИСХОДНИКАМ / SECRET И NIL SAFETY НЕ ДОКАЗАНЫ ПОЛНОСТЬЮ / P0.** GameAPI имеет fail-closed read contract, но отсутствие probes и nested secret требуют проверки. **SOURCE/DOC AUDIT PASS; FULL STATIC SCAN NOT RUN; LUA 5.1 NOT RUN; CI NOT RUN; WOW FOREVER NOT RUN; CLIENT PASS 0/101.** Lua/TOC/ZIP не менялись.
+
+**Ретроактивные ссылки:** NO-01, AC-07, QA-04, QA-06, DA-02, EN-A3, AU-01, PL-01, UI-01; обновлены в том же коммите.
