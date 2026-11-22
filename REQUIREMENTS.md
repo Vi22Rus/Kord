@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 supplies confirmed auto-attack/auto-repeat states as inputs; AbilityEligibility alone issues final READY, and unknown never means inactive.**
+
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 observations and refresh policy never issue final READY; AbilityEligibility remains the sole spell gate.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 time estimates and pet care need are observations, not final READY; only AbilityEligibility authorizes recommendation readiness.**
@@ -3297,6 +3299,8 @@
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
 
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 autoattack recommendations must respect EN-04 breakable crowd-control safety; do not activate attack against protected targets.**
+
 **Архитектурная актуализация EN-07:** **См. EN-07: EN-07 target-switch candidates must respect existing breakable-CC safety and not infer safe AoE from a cast candidate.**
 
 **Архитектурная актуализация EN-08:** **См. EN-08: AoE CC safety consumes the EN-08 shared bounded enemy snapshot; expired or incomplete coverage yields UNKNOWN, never an emergency unbounded scan.**
@@ -3474,6 +3478,8 @@
 
 
 ### EN-07 — Ближайшая цель для смены, цель с прерываемым кастом
+
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 target/range checks may reuse EN-07 target observation but must not infer melee/ranged range from unknown proximity.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P2.**
 
@@ -4241,6 +4247,8 @@
 
 ### PE-03 — Что атакует питомец, режим (атака, защита, пассив)
 
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 concerns player Attack/Auto Shot/Shoot, not PE-03 pet attacking target or pet stance; do not conflate the two.**
+
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 guardian attack/target state cannot be inferred from PE-03 pettarget; summons may lack addressable unit tokens.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 dismiss/revive/heal timing is independent of PE-03 pet attack state and stance; shared petGUID revisions invalidate stale timing.**
@@ -4297,6 +4305,8 @@
 
 ### PE-04 — Способности питомца: кулдаун, автокаст включён, команды
 
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 player auto-repeat status is distinct from PE-04 pet autocast enabled; share safe spell API patterns, not state.**
+
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 summon spell cooldown is distinct from summoned-unit remaining lifetime and range; reuse the common spell eligibility gate.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 reuses PE-04 spell/action cooldown and learned spell evidence but distinguishes cooldown, cast time, aura duration and postcast suppression.**
@@ -4351,6 +4361,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
+
+**Архитектурная актуализация SW-01:** **См. SW-01: SW-01 active auto-repeat is not a cast-duration/cooldown timer; keep SW-02 future swing timing separate from PE-05 pet-care timing.**
 
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 reuses validated time and event-revision conventions, but a totem lifetime is not pet heal/revive/dismiss cast duration.**
 
@@ -4455,5 +4467,56 @@
 **НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P2).** Kord имеет общие часы, spell metadata и базовые события pet/aura, но не содержит доказанного totem-slot reader, guardian lifecycle observation, оставшегося времени и проверки summon-to-target radius.
 
 **Архитектурные ссылки:** PE-01, PE-03, PE-04, PE-05, GR-06, SP-14, EN-03. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### SW-01 — Автоатака включена / выключена; автострельба и волшебная палочка
+
+**Раздел: 10. Автоатака и таймеры ударов. Приоритет: P0.**
+
+#### Требование
+
+Наблюдать три **независимых** режима игрока: `MELEE_ATTACK` (Attack spellID 6603), `RANGED_AUTO_SHOT` (Auto Shot spellID 75), `WAND_SHOOT` (Shoot spellID 5019). Для каждого `AutoAttackObservation(mode,spellID)`: `active=TRUE/FALSE/UNKNOWN`, `currentSpell`, `autoRepeat`, `playerGUID`, `targetGUID`, `source`, `reason`, `observedAt`, `revision`. **`C_Spell.IsCurrentSpell(6603)` проверяет текущую ближнюю автоатаку, `C_Spell.IsAutoRepeatSpell(75/5019)` — повторяющуюся стрельбу**; не подменять одно другим, а `IsCurrentSpell` для Auto Shot/Shoot использовать только как дополнительное свидетельство с проверенной семантикой. `UNKNOWN` из secret/nil/API missing не означает `FALSE`, а подтверждённый false не означает, что сейчас безопасно включить атаку: нужны attackable target, alive, CC safety EN-04, проверенный диапазон, оружие/патроны, ограничения движения/каста и политика клиента. **Auto Attack / Auto Shot auto-switch option** может самостоятельно переключать ближнюю и дальнюю атаку; не рекомендовать противоположный режим, который остановит уже работающий. Активность ≠ время следующего удара: swing timer — отдельная следующая задача SW-02, не выводить точный timer из одного active=true. Никаких защищённых `AttackTarget`, `StartAttack`, `CastSpellByID` и автоматического управления.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:51–52`: `C_Spell.IsCurrentSpell` и `C_Spell.IsAutoRepeatSpell` уже разрешены в read-only API, secret-safe reader предусмотрен; отдельные `IsCurrentSpell`/`IsAutoRepeatSpell` legacy fallback не подтверждены.
+- `KordRotation/Core/GameState.lua:384–389,768–778`: `autoShot.active` опирается на `ReadAutoShot(75)`, который читает оба C_Spell флага; однако отдельного `AutoAttackObservation` для `6603` и `5019`, единой тристейтной матрицы и client auto-switch policy нет.
+- `KordRotation/Core/RotationConditions.lua:50,74`: существует `autoShot.active` и `autoShot.swing` (последнее зависит от `Needs.swing`); условия `autoAttack.active`/`wandShoot.active` как общий контракт не подтверждены.
+- `KordRotation/Core/EventBus.lua:21–30,35–42`: cooldown/cast/combat events существуют, но `START_AUTOREPEAT_SPELL`, `STOP_AUTOREPEAT_SPELL`, `PLAYER_ENTER_COMBAT`/`PLAYER_LEAVE_COMBAT` и отдельная `autoattack` revision не подтверждены.
+- `KordRotation/Core/AbilityEligibility.lua:72–100,240–254`: общий cooldown/cast gate есть, но отдельная проверка повторяющейся атаки и безопасная suppression рекомендации «включить» при `UNKNOWN` не подтверждены.
+
+#### Сравнение семи референсов (проверены все ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Spells.lua:973–982` раздельно вызывает `C_Spell.IsCurrentSpell` и `C_Spell.IsAutoRepeatSpell` через `Secret.CallBool`; `Sonah/Core/Molecules/Conditions.lua:206–209` объединяет оба как `autoActive`, **но unknown фактически превращается в false** — это небезопасно для P0. `:976–983` `autoSwapping` учитывает клиентское Auto Attack / Auto Shot переключение; `Sonah/Classes/Hunter.lua:215–236,516–519` избегает ручного переключения при auto-switch; `Sonah/Classes/Mage.lua:333–337` проверяет wand/standing/notCasting. Перенять auto-switch awareness и class policies, но **не** fail-open unknown->off.
+2. **JustAC:** `JustAC/BlizzardAPI/CooldownTracking.lua:341–353` различает `C_Spell.IsCurrentSpell(6603)` и `C_Spell.IsAutoRepeatSpell(spellID)` с проверкой secret; `:428–445` обрабатывает `START_AUTOREPEAT_SPELL`, `STOP_AUTOREPEAT_SPELL`, `PLAYER_LEAVE_COMBAT`; `JustAC/DebugCommands.lua:8189–8190` диагностирует оба API; `JustAC/UI/UIRenderer.lua:1222–1239` классифицирует Auto Shot/Wand как auto-repeat, а не instant cast. Перенять Forever-validated API distinction, events, diagnostics; не считать `RunningAutoSwing=nil` доказательством выключения, поскольку helper также возвращает nil при неподдерживаемом клиенте/secret.
+3. **ForeverAuras:** `ForeverAuras/Compatibility.lua:92` читает `C_Spell.IsCurrentSpell` с legacy fallback; `ForeverAuras/Types.lua:4211–4216` каталогизирует bow/crossbow/gun/wand Shoot и Auto Shot; `ForeverAuras/SpellCooldown.lua:312–326` отдельно трактует wand Shoot shared lockout. Перенять spell family and edition-safe fallback; wand lockout ≠ off/on state.
+4. **MaxDps:** `MaxDps/Core.lua:39` включает Auto Shot 75 в особую обработку, `MaxDps/SpellData.lua:235,3429` каталогизирует Attack 6603 и Shoot 5019; `MaxDps_Hunter/Specialization/TWW/Beastmastery.lua:49` использует `C_Spell.IsCurrentSpell`. Перенять identity mapping, но TWW `IsCurrentSpell` не является доказательством Forever auto-repeat semantics.
+5. **ForeverRotation:** `ForeverRotation/Rotations/Mage.lua:54,77,97`, `ForeverRotation/Rotations/Priest.lua:23`, `ForeverRotation/Rotations/Warlock.lua:32,54,74` рекомендуют wand Shoot при OOM; в проверенных Lua нет подтверждённого универсального `IsAutoRepeatSpell`/Attack status reader. Перенять OOM wand fallback как политику, но **не** считать каждую рекомендацию Shoot доказательством, что он выключен.
+6. **RotationGuide:** в проверенных Lua не найдены `IsCurrentSpell`/`IsAutoRepeatSpell` и общий autoattack status reader. Отсутствие подтверждённого механизма не означает, что рекомендации автоатаки всегда невозможны.
+7. **RotationMaster:** `RotationMaster/Conditions/spell.lua:693–720` реализует `SPELL_AUTOREPEAT` с `nil,reason` при неизвестном статусе и per-evaluation cache; `RotationMaster/Core/condition_support.lua:357,619` probe-матрица `C_Spell.IsCurrentSpell/IsCurrentSpell` и `C_Spell.IsAutoRepeatSpell/IsAutoRepeatSpell`; `RotationMaster/Core/action_policy.lua:284–317` fallback Attack/Auto Shot/Wand, **только** при доказанном target/range и bound spell, а при неизвестном melee range — ничего. Перенять tri-state provider + bounded fallback policy; не переносить profile/UI fallback в ядро как обход `AbilityEligibility`.
+
+#### Выбранный путь Kord (решение по сравнению)
+
+**Единый логический `PlayerAutoAttackObservation` в GameState с тремя `AutoAttackModeObservation`, по образцу RotationMaster tri-state API и JustAC Forever-specific проверки, плюс Sonah auto-switch awareness.** Не создавать class-specific scanners. `MELEE_ATTACK`: `C_Spell.IsCurrentSpell(6603)`; `RANGED_AUTO_SHOT`: `C_Spell.IsAutoRepeatSpell(75)`; `WAND_SHOOT`: `C_Spell.IsAutoRepeatSpell(5019)`; отдельный `currentSpell` для каждого — диагностический факт, а не замена autoRepeat. Если client API возвращает secret/nil, `UNKNOWN(reason)`; legacy fallback только после подтверждения на Forever и GameAPI allowlist. События `START_AUTOREPEAT_SPELL`/`STOP_AUTOREPEAT_SPELL` используются как **инвалидация и подтверждающие сигналы**, не вечный источник true/false при пропущенном событии; target change, weapon swap, player death, combat leave, zone, form, mount/vehicle сбрасывают устаревшие предположения. `C.autoSwapping`-подобный client policy flag хранить отдельно `autoSwitchEnabled=TRUE/FALSE/UNKNOWN`; при true и уже активной Attack/Auto Shot не предлагать противоположное переключение. Проверить на Forever точный API флага настройки и изменение поведения; не угадывать по классу. Wand Shoot требует подтверждённую wand, learned Shoot, range, отсутствие несовместимого каста/движения; Auto Shot — ranged weapon, ammo если актуально Forever, minimum range, movement/standing requirements. Attack — confirmed melee range and CC safety. Оценка `autoAttackNeeded` отдельно от факта `active`, `UNKNOWN` блокирует повторную рекомендацию включения. `AbilityEligibility` остаётся **единственным** финальным READY; никаких защищённых вызовов. Lazy `Needs.autoAttack`, event coalescing, per-evaluation memo; SW-02 позже использует тот же identity/revision, не повторяет active-state reader.
+
+#### Требуемые изменения
+
+1. Ввести единый `PlayerAutoAttackObservation` для Attack 6603, Auto Shot 75, Wand Shoot 5019, три независимых tri-state status, provenance и revision.
+2. Переиспользовать существующий `GameState.ReadAutoShot`, уточнить его семантику; добавить Attack/Wand без отдельного сканера и совместимость `autoShot.active`.
+3. Проверить на Forever `C_Spell.IsCurrentSpell`, `C_Spell.IsAutoRepeatSpell`, legacy fallbacks, secret/nil, cast/queued semantics и типы значений; не считать nil false.
+4. Проверить клиентскую настройку Auto Attack / Auto Shot auto-switch, event/API и влияние на Attack/Auto Shot при смене дистанции; хранить отдельно от active state.
+5. EventBus `START_AUTOREPEAT_SPELL`, `STOP_AUTOREPEAT_SPELL`, combat/target/weapon/form/vehicle/zone revisions, bounded memo, без вечного доверия к событиям.
+6. Добавить `autoAttack.active`, `autoShot.active`, `wandShoot.active` и `autoAttack.autoSwitchEnabled` в RotationConditions с явным UNKNOWN; не путать `IsCurrentSpell` с auto-repeat.
+7. Отдельная `AutoAttackNeedPolicy`: alive attackable target, EN-04 breakable CC, proven melee/ranged range, weapon/ammo/standing/cast, no harmful toggles; fail-closed unknown.
+8. Согласовать fallback policy с `AbilityEligibility` и SP-14: не обходить финальный READY через `ignoreReady`, не выполнять protected actions.
+9. DevTools-only диагностика: `autoattack_melee_unknown`, `autoattack_ranged_unknown`, `autoattack_wand_unknown`, `autoattack_secret`, `autoattack_current_vs_repeat_disagree`, `autoattack_auto_switch_unknown`, `autoattack_auto_switch_suppressed`, `autoattack_target_unverified`, `autoattack_cc_unsafe`, `autoattack_repeat_event_stale`, `autoattack_mode_changed`.
+10. Тесты: Attack on/off, Auto Shot on/off, Wand Shoot on/off, switch melee/ranged with auto-switch enabled/disabled, target change/death, range minimum/dead zone, wand vs bow/gun/crossbow, no ammo, moving/standing, cast/channel, queued melee next-swing vs active attack, secret/nil/missing API, event missed/out of order, combat leave, pet autoattack independent, no duplicate toggles, no protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** В Kord уже существует Auto Shot observation и C_Spell API allowlist, но не подтверждён единый надёжный статус ближней автоатаки, wand Shoot и auto-switch клиента с tri-state и безопасной политикой рекомендаций.
+
+**Архитектурные ссылки:** SP-14, PE-03, PE-04, EN-04, EN-07, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
