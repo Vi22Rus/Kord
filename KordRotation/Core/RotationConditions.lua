@@ -96,26 +96,34 @@ local function value(ctx,field,id)
  if ctx.readDone[key] then return ctx.readCache[key] end
  ctx.readDone[key]=true
  local answer=nil
+ local failure=nil
  if direct[field] then
   answer=directRead(ctx,field)
+  if answer==nil then failure="direct_field_unverified" end
  else
   local state=KR.GameState
   if state and type(state.ReadSignal)=="function" then
    -- ReadSignal is a future canonical v14 provider, never bypass GameAPI.
    local ok,record=pcall(state.ReadSignal,state,field,id,ctx.snapshot)
-   if ok and type(record)=="table" and safe(record)
-       and safe(record.status) and record.status=="READY"
+   if ok and type(record)=="table" and safe(record) then
+    if safe(record.status) and record.status=="READY"
        and safe(record.value) then
-    if type(record.value)=="boolean" or type(record.value)=="string"
+     if type(record.value)=="boolean" or type(record.value)=="string"
         or number(record.value) then answer=record.value end
-   end
+    end
+    if answer==nil and safe(record.reason)
+       and type(record.reason)=="string" then
+     failure=record.reason
+    end
+   else failure="signal_provider_error" end
   end
  end
  ctx.readCache[key]=answer
  ctx.observations=ctx.observations or {}
- if #ctx.observations<96 then
+ if #ctx.observations<256 then
   ctx.observations[#ctx.observations+1]={field=field,
-    status=answer~=nil and "READY" or "UNKNOWN"}
+    status=answer~=nil and "READY" or "UNKNOWN",
+    reason=answer==nil and (failure or "signal_unverified") or "none"}
  end
  return answer
 end
@@ -287,7 +295,8 @@ function C:ObservationsSince(S,start)
  if not ctx then return result end
  for i=(start or 0)+1,#(ctx.observations or {}) do
   local item=ctx.observations[i]
-  result[#result+1]={field=item.field,status=item.status}
+  result[#result+1]={field=item.field,status=item.status,
+    reason=item.reason}
  end
  return result
 end
