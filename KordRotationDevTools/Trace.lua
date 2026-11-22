@@ -431,6 +431,10 @@ function D:ObserveDetails(diagnosis,force,summary)
         add("DISPLAY",flag(display.defensiveEnabled),"defensive_enabled")
         add("DISPLAY",flag(display.defensiveCombatOnly),"defensive_combat_only")
         add("DISPLAY",flag(display.auraPromotion),"aura_promotion")
+        add("DISPLAY",flag(display.defensiveInCombatMain),
+            "defensive_in_combat_main")
+        add("DISPLAY",flag(display.defensivePreferenceStored),
+            "defensive_preference_stored")
         add("DISPLAY",display.defensiveStatus,"defensive_engine_status",
             display.defensiveReason)
         add("DISPLAY",flag(display.defensiveRecommendation),
