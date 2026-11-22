@@ -369,9 +369,40 @@ function O:ReadDisplay()
         testMode=field(panel,"testMode")==true,
         frameCreated=frame~=nil,
         recommendationAccepted=ready==true,
+        defensiveEnabled=field(KR.IndicatorSettings and KR.db and KR.db.indicators,
+            "defensiveEnabled")==true or
+            (KR.IndicatorSettings and KR.IndicatorSettings:Get("defensiveEnabled")==true)
+            or false,
+        defensiveCombatOnly=KR.IndicatorSettings and
+            KR.IndicatorSettings:Get("defensiveCombatOnly")==true or false,
+        auraPromotion=KR.RotationSettings and
+            KR.RotationSettings:GetFlag("buffsInCombatMain")==true or false,
+        defensiveRecommendation=field(display,"defensiveReady")==true,
+        defensiveStatus=status(field(display,"lastDefensiveStatus")),
+        defensiveReason=reason(field(display,"lastDefensiveReason")) or "unknown",
         lastEngineStatus=status(field(display,"lastEngineStatus")),
         lastEngineReason=reason(field(display,"lastEngineReason")) or "unknown",
     }
+    local defensiveFrame=field(display,"defenseFrame")
+    out.defensiveFrameCreated=defensiveFrame~=nil
+    if defensiveFrame and safe(defensiveFrame) then
+        local api=KR.GameAPI
+        local method=api and type(api.ReadField)=="function"
+            and api:ReadField(defensiveFrame,"IsShown","function")
+        local fn=method and method.status=="READY" and method.value
+        if type(fn)=="function" then
+            local ok,value=pcall(fn,defensiveFrame)
+            if ok and safe(value) and type(value)=="boolean" then
+                out.defensiveFrameShown=value
+            end
+        end
+    end
+    if type(display.ShouldShowDefensive)=="function" then
+        local ok,value=pcall(display.ShouldShowDefensive,display)
+        if ok and safe(value) and type(value)=="boolean" then
+            out.defensiveVisibilityAllowed=value
+        end
+    end
     if frame and safe(frame) then
         local api=KR.GameAPI
         local method=api and type(api.ReadField)=="function"
