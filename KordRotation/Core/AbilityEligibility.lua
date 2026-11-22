@@ -3,7 +3,10 @@
 local addonName, KR = ...
 KR.AbilityEligibility = KR.AbilityEligibility or {}
 local A = KR.AbilityEligibility
-local GCD_SPELL_ID = 61304
+-- WoW Forever: ForeverAuras/Prototypes.lua Global Cooldown trigger
+-- reads Classic reference 29515; retail dummy 61304 does not track
+-- Forever's shared GCD reliably. See GenericTrigger.lua (ForeverAuras).
+local GCD_SPELL_ID = 29515
 local watched = {"spellbook","actionbar","identity","talents","target","resources","cast","combat","cooldowns"}
 local function validID(n)
     -- Check secrecy BEFORE type checks, math.floor or numeric comparisons.
@@ -99,27 +102,37 @@ end
 local function gcd()
     local api=KR.GameAPI
     if not api then return "UNKNOWN","api_missing" end
+    -- ForeverAuras uses 29515, not the retail reference 61304.
+    -- isActive is the reliable non-secret GCD state on Forever. Never
+    -- use isOnGCD or read secret timer fields in the modern API path.
     if api:Probe("C_Spell.GetSpellCooldown").status=="READY" then
         local r=get("C_Spell.GetSpellCooldown","table",GCD_SPELL_ID)
-        if r.status~="READY" then return "UNKNOWN","gcd_unavailable" end
-        local active=field(r.value,"isActive")
-        -- Matrix v14 #25/#80: only a confirmed plain boolean can
-        -- establish GCD state. Never derive it from startTime/duration,
-        -- which may be protected in combat.
-        if type(active)~="boolean" then return "UNKNOWN","gcd_activity_unknown" end
-        if active==true then return "BLOCKED","global_cooldown" end
-        return "READY"
+        if r.status=="READY" then
+            local active=field(r.value,"isActive")
+            if type(active)~="boolean" then
+                -- A protected/absent field is unknown, not an idle GCD.
+                return "UNKNOWN","gcd_activity_unknown"
+            end
+            if active then return "BLOCKED","global_cooldown" end
+            return "READY"
+        end
+        -- If the modern read failed, a present legacy function can still
+        -- supply an independently validated signal. Neither source is
+        -- allowed to infer READY from a missing or secret value.
     end
     local r=multi("GetSpellCooldown",GCD_SPELL_ID)
     if r.status~="READY" then return "UNKNOWN","gcd_unavailable" end
-    local start,duration=r.value[1],r.value[2]
-    if not number(start) or not number(duration) or start<0 or duration<0 then
+    local start,duration,enabled=r.value[1],r.value[2],r.value[3]
+    if not number(start) or not number(duration) or start<0 or duration<0
+        or (enabled~=nil and enabled~=0 and enabled~=1) then
         return "UNKNOWN","gcd_invalid"
     end
-    if start==0 or duration==0 then return "READY" end
-    local now=get("GetTime","number")
-    if now.status~="READY" then return "UNKNOWN","gcd_clock_unknown" end
-    if start+duration<=now.value then return "READY" end
+    if enabled==0 then return "UNKNOWN","gcd_unavailable" end
+    if start==0 and duration==0 then return "READY" end
+    if start==0 or duration==0 then return "UNKNOWN","gcd_invalid" end
+    local tick=get("GetTime","number")
+    if tick.status~="READY" then return "UNKNOWN","gcd_clock_unknown" end
+    if start+duration<=tick.value then return "READY" end
     return "BLOCKED","global_cooldown"
 end
 local function charges(id,required)
