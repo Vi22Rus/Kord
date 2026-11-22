@@ -287,6 +287,36 @@ function S:ReadSignal(field,spellID,snapshot)
     if not ok or safeField~=true or type(field)~="string" then
         return unknown("signal_field_unverified")
     end
+    if field=="target.melee" then
+        local mod=KR.AbilityEligibility
+        if mod and type(mod.Fact)=="function" then
+            local ok,r=pcall(mod.Fact,mod,2973,"inRange",
+                {stateSnapshot=snapshot})
+            if ok and type(r)=="table" and r.status=="READY"
+                and type(r.value)=="boolean" and api:IsSafeValue(r.value) then
+                return {status="READY",value=r.value,source="RaptorStrikeRange"}
+            end
+        end
+        return unknown("melee_range_unverified")
+    elseif field=="autoShot.active" then
+        local r=self:ReadAutoShot(75)
+        if r and r.active and r.active.status=="READY"
+            and type(r.active.value)=="boolean"
+            and api:IsSafeValue(r.active.value) then
+            return {status="READY",value=r.active.value,source="AutoShot"}
+        end
+        return unknown("auto_shot_state_unknown")
+    elseif field=="target.targetsPlayer" or field=="player.hasAggro" then
+        local exists=api:Read("UnitExists","boolean","targettarget")
+        if exists.status~="READY" or exists.value~=true then
+            return unknown("target_target_unverified")
+        end
+        local relation=api:Read("UnitIsUnit","boolean","targettarget","player")
+        if relation.status=="READY" and type(relation.value)=="boolean" then
+            return {status="READY",value=relation.value,source="UnitIsUnit"}
+        end
+        return unknown("target_target_unverified")
+    end
     if field~="player.buff" and field~="target.debuff" then
         return unknown("signal_provider_unimplemented")
     end
@@ -355,7 +385,53 @@ function S:ReadSignal(field,spellID,snapshot)
     else
         r=api:Read(name,"table",unit,spellID)
     end
-    if not r or r.status~="READY" then return unknown("aura_lookup_unverified") end
+    if not r or r.status~="READY" then
+        if r and (r.reason=="protected_value" or
+            r.reason=="api_call_failed") then
+            return unknown("aura_lookup_unverified")
+        end
+        -- Forever C_UnitAuras.GetAuraDataByIndex enumeration allows a
+        -- complete, bounded negative scan. Nil terminator is distinct
+        -- from a protected/failed entry. No false-negative guessing.
+        if api:Probe("C_UnitAuras.GetAuraDataByIndex").status~="READY" then
+            return unknown("aura_scan_unavailable")
+        end
+        local completed=false
+        for index=1,64 do
+            local row=api:Read("C_UnitAuras.GetAuraDataByIndex",
+                "table",unit,index,unit=="target" and "HARMFUL" or "HELPFUL")
+            if row.status=="UNKNOWN" and row.reason=="no_value" then
+                completed=true
+                break
+            end
+            if row.status~="READY" or not api:IsSafeValue(row.value) then
+                return unknown("aura_scan_unverified")
+            end
+            local spell=api:ReadField(row.value,"spellId","number")
+            if spell.status~="READY" then
+                return unknown("aura_scan_unverified")
+            end
+            if spell.value==spellID then
+                if unit=="target" then
+                    local current=api:Read("UnitGUID","string","target")
+                    if current.status~="READY" or current.value~=targetGUID then
+                        return unknown("aura_target_changed")
+                    end
+                end
+                return {status="READY",value=true,
+                    source="GameState.ReadSignal.aura_scan"}
+            end
+        end
+        if not completed then return unknown("aura_scan_limit") end
+        if unit=="target" then
+            local current=api:Read("UnitGUID","string","target")
+            if current.status~="READY" or current.value~=targetGUID then
+                return unknown("aura_target_changed")
+            end
+        end
+        return {status="READY",value=false,
+            source="GameState.ReadSignal.aura_scan"}
+    end
     local id=api:ReadField(r.value,"spellId","number")
     local matching=api:ReadField(r.value,flag,"boolean")
     if not id or id.status~="READY" or id.value~=spellID
