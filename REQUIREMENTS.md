@@ -5938,6 +5938,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
 
+**Архитектурная актуализация AC-06:** намеренное ожидание представлять отдельной `actionType="WAIT"` рекомендацией с причиной, условием выхода и подтверждённым таймингом, не путать с `BLOCKED/UNKNOWN` или пустой очередью (см. AC-06). Использовать общий арбитр действий; не создавать отдельный движок ожидания.
+
+
 **Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
 
 
@@ -6002,6 +6005,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-02 — ITEM: предмет, зелье, камень (после IT-01–IT-04)
 
+**Архитектурная актуализация AC-06:** намеренное ожидание представлять отдельной `actionType="WAIT"` рекомендацией с причиной, условием выхода и подтверждённым таймингом, не путать с `BLOCKED/UNKNOWN` или пустой очередью (см. AC-06). Использовать общий арбитр действий; не создавать отдельный движок ожидания.
+
+
 **Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
 
 
@@ -6064,6 +6070,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 
 ### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
+
+**Архитектурная актуализация AC-06:** намеренное ожидание представлять отдельной `actionType="WAIT"` рекомендацией с причиной, условием выхода и подтверждённым таймингом, не путать с `BLOCKED/UNKNOWN` или пустой очередью (см. AC-06). Использовать общий арбитр действий; не создавать отдельный движок ожидания.
+
 
 **Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
 
@@ -6130,6 +6139,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 ### AC-04 — TARGET: смена цели (рекомендация, не действие)
 
+**Архитектурная актуализация AC-06:** намеренное ожидание представлять отдельной `actionType="WAIT"` рекомендацией с причиной, условием выхода и подтверждённым таймингом, не путать с `BLOCKED/UNKNOWN` или пустой очередью (см. AC-06). Использовать общий арбитр действий; не создавать отдельный движок ожидания.
+
+
 **Архитектурная актуализация AC-05:** стойки, облики и переключаемые ауры рекомендовать через общий `actionType="STANCE_OR_FORM"` с `FormStanceObservation` и spell eligibility; не создавать второй spell engine и не дублировать переключение уже активной формы (см. AC-05).
 
 
@@ -6189,6 +6201,9 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 ### AC-05 — STANCE_OR_FORM: смена стойки, ауры, облика
 
+**Архитектурная актуализация AC-06:** намеренное ожидание представлять отдельной `actionType="WAIT"` рекомендацией с причиной, условием выхода и подтверждённым таймингом, не путать с `BLOCKED/UNKNOWN` или пустой очередью (см. AC-06). Использовать общий арбитр действий; не создавать отдельный движок ожидания.
+
+
 **Раздел: 13. Типы действий, которые движок умеет рекомендовать. Приоритет: P1.**
 
 #### Требование
@@ -6240,5 +6255,64 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ (P1).** Существующие spell и aura механизмы переиспользовать; отдельная typed form/stance observation и выбор действительно нужного переключения ещё требуются.
 
 **Архитектурные ссылки:** AC-01–AC-04, SP-01–SP-14, CC-01–CC-03, PE-04, `RotationEngine`, `GameState`, `AbilityEligibility`. Обратные ссылки внесены в AC-01, AC-03 и AC-04.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-06 — WAIT: ничего не нажимать, ждать (не клиппить автострельбу, копить ресурс)
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Приоритет: P1.**
+
+#### Требование
+
+Поддержать `WAIT` как **положительную, осознанную рекомендацию временно ничего не нажимать** ради конкретной боевой цели: не прервать ближайший Auto Shot/выстрел жезла/автоатаку, дождаться энергии/маны/ярости для более приоритетной способности, сохранить combo points или контроль, дождаться завершения текущего каста/канала, окна механики либо подтверждённого краткого cooldown. `WAIT` не равен отсутствию READY-способностей, `BLOCKED`, `UNKNOWN`, ошибке API, пустой очереди или выключенному профилю. Не выполнять protected actions, не останавливать автострельбу и не запускать таймеры, которых клиент не предоставляет.
+
+Контракт: `actionType="WAIT"`, `waitReason=AUTO_SHOT_WINDOW/RESOURCE_POOL/CAST_OR_CHANNEL/CONTROL_PRESERVE/COOLDOWN_WINDOW/OTHER_VERIFIED`, `forSpellID` (необязательный будущий приоритет), `targetResource` (если известен), `untilCondition`, `remainingSeconds` (только достоверное branchable число), `status=READY/BLOCKED/UNKNOWN`, `priority`, `channel`, `reason/source/revision`, `requiresManualAction=false`. `READY` означает, что ожидание подтверждённо полезнее допустимого немедленного действия; неизвестный таймер не заменять нулём и не придумывать время. Если есть срочное прерывание, защита или спасение, их подтверждённый приоритет должен иметь возможность прервать WAIT.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161,185–186`: `rule.type` поддерживает `SPELL`, остальные типы дают `unsupported_action`; отдельной рекомендации `WAIT` нет.
+- `RotationEngine.lua:7–11,225–251`: `UNKNOWN/BLOCKED` и `READY` spell recommendation существуют, но **пустая очередь не означает осознанное WAIT**.
+- `KordRotation/Core/GameState.lua:9,60–111,243`: уже есть typed observation ресурса игрока, включая `UNKNOWN`; переиспользовать вместо нового resource scanner.
+- `GameState.lua:385–389`: есть `ReadAutoShot(75)` и проверка `active`; **активная автострельба не даёт достоверного времени до следующего выстрела**.
+- `KordRotation/Core/EventBus.lua:25–26`: `UNIT_POWER_UPDATE/FREQUENT` и связанные события уже инвалидируют `resources`. В проверенной таблице нет подтверждённого `PLAYER_SWING` и специализированной ranged swing revision.
+- `KordRotation/Core/GameAPI.lua`: secret-safe read contract уже есть; отдельный `C_SwingTimer`/Forever `PLAYER_SWING` observation в проверенном ядре не подтверждён.
+- **Итог:** resource/auto-repeat база частично существует, но подтверждённого `WAIT` action, точного swing observation и общей политики ожидания нет.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Classes/Hunter.lua:215–226` проверяет уже активный Auto Shot и требования к оружию/боеприпасам; `Sonah/Classes/Rogue.lua:146–150` описывает сохранение энергии/комбо для PvP stun chain, `:170–173` — ожидание энергии для Backstab. Есть полезные условия, но правило с `ignoreReady` не переносить как разрешение рекомендовать недоступный SPELL.
+2. **JustAC:** `JustAC/BlizzardAPI/CooldownTracking.lua:310–336` реализует Forever swing remaining/window; `:400–436` учитывает последний ranged shot и `PLAYER_SWING`; `:356–366` — `PLAYER_SWING_RANGE_UPDATE`/`C_SwingTimer`. **Главный референс для проверяемого тайминга**, но подтверждать поведение на текущем Forever build.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua:382` и `:560` читает power/percent; `ForeverAuras/CooldownViewerTrigger.lua:872–877` различает usability и insufficientResources. Полезно для причины ожидания, но триггер не является WAIT decision.
+4. **MaxDps:** `MaxDps/Core.lua:39` учитывает Auto Shot (75); `MaxDps/Helper.lua:2092–2093` рассчитывает mana и `:2567` сравнивает resource cost. Это отдельные наблюдения, не подтверждённый swing-safe WAIT selector.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:692` выдаёт `kind="wait"` при нехватке ресурса и включённом `predict`; `ForeverRotation/Display.lua:392` визуально выделяет wait, `ForeverRotation/Bars.lua:95` задаёт стиль; `ForeverRotation/Rotations/Rogue.lua:77` описывает energy pooling. **Главный референс для явного WAIT в рекомендациях**, но не копировать предположение, что всякий `noPower` требует ожидания.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:263–264` читает mana/max, `:234` — combo points. В проверенных 20 Lua-файлах не найден самостоятельный swing-aware WAIT action; наличие ресурса само по себе не доказывает политику ожидания.
+7. **RotationMaster:** `RotationMaster/Platform/swing_timer.lua:3,14,35,54–70` — Forever `PLAYER_SWING` и `GetNextSwingObservation`; `RotationMaster/Conditions/swing_timer.lua:4,56` — использование swing observation; `RotationMaster/Conditions/weapon.lua:474–478` — `SWING_TIME_REMAIN`; `RotationMaster/Conditions/spell.lua:693–709` — `SPELL_AUTOREPEAT`. Перенять safe swing observation/UNKNOWN, а не весь condition runtime.
+
+#### Выбранный путь Kord
+
+Ввести **`WaitDecisionPolicy`** как один typed action selector в общем `RotationEngine → RotationConditions → AbilityEligibility → recommendation`, без второго ротационного движка. `WAIT` — самостоятельный READY-кандидат с доказанной причиной и условием выхода, конкурирующий с SPELL/ITEM/PET_COMMAND/STANCE_OR_FORM через общий арбитр; TARGET остаётся информационной рекомендацией. Обычный `UNKNOWN` по обязательному наблюдению не превращается в WAIT и не должен маскировать диагностическую ошибку. `WAIT` не должен навсегда блокировать последующие правила; нужен явный приоритет и конечное/событийное условие пересмотра.
+
+**Автострельба:** переиспользовать `GameState.ReadAutoShot` для факта активности, добавить отдельный capability-probed `SwingTimingObservation` на подтверждённом Forever `PLAYER_SWING`/swingDuration/swingType или доступном `C_SwingTimer`. Для ranged измерять ближайший выстрел и окно, в котором конкретное заклинание рискует его отложить, учитывая cast time, GCD, задержку, движение и range только по подтверждённым данным. **Не считать всякий instant spell клиппингом** и не утверждать безопасное окно по таймеру, пока не было надёжного swing observation. Если swing timing неизвестен — `UNKNOWN` для swing-aware WAIT, а не выдуманный WAIT/READY. После первого выстрела, остановки Auto Shot, смены оружия, цели, дистанции или боя состояние инвалидируется. Отдельно учитывать melee swing и wand, не смешивая типы.
+
+**Накопление ресурса:** использовать `GameState.resources`, стоимость и известность приоритетного заклинания из общего spell eligibility, скорость регенерации/тик ресурса только если она наблюдаема; `RESOURCE_POOL` разрешён при доказанной стратегической выгоде и явном target threshold, а не просто из-за `not_enough_resource`. Не отказываться от доступной безопасной способности без подтверждённого приоритета. Для combo points учитывать конкретную цель, чтобы не копить очки после смены/смерти цели; rage/energy/mana различать. В случае `CAST_OR_CHANNEL` не клиппить текущий канал без политики разрешённого прерывания, но не скрывать urgent defensive/interrupt.
+
+Приоритеты: `emergency defense/urgent interrupt > обязательная ситуация > подтверждённый WAIT > обычный filler` как настраиваемая политика с явными исключениями; WAIT может иметь отдельный нейтральный UI (пауза, причина, при наличии достоверных данных таймер), не отображаться как вымышленный spell icon и не стирать defensive канал. События: Forever `PLAYER_SWING` только после capability/event verification, `START/STOP_AUTOREPEAT_SPELL`, resource, cast/channel, cooldown, target, weapon, combat, config; ленивый `Needs.waitDecision`, memo на оценку и bounded heartbeat. DevTools: `wait_auto_shot_window`, `wait_resource_pool`, `wait_channel_preserve`, `wait_control_preserve`, `wait_timing_unknown`, `wait_not_beneficial`, `wait_urgent_override`, `wait_condition_expired`.
+
+#### Требуемые изменения
+
+1. Добавить `WAIT` в общий `ActionRecommendation` с reason, untilCondition, optional remaining и строгим отличием от `UNKNOWN/BLOCKED/no_action`.
+2. Реализовать `WaitDecisionPolicy` как ленивый typed selector в текущем движке; итоговый `READY` выдаёт общий eligibility/arbitration, не профильное условие.
+3. Переиспользовать `GameState.ReadAutoShot` и ресурсы; добавить проверенный Forever `SwingTimingObservation` только при подтверждённых API/events, без выдуманных swing таймеров.
+4. Для Auto Shot/wand/melee различать active auto-repeat, swing type, достоверное время, cast window и клиппинг; неизвестный таймер → UNKNOWN.
+5. Для resource pooling проверять известное приоритетное действие, стоимость, текущий ресурс, условия восстановления и допустимость filler; не заменять отсутствие ресурса безусловным WAIT.
+6. Добавить явный арбитраж WAIT против urgent interrupt/defensive, обычного SPELL и прочих типов, anti-stall, событие выхода и UI без фиктивного spellID.
+7. EventBus revisions, lazy Needs, DevTools причины и tests: hunter auto shot active/inactive, до первого swing, первый выстрел, wand, melee, cast near shot, instant without clip, движение, range, unknown/secret swing, rogue energy pooling, rage/mana, combo target switch, noPower without benefit, channel, emergency interrupt override, wait expiry, no false READY, no protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ (P1).** Частичные наблюдения ресурса и Auto Shot уже есть, но WAIT action, swing-safe policy и общий арбитраж отсутствуют.
+
+**Архитектурные ссылки:** AC-01–AC-05, CC-04, SP-01–SP-14, `GameState`, `EventBus`, `AbilityEligibility`. Обратные ссылки внесены в AC-01–AC-05.
 
 **Изменения Lua:** отсутствуют. Только документация.
