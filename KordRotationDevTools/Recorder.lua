@@ -307,6 +307,14 @@ function D:Record(kind,status,reason,matrix,elapsed,detail,method,count)
     local cleanMethod
     local cleanCount
     if kind=="METHOD" then
+        -- Generic safe reason vocabulary for actual GameAPI calls:
+        -- no new Recorder whitelist edit is required for a newly added
+        -- internal adapter failure code. The bridge supplies only a
+        -- bounded reason token, never the original game return value.
+        if self:Safe(detail) and type(detail)=="string" and #detail>=1
+            and #detail<=64 and detail:match("^[a-z][a-z0-9_]*$") then
+            cleanDetail=detail
+        end
         local known=self:Safe(method) and type(method)=="string"
             and self.apiTraceAllowed and self.apiTraceAllowed[method]
         -- Only a bounded ASCII field key is accepted from the protected
