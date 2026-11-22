@@ -1,3 +1,13 @@
+## KR-20261122-012 — аудит QA-03: Lua 5.1 mock tests и профили
+- Дата: 2026-11-22; commit SHA — GitHub.
+- Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не менялся.
+- Проверены `.github/workflows/lua-regression.yml`, `scripts/run_local_lua_regression.sh`, профильные и eligibility mocks, `tests/bm_full_audit.lua`, существующий test tree.
+- Подтверждено: GitHub CI запускает 27 Lua 5.1 suites, локальный runner по умолчанию 17; требуется единый test manifest. `AuditFull` требует non-interference проверок относительно live lazy engine.
+- Добавлены 10 задач/тестов, обратные ссылки QA-01, QA-02, EN-A2, EN-A3, EN-A7, DA-08.
+- PASS: статический аудит. NOT RUN: текущий Lua 5.1/CI, WoW Forever.
+- Вердикт: частично реализовано, P0; parity и coverage ещё не подтверждены.
+
+
 ## KR-20261122-011 — аудит QA-02: полный журнал причин и подпричин
 - Дата: 2026-11-22; commit SHA — GitHub.
 - Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.

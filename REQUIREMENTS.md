@@ -6628,6 +6628,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-02:** полнота журнала означает все **реально выполненные** проверки и причины; ленивое правило «первое подходящее побеждает» остаётся обязательным. DevTools `Audit()` не вправе выполнять пропущенные правила в живом бою ради полной таблицы; ставить `NOT_EVALUATED`.
 
+**Ретроактивное уточнение QA-03:** обязательные Lua 5.1 mock-тесты first-match-wins, UNKNOWN→STOP, отсутствие вызовов последующих rules и неизменность результата при подключении DevTools. `AuditFull` не служит доказательством lazy runtime.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6686,6 +6688,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
 
 **Ретроактивное уточнение QA-02:** lazy `all/any` сохраняет short-circuit. В журнале QA-02 отражаются фактические checked child predicates и `NOT_EVALUATED` для непрочитанных; не запускать API-проверки заново ради подпричин.
+
+**Ретроактивное уточнение QA-03:** Lua 5.1 mocks для lazy all/any проверяют точное число чтений и отсутствие вызова непройденных child predicates; NOT_EVALUATED не должен провоцировать чтение.
 
 ### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
 
@@ -6916,6 +6920,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-03:** вкладки режимов, burst, категорий и профильных CFG используют общий UI-03 resolver и явные namespace/owner. Одноимённые элементы в разных вкладках должны показывать один effective value, если это один ключ; независимые параметры нельзя объединять из-за похожего названия. См. UI-03.
 
 **Ретроактивное уточнение UI-04:** режимы single/aoe/auto, категории и burst-параметры могут входить в именованный пресет настроек, но не обходят Eligibility и UNKNOWN; тип контента не подменяет неподтверждённый подсчёт врагов или выбор режима.
+
+**Ретроактивное уточнение QA-03:** все профили и конфигурационные схемы, зарегистрированные по EN-A7, обязаны входить в единый Lua 5.1 profile contract/selection/config/eligibility test matrix; тест только Hunter BM не равен покрытию всех классов.
 
 ### EN-A8 — Профиль уровня: диапазон, смена рангов, граничные уровни
 
@@ -7660,6 +7666,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение UI-08:** общий механизм инвалидации DA-08 обязан учитывать actionbar Hide/Show, paging, addon load/unload where observable, bindings, form/stance/override и live revalidation из UI-08. Не предполагать, что все сторонние аддоны посылают Blizzard event; TTL fallback остаётся ограниченным.
 
+**Ретроактивное уточнение QA-03:** инвалидации DA-08 проверяются детерминированным mock event harness Lua 5.1 с счётчиками API reads, revision, cache, target/spec/talents/bindings/actionbar; без in-game PASS.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -8256,6 +8264,8 @@ Kord должен корректно реагировать на фактиче�
 
 **Ретроактивное уточнение QA-02:** DevTools `Recorder` обязан сохранять **все проверенные внутренние machine reason codes** через безопасный общий `DiagnosticReasonEnvelope` QA-02, без ручного whitelist каждого кода и без `diagnostic_code_unmapped` для валидного доверенного reason. Подпричины, фактическая панель, evaluated stages и `NOT_EVALUATED` должны сохраняться структурно; untrusted строки по-прежнему отбрасываются. Независимый `Audit()` не должен повторно вычислять пропущенные ленивым движком правила и менять игровой результат.
 
+**Ретроактивное уточнение QA-03:** DevTools QA-01 обязан иметь mock tests под настоящим Lua 5.1 для Start/Stop, reload, opt-in, secret, v14, recorder, byte-identical ZIP; единый CI/local test manifest QA-03, без пропуска devtools suites.
+
 ### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8318,5 +8328,67 @@ DevTools должен записывать **все достоверно сфо�
 
 **Архитектурные ссылки:** QA-01, UI-06, UI-08, DA-03, EN-A2, EN-A3, AC-07, `RotationEngine`, `AbilityEligibility`, `ActionBarScanner`, `KordRotationCoreObservation`, `KordRotationDevTools/Recorder.lua`, `Trace.lua`. **Обратные ссылки внесены в QA-01, UI-06, DA-03, EN-A2, EN-A3, UI-08**; существующий DevTools должен быть исправлен, не заменён новым.
  
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение QA-03:** полный reason/subreason envelope QA-02 проверять Lua 5.1 mock-тестами, включая новый trusted reason без whitelist, NOT_EVALUATED и отсутствие повторной оценки ленивого engine; `AuditFull` отдельно маркировать diagnostic-only, проверять non-interference и не объявлять live-equivalent.
+
+### QA-03 — Mock-тесты движка и профилей, запуск на Lua 5.1
+
+**Раздел: 17. Диагностика и качество. Приоритет: P0.**
+
+#### Требование
+
+Все изменения канонического ядра, движка, зарегистрированных профилей, условий, Eligibility, API-адаптеров, настроек, DevTools и двух ZIP должны проходить воспроизводимый набор автоматизированных mock-тестов **на настоящем Lua 5.1**. Нельзя считать Lua 5.3/5.4, texlua, Luau, syntax-only проверку или CI с пропущенными файлами эквивалентом полного регрессионного прогона. Тестовый harness имитирует только WoW API и события, но загружает **реальные production Lua-модули**, а не копию алгоритма. Результат тестов `MOCK PASS` никогда не означает `WOW FOREVER CLIENT PASS`; при отсутствии настоящего Lua 5.1 тест обязан завершиться FAIL/NOT RUN, а не молча выбрать другой интерпретатор.
+
+**Канонический контракт тестов:** один декларативный `tests/manifest` — единый источник списка обязательных suites для `.github/workflows/lua-regression.yml` и `scripts/run_local_lua_regression.sh`; оба runner выполняют все suite в одинаковом порядке и на одном `_VERSION=="Lua 5.1"`, независимо от текущего рабочего каталога. Проверка `luac5.1 -p` для всех Lua файлов ядра, DevTools и tests; затем unit/contract/integration mocks, тест сборки и побайтового равенства `KordRotation/` в двух ZIP. CI должен падать при новом обязательном тесте, отсутствующем в manifest, при неуспешном assert, таймауте, неверной версии Lua, неполной сборке или попытке объявить skipped suite как PASS. Каждая suite печатает PASS/FAIL с конкретным файлом, assert, тестируемым контрактом; итог — count executed/failed/skipped, commit SHA и Lua version.
+
+**Mock fixture:** изолированные `_G`, `CreateFrame`, `Unit*`, `C_Spell*`, `C_SpellBook*`, `GetActionInfo`, `GetBinding*`, EventBus, fake clock, combat/target/pet/inventory, secure/secret sentinel и optional third-party buttons; воспроизводимые последовательности событий, без случайности и доступа к живому WoW. `UNKNOWN`/secret/protected API проверяются до чтения значений. Инварианты: `EN-A2` first-match-wins, `EN-A3` lazy all/any, один snapshot/оценку, `UNKNOWN→STOP` без выполнения последующих приоритетов, `READY` только от AbilityEligibility, max learned rank, отсутствие неподтверждённого spell, target/range/resource/cooldown/GCD/cast/charge/item/pet/stance/AoE/TTD policy, стабильные профили по class/spec/talents/level, локализация и settings migration. Для незарегистрированных классов тестировать корректный UNKNOWN/unsupported, **не** объявлять профиль реализованным. Для `QA-02` тестировать все реально вычисленные reason/subreason, `NOT_EVALUATED` и отсутствие повторных API calls; `AuditFull` не подменяет live lazy evaluation.
+
+#### Аудит Kord (main)
+
+- `.github/workflows/lua-regression.yml:1–32`: workflow на push main при изменении исходников/тестов и ручной dispatch, установка `lua5.1`, `luac5.1 -p` для `KordRotation`, `KordRotationDevTools`, `tests`. Это реальная основа CI, но документационные-only коммиты не запускают workflow автоматически.
+- `.github/workflows/lua-regression.yml:33–69`: фиксированный список **27** Lua mock suites (включая profile contract, eligibility, v14, DevTools, Hunter BM, settings, display, diagnostic tests); каждый вызывается через `lua5.1`, failed accumulator блокирует успех.
+- `.github/workflows/lua-regression.yml:70–71`: отдельный Python unittest проверяет byte-identical packaging и TOC. Python проверка дополняет, но не заменяет Lua 5.1.
+- `scripts/run_local_lua_regression.sh:5–19`: строго требует `lua5.1` и `_VERSION=="Lua 5.1"`, компилирует все модули через `scripts/check_lua_syntax.lua`; это правильно. `:21–42`: локальный default manifest содержит **17** Lua suites, а не 27 из CI. **Подтверждённый пробел:** локальный PASS не покрывает дополнительные CI-тесты, например `hunter_bm_rank_selection`, `rotation_module_config`, `bm_full_audit`, `diagnostics_devtools_launch`. Нужен единый manifest, а не два расходящихся ручных списка.
+- `tests/profile_contract_v1.lua:1–75`: загружает реальные модули профиля/engine, подменяет WoW-зависимости, считает snapshot reads, AbilityEligibility calls, signal reads, проверяет статус и ленивую семантику. `tests/stage_02_07_eligibility.lua:1–75`: mock cooldown/charges/range/GCD/secret/target GUID/target change, API guard.
+- `tests/bm_full_audit.lua:1–72`: специально проверяет `RotationEngine:AuditFull()` и посещение **всех** правил, даже если live evaluator остановился бы на первом UNKNOWN. Это допустимый отдельный диагностический сценарий **только при доказанном отсутствии побочных эффектов/повторных live API reads**, но не тест реального lazy runtime. Обязателен regression assertion `engineResultBefore==engineResultWithDevTools` и счётчик API reads.
+- `tests/devtools_*.lua`, `tests/stage_02_08_v14_*.lua`, `tests/rotation_module_config.lua`, `tests/hunter_bm_*.lua`, `tests/combat_aura_routing.lua`: существующие targeted mocks; наличие файла не доказывает coverage каждого P0 требования и не заменяет живой клиент.
+- **Пробел:** нет единого runner manifest, автоматического доказательства покрытия **всех** зарегистрированных профилей/специализаций и всех P0 инвариантов, отдельного non-interference теста QA-02 `AuditFull`, текущего подтверждённого запуска CI на этом HEAD и WoW Forever. В рамках данного аудита Lua тесты/CI **NOT RUN**.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Profiles.lua` и `Sonah/Classes/Hunter.lua` содержат отдельные profile/rule paths; для Kord важно тестировать реальный registry/selection, а не скопированный mock profile. Наличие эквивалентного Lua 5.1 CI в проверенных ZIP не подтверждено.
+2. **JustAC:** `JustAC/ActionBarScanner.lua`, `JustAC/DebugCommands.lua` иллюстрируют разные UI/API маршруты; mock button и binding должны тестироваться независимо от engine.
+3. **ForeverAuras:** `ForeverAuras/API.lua`, `ForeverAuras/BlizzardAuraDisplay.lua` разделяют API и display; аналогичные границы Kord требуют contract mocks.
+4. **MaxDps:** `MaxDps/Core.lua`, `MaxDps/Buttons.lua` показывают разделение вычисления и кнопок; Kord должен отдельно тестировать actionbar routing и отсутствие влияния glow на READY.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua`, `ForeverRotation/Rotations/Signals.lua` используют engine/signal boundaries; тесты Kord должны сохранять lazy semantics и причины отказа.
+6. **RotationGuide:** `RotationGuide/Core/State.lua`, `RotationGuide/Core/Init.lua` дают пример state/event boundaries; полезны fake clock/event sequences.
+7. **RotationMaster:** `RotationMaster/Core/forecast.lua`, `RotationMaster/Core/assisted_highlight.lua` показывают независимые forecast/highlight; тестировать отсутствие второго engine и защищённых UI-действий.
+
+**Границы доказательств:** сопоставлены Lua paths из семи reference ZIP и требования к границам компонентов; наличие/отсутствие аналогичной CI-инфраструктуры в чужих ZIP без отдельного полного file-by-file audit не утверждается.
+
+#### Выбранный путь Kord
+
+**Сохранить существующий `tests/`, GitHub Actions и `scripts/run_local_lua_regression.sh`, унифицировать список suites через один test manifest, добавить недостающие contract tests на Lua 5.1.** Не создавать второй test runner, engine, profile registry или диагностический evaluator. QA-03 — обязательный quality gate для каждого будущего P0/P1 изменения; QA-01/QA-02 тестируются теми же production Lua-модулями и строго изолированными mocks. `AuditFull` допустим только в отдельном offline/test/opt-in сценарии с подтверждённой safety, без изменения live engine decisions.
+
+#### Требуемые изменения
+
+1. Создать один versioned `tests/manifest` и заставить CI и local runner использовать его, убрать дублирующиеся списки 27/17, проверять missing/duplicate suite и версию Lua 5.1.
+2. Обеспечить `luac5.1 -p` для **всех** Lua в обоих аддонах и tests, fail-fast при ошибке синтаксиса и недоступном `lua5.1`.
+3. Ввести общий deterministic mock harness с fake WoW API, EventBus, clock, spellbook, buttons, pet, item, secure/secret values; сбрасывать состояние между tests, не подменять production engine логикой test double.
+4. Покрыть profile registry/contract/config и выбор class/tree/spec/level/talents, rank selection, приоритеты, `UNKNOWN` для отсутствующих профилей, непроверенные experimental profiles.
+5. Проверить `EN-A2/EN-A3`: first-match-wins, all/any short-circuit, exact API call counts, `UNKNOWN→STOP`, skipped predicates, single snapshot per evaluation, READY only via AbilityEligibility.
+6. Покрыть eligibility/provider states: target hostility/friendly, combat, range/LOS, movement/casting, cooldown/GCD/charges, mana/energy/rage, learned max rank, item/pet/stance, aura, AoE and UNKNOWN fail-closed; unsupported features явно `NOT_IMPLEMENTED/NOT_TESTED`.
+7. Для QA-02 добавить regression тест сохранения любого trusted bounded reason и nested subreasons, `NOT_EVALUATED`, source/revision, dropped metadata; запрет на повторные live API reads в диагностике.
+8. Проверить UI-05/06/08: main/defensive visibility, target/combat transitions, missing icon explanation, actionbar Hide/Show/paging/bindings/glow, secret frame; отсутствие зависимости собственных рекомендаций от видимости чужой панели.
+9. Проверить DevTools opt-in/OFF after reload, API matrix 101 rows, trace/recorder safety, производительность и byte-identical user/dev ZIP из одного исходного каталога.
+10. Сделать CI обязательным quality gate и выдавать машинно-читаемый отчёт `SHA/Lua version/suites executed/failed/skipped/P0 coverage`; запускать локально и в GitHub Actions на **одном** manifest. После mock PASS провести отдельный WoW Forever client QA, не смешивать статусы.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО / P0 / LUA 5.1 MOCK INFRASTRUCTURE EXISTS, COVERAGE AND PARITY NOT COMPLETE.** Реальные Lua 5.1 CI, mock suites и Python packaging tests существуют. Подтверждённое расхождение локального и CI списка тестов (17 против 27), отсутствует единый coverage gate и доказательство client QA. **Текущий запуск Lua/CI NOT RUN.**
+
+**Архитектурные ссылки:** QA-01, QA-02, EN-A2, EN-A3, EN-A7, DA-08, `tests/`, `.github/workflows/lua-regression.yml`, `scripts/run_local_lua_regression.sh`, `scripts/build_variants.py`. **Обратные ссылки добавлены в QA-01, QA-02, EN-A2, EN-A3, EN-A7, DA-08.**
+
 **Изменения Lua:** отсутствуют. Только документация.
 
