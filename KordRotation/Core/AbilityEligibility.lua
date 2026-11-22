@@ -208,21 +208,34 @@ local function targetAndRange(id,policy,stateSnapshot)
     end
     if condition.value==false then return "BLOCKED","target_relation_invalid" end
     local api=KR.GameAPI
+    if not api then return "UNKNOWN","range_unavailable" end
+    -- RM Platform/actions.lua: a spell with no range is not out of range.
+    -- Check applicability independently before querying the distance.
+    -- This never assumes a nil range API result means "in range".
+    if api:Probe("C_Spell.SpellHasRange").status=="READY" then
+        local shape=get("C_Spell.SpellHasRange","boolean",id)
+        if shape.status=="READY" then
+            if shape.value==false then return "READY" end
+        else
+            return "UNKNOWN","range_unavailable"
+        end
+    end
     local result
-    if api and api:Probe("C_Spell.IsSpellInRange").status=="READY" then
+    if api:Probe("C_Spell.IsSpellInRange").status=="READY" then
         result=get("C_Spell.IsSpellInRange","boolean",id,"target")
-    else
-        result=multi("IsSpellInRange",id,"target")
         if result.status=="READY" then
-            local value=result.value[1]
-            if value==true or value==1 then return "READY" end
-            if value==false or value==0 then return "BLOCKED","out_of_range" end
+            return result.value==true and "READY" or "BLOCKED",
+                result.value==true and nil or "out_of_range"
         end
         return "UNKNOWN","range_unavailable"
     end
-    if result.status~="READY" then return "UNKNOWN","range_unavailable" end
-    if result.value==false then return "BLOCKED","out_of_range" end
-    return "READY"
+    result=multi("IsSpellInRange",id,"target")
+    if result.status=="READY" then
+        local value=result.value[1]
+        if value==true or value==1 then return "READY" end
+        if value==false or value==0 then return "BLOCKED","out_of_range" end
+    end
+    return "UNKNOWN","range_unavailable"
 end
 local function castStatus(policy)
     if policy=="allow" then return "READY" end
