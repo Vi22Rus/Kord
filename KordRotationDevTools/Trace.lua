@@ -406,6 +406,19 @@ function D:ObserveDetails(diagnosis,force,summary)
         add("DISPLAY",flag(display.frameShown),"frame_shown")
         add("DISPLAY",display.lastEngineStatus,"ui_engine_status",
             display.lastEngineReason)
+        add("DISPLAY",flag(display.defensiveEnabled),"defensive_enabled")
+        add("DISPLAY",flag(display.defensiveCombatOnly),"defensive_combat_only")
+        add("DISPLAY",flag(display.auraPromotion),"aura_promotion")
+        add("DISPLAY",display.defensiveStatus,"defensive_engine_status",
+            display.defensiveReason)
+        add("DISPLAY",flag(display.defensiveRecommendation),
+            "defensive_recommendation")
+        add("DISPLAY",flag(display.defensiveFrameCreated),
+            "defensive_frame_created")
+        add("DISPLAY",flag(display.defensiveFrameShown),
+            "defensive_frame_shown")
+        add("DISPLAY",flag(display.defensiveVisibilityAllowed),
+            "defensive_visibility_allowed")
     end
     return true
 end
