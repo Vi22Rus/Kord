@@ -10,7 +10,12 @@ local categories={damage=true,cooldowns=true,buffs=true,racial=true,
 local targets={enemy=true,friendly=true,self=true,none=true}
 local casts={idle=true,allow=true}
 -- Explicit semantic classification: not every spell in 'buffs' is an aura.
-local recommendationTypes={aura=true}
+-- Describes recommended effect semantics, never a hardcoded spell ID.
+-- A plain 'buffs' category defaults to buff; utility/debuff opt out.
+local recommendationTypes={
+ buff=true,aura=true,aspect=true,stance=true,
+ utility=true,debuff=true,
+}
 local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true}
 local function finite(n)
  return type(n)=="number" and n==n and n~=math.huge and n~=-math.huge
