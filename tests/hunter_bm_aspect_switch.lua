@@ -15,12 +15,12 @@ assert(KR.BMLeveling:Register())
 local p=KR.RotationProfiles:Get("HUNTER_TREE_1",30)
 local r=p.Rules[2]
 assert(r.spell=="AspectHawk","second rule must remain combat Hawk")
-local state={travel=true,combat=false,hawkMissing=nil}
+local state={travel=true,combat=false,hawkMissing=nil,hasTarget=true}
 local S={}
 function S:spellFact() return true end
 function S:ge() return true end
 function S:is(field)
- if field=="target.exists" then return true end
+ if field=="target.exists" then return state.hasTarget end
  if field=="player.combat" then return state.combat end
  return nil
 end
@@ -59,4 +59,12 @@ state.hawkMissing=true
 eq(true,"clean missing Hawk should recommend casting")
 cfg.aspect=false
 eq(false,"user-disabled aspect never recommended")
+cfg.aspect=true
+state.combat=false
+state.travel=false
+state.hasTarget=false
+state.hawkMissing=true
+eq(true,"out of combat without target still recommends missing Hawk in Defensive")
+state.travel=true
+eq(false,"out of combat travel aspect is preserved without target")
 print("PASS BM Sonah travel aspect combat switch")
