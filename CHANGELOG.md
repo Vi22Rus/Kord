@@ -1,3 +1,12 @@
+## KR-20261122-071 — IT-01/1.10: integrate inventory tests with ordinary regression
+- Дата: 2026-11-22 UTC (точное время Git), этап 1/подшаг 1.10, IT-01 P0. Тип test/docs. Коммит: `git log --grep KR-20261122-071`.
+- Контекст: исходные inventory mock suites 1.1–1.9 были созданы, но большинство не входило в стандартный runner/CI, поэтому отсутствие регрессии нельзя было гарантировать. Это подтверждено списками тестов, не игровым дефектом.
+- Изменено: `tests/inventory_integration_regression.lua` — новая связка item/family/revision, explicit refresh, false/false; `tests/IT01_QA_MATRIX.md` — 14 групп coverage + прогал, `scripts/run_local_lua_regression.sh` и `.github/workflows/lua-regression.yml` — добавлены 9 post-cutoff inventory files, не удалён ни один исторический LEGACY-тест; `REQUIREMENTS.md`, поэтапный план и CHANGELOG.
+- API: новых WoW вызовов нет; используются только уже существующие mock-читатели C_Item/GameState и EventBus. Поведение реального Forever не проверено. Reference-based constraints из IT-01: RotationMaster/JustAC/ForeverAuras.
+- PASS — статическая сверка suite-list, уникальных путей, отсутствия изменений LEGACY логики/engine; NOT RUN — Lua 5.1, локальный mock suite, Python regression, GitHub Actions, WoW Forever. В инструментарии доступен texlua, но не установлен Lua 5.1; по правилам проекта его нельзя объявлять эквивалентом.
+- Тестировщику: запуск только после завершения зависимостей, регистрировать client FAIL/UNKNOWN отдельно; реестр LEGACY не является признаком некорректности.
+- Ограничения: client count scope, Soulwell без BAG_UPDATE_DELAYED, shared cooldown и usability остаются непроверенными. IT-01 PARTIALLY IMPLEMENTED, следующий IT-02/2.1; связи IT-01, IT-02–IT-04, AC-02, KR-069/070.
+
 ## KR-20261122-070 — fix: validate manual inventory command and READY diagnostics
 - Дата: 2026-11-22 (точный timestamp по git log); этап IT-01/1.9, P0, тип fix. SHA определяется через `git log --grep KR-20261122-070`.
 - Контекст: статическое ревью KR-20261122-069 выявило две исходные ошибки: Lua patterns не поддерживают альтернативы `(item|family)`, поэтому /krdev inventory item/family не распознавался; CoreObservation мог отдать READY для неполного/mismatched record. Это подтверждено исходником, но игровое воспроизведение НЕ выполнялось.

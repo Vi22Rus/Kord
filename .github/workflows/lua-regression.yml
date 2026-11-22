@@ -62,7 +62,16 @@ jobs:
             tests/hunter_bm_aspect_bar_rank.lua \
             tests/rotation_module_config.lua \
             tests/bm_full_audit.lua \
-            tests/diagnostics_devtools_launch.lua; do
+            tests/diagnostics_devtools_launch.lua \
+            tests/inventory_observation_contract.lua \
+            tests/inventory_bag_snapshot_mock.lua \
+            tests/item_family_catalog_mock.lua \
+            tests/inventory_family_count_mock.lua \
+            tests/inventory_event_revisions_mock.lua \
+            tests/inventory_conditions_mock.lua \
+            tests/inventory_item_eligibility_mock.lua \
+            tests/inventory_diagnostics_mock.lua \
+            tests/inventory_integration_regression.lua; do
             echo "RUN $f"
             lua5.1 "$f" || failed=1
           done

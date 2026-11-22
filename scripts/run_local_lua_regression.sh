@@ -39,6 +39,15 @@ else
     tests/devtools_ui_locale.lua
     tests/devtools_v14_registry.lua
     tests/devtools_trace_signals.lua
+    tests/inventory_observation_contract.lua
+    tests/inventory_bag_snapshot_mock.lua
+    tests/item_family_catalog_mock.lua
+    tests/inventory_family_count_mock.lua
+    tests/inventory_event_revisions_mock.lua
+    tests/inventory_conditions_mock.lua
+    tests/inventory_item_eligibility_mock.lua
+    tests/inventory_diagnostics_mock.lua
+    tests/inventory_integration_regression.lua
   )
 fi
 for t in "${tests[@]}"; do

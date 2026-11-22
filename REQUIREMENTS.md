@@ -5038,6 +5038,15 @@
 - Коммит: `KR-20261122-069`, SHA определяется через Git log; постоянные ссылки `https://github.com/Vi22Rus/Kord/blob/<SHA>/KordRotation/Core/CoreObservation.lua` и `https://github.com/Vi22Rus/Kord/blob/<SHA>/KordRotationDevTools/Probe.lua`. Оставшееся — подтверждение регистрации событий клиента, реальная диагностика soulwell/duplicate, запуск mock/regression и следующий IT-01/1.10. Связи IT-01/1.1–1.8, IT-02–IT-14, AC-02.
 
 
+#### Реализация Kord — фактическое состояние (IT-01, этап 1, шаг 1.10)
+- **Дата/статус:** 2026-11-22; InventoryObservation P0, PARTIALLY IMPLEMENTED / LOCAL NOT RUN / CLIENT NOT RUN, несмотря на добавленные mock-кейсы.
+- **Код/тесты:** `tests/inventory_integration_regression.lua` проверяет связку `GameState:ReadInventoryItemObservation`, `ReadInventoryFamilyObservation`, `EventBus:HandleEvent` / `RequestInventoryRefresh`, `ItemFamilyCatalog:ReplaceFamily`. Ноль, BAGS_ONLY false/false, пересечения/дедуп, частичный UNKNOWN, смена ревизии во время чтения и явное обновление Soulwell-подобного сценария проверяются на синтетических данных. Тест не использует новые WoW API и не исполняет protected item use.
+- `tests/IT01_QA_MATRIX.md` — сводка 14 групп проверок по всем 10 пунктам IT-01, включая недоказанные клиентские свойства. `scripts/run_local_lua_regression.sh`, `.github/workflows/lua-regression.yml` — добавлены **девять** новых inventory tests в обычные списки при сохранении старых LEGACY suites, их assertions/logic не менялись.
+- **Источники:** GameState/GameAPI, ItemFamilyCatalog, EventBus; исторические референсы RotationMaster, JustAC и ForeverAuras из IT-01, их исходники повторно не анализировались. Использованные WoW API в новом тесте — только mocked `C_Item.GetItemCount` (name intercepted by mock), реального игрового API не вызывали.
+- **Проверки:** PASS — статическая проверка тестовых путей, отсутствия удаления прежних suites и реестра LEGACY; NOT RUN — actual Lua 5.1/mock execution, Python build regression, GitHub CI и WoW Forever. Наличие/подключение в CI не означает успешный прогон.
+- **Осталось:** фактическое тестирование Lua 5.1, клиентские scope/count semantics, Soulwell edge-event, bag event payload и IT-02/IT-03 cooldown/usability. Статус IT-01 остаётся PARTIALLY IMPLEMENTED; связанный AC-02 не включён. Коммит `KR-20261122-071` (SHA по Git log).
+
+
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
 
 **Архитектурная актуализация AC-02:** итоговые рекомендации использования предмета оформлять как `actionType="ITEM"` через общий контракт действий (см. AC-02), сохраняя общие проверки IT-01–IT-04; не подменять itemID spellID эффекта и не создавать второй движок рекомендаций.
