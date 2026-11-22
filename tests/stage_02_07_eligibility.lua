@@ -262,7 +262,8 @@ end
 eq(eval().status,"READY","legacy 29515 idle")
 KR.GameAPI.ReadValues=function(self,name,...)
  if name=="GetSpellCooldown" then
-  return {status="UNKNOWN",reason="no_value"}
+  if (...)==29515 then return {status="UNKNOWN",reason="no_value"} end
+  return {status="READY",value={0,0,1}}
  end
  if name=="GetSpellCharges" then return {status="READY",value={1,2}} end
  if name=="IsUsableSpell" then return {status="READY",value={true,false}} end
