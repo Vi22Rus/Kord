@@ -122,3 +122,33 @@
 3. Закрепить read-only инвариант тестом/статическим контролем, который отклоняет добавление запрещённых вызовов.
 
 **Изменения кода:** не выполнялись; добавлена документация.
+
+
+## PR-04 — Единственный арбитр доступности действия: AbilityEligibility; профиль без игрового API
+
+### Требование
+
+Окончательное решение о пригодности способности к рекомендации (`READY`, `BLOCKED`, `UNKNOWN`) принимает только `KordRotation/Core/AbilityEligibility.lua`. Условия профиля могут определять **желательность и приоритет**, но не объявлять способность готовой самостоятельно. Профиль получает только ограниченный интерфейс условий `S` и конфигурацию; не вызывает игровой API напрямую, в том числе через `KR.GameAPI`, `_G` или обходные обёртки. Чтение книги заклинаний и локализованных названий должно выполняться отдельным провайдером/каталогом до передачи данных профилю.
+
+### Проверка исходников Kord (main)
+
+- [`KordRotation/Core/RotationEngine.lua`](KordRotation/Core/RotationEngine.lua), строки 202–253: движок вызывает `rule.when(S,cfg)`; только если условие равно `true`, запрашивает `KR.RotationConditions:Check(S,spellID,policy)`. Статус `READY` берётся из результата проверки пригодности.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 152–191, 256–260, 274–312, 341–345: `Check` делегирует `KR.AbilityEligibility.Evaluate`; `spellAvailable` использует тот же модуль; `spellFact` делегирует `KR.AbilityEligibility.Fact`. Непроверенный ответ превращается в `UNKNOWN`.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua): отдельный модуль проверяет изученность, cooldown, GCD, ресурсы, дальность и другие условия применимости.
+- [`KordRotation/Core/RotationProfiles.lua`](KordRotation/Core/RotationProfiles.lua), строки 149–175 и 217–224: проверяет контракт правил и сохраняет `when` как функцию; ограниченный `S` передаётся движком.
+- **Подтверждённое нарушение запрета API в профиле:** [`KordRotation/Profiles/Hunter/BM_Leveling_Contract.lua`](KordRotation/Profiles/Hunter/BM_Leveling_Contract.lua), строки **514–542**, функция `resolveSpells`, напрямую обращается к `KR.GameAPI` и вызывает `ReadValues("GetSpellInfo",...)`, `Read("C_Spell.GetSpellInfo",...)` и `ReadField(...)` для разрешения локализованных названий заклинаний. Это не проверка готовности к применению, но **всё равно нарушает буквальное требование «профиль не обращается к игровому API»**.
+- Дополнительно просмотрены профили `Kord_Hunter_BM_60_PVE.lua`, `Kord_Hunter_BM_Leveling_PVE.lua`, `Kord_Hunter_MM_60_PVE.lua`, `Kord_Hunter_MM_Leveling_PVE.lua`, `Kord_Hunter_SV_Core.lua`, `BM_Pilot_Experimental.lua`: аналогичных прямых обращений в проверенных файлах не обнаружено. Строка с `GetSpellInfo` в BM 60 — комментарий, не вызов.
+
+### Вердикт
+
+**РЕАЛИЗОВАНО — НЕОБХОДИМО ИСПРАВИТЬ.**
+
+Единый арбитр `READY` для основной ротации реализован через `AbilityEligibility`. Однако требование полностью не соблюдено: профиль `BM_Leveling_Contract.lua` непосредственно вызывает читающий игровой API через `KR.GameAPI`.
+
+### Требуемое исправление
+
+1. Вынести локализацию и сопоставление рангов из `BM_Leveling_Contract.resolveSpells` в `SpellCatalogue` либо отдельный сервис разрешения заклинаний. Профиль должен получать уже подготовленные значения без вызовов `KR.GameAPI`.
+2. Сохранить существующий путь `rule.when → RotationConditions.Check → AbilityEligibility.Evaluate` и запретить самостоятельную выдачу `READY` профилями.
+3. Добавить статическую проверку профилей на `KR.GameAPI`, прямые вызовы WoW API и обходные обращения; тестировать, что `UNKNOWN` от `AbilityEligibility` не превращается в `READY`.
+
+**Изменения кода движка:** не выполнялись; обновлена только документация требований.
