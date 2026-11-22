@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 must reuse universal aura presence/remaining observation and its secret-safe UNKNOWN, not introduce a parallel aura scanner.**
+
 **Архитектурная актуализация GR-04:** **См. GR-04: GR-04 checks actually learned group buff spell families/ranks through canonical spellbook evidence; a reference catalog is not proof of known spells.**
 
 **Архитектурная актуализация GR-03:** **См. GR-03: GR-03 determines which dispel families are actually learned via the canonical spellbook/rank provider; catalog membership is not proof of known spell.**
@@ -1585,6 +1587,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 is an advisory buff-need observation; canonical AbilityEligibility remains sole final READY gate.**
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 threshold observation only gates candidates; a display-only secret alpha must not be branched on or treated as READY, and final READY belongs to AbilityEligibility.**
 
@@ -3994,6 +3998,8 @@
 
 ### GR-04 — Отсутствующие групповые баффы (кого баффать)
 
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 player consumable buff maintenance and GR-04 group buff coverage reuse aura observations but have different scope/ownership and no duplicate scanners.**
+
 **Архитектурная актуализация GR-05:** **См. GR-05: GR-05 shares roster, aura and candidate dedup with GR-04; resurrection, healing and buffing have independent eligibility/policy.**
 
 **Раздел: 8. Группа и рейд. Приоритет: P2.**
@@ -4757,6 +4763,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses the IT-01 inventory and versioned item family catalog; extend its itemID-to-buffSpellID mappings, never add another bag scanner.**
+
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 consumes IT-01 typed mana/resource consumable family and bag counts; no duplicate inventory scanner.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 reuses IT-01 bag-only counts and healthstone/soulstone/shard family catalog; no duplicate bag scanner.**
@@ -4819,6 +4827,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-02 — Кулдаун предмета: активен, остаток, общий кулдаун зелий
+
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses item/shared cooldown observations; buff remaining time is not item cooldown remaining time.**
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 uses IT-02 item and potion shared cooldown, including shared lockout with health potions; no false fallback to another potion.**
 
@@ -4884,6 +4894,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 delegates combat/level/zone/target item use restrictions to IT-03; a missing buff does not prove item usable.**
+
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 delegates in-combat/out-of-combat item usability and zone/level/target restrictions to IT-03; combat context is not itself an item-use permission.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 use eligibility for stones and creation spell eligibility must remain separate; no item READY inferred from create spell READY.**
@@ -4945,6 +4957,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses IT-04 ranked usable family selection but must additionally compare active buff tier, category and compatibility before replacement.**
 
 **Архитектурная актуализация IT-06:** **См. IT-06: IT-06 reuses IT-04 highest usable tier selector with family=MANA_POTION; no second ranked item selector.**
 
@@ -5061,6 +5075,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-06 — Зелья маны и ресурса: порог процента, отличие боя и вне боя
 
+**Архитектурная актуализация IT-07:** **См. IT-07: IT-07 maintenance of long-duration elixirs is distinct from IT-06 mana/resource potion thresholds; share inventory and eligibility only.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
 
 #### Требование
@@ -5112,5 +5128,63 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ RESOURCE/COMBAT API — ДОРАБОТАТЬ (P1).** Kord имеет typed player power, combat snapshot и `ReadPowerPercent`, но не имеет подтверждённого универсального mana/resource potion threshold policy, combat/ooc split, OOM fallback и item eligibility integration. Secret UI alpha **не** является доказательством branchable percent.
 
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-05, SP-14, SW-04. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-07 — Зелья усиления и эликсиры: нужно ли обновить, остаток действия
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
+
+#### Требование
+
+Для длительных расходуемых усилений (`FLASK`, `ELIXIR`, подтверждённых Forever-specific buff potions; иные `FOOD_BUFF`/`SCROLL`/`WEAPON_CONSUMABLE` — отдельные категории, только при явном включении) определять: `activeAuraSpellID`, `auraPresent=TRUE/FALSE/UNKNOWN`, `remainingSeconds=number/UNKNOWN/PERMANENT`, `refreshThresholdSeconds`, `buffTier`, `compatibleWithCurrent`, `itemAvailable`, `itemUsable`, `decision=REFRESH/KEEP/WAIT/NONE/UNKNOWN`, `reason/source/auraRevision/catalogRevision`. Обновлять только когда подтверждены отсутствие **нужного** эффекта или `remaining <= threshold`, подходящий предмет имеется и применим, и замена не ухудшит действующий buff и не нарушит проверенную клиентскую совместимость flask/elixir. `UNKNOWN` duration не означает истечение; неизвестное наличие aura не означает её отсутствие. Не путать `remainingSeconds` ауры с item cooldown. Политика настраивает `enabled`, `refreshThresholdSeconds`, `allowRefreshInCombat`, `allowReplaceWeaker`, `allowOverwriteStronger` (по умолчанию false), `preferredStats`, `budget/consumptionConservation`, `prePullOnly`. Порог не фиксировать без настройки; возможен refresh перед pull, но не автоиспользование.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:17,44–50`: `UnitAura`, `C_UnitAuras.GetPlayerAuraBySpellID`, `GetUnitAuraBySpellID`, `GetAuraDuration` и другие read-only aura APIs allowlisted; это **примитивы**, а не универсальный reader числового remaining.
+- `KordRotation/Core/GameState.lua:287–289,440–462`: `player.buff` читает факт наличия с secret-safe UNKNOWN; в проверенном пути нет универсального `player.buffRemaining`/duration observation и consumable family refresh decision.
+- `KordRotation/Core/RotationConditions.lua:66–67`: `Needs.auras` и `player.buff` есть; `consumableBuff.refreshNeeded` и lazy `Needs.items.buffMaintenance` отсутствуют.
+- `KordRotation/Core/EventBus.lua:23,35`: `UNIT_AURA` уже инвалидирует aura revision; item bag/cooldown/catalog/zone events нужны по IT-01–03.
+- `KordRotation/Core/AbilityEligibility.lua`: spell-centric READY, нет item-specific buff maintenance candidate eligibility; финальный READY остаётся только здесь.
+- **IT-01–IT-04** — существующие в требованиях контракты каталога/сумок/кулдаунов/usable/best-item; IT-07 их расширяет, не создаёт дубликаты.
+
+#### Сравнение семи референсов (локальные ZIP, проверенные Lua)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:715–720` реализует `BuffRemaining(unit,def)`: отсутствующая aura → 0, неизвестная → nil, подтверждённая → `remaining`; `:230–237` secret-aware `C_UnitAuras.GetAuraDataBySpellName`. Перенять разделение ABSENT/UNKNOWN/REMAINING, но `remaining=nil` не трактовать как истечение и не создавать второй aura reader.
+2. **JustAC:** `JustAC/Data/Forever/Consumables.lua:3–16,20–69` — **Forever-specific** таблица itemID→buffSpellID→stat для flask/elixir, включая custom IDs; `JustAC/Data/PrecombatBuffs.lua:3,19–35` — отдельный retail catalog, не применять к Forever. Перенять mapping и проверку client edition; один только список item/buff не доказывает политику совместимости, ранжирования или своевременного refresh.
+3. **ForeverAuras:** `ForeverAuras/SecretAuraConditions.lua:27,382–404` реализует native UI conditions для `RemainingDuration`, в том числе ограниченный набор операторов; `ForeverAuras/SecretAuraSingle.lua:806` использует `FormatRemainingDuration`, `:1468–1469` — native duration text/color curve. Перенять **отдельный display-only путь** для secret duration; UI-видимость/цвет не является branchable boolean для Lua и не доказывает REFRESH.
+4. **MaxDps:** `MaxDps/Helper.lua:1684–1726` содержит расходники/GlowConsumables, `:1771` aura `up/count/remains`, `:3215` вычисляет aura remaining из start+duration-now. В проверенных местах не подтверждён единый Forever elixir refresh policy с защитой от замены более сильного эффекта; Retail consumable IDs не переносить в Forever.
+5. **ForeverRotation:** в проверенных Lua не найден подтверждённый универсальный catalog flask/elixir с remaining/refresh decision. Не считать отсутствие универсального решения доказательством отсутствия отдельных buff priorities.
+6. **RotationGuide:** в проверенных Lua не найден подтверждённый универсальный catalog flask/elixir с remaining/refresh decision. Статические условия наличия бафа не доказывают отслеживание срока и совместимости.
+7. **RotationMaster:** `RotationMaster/Conditions/buffs.lua:150–184` описывает `BUFF_REMAIN` с явными UNKNOWN/reason при скрытой длительности и `anyrank/ownbuff`; `RotationMaster/Platform/auras.lua:235` читает `C_UnitAuras.GetAuraDataBySpellName`. **Основной референс** для универсального aura-remaining condition; itemID→buffSpellID catalog брать из JustAC Forever, не дублируя aura scanner.
+
+#### Выбранный путь Kord
+
+**Один логический `ConsumableBuffMaintenanceObservation` + `ConsumableBuffPolicy` поверх существующего общего `PlayerAuraObservation` (SP-01), IT-01 `ItemFamilyCatalog`/`InventoryObservation`, IT-02 `ItemCooldownObservation`, IT-03 `ItemUseEligibilityObservation` и IT-04 `ItemFamilySelectionObservation`.** Не создавать отдельный buff scanner, bag scanner, item cooldown reader, tier selector или отдельный READY gate. В **тот же** `ItemFamilyCatalog` добавить `itemID`, `auraSpellIDs`, `category=FLASK/ELIXIR/...`, `effectStat`, `tierOrder`, `compatibilityGroup`, `overwritesGroups`, `clientEdition`, `source/verificationStatus`; использовать Forever-specific mappings JustAC, валидировать реальные игровые ограничения, не предполагать автоматически Retail-era battle/guardian flask slots. Разные itemIDs могут давать один auraID; разные ранги могут иметь отдельные auraIDs; dedup по effect family с provenance. Если идентификатор эффекта неизвестен, не объявлять отсутствие бафа.
+
+`BuffDurationObservation` — **расширение того же общего aura provider SP-01**, с `PRESENT/ABSENT/UNKNOWN`, `remaining=FINITE/PERMANENT/UNKNOWN`, `expirationTime`, `durationSource`, `auraRevision`. Для подтверждённой aura `expirationTime` вычислять только из валидированных конечных readable данных и общего `GetTime`; отсутствие expiry может означать permanent **только если это подтверждено**. При secret duration `logicRemaining=UNKNOWN`, `displayRemaining` допускается через native DurationObject/UI binding, **но UI-only countdown нельзя использовать в Lua для REFRESH/READY**. Время обновления порога должно быть сравнимым в Lua или подтверждённым client-safe branchable boolean; иначе UNKNOWN, а не «скоро закончится».
+
+`ConsumableBuffPolicy` сначала определяет желаемые stat/effect family по классу/спеку/контексту и пользовательской настройке (не объявлять любой доступный elixir нужным), затем проверяет текущие подтверждённые эффекты и совместимость: `KEEP` если действующий эффект того же или лучшего tier с remaining выше порога; `REFRESH` при доказанном отсутствии/истечении/низком remaining и отсутствии нежелательной замены; `WAIT` при подтверждённой боевой/политической блокировке или сохранении расходника; `UNKNOWN` при secret/missing duration, неясной совместимости, неполном catalog/ауре. При действующем более сильном бафе нельзя предлагать слабый, даже если он единственный в сумках. При одинаковом эффекте от разных источников не делать ложного вывода о расходнике по имени бафа. Для подтверждённо несовместимых elixirs/flasks не рекомендовать конфликтующий эффект без явного `allowOverwriteStronger` и проверки последствий. В бою/OOC, level, zone, item cooldown, bag count и item usability проверять через IT-01–03; лучший tier — IT-04. `REFRESH` есть **policy need**, а не final READY: только AbilityEligibility выдаёт READY после всех gates.
+
+Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UNIT_AURA`, bag/item cooldown, player identity/spec, combat/zone, item metadata и catalog revision. Не использовать бесконечный OnUpdate scan, secret comparisons, protected item use. DevTools фиксирует факты/причины, не сериализует secret.
+
+#### Требуемые изменения
+
+1. Ввести `ConsumableBuffMaintenanceObservation` и настраиваемую `ConsumableBuffPolicy` с KEEP/REFRESH/WAIT/UNKNOWN.
+2. Расширить общий aura provider SP-01 до duration/expiration с typed PRESENT/ABSENT/UNKNOWN и FINITE/PERMANENT/UNKNOWN; не создавать новый scanner.
+3. Валидировать на Forever `C_UnitAuras.GetAuraDuration`, duration object/expiration и secret-safe branchability; UI-only countdown отдельно от Lua refresh decision.
+4. Расширить **тот же IT-01** `ItemFamilyCatalog` itemID→buffSpellID, tier/stat/compatibility/edition, используя Forever catalog JustAC; не смешивать Retail IDs.
+5. Проверить реальную совместимость flask/elixir, overwrite, stacking и rank/effect identity на Forever; не переносить неподтверждённые Retail правила.
+6. Реиспользовать IT-04 best usable tier, IT-01 count, IT-02 item cooldown, IT-03 combat/level/zone/target; не считать REFRESH итоговым READY.
+7. Реализовать threshold seconds, pre-pull/OOC policy, in-combat refresh switch, stat preference и защиту от замены сильного бафа слабым.
+8. EventBus aura/item/bag/combat/zone revisions, lazy `Needs.items.buffMaintenance`, per-evaluation memo, no duplicate scan.
+9. DevTools-only диагностика: `consumable_buff_aura_unknown`, `consumable_buff_duration_secret`, `consumable_buff_duration_display_only`, `consumable_buff_mapping_unknown`, `consumable_buff_compatibility_unknown`, `consumable_buff_stronger_active`, `consumable_buff_refresh_due`, `consumable_buff_refresh_suppressed`, `consumable_buff_item_unavailable`, `consumable_buff_item_cd_blocked`, `consumable_buff_final_eligibility_unknown`.
+10. Тесты: aura absent/present, finite remaining 0/below/equal/above threshold, permanent, secret duration, display-only countdown, same aura from multiple items, different rank auraIDs, custom Forever elixir/flask, weaker vs stronger, incompatible groups, compatibility unknown, class/spec preferred stats, item absent/secret count, cooldown active, combat/OOC, zone/level restrictions, aura refresh event and expiration race, player relog, no false REFRESH/READY/protected item use.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩЕГО AURA API — ДОРАБОТАТЬ (P1).** Kord имеет aura presence и event invalidation, но не имеет подтверждённого универсального consumable buff catalog/remaining reader/refresh policy и compatibility checks.
+
+**Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-06, SP-01, SP-14, GR-04. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
