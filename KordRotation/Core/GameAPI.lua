@@ -386,8 +386,8 @@ for name in pairs(traceMethods) do
                 -- Generic bounded metadata keeps future API fields
                 -- diagnosable without extending a fixed reason dictionary.
                 local key=select(2,...)
-                if type(key)=="string" and #key>0 and #key<=40
-                    and self:IsSafeValue(key)
+                if type(key)=="string" and self:IsSafeValue(key)
+                    and #key>0 and #key<=40
                     and key:match("^[A-Za-z_][A-Za-z0-9_]*$") then
                     methodName="GameAPI.ReadField."..key
                 else
