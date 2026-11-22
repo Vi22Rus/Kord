@@ -1,3 +1,18 @@
+## Binding requirement: combat Defensive ability routing (2026-11-22)
+
+**Defensive abilities only** (effective rotation category `defensive`), not buffs, auras, aspects, stances, consumables, or generic utility.
+
+The Advanced checkbox **Recommend Defensive abilities in main window during combat** (`defensiveInCombatMain`) controls recommendation **placement**, never automated casting:
+- Checked (default), confirmed combat: eligible defensive spell is recommended in the **main** frame alongside the normal priority rotation, not duplicated in Defensive.
+- Unchecked, confirmed combat: eligible defensive spell is recommended **only in the Defensive frame**. The main frame continues its ordinary DPS/rotation.
+- Outside confirmed combat: eligible defensive spells are routed to the Defensive frame regardless of the checkbox.
+- Separate `defensiveEnabled` controls whether the Defensive frame is displayed; it cannot suppress a defensive recommendation routed to the main frame.
+- An unknown combat state must not be treated as confirmed combat. The main-frame route requires `player.combat == READY(true)`.
+- This control is independent of the legacy `buffsInCombatMain` aura-maintenance preference. **Never label the defensive checkbox as a buffs/auras option or use it to change aura routing.**
+- Ordinary condition, learned spell and AbilityEligibility checks continue to determine whether a routed action can actually be recommended.
+
+This is a user-defined product requirement. Do not silently reinterpret it as aura management.
+
 # PROJECT_CONTEXT — постоянный контекст Kord Rotation
 
 **ТЕКУЩИЙ СТАТУС 2026-11-21:** этап **2.9**, предварительная очистка/тесты/минимальный контракт профиля. [Profile Contract v1](rotation/Profile_Contract.md) принят как целевая спецификация, сохранён **дословно**; `RotationProfiles/RotationConditions/RotationEngine` v1 внесены в исходники (KR-20261121-070…079), но Lua 5.1 и WoW Forever NOT RUN. До Hunter BM: ревизия 17 актуальных Lua suites и целевые/полные локальные тесты новой архитектуры → подтверждённые провайдеры v14 → дифференциальные тесты → игровой QA. **Статус SPEC ONLY, игра NOT RUN.** Старые «текущий этап 1» и `Next(state,cfg)` ниже — исторический контекст, не инструкции.
