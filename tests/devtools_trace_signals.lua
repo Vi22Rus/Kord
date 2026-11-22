@@ -80,6 +80,15 @@ end
 local beforeDetails=#D.entries
 eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
  arcaneR4Reason="action_slot_unconfirmed",
+ arcaneR4BarReason="button_action_info_unconfirmed",
+ arcaneR4Checks={
+  {name="cast",status="UNKNOWN",reason="cast_unknown"},
+  {name="usability",status="READY",reason="none"},
+  {name="charges",status="READY",reason="none"},
+  {name="cooldown",status="UNKNOWN",reason="cooldown_unavailable"},
+  {name="gcd",status="UNKNOWN",reason="gcd_activity_unknown"},
+  {name="range",status="UNKNOWN",reason="range_unavailable"},
+ },
  decisivePriority=5,decisiveStatus="UNKNOWN",
  decisiveReason="action_slot_unconfirmed"},true),true,"detail sample created")
 local matches={}
@@ -88,6 +97,13 @@ for i=beforeDetails+1,#D.entries do
  matches[entry.reason]=entry.status
 end
 eq(matches.arcane_rank_4_rule,"UNKNOWN","rank four recorded")
+eq(matches.arcane_rank_4_bar_failure,"UNKNOWN","scanner subreason logged")
+eq(matches.arcane_check_cast,"UNKNOWN","cast observation recorded")
+eq(matches.arcane_check_usability,"READY","usable stage recorded")
+eq(matches.arcane_check_charges,"READY","charges stage recorded")
+eq(matches.arcane_check_cooldown,"UNKNOWN","cooldown observation recorded")
+eq(matches.arcane_check_gcd,"UNKNOWN","GCD observation recorded")
+eq(matches.arcane_check_range,"UNKNOWN","range observation recorded")
 eq(matches.engine_decisive_priority,"UNKNOWN","decisive priority recorded")
 eq(matches.engine_decisive_reason,"UNKNOWN","decisive reason recorded")
 eq(matches.priority_1_rule,"UNKNOWN","priority 1 recorded")
@@ -111,6 +127,15 @@ eq(matches.ui_engine_status,"UNKNOWN","last UI engine recorded")
 local detailsCount=#D.entries
 eq(D:ObserveDetails({arcaneR4Status="UNKNOWN",
  arcaneR4Reason="action_slot_unconfirmed",
+ arcaneR4BarReason="button_action_info_unconfirmed",
+ arcaneR4Checks={
+  {name="cast",status="UNKNOWN",reason="cast_unknown"},
+  {name="usability",status="READY",reason="none"},
+  {name="charges",status="READY",reason="none"},
+  {name="cooldown",status="UNKNOWN",reason="cooldown_unavailable"},
+  {name="gcd",status="UNKNOWN",reason="gcd_activity_unknown"},
+  {name="range",status="UNKNOWN",reason="range_unavailable"},
+ },
  decisivePriority=5,decisiveStatus="UNKNOWN",
  decisiveReason="action_slot_unconfirmed"},true),true,"repeat sample available")
 eq(#D.entries,detailsCount,"unchanged detailed observations not duplicated")
