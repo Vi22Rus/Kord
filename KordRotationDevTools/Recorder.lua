@@ -199,6 +199,7 @@ function D:SaveJournalPart(final)
         started=self.session.started,stopped=now() or 0,
         sessionID=self.session.sessionID,
         dropped=final and self.dropped or 0,
+        evictedParts=final and (self.evictedParts or 0) or 0,
         part=(self.journalPart or 0)+1,
         final=final==true,records={}}
     for i,item in ipairs(self.records) do
@@ -209,7 +210,12 @@ function D:SaveJournalPart(final)
     end
     table.insert(db.sessions,kept)
     local limit=type(self.maxSessions)=="number" and self.maxSessions or 8
-    while #db.sessions>limit do table.remove(db.sessions,1) end
+    while #db.sessions>limit do
+        local removed=table.remove(db.sessions,1)
+        if removed and removed.sessionID==self.journalID then
+            self.evictedParts=(self.evictedParts or 0)+1
+        end
+    end
     self.settings=db
     KordRotationDevToolsDB=db
     self.journalPart=kept.part
@@ -222,6 +228,7 @@ function D:Start()
     self.sequence=0
     self.dropped=0
     self.journalPart=0
+    self.evictedParts=0
     local nextID=type(self.settings.nextSessionID)=="number"
         and self.settings.nextSessionID or 0
     if nextID<0 or nextID>999999999 or nextID~=math.floor(nextID) then
@@ -269,7 +276,8 @@ end
 function D:Record(kind,status,reason,matrix,elapsed,detail,method,count)
     if not self.active then return false,"not_recording" end
     local current=now()
-    if self.started and current and current-self.started>self.maxDuration then
+    if not self.stopping and self.started and current
+        and current-self.started>self.maxDuration then
         -- A final diagnostic snapshot during Stop must not recursively Stop.
         if not self.stopping then self:Stop() end
         return false,"session_limit"
@@ -373,5 +381,7 @@ function D:Export()
         if full then break end
     end
     lines[#lines+1]="dropped="..encode(self.dropped)
+    lines[#lines+1]="evicted_parts="..encode(self.evictedParts or 0)
+    lines[#lines+1]="truncated="..(full and "1" or "0")
     return table.concat(lines,"\n")
 end
