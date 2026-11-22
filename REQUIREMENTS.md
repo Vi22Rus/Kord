@@ -2147,6 +2147,9 @@
 ### AU-06 — Подсчёт моих DoT и дебаффов на нескольких целях
 
 
+**Архитектурная актуализация EN-01:** **См. EN-01: shared bounded multi-target GUID index may feed aura counts and enemy counts, but aura visibility does not establish proximity.**
+
+
 **Архитектурная актуализация TG-06:** **См. TG-06: multiple target TTD histories reuse the shared GUID index lifecycle, not a parallel multi-target tracker.**
 
 
@@ -2357,6 +2360,9 @@
 
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
+
+
+**Архитектурная актуализация EN-01:** **См. EN-01: hostile/attackable and GUID verification must reuse TargetObservation for each observed unit.**
 
 
 **Архитектурная актуализация TG-11:** **См. TG-11: focus/mouseover reuse the same generic unit/target observation and identity guards; do not copy target-only scanners.**
@@ -2643,6 +2649,9 @@
 
 ### TG-06 — Время жизни цели (TTD): оценка с границей уверенности, nil если мало данных
 
+
+**Архитектурная актуализация EN-01:** **См. EN-01: per-enemy health/TTD history can share GUID indexing, but enemy count does not imply reliable TTD.**
+
 **Раздел: 5. Цель. Приоритет: P1.**
 
 #### Требование
@@ -2800,6 +2809,9 @@
 
 ### TG-09 — Дальность до цели: диапазон (ближний бой, 5–8, 8–30, дальше)
 
+
+**Архитектурная актуализация EN-01:** **См. EN-01: enemy radius membership must reuse the canonical interval range provider, not infer exact distance from a nameplate.**
+
 **Раздел: 5. Цель. Приоритет: P0.**
 
 #### Требование
@@ -2946,3 +2958,53 @@
 **Архитектурные ссылки:** TG-01 — target identity, AU-01 — aura, CA-04 — cast, SP-08 — range, SP-14 — spell restrictions. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-11.
+
+
+### EN-01 — Число враждебных целей в радиусе N (nameplates или другие источники)
+
+**Раздел: 6. Враги вокруг и AoE. Приоритет: P1.**
+
+#### Аудит текущего Kord
+
+- `KordRotation/Core/GameAPI.lua:56` разрешает `C_NamePlate.GetNamePlates`, но allowlist не является реализацией корректного подсчёта.
+- `KordRotation/Core/RotationConditions.lua:73` распознаёт `enemy.count` с `needs.enemyCount`; наличие имени условия не подтверждает достоверный provider.
+- `KordRotation/Core/RotationEngine.lua:130` для auto target mode возвращает `UNKNOWN(auto_target_count_unverified)`; manual single/aoe mode не измеряет число противников.
+- `KordRotation/Core/GameState.lua:132` проверяет `UnitCanAttack("player","target")` для одной цели; `target.melee` и spell range также относятся к текущему target, а не к набору nameplates.
+- `KordRotation/Core/EventBus.lua` не содержит подтверждённой специализированной инвалидации nameplate add/remove; heartbeat сам по себе не доказывает полноту списка.
+
+#### Сравнение семи референсов и ограничения переноса
+
+1. **Sonah:** применимы общие безопасные unit observation и фильтры враждебности; наличие готового полного радиусного enemy-count provider не подтверждено в текущей проверке.
+2. **JustAC:** полезна стратегия secret-safe unit checks; готовый универсальный nameplate radius counter в текущей проверке не подтверждён.
+3. **ForeverAuras:** архитектура отслеживания нескольких unit tokens и аур может подсказать жизненный цикл nameplates, но число аур не равно числу близких врагов.
+4. **MaxDps:** AoE rotation concepts полезны как потребитель count, однако retail proximity APIs нельзя переносить на Forever без проверки.
+5. **ForeverRotation:** логика переключения single/AoE может быть потребителем, но не доказательством точного количества.
+6. **RotationGuide:** источники unit/range могут помочь для отдельных проверок; универсальный точный счётчик в текущей проверке не подтверждён.
+7. **RotationMaster:** полезна интервальная модель range и безопасные unit observations; наличие nameplate не доказывает радиус, и retail-specific подсчёт нельзя принимать без валидации.
+
+**Ограничение аудита референсов:** приведённые сравнения — архитектурные ориентиры; конкретные реализации nameplate-count в семи ZIP в этом проходе не были исчерпывающе подтверждены. Не выдавать их за проверенные готовые реализации.
+
+#### Каноническая архитектура
+
+Один `EnemyProximityObservation(radius, origin="player")`, опирающийся на общий `UnitObservation(unitToken)`, `TargetRangeObservation` TG-09 и bounded GUID-index AU-06. Читает только подтверждённые на Forever `nameplateN`/другие наблюдаемые unit tokens; сохраняет `GUID`, `exists`, `alive`, `hostile`, `attackable`, `rangeBounds`, `source`, `observedAt`. Дедупликация по GUID обязательна; отсутствие nameplates **не** означает отсутствие врагов.
+
+Результат: `confirmedWithinCount` (достоверно в радиусе), `possibleWithinCount` (не исключено, что в радиусе), `observedHostileCount`, `coverage=PARTIAL/VERIFIED`, `status/reason`, `radius`, `unit=yards`. Для интервала `[min,max]`: `max<=N` → confirmed within, `min>N` → confirmed outside, пересечение границы → unknown membership. `confirmedWithinCount` — **нижняя граница** количества, а не точное число всех врагов в мире. Точный `enemy.count=READY(n)` разрешён лишь при подтверждённой полноте источника и всех необходимых distance observations; иначе `UNKNOWN` с отдельными bounded estimates. Не использовать отсутствие nameplates для READY(0).
+
+`AoEPolicyObservation` потребляет count и explicit profile thresholds, но не подменяет `AbilityEligibility` и не переключает скрытно ручной режим. Никаких защищённых действий, сканирования невидимых unit tokens или искусственной точности.
+
+#### Требуемые изменения
+
+1. Проверить на Forever `C_NamePlate.GetNamePlates`, `nameplateN`, `NAME_PLATE_UNIT_ADDED/REMOVED`, их secret/visibility ограничения и доступность в бою.
+2. Дедуплицировать по стабильному GUID; на target switch и recycled nameplate token не наследовать старые данные.
+3. Проверять exists, alive, hostility и attackability отдельно; нейтральные и friendly nameplates не считать врагами.
+4. Подключить TG-09 интервальные bounds для каждого unit; spell-specific range не считать точной дистанцией.
+5. Для каждого N считать confirmed/possible и полноту наблюдений; при частичном обзоре `enemy.count` UNKNOWN, а не фиктивный ноль.
+6. Не смешивать радиус **от игрока** и радиус AoE **вокруг цели**; `origin` обязателен и проверяем. Учитывать large hitboxes.
+7. Ленивая активация только по `Needs.enemyCount`, bounded список/TTL, события nameplates и ревизии EventBus, ограниченный heartbeat.
+8. Диагностика `nameplate_source_unavailable`, `nameplate_coverage_partial`, `enemy_guid_unknown`, `enemy_range_unknown`, `enemy_radius_boundary`, `enemy_count_unverified`; тесты 0/1/много nameplates, duplicates, friendly/neutral, secret, 5/8/30 boundary, missing plates, recycled tokens, moving targets, combat, AoE target-origin vs player-origin.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ДОСТОВЕРНЫЙ ПОДСЧЁТ ВРАГОВ В РАДИУСЕ N — ДОРАБОТАТЬ (P1).** Есть API allowlist и имя условия, но нет доказанного полного count provider. Ссылки: TG-01, TG-09, TG-06, AU-06; обратные архитектурные сноски внесены.
+
+**Изменения Lua:** отсутствуют. Только документация.
