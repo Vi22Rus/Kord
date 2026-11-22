@@ -201,8 +201,8 @@ for pg=1,totalPages do
  eq(current,pg,"pagination index")
  eq(pages,totalPages,"stable page count")
  eq(#data<=D.maxExport,true,"bounded UI export page")
- for line in data:gmatch("[^\\n]+") do
-  local number=tonumber(line:match("^(%d+)\\t"))
+ for line in data:gmatch("[^\n]+") do
+  local number=tonumber(line:match("^(%d+)\t"))
   if number then
    eq(seen[number],nil,"unique exported sequence "..number)
    seen[number]=true
