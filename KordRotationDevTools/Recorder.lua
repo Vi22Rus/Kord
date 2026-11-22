@@ -12,6 +12,8 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     snapshot_unavailable=true,manual_sample=true,game_state_unavailable=true,
     action_slot_unconfirmed=true,spell_visual_data_unverified=true,
     matrix_probe=true,no_single_safe_probe=true,unlisted_method=true,
+    diagnostic_code_unmapped=true,diagnostic_code_invalid=true,
+    diagnostic_detail_unmapped=true,
     core_bridge_missing=true,probe_failed=true,
     condition_unknown=true,condition_false=true,no_confirmed_visible_slots=true,
     profile_unverified=true,rotation_settings_unavailable=true,
@@ -144,11 +146,13 @@ local detailWords={confirmed=true,spell_not_confirmed_on_visible_bar=true,
  scanner_unavailable=true,unknown=true,none=true}
 local function safeDetail(v)
     if v==nil then return nil end
-    if not D:Safe(v) then return nil end
+    if not D:Safe(v) then return "diagnostic_detail_unmapped" end
     if type(v)=="number" and v==v and v==math.floor(v)
         and v>=0 and v<=1200 then return v end
     if type(v)=="string" and #v<=64 and (detailWords[v] or reasons[v]) then return v end
-    return nil
+    -- An unlisted detail must be visible as a contract gap; never export
+    -- raw user/game data. The original rejected value is not retained.
+    return "diagnostic_detail_unmapped"
 end
 local function now()
     if type(GetTime)~="function" then return nil end
@@ -170,9 +174,12 @@ local function int(v,min,max)
 end
 local function sanitizeReason(v)
     if not D:Safe(v) or type(v)~="string" or #v<1 or #v>64
-        or not string.match(v,"^[a-z][a-z0-9_]*$") then return "unknown" end
-    -- Never record arbitrary user data as a reason.
-    return reasons[v] and v or "unknown"
+        or not string.match(v,"^[a-z][a-z0-9_]*$") then
+        return "diagnostic_code_invalid"
+    end
+    -- Do not silently erase a newly introduced fixed internal code.
+    -- Never record the rejected value (which may be user data).
+    return reasons[v] and v or "diagnostic_code_unmapped"
 end
 -- Store each bounded journal segment as a scalar-only SavedVariables
 -- record. WoW itself flushes SavedVariables to disk on logout/reload;
