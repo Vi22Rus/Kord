@@ -987,3 +987,50 @@
 7. Тесты: active true/false при secret таймерах; remaining safe/secret; legacy ready/active; GCD-only; shared cooldown; recharge при доступном заряде; enabled=false; смена цели/способности; clock invalid/NaN; отсутствующий API; неиспользуемое поле remaining не читается.
 
 **Изменения кода:** не выполнялись; внесён аудит SP-03.
+
+
+### SP-04 — Глобальный кулдаун: активен / нет, оставшееся время; различать GCD и индивидуальный КД
+
+**Приоритет: P0.**
+
+#### Требование
+
+Предоставлять независимые наблюдения `gcd.active`, `gcd.remainingSeconds`, `spell.cooldown.active`, `spell.cooldown.remainingSeconds` и классификацию `gcdOnly/individual/shared/unknown` **только при достаточных свидетельствах**. Безопасный `isActive` не означает безопасный `startTime/duration`; отсутствие числового таймера → `UNKNOWN`, а не ноль или 1,5 секунды. Не считать `isOnGCD` надёжным из произвольного snapshot, если его контракт ограничен событием. Не смешивать доступные charges с перезарядкой.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 8–9, 72–141: уже есть **отдельные** `cooldown(id)` и `gcd()`. GCD ID для Forever — **29515**. Modern `C_Spell.GetSpellCooldown(...).isActive` обрабатывается независимо; при secret таймерах не выводится ложный остаток; legacy `GetSpellCooldown` сравнивает `start+duration` с `GetTime`. `isOnGCD` намеренно не используется в произвольном poll (комментарии строки 81–85, 106–107).
+- `AbilityEligibility.lua`, строки 350–352: cooldown и GCD — независимые этапы eligibility; итоговый READY остаётся ответственностью `AbilityEligibility`.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9, 24–35: modern/legacy cooldown и `GetTime` уже в allowlist.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua), строки 21–22: `SPELL_UPDATE_COOLDOWN`, `ACTIONBAR_UPDATE_COOLDOWN`, `SPELL_UPDATE_CHARGES` уже вызывают канал `cooldowns`.
+- **Пробел:** нет типизированных отдельных результатов `gcd.remainingSeconds` и `spell.cooldown.remainingSeconds`; нет достоверной классификации `gcdOnly` против индивидуального/shared cooldown. Статус `BLOCKED` сам по себе не объясняет тип активного кулдауна и не содержит остаток времени.
+
+#### Как делают семь референсов (проверены Lua локальных ZIP)
+
+1. **Sonah** — `Sonah/Core/Atoms/Spells.lua:285–309`: `GCD_SPELL=61304`, `GCDRemaining` читает cooldown через `Secret.Call` и возвращает `nil` при нечитаемом времени; отдельная логика `GCDLeft` применяет оценку 1,5 с после каста. **Не переносить 61304 и оценку как точные данные Forever**.
+2. **JustAC** — `JustAC/DebugCommands.lua:1195–1230`: диагностирует `GetGCDInfo()`, modern `isActive`/`isOnGCD`, secret-поля; прямо различает `isOnGCD=true` и `nil` как неоднозначный результат. В `BlizzardAPI` есть выделенный GCD-путь. Не использовать диагностическую интерпретацию `isOnGCD` без событийного контракта.
+3. **ForeverAuras** — `ForeverAuras/SpellCooldown.lua` реализует GCD-флаг, `CooldownViewerTrigger.lua` и `GenericTrigger.lua` обеспечивают отображение/триггеры кулдауна, включая GCD; duration objects пригодны для UI, но не являются безопасными числовыми секундами.
+4. **MaxDps** — `MaxDps/Core.lua:719` формирует `FrameData.gcd` через `GlobalCooldown()`; `MaxDps/SecretHelper.lua:363–366` работает с `GetSpellCooldownDuration`; в `MaxDps_Paladin/Specialization/Forever/Retribution.lua:11–12` встречается ID 61304. Это **не доказательство** корректного GCD ID для Kord Forever.
+5. **ForeverRotation** — `ForeverRotation/Engine.lua:223–236` читает `C_Spell.GetSpellCooldown().isActive/isOnGCD`, различает GCD-only эвристически, когда `isOnGCD` отсутствует. Эвристика «сразу после чужого каста — скорее GCD» не является доказательством индивидуального/общего cooldown.
+6. **RotationGuide** — `RotationGuide/Core/State.lua:93–94` получает `C_Spell.GetSpellCooldownDuration` как duration object; отдельный надёжный провайдер числового GCD и его разграничения с индивидуальным cooldown в проверенном поиске не обнаружен.
+7. **RotationMaster** — `RotationMaster/buttons.lua:3084–3173` сравнивает `Platform:GetGlobalCooldown()` с cooldown конкретной способности и проверяет `isOnGCD` при доступности; `RotationMaster/Core/forecast.lua:362–407` явно предусматривает secret-таймеры и использование доступных булевых флагов. Платформенный GCD-провайдер и раздельная классификация — наиболее полезная архитектура для Kord.
+
+#### Сравнение и моя рекомендация
+
+**Основа — RotationMaster + JustAC, сохраняя текущий Kord GCD=29515.** RotationMaster — архитектура отдельного платформенного GCD и сравнения с индивидуальным cooldown; JustAC — диагностическое различение `true/false/nil/secret` у `isOnGCD` и GCD API. Из Sonah использовать лишь идею безопасного `remaining`, **не** его retail ID 61304 и не оценку 1,5 секунды как точное время. Из ForeverRotation не переносить эвристическое `gcdOnly` как доказанный факт.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** Бинарный GCD и отдельный cooldown способности уже есть; независимый остаток GCD и доказанная классификация типа cooldown отсутствуют.
+
+#### Требуемые изменения
+
+1. Ввести `GCDObservation` с `active:{status,value,reason,source}`, `remaining:{status,seconds,reason,source}` и `gcdSpellID=29515` только для подтверждённого Forever-контракта.
+2. Объединить факты с `CooldownObservation` из SP-03 без слияния их достоверности: `gcdOnly` подтверждать только когда индивидуальный cooldown достоверно неактивен, а GCD активен; `individual` — когда собственный cooldown подтверждён. При shared cooldown без достоверной классификации оставлять `unknown`.
+3. Использовать modern `isActive` для активности; вычислять `remainingSeconds` только из доступных обычных чисел legacy или подтверждённого безопасного modern API. Secret start/duration → `UNKNOWN`; не выводить секунды из UI duration object, `isOnGCD` или фиксированного времени.
+4. Учитывать ограничение `isOnGCD`: не трактовать `nil` как `false`, не использовать произвольный poll как доказательство `gcdOnly`; при event-bound контракте сохранять источник и время свидетельства.
+5. `Needs.gcd` и `Needs.cooldowns` — разрешения на ленивое чтение, не eager-предзагрузка; `AbilityEligibility` сохраняет исключительное право итогового READY.
+6. Инвалидация на существующих cooldown событиях и пересчёт времени без превращения устаревших чисел в факты.
+7. Тесты: только GCD; только индивидуальный cooldown; оба активны; shared cooldown; `isOnGCD=nil`; secret duration при известном active; GCD ID 29515 vs 61304; charges/recharge; clock invalid; событие обновления cooldown и устаревший snapshot.
+
+**Изменения кода:** не выполнялись; внесён аудит SP-04.
