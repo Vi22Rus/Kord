@@ -13,9 +13,31 @@ local casts={idle=true,allow=true}
 -- Describes recommended effect semantics, never a hardcoded spell ID.
 -- A plain 'buffs' category defaults to buff; utility/debuff opt out.
 local recommendationTypes={
- buff=true,aura=true,aspect=true,stance=true,
- utility=true,debuff=true,
+ buff=true,aura=true,aspect=true,stance=true,form=true,
+ utility=true,debuff=true,potion=true,consumable=true,spell=true,
 }
+local maintenanceKinds={
+ buff=true,aura=true,aspect=true,stance=true,form=true,
+}
+-- A rule's semantic kind is the ONLY authority for window routing.
+-- Without explicit metadata, a non-hostile 'buffs' category denotes upkeep.
+-- An enemy debuff, a potion or a utility action is NOT inferred as upkeep.
+function P:RecommendationKind(rule,effectiveCategory)
+ if type(rule)~="table" then return "spell",false end
+ local kind=rule.recommendationType
+ if not recommendationTypes[kind] then
+  if kind~=nil then return "spell",false end
+  local category=effectiveCategory or rule.category
+  if category=="buffs" and rule.target~="enemy" then
+   kind="buff"
+  elseif category=="consumables" then
+   kind="consumable"
+  else
+   kind="spell"
+  end
+ end
+ return kind,maintenanceKinds[kind]==true
+end
 local allowedNeeds={auras=true,ranges=true,enemyCount=true,ttd=true,swing=true}
 local function finite(n)
  return type(n)=="number" and n==n and n~=math.huge and n~=-math.huge
