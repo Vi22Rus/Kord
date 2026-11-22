@@ -59,6 +59,12 @@ local diagnosticSignals={
  ["target.dyingSoon"]=true,["aimed.profitable"]=true,
  ["sting.profitable"]=true,["target.stingRemaining"]=true
 }
+local function itemID(id)
+ return spellID(id)
+end
+local function familyID(id)
+ return safe(id) and type(id)=="string" and #id>0 and #id<=96
+end
 local function declared(ctx,field,id)
  local needs=ctx.profile.Needs
  if direct[field] then return id==nil end
@@ -68,6 +74,14 @@ local function declared(ctx,field,id)
  end
  if field=="spell.range" then
   return spellID(id) and has(needs.ranges,id)
+ end
+ if field=="items.count" then
+  return type(needs.items)=="table" and type(needs.items.ids)=="table"
+      and itemID(id) and has(needs.items.ids,id)
+ end
+ if field=="items.familyCount" or field=="items.hasAny" then
+  return type(needs.items)=="table" and type(needs.items.families)=="table"
+      and familyID(id) and has(needs.items.families,id)
  end
  if field=="target.ttd" then return needs.ttd==true and id==nil end
  if field=="enemy.count" then return needs.enemyCount==true and id==nil end
@@ -90,6 +104,35 @@ local function directRead(ctx,field)
  if number(value) then return value end
  return nil
 end
+local function readItemFact(field,id)
+ local state=KR.GameState
+ local family=(field=="items.familyCount" or field=="items.hasAny")
+ local reader=family and "ReadInventoryFamilyObservation"
+     or "ReadInventoryItemObservation"
+ if not state or type(state[reader])~="function" then
+  return nil,"item_provider_missing"
+ end
+ local ok,record=pcall(state[reader],state,id)
+ if not ok or type(record)~="table" or not safe(record) then
+  return nil,"item_provider_error"
+ end
+ local valid=record.status=="READY" and safe(record.status)
+     and record.inventoryScope=="BAGS_ONLY" and safe(record.inventoryScope)
+     and record[family and "familyID" or "itemID"]==id
+     and safe(record.count) and type(record.count)=="number"
+     and record.count==record.count and record.count>=0
+     and record.count<math.huge and record.count==math.floor(record.count)
+ if valid then
+  if field=="items.hasAny" then return record.count>0,nil end
+  return record.count,nil
+ end
+ local why=record.reason
+ if not safe(why) or type(why)~="string" then
+  why="item_count_unverified"
+ end
+ return nil,why
+end
+
 local function value(ctx,field,id)
  if not safe(field) or type(field)~="string"
      or not declared(ctx,field,id) then return nil end
@@ -112,6 +155,9 @@ local function value(ctx,field,id)
  if direct[field] then
   answer=directRead(ctx,field)
   if answer==nil then failure="direct_field_unverified" end
+ elseif field=="items.count" or field=="items.familyCount"
+     or field=="items.hasAny" then
+  answer,failure=readItemFact(field,id)
  else
   local state=KR.GameState
   if state and type(state.ReadSignal)=="function" then
@@ -316,10 +362,26 @@ function C:Create(profile,snapshot)
  local ctx={profile=profile,snapshot=snapshot,readDone={},readCache={},
   eligibilityCache={},factDone={},factCache={}}
  local S=setmetatable({},{
-  __index=methods,
+  __index=function(_,key)
+   if key=="items" then return ctx.items end
+   return methods[key]
+  end,
   __newindex=function() error("restricted_profile_state") end,
   __metatable=false
  })
+ -- Read-only per-evaluation facade; callers cannot request undeclared IDs.
+ -- Both :observe("items.count",id) and S.items:count(id) use one memo.
+ local items=setmetatable({},{
+  __index={
+   count=function(_,id) return value(ctx,"items.count",id) end,
+   familyCount=function(_,id) return value(ctx,"items.familyCount",id) end,
+   hasAny=function(_,id) return value(ctx,"items.hasAny",id) end,
+  },
+  __newindex=function() error("restricted_inventory_methods") end,
+  __metatable=false
+ })
+ -- Stored on the context rather than on writable public profile data.
+ ctx.items=items
  contexts[S]=ctx
  return S
 end
