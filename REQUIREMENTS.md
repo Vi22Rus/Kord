@@ -1586,6 +1586,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация SW-02:** **См. SW-02: SW-02 timing is advisory input for next-swing and weaving policies, not spell READY; only AbilityEligibility issues final READY.**
+
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 supplies confirmed auto-attack/auto-repeat states as inputs; AbilityEligibility alone issues final READY, and unknown never means inactive.**
 
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 observations and refresh policy never issue final READY; AbilityEligibility remains the sole spell gate.**
@@ -3479,6 +3481,8 @@
 
 ### EN-07 — Ближайшая цель для смены, цель с прерываемым кастом
 
+**Архитектурная актуализация SW-02:** **См. SW-02: SW-02 must not infer swing completion or target range from nearest-target geometry; range evidence is independent.**
+
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 target/range checks may reuse EN-07 target observation but must not infer melee/ranged range from unknown proximity.**
 
 **Раздел: 6. Враги вокруг и AoE. Приоритет: P2.**
@@ -4362,6 +4366,8 @@
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
 
+**Архитектурная актуализация SW-02:** **См. SW-02: SW-02 reuses monotonic clock/revision conventions but swing estimation is independent from pet care cast/aura timing.**
+
 **Архитектурная актуализация SW-01:** **См. SW-01: SW-01 active auto-repeat is not a cast-duration/cooldown timer; keep SW-02 future swing timing separate from PE-05 pet-care timing.**
 
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 reuses validated time and event-revision conventions, but a totem lifetime is not pet heal/revive/dismiss cast duration.**
@@ -4472,6 +4478,8 @@
 
 ### SW-01 — Автоатака включена / выключена; автострельба и волшебная палочка
 
+**Архитектурная актуализация SW-02:** **См. SW-02: SW-02 extends SW-01's confirmed melee/Auto Shot/wand active-state observation with independent main-hand, off-hand and ranged remaining estimates; active does not prove timer.**
+
 **Раздел: 10. Автоатака и таймеры ударов. Приоритет: P0.**
 
 #### Требование
@@ -4518,5 +4526,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P0).** В Kord уже существует Auto Shot observation и C_Spell API allowlist, но не подтверждён единый надёжный статус ближней автоатаки, wand Shoot и auto-switch клиента с tri-state и безопасной политикой рекомендаций.
 
 **Архитектурные ссылки:** SP-14, PE-03, PE-04, EN-04, EN-07, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### SW-02 — Таймеры ударов: до следующего ближнего и дальнего удара
+
+**Раздел: 10. Автоатака и таймеры ударов. Приоритет: P1.**
+
+#### Требование
+
+Показывать **оценку времени до следующего** `MAIN_HAND`, `OFF_HAND` и `RANGED` удара игрока, а также `nextMelee=min(confirmed main/off)` только для реально наблюдаемых рук; различать `Auto Shot` и `Wand Shoot` по SW-01. На каждый `SwingTimingObservation(mode,hand,playerGUID)`: `lastConfirmedSwingAt`, `interval`, `predictedNextAt`, `remaining`, `status=CONFIRMED_EVENT/ESTIMATED/UNKNOWN/NOT_APPLICABLE`, `source`, `reason`, `observedAt`, `revision`. **Таймер следующего удара обычно оценочный, не точный факт.** Скорость `UnitAttackSpeed`/`UnitRangedDamage` сама по себе не сообщает фазу цикла; `SWING_DAMAGE/MISSED` и `RANGE_DAMAGE/MISSED` дают временные якоря только после проверки player sourceGUID, hand/offhand, event format и того, что конкретное событие действительно соответствует автоудару. При secret, отсутствии события, пропущенном ударе, haste/weapon change, pause/reset/queue и рассинхронизации — `UNKNOWN` либо `ESTIMATED` с provenance; никогда не выдавать ложный точный ноль или `math.huge` за remaining. Не смешивать `C_SwingTimer.IsTargetWithinSwingRange` (проверка **дистанции**) с swing time. Не запускать protected actions и не вводить бесконечный OnUpdate polling.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9,20`: `GetTime` и `C_SwingTimer.IsTargetWithinSwingRange` доступны; `UnitAttackSpeed`, `UnitRangedDamage`, подтверждённый swing event reader в allowlist не найдены.
+- `KordRotation/Core/GameState.lua:303–335`: `C_SwingTimer.IsTargetWithinSwingRange(0)` используется **для проверки melee range** при next-swing abilities, не как timer; `:768–778` читает статус Auto Shot без фаз/remaining; `:177` есть validated clock.
+- `KordRotation/Core/RotationConditions.lua:50,74`: `autoShot.active` есть; `autoShot.swing` объявлен как need-gated field, но это **не подтверждение работающего swing timer provider**.
+- `KordRotation/Core/EventBus.lua`: в проверенном mapping нет `COMBAT_LOG_EVENT_UNFILTERED`, `PLAYER_SWING`, `UNIT_ATTACK_SPEED` и специализированной swing revision; event-driven timestamps для main/off/ranged не подтверждены.
+- `SW-01` фиксирует player autoattack mode identity/tri-state; SW-02 должен расширять тот же общий источник и не копировать определение активности.
+
+#### Сравнение семи референсов (все предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Casts.lua:151–152` получает `UnitAttackSpeed("player")` и `UnitRangedDamage("player")` через `Secret.CallMulti`; `:164–181,219–220` хранит время последнего swing и длительность; `Sonah/UI/SwingTimer.lua` визуализирует отдельные полосы. Перенять secret-safe numeric reads и distinction между last event/remaining; проверить фактический `PLAYER_SWING` источник на Forever.
+2. **JustAC:** `JustAC/BlizzardAPI/CooldownTracking.lua:313–335` вычисляет `GetSwingRemaining` из `last+duration-GetTime` с защитой; `:378–395` читает speed и haste через `pcall`; `:412–435` обновляет swing anchors на событиях; `:458–460` включает клиентскую проверку дистанции отдельно. Перенять **событийные таймеры и unknown вместо фиктивной точности**, но не считать скорость в combat читаемой на Forever.
+3. **ForeverAuras:** `ForeverAuras/SwingTimer.lua:13–16,25–44` реализует `GetSwingTimerInfo`, хранит `duration` и `expirationTime=GetTime()+duration`, подписывает swing updates; `:20–22` range проверяет отдельно через `C_SwingTimer.IsTargetWithinSwingRange`. Перенять **событийную модель duration/expiration** и разделение range/timer; не считать UI hook гарантией engine-readable времени.
+4. **MaxDps:** `MaxDps/SwingTimer.lua:11–18,26–51` рассчитывает remaining main/off/ranged и `min` melee, слушая `SWING_DAMAGE/MISSED`, `RANGE_DAMAGE/MISSED`, с `UnitAttackSpeed`/`UnitRangedDamage`. Перенять раздельные hand timers и bounded estimation; **не** копировать `math.huge` как валидное время и не предполагать, что все combat-log события всегда доступны в Forever.
+5. **ForeverRotation:** в проверенных Lua не найдены `UnitAttackSpeed`, `UnitRangedDamage`, `C_SwingTimer` и универсальный remaining swing provider. Не объявлять поддержку точного таймера без подтверждения.
+6. **RotationGuide:** в проверенных Lua не найдены `UnitAttackSpeed`, `UnitRangedDamage`, `C_SwingTimer` и универсальный remaining swing provider. Отсутствие обнаруженного timer reader не означает отсутствия обычных рекомендаций Attack/Auto Shot.
+7. **RotationMaster:** `RotationMaster/Conditions/weapon.lua:94–107` разделяет ranged `UnitRangedDamage` и melee `UnitAttackSpeed`, с `pcall` и кэшированием; `RotationMaster/Core/condition_support.lua:498–504,570–571` регистрирует `SWING_TIME` и `SWING_TIME_REMAIN` с API requirements; `RotationMaster/main.lua:7446–7468` обрабатывает `SWING_DAMAGE/MISSED` с выделением hand/source. Перенять **общий class-independent contract с API capability gating и combat-log attribution**, не переносить неизвестные значения как 0.
+
+#### Выбранный путь Kord
+
+**Один `PlayerSwingObservation` поверх SW-01 `PlayerAutoAttackObservation`, с `SwingEventAdapter` + `SwingSpeedAdapter`, общим EventBus и единым monotonic clock.** Не создавать hunter/rogue/warrior-specific swing scanners. События `PLAYER_SWING` (если действительно доступны Forever) и `COMBAT_LOG_EVENT_UNFILTERED` после client probe дают подтверждённый last swing anchor, с фильтром `sourceGUID==playerGUID` и классификацией `main/off/ranged`. Для Auto Shot/Wand проверять тип и семантику `RANGE_*` (wand может приходить как `SPELL_*`); при неясном типе — UNKNOWN. Интервал `UnitAttackSpeed` main/off и `UnitRangedDamage` ranged только при проверенном numeric не-secret value; при secret допускается подтверждённый event-reported interval (Sonah/ForeverAuras), но не угадывание скорости. `remaining=max(0,lastConfirmedSwingAt+validatedInterval-now)` является **ESTIMATED**, если phase/rate может меняться; после missed events/haste/weapon swap/movement/cast reset/auto-repeat stop — invalidation. `remaining=0` означает **ожидаемое окно**, не доказанный совершённый удар. `C_SwingTimer.IsTargetWithinSwingRange` остаётся **только** range observation. Lazy `Needs.swing`, per-evaluation memo, bounded event ring buffer и coalescing; не проводить постоянное дорогое сканирование. Политика next-swing/shot-weaving отдельно от observation, использует SW-01 active/EN-04 CC safety/target range и AbilityEligibility как единственный final READY.
+
+#### Требуемые изменения
+
+1. Ввести `PlayerSwingObservation` с main/off/ranged и `nextMelee`, отдельными status/reason/source/revision, не дублировать SW-01 active-state reader.
+2. Проверить Forever `UnitAttackSpeed`, `UnitRangedDamage`, return layout, numeric secret, `PLAYER_SWING`, combat log `SWING_*`/`RANGE_*`, `isOffHand` и sourceGUID.
+3. Реализовать один `SwingEventAdapter` с доказательным player attribution, offhand split и проверкой wand/Auto Shot event identity.
+4. Реализовать `SwingSpeedAdapter` с validated seconds, independent main/off/ranged, изменениями haste, weapon speed, ranged weapon/ammo и нулевыми/secret значениями.
+5. Вычислять predicted next/remaining только при подтверждённом anchor + interval, хранить `ESTIMATED` и `UNKNOWN`, не выдавать `math.huge` или отсутствие события за ноль.
+6. EventBus добавить подтверждённые swing/attack-speed/weapon/target/combat/zone invalidation, bounded ring buffer, coalescing и revision; не полагаться на одно пропущенное событие.
+7. RotationConditions `swing.main.remaining`, `swing.off.remaining`, `swing.ranged.remaining`, `swing.nextMelee.remaining` с `Needs.swing`, per-pass memo и fail-closed.
+8. Связать SW-01 auto-repeat mode, next-swing queue policy и SP-14 AbilityEligibility без автоматического нажатия кнопок.
+9. DevTools-only диагностика: `swing_api_unavailable`, `swing_speed_secret`, `swing_anchor_missing`, `swing_source_guid_mismatch`, `swing_hand_unknown`, `swing_ranged_identity_unknown`, `swing_haste_invalidated`, `swing_event_missed`, `swing_remaining_estimated`, `swing_remaining_unknown`, `swing_timer_expired_unconfirmed`.
+10. Тесты: main only, dual wield, offhand miss, ranged Auto Shot, wand Shoot, weapon swap, haste gained/lost, combat start before first swing, swing delayed by cast/movement, stopped auto-repeat, target switch, missed/out-of-order combat-log event, secret speed in combat, event-reported duration, offhand ambiguity, sourceGUID pet vs player, estimated zero without swing, absent API, no OnUpdate heavy scan/protected actions.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P1).** В Kord есть range API и Auto Shot active observation, но нет доказанного player swing anchor/speed provider для remaining main/off/ranged.
+
+**Архитектурные ссылки:** SW-01, SP-14, EN-07, PE-05. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
