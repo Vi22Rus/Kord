@@ -1239,6 +1239,9 @@
 ### SP-08 — Дальность: в радиусе / вне, ближний бой, «мёртвая зона» стрелка
 
 
+**Архитектурная актуализация TG-11:** **См. TG-11: range checks are unit-specific and GUID-bound; target range must never be reused for focus/mouseover.**
+
+
 **Архитектурная актуализация TG-09:** **См. TG-09: range/deadzone shares one interval-based TargetRangeObservation; spell in-range and melee facts are constraints, not exact distances; do not build separate range scanners.**
 
 
@@ -1548,6 +1551,9 @@
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
 
+**Архитектурная актуализация TG-11:** **См. TG-11: AbilityEligibility needs a verified recipient unit token and GUID; focus/mouseover targeting is not proved by current target eligibility.**
+
+
 **Архитектурная актуализация TG-10:** **См. TG-10: PvP-only spell restrictions consume shared player identity/PvP observations and remain subject to AbilityEligibility.**
 
 
@@ -1779,6 +1785,9 @@
 ### CA-04 — Каст цели: что кастует, прерываем ли, оставшееся время
 
 
+**Архитектурная актуализация TG-11:** **См. TG-11: focus/mouseover casts reuse UnitCastObservation(unit), not a separate focus interrupt reader.**
+
+
 **Архитектурная актуализация (перекрёстные ссылки):** **См. CA-01:** общий UnitCastObservation(unit) проектируется совместно с CA-01; отдельный TargetCastObservation не создавать.
 
 **Приоритет: P1.**
@@ -1877,6 +1886,9 @@
 ## 4. Ауры (баффы и дебаффы)
 
 ### AU-01 — Аура по spellID на игроке, цели, питомце, фокусе, члене группы: есть / нет
+
+
+**Архитектурная актуализация TG-11:** **См. TG-11: aura reads for focus/mouseover use the same canonical AuraPresenceObservation(unit,...) and Needs gating.**
 
 
 **Архитектурная актуализация TG-08:** **См. TG-08: slow/snare presence reuses canonical aura reader, not a new movement-specific aura scanner.**
@@ -2345,6 +2357,9 @@
 
 
 ### TG-01 — Цель существует, жива, враждебна, доступна для атаки, видима
+
+
+**Архитектурная актуализация TG-11:** **См. TG-11: focus/mouseover reuse the same generic unit/target observation and identity guards; do not copy target-only scanners.**
 
 
 **Архитектурная актуализация TG-10:** **См. TG-10: target player/NPC identity and PvP flags extend the same GUID-bound TargetObservation; attackability does not equal PvP flag.**
@@ -2880,3 +2895,54 @@
 **Архитектурные ссылки:** TG-01 — target identity, TG-03 — classification, PL-07 — context, SP-14 — spell restrictions. Обратные сноски внесены.
 
 **Изменения кода:** не выполнялись; внесён аудит TG-10.
+
+
+### TG-11 — Фокус-цель и мышь-цель (если профиль их использует)
+
+**Раздел: 5. Цель. Приоритет: P2.**
+
+#### Требование
+
+Универсальный `UnitObservation(unitToken)` поддерживает `target`, `focus`, `mouseover` только по явно заявленным `Needs.units` профиля. Для каждого юнита независимые `exists`, `guid`, `alive`, `attackable/assistable`, `health`, `auras`, `cast`, `range` при соответствующих Needs, с `READY/UNKNOWN` и reason/source. Отдельно `AbilityRecipientObservation(spellID,requestedUnit,actionBinding)` должен подтверждать, **куда реально пойдёт заклинание**: `@focus`/`@mouseover` в макросе или обычный `target`. Наличие focus/mouseover не доказывает, что обычная кнопка атакует их. При secret или смене GUID — UNKNOWN; не перенаправлять молча на текущую цель.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 107–155,182–185: `unitSnapshot(unit)` уже принимает произвольный token, но `BuildSnapshot` вызывает только `player`, `target`, `pet`; `focus` и `mouseover` отсутствуют. Внутри `unitSnapshot` target-specific поля пока привязаны к `unit=="target"`; для focus/mouseover нужны общие безопасные наблюдения, а не слепое копирование.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua), строки 187–238,267–275,448–499: target policy ограничен `enemy/friendly/self/none`, а range факты читают `"target"`; focus/mouseover не являются подтверждённым recipient.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строки 11–21,66–72,159–171: условия target/player/pet, spellID-specific auras/ranges, но нет `focus.*`/`mouseover.*` и декларации `Needs.units`.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua): `PLAYER_FOCUS_CHANGED`/`UPDATE_MOUSEOVER_UNIT` не обнаружены в проверенном event map; при поддержке Forever нужны адресные инвалидации.
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 9–20: общие `UnitExists`, `UnitGUID`, `UnitIsDeadOrGhost` уже allowlisted; проверка конкретных unit tokens и secret должна сохраняться.
+- Учитывать отдельный actionbar/macro binding: запрос состояния focus/mouseover не означает, что выбранная способность имеет соответствующий `@focus`/`@mouseover` маршрут.
+
+#### Семь референсов (проверенные локальные Lua ZIP)
+
+1. **Sonah** — `UI/ClassOptions.lua:846` включает `mouseoverHealing`, `Classes/Paladin.lua:201–204` и `Classes/Shaman.lua:544` используют выбор союзника под мышью/дружественной цели для лечения. Полезна политика recipient selection, но не универсальный focus/mouseover snapshot.
+2. **JustAC** — `MacroParser.lua:229` распознаёт target specifiers `@mouseover`, `@player`; `BlizzardAPI/StateHelpers.lua:1937+` учитывает focus/mouseover fallback в макросах. Особенно важен **фактический маршрут макроса**, а не только наличие юнита.
+3. **ForeverAuras** — `GenericTrigger.lua:4114,4255` отслеживает `PLAYER_FOCUS_CHANGED`, `SecretAuraTrigger.lua:154` связывает focus/focustarget с event; `Libs/LibSpellRange-1.0/LibSpellRange-1.0.lua:272–274` показывает spell-range на mouseover. Образец unit-token lifecycle и unit-specific range.
+4. **MaxDps** — в проверенных Lua явный универсальный focus/mouseover reader не подтверждён; не переносить retail assumptions.
+5. **ForeverRotation** — в проверенных Lua явный универсальный focus/mouseover reader не подтверждён; основной engine преимущественно target-centric.
+6. **RotationGuide** — в проверенных Lua явный универсальный focus/mouseover reader не подтверждён; не считать отсутствие совпадений доказательством полного отсутствия поддержки в иных путях.
+7. **RotationMaster** — `Platform/raid_marks.lua:102` регистрирует `PLAYER_FOCUS_CHANGED` и `UPDATE_MOUSEOVER_UNIT`, `Platform/casting.lua:88` отслеживает focus cast updates; полезна общая unit/event архитектура.
+
+#### Рекомендация
+
+**Основа — Kord generic `unitSnapshot` + ForeverAuras (focus/mouseover event lifecycle) + JustAC (macro recipient resolution) + Sonah (mouseover healing selection) + RotationMaster (unit event support).** Обобщить существующий `UnitObservation(unitToken)`, подключая focus/mouseover **лениво по `Needs.units`**. Общие AU-01/02/05 aura, CA-04 cast, SP-08 range и TG-01 target identity должны принимать unit token, а не плодить отдельные focus/mouseover readers. Независимый `AbilityRecipientObservation` подтверждает реального адресата способности с учётом безопасно доступной конфигурации actionbar/macro; при невозможности доказать маршрут — UNKNOWN. Никакого автоматического переключения целей или исполнения защищённых действий.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО ДЛЯ FOCUS/MOUSEOVER — ДОРАБОТАТЬ (P2).** Есть generic function skeleton `unitSnapshot(unit)`, но снимок, Needs, события, условия и eligibility остаются target-centric.
+
+#### Требуемые изменения
+
+1. Расширить `Needs.units` до `focus`/`mouseover`; не читать/не подписываться на них, если профиль их не использует.
+2. `UnitObservation(unitToken)` — один общий provider для target/focus/mouseover; unit-specific поля independent, guid guard до/после каждого набора данных; отсутствие focus/mouseover не означает отсутствие обычной цели.
+3. Подключить `PLAYER_FOCUS_CHANGED`, `UPDATE_MOUSEOVER_UNIT`, `UNIT_TARGET`/UNIT_AURA/UNIT_SPELLCAST события только если подтверждены Forever и нужны профилю; мышь может сменить юнит без смены target.
+4. Обобщить aura AU-01/05, cast CA-04 и range SP-08 на разрешённые unit tokens; не переносить `target` GUID, range или aura к focus/mouseover.
+5. В `RotationConditions` добавить `focus.*`/`mouseover.*` только для заявленных Needs, включая независимую проверку friendly/enemy и death.
+6. В `AbilityEligibility` разделить `targetPolicy` (enemy/friendly/self/none) и `recipientUnit` (target/focus/mouseover), привязать range/identity к **реальному recipient**, а не всегда к `"target"`.
+7. Проверять actionbar/macro routing: `@focus`, `@mouseover`, conditional fallback, help/harm; если фактический маршрут защищён/не доказан — UNKNOWN. Не советовать каст в focus при обычной target-only кнопке.
+8. Диагностика `focus_missing`, `mouseover_missing`, `recipient_unit_unknown`, `recipient_macro_unverified`, `unit_guid_changed`, `unit_range_secret`; тесты focus present/absent, mouseover moving, friendly heal, enemy interrupt, conditional macro fallback, same GUID target+focus, different GUID, target switch, focus switch, mouseover switch, combat secret, no profile Needs.
+
+**Архитектурные ссылки:** TG-01 — target identity, AU-01 — aura, CA-04 — cast, SP-08 — range, SP-14 — spell restrictions. Обратные сноски внесены.
+
+**Изменения кода:** не выполнялись; внесён аудит TG-11.
