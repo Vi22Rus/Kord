@@ -15,6 +15,11 @@ local direct={
  ["pet.exists"]={"pet","exists"},
  ["pet.dead"]={"pet","dead"},
  ["pet.health.percent"]={"pet","health","percent"},
+ ["pet.attackingTarget"]={"pet","attackingTarget"},
+ ["target.dead"]={"target","dead"},
+ ["target.threat"]={"target","threat"},
+ ["context.instanceType"]={"context","instanceType"},
+ ["player.mounted"]={"player","mounted"},
  ["context.inGroup"]={"context","inGroup"},
  ["context.inRaid"]={"context","inRaid"},
  ["context.inInstance"]={"context","inInstance"},
@@ -91,6 +96,11 @@ local function value(ctx,field,id)
   end
  end
  ctx.readCache[key]=answer
+ ctx.observations=ctx.observations or {}
+ if #ctx.observations<96 then
+  ctx.observations[#ctx.observations+1]={field=field,
+    status=answer~=nil and "READY" or "UNKNOWN"}
+ end
  return answer
 end
 local function spellAllowed(ctx,id)
@@ -142,6 +152,12 @@ local function eligibility(ctx,id,opts)
  return result
 end
 local methods={}
+-- Typed, demand-driven observation: nil is UNKNOWN and must not be
+-- interpreted as false in legacy Hunter condition callbacks.
+function methods:observe(field,id)
+ local ctx=contexts[self]
+ return ctx and value(ctx,field,id) or nil
+end
 function methods:is(field,id)
  local ctx=contexts[self]
  local current=ctx and value(ctx,field,id)
@@ -244,6 +260,20 @@ function C:Create(profile,snapshot)
  })
  contexts[S]=ctx
  return S
+end
+function C:ObservationCount(S)
+ local ctx=contexts[S]
+ return ctx and #(ctx.observations or {}) or 0
+end
+function C:ObservationsSince(S,start)
+ local ctx=contexts[S]
+ local result={}
+ if not ctx then return result end
+ for i=(start or 0)+1,#(ctx.observations or {}) do
+  local item=ctx.observations[i]
+  result[#result+1]={field=item.field,status=item.status}
+ end
+ return result
 end
 function C:Check(S,spellIDValue,policy)
  local ctx=contexts[S]
