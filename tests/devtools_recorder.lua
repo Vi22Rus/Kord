@@ -72,6 +72,14 @@ eq(D:Record("BAR","READY","actionbar_buttons",nil,nil,29),true,
  "button coverage is recorded")
 eq(D:Record("DISPLAY","BLOCKED","frame_shown"),true,
  "frame visibility is recorded")
+eq(D:Record("DISPLAY","BLOCKED","defensive_in_combat_main"),true,
+ "unchecked Defensive placement is allowed")
+eq(D.records[#D.records].reason,"defensive_in_combat_main",
+ "actual preference code is not mapped to diagnostic_code_unmapped")
+eq(D:Record("DISPLAY","READY","defensive_preference_stored"),true,
+ "persisted Defensive preference is allowed")
+eq(D.records[#D.records].reason,"defensive_preference_stored",
+ "stored setting flag is not mapped to diagnostic_code_unmapped")
 eq(D:Record("DISPLAY","BLOCKED","frame_shown",nil,nil,
  "PlayerName-SECRET"),true,"arbitrary detail is discarded")
 local structured=D:Export()
