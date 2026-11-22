@@ -235,7 +235,9 @@ local function makeRules(spells,is60)
  add("aspect_monkey","AspectMonkey",function(S,c)
   if not c.aspect then return false end
   local upper=S:ge("player.level",10)
-  if upper~=false then return upper==true and false or nil end
+  -- Level >= 10 disables Monkey; avoid Lua's 'and false or nil' trap.
+  if upper==true then return false end
+  if upper==nil then return nil end
   if maintenance(S,c)~=true then return maintenance(S,c) end
   return S:isNot("player.buff",spells.AspectMonkey)
  end)
