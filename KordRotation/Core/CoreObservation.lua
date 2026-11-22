@@ -446,4 +446,39 @@ _G.KordRotationCoreObservation = {
         return {status=s,reason=why or "presence_only"}
     end,
 }
+-- Opt-in read-only method tracing. The core never writes logs, and the
+-- bridge only exposes the fixed API adapter method names and scalar results.
+function O:BeginAPITrace()
+    local api=KR.GameAPI
+    if not api or type(api.BeginDiagnosticTrace)~="function" then
+        return false
+    end
+    return api:BeginDiagnosticTrace()
+end
+function O:EndAPITrace()
+    local api=KR.GameAPI
+    if not api or type(api.EndDiagnosticTrace)~="function" then
+        return false
+    end
+    return api:EndDiagnosticTrace()
+end
+function O:ReadAPITrace()
+    local api=KR.GameAPI
+    if not api or type(api.DrainDiagnosticTrace)~="function" then
+        return {active=false,entries={}}
+    end
+    return api:DrainDiagnosticTrace()
+end
+function O:ReadAPIMethodNames()
+    local api=KR.GameAPI
+    if not api or type(api.SupportedNames)~="function" then
+        return {}
+    end
+    local names=api:SupportedNames()
+    names[#names+1]="GameAPI.ReadField"
+    names[#names+1]="GameAPI.ReadHealthPercent"
+    names[#names+1]="GameAPI.ReadPowerPercent"
+    names[#names+1]="GameAPI.unsupported"
+    return names
+end
 -- Copyright notice: see root LICENSE.
