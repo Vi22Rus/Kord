@@ -366,6 +366,8 @@ function KR.RotationDisplay:Refresh(skipLayout)
     if not skipLayout then self:RefreshLayout() end
     self.productionReady=false
     self.defensiveReady=false
+    self.lastDefensiveStatus="UNKNOWN"
+    self.lastDefensiveReason="engine_unavailable"
     self.lastSummary={profileStatus="UNKNOWN",eligibilityReady=0,
         eligibilityBlocked=0,eligibilityUnknown=0}
     if p.testMode then
@@ -425,9 +427,8 @@ function KR.RotationDisplay:Refresh(skipLayout)
                 if i<=(p.slotCount or 3) then slot:Show() end
             end
         end
-        -- Evaluate defensive independently so an UNKNOWN earlier DPS
-        -- condition cannot suppress verified aura upkeep. Never route
-        -- the same aura to main and defense in a single snapshot.
+        -- The independently routed Defensive result is never a predicted
+        -- second action; it is evaluated against the same game snapshot.
         local pref=KR.IndicatorSettings
         local defenseEnabled=pref
             and pref:Get("defensiveEnabled")==true
@@ -447,8 +448,30 @@ function KR.RotationDisplay:Refresh(skipLayout)
                     KR.RotationEngine)
                 if ok then defResult=read end
             end
+            if type(defResult)=="table" then
+                local okStatus,defStatus,defReason=pcall(function()
+                    local api=KR.GameAPI
+                    if not api or not api:IsSafeValue(defResult) then
+                        return "UNKNOWN","engine_unavailable"
+                    end
+                    return defResult.status,defResult.reason
+                end)
+                if okStatus and (defStatus=="READY" or
+                    defStatus=="BLOCKED" or defStatus=="UNKNOWN" or
+                    defStatus=="UNAVAILABLE") then
+                    self.lastDefensiveStatus=defStatus
+                    self.lastDefensiveReason=type(defReason)=="string"
+                        and defReason or "none"
+                end
+            end
             local checked,record=pcall(verifiedRecommendation,defResult)
             if checked then defensiveItem=record end
+        elseif not defenseEnabled then
+            self.lastDefensiveStatus="BLOCKED"
+            self.lastDefensiveReason="defensive_disabled"
+        else
+            self.lastDefensiveStatus="BLOCKED"
+            self.lastDefensiveReason="defensive_combat_only"
         end
         local mainID=item and item.spellID
         if defensiveItem and defensiveItem.spellID==mainID then
