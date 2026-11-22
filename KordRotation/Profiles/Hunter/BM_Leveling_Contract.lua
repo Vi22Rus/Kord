@@ -123,10 +123,15 @@ local function makeRules(spells)
    cast="idle",chargesRequired=false,mode=mode or "any",
    reason="BM leveling v2.3: "..id,
    when=function(S,cfg)
+    if actionType~="PET_COMMAND" then
+     -- A missing/unlearned spell must not block earlier conditions such
+     -- as threat, hawk count or TTD that are irrelevant at this level.
+     local trained=known(S,spells,key)
+     if trained~=true then return trained end
+    end
     local applicable=condition(S,cfg)
     if applicable~=true then return applicable end
-    if actionType=="PET_COMMAND" then return true end
-    return known(S,spells,key)
+    return true
    end}
   -- Optional buffs/movement/damage are safe to skip if their condition
   -- needs an unimplemented provider. Core Eligibility UNKNOWN never skips.
