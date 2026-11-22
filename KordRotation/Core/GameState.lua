@@ -791,10 +791,22 @@ local function inventorySafeID(value, kind)
     return type(value)=="string" and #value>0
 end
 
+-- Optional EventBus revision evidence; absent bus must remain unverified.
+local function inventoryBagRevision()
+    local bus=KR.EventBus
+    if not bus or type(bus.GetInventoryRevision)~="function" then return nil end
+    local ok,value=pcall(bus.GetInventoryRevision,bus)
+    if not ok or not finite(value,0) or value~=math.floor(value) then
+        return nil
+    end
+    return value
+end
+
 function S:ReadInventoryObservation()
     local result=inventoryObservation()
     result.items={}
     result.families={}
+    result.bagRevision=inventoryBagRevision()
     return result
 end
 
@@ -809,7 +821,14 @@ function S:ReadInventoryItemObservation(itemID)
         return result
     end
     result.itemID=itemID
+    local startRevision=inventoryBagRevision()
     local count=read("C_Item.GetItemCount","number",itemID,false,false)
+    local endRevision=inventoryBagRevision()
+    if startRevision~=endRevision then
+        result.reason="item_bag_revision_changed"
+        return result
+    end
+    result.bagRevision=endRevision
     if not count or count.status~="READY" then
         result.reason=count and count.reason or "inventory_reader_unavailable"
         if count and count.reason=="protected_value" then
@@ -845,6 +864,7 @@ function S:ReadInventoryBagSnapshot()
     result.bagIDs={0,1,2,3,4}
     result.scopeEvidence="source_supported_bag_ids_pending_forever_qa"
     result.complete=false
+    local startRevision=inventoryBagRevision()
 
     local api=KR.GameAPI
     if not api or type(api.Read)~="function"
@@ -908,12 +928,17 @@ function S:ReadInventoryBagSnapshot()
             end
         end
     end
+    local endRevision=inventoryBagRevision()
+    if endRevision~=startRevision then
+        result.reason="item_bag_revision_changed"
+        return result
+    end
+    result.bagRevision=endRevision
     result.status="READY"
     result.reason=nil
     result.complete=true
     result.countsByID=counts
     result.visitedSlots=visited
-    -- No events or revisions in 1.3; 1.6 supplies invalidation.
     return result
 end
 
@@ -958,6 +983,7 @@ function S:ReadInventoryFamilyObservation(familyID)
         return result
     end
     result.catalogRevision=revision
+    local startBagRevision=inventoryBagRevision()
 
     local distinct,seen={},{}
     for index=1,#ids do
@@ -999,6 +1025,12 @@ function S:ReadInventoryFamilyObservation(familyID)
         result.reason="item_catalog_revision_changed"
         return result
     end
+    local endBagRevision=inventoryBagRevision()
+    if startBagRevision~=endBagRevision then
+        result.reason="item_bag_revision_changed"
+        return result
+    end
+    result.bagRevision=endBagRevision
     result.countsByID=knownCounts
     result.knownComponents=known
     result.unknownComponents=unknown
