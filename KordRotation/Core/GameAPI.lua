@@ -370,9 +370,17 @@ for name in pairs(traceMethods) do
             -- ReadField key names may be user/game data. Its method
             -- identity is fixed rather than derived from the key.
             local methodName=name
-            if name=="Read" or name=="ReadTuple" or name=="ReadValues"
-                or name=="Probe" then
+            if name=="Read" or name=="ReadTuple" or name=="ReadValues" then
                 methodName=select(1,...)
+            elseif name=="Probe" then
+                -- A probe proves presence ONLY; never merge it with a
+                -- successful invocation of the same method.
+                local target=select(1,...)
+                if type(target)=="string" and allowed[target] then
+                    methodName="GameAPI.Probe."..target
+                else
+                    methodName="GameAPI.unsupported"
+                end
             else
                 methodName="GameAPI."..name
             end
