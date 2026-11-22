@@ -39,10 +39,10 @@ V:Observe(13165,false)
 assert(V:GetObserved(13165)==false,"verified visible absence tracked")
 V:Observe(13165,true)
 assert(V:GetObserved(13165)==true,"positive supersedes negative")
-V.frame.OnEvent(V.frame,"PLAYER_ENTERING_WORLD")
-assert(V:GetObserved(13165)==nil,"world transition clears observation")
 -- Do not inspect child frames while combat-lockdown prevents it.
 InCombatLockdown=function() return true end
+V.frame.OnEvent(V.frame,"PLAYER_ENTERING_WORLD")
+assert(V:GetObserved(13165)==nil,"world transition clears observation")
 V:Refresh()
 assert(V:GetPresence(13165,"player")==nil,
  "world transition cleared stale viewer cache and combat denies refresh")
