@@ -9,6 +9,9 @@ end
 local time=100
 local petPresent=true
 local petTarget=true
+local targetTargetPresent=false
+local targetTargetIsPlayer=false
+local liveTargetGUID="target-GUID"
 local currentThreat=2
 local inside=true
 local instanceType="party"
@@ -22,9 +25,10 @@ UnitExists=function(u)
   if u=="player" or u=="target" then return true end
   if u=="pet" then return petPresent end
   if u=="pettarget" then return petPresent and petTarget end
+  if u=="targettarget" then return targetTargetPresent end
   return false
 end
-UnitGUID=function(u) return u.."-GUID" end
+UnitGUID=function(u) return u=="target" and liveTargetGUID or u.."-GUID" end
 UnitIsDeadOrGhost=function() return false end
 UnitHealth=function(u) return u=="player" and playerHealth or 50 end
 UnitHealthMax=function() return 100 end
@@ -39,7 +43,10 @@ IsMounted=function() return false end
 UnitCanAttack=function() return true end
 UnitCanAssist=function() return false end
 UnitIsPlayer=function() return false end
-UnitIsUnit=function(a,b) return a=="pettarget" and b=="target" end
+UnitIsUnit=function(a,b)
+  if a=="targettarget" and b=="player" then return targetTargetIsPlayer end
+  return a=="pettarget" and b=="target"
+end
 UnitThreatSituation=function() return currentThreat end
 UnitCastingInfo=function() return nil end
 UnitChannelInfo=function() return nil end
@@ -115,4 +122,22 @@ inside=false
 time=time+1
 snap=state:GetSnapshot()
 eq(snap.context.instanceType.value,"none","outside instance")
+-- Regression: target-of-target evidence belongs to the snapshotted target.
+time=time+1
+snap=state:GetSnapshot()
+eq(state:ReadSignal("target.targetsPlayer",nil,snap).value,false,
+  "confirmed absent targettarget is false")
+targetTargetPresent=true
+targetTargetIsPlayer=true
+eq(state:ReadSignal("target.targetsPlayer",nil,snap).value,true,
+  "targettarget confirmed as player")
+eq(state:ReadSignal("player.hasAggro",nil,snap).value,true,
+  "aggro uses same verified relation")
+liveTargetGUID="different-target-GUID"
+eq(state:ReadSignal("target.targetsPlayer",nil,snap).reason,"target_changed",
+  "changed live target cannot reuse snapshot")
+targetTargetPresent=false
+eq(state:ReadSignal("player.hasAggro",nil,snap).reason,"target_changed",
+  "absent targettarget cannot override changed target")
+liveTargetGUID="target-GUID"
 print("PASS canonical v14 GameState/GameAPI mock: "..count.." assertions")
