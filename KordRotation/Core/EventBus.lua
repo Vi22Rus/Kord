@@ -30,6 +30,9 @@ local channels = {
     UNIT_SPELLCAST_CHANNEL_STOP="cast", UNIT_SPELLCAST_SUCCEEDED="cast",
     PLAYER_REGEN_ENABLED="combat", PLAYER_REGEN_DISABLED="combat",
     PLAYER_DEAD="combat", PLAYER_ALIVE="combat", PLAYER_UNGHOST="combat",
+    -- IT-01/1.6: optional inventory signals, registered through client probe.
+    BAG_UPDATE="inventory", BAG_UPDATE_DELAYED="inventory",
+    BAG_CONTAINER_UPDATE="inventory",
 }
 local unitEvents = {
     UNIT_AURA=true, UNIT_HEALTH=true, UNIT_MAXHEALTH=true,
@@ -82,9 +85,59 @@ function E:Unsubscribe(channel, token)
     return exists
 end
 
+-- Inventory revision is separate from general event-channel revisions. All
+-- changes invalidate shared observations; a known bag ID also gets its own
+-- revision. Unknown event parameters invalidate all bags, never imply zero.
+local function knownBag(bagID)
+    return type(bagID)=="number" and bagID==math.floor(bagID)
+        and bagID>=0 and bagID<=4
+end
+
+function E:GetInventoryRevision()
+    return self.inventoryRevision or 0
+end
+
+function E:GetBagRevision(bagID)
+    if not knownBag(bagID) then return nil end
+    return self.bagRevisions and self.bagRevisions[bagID] or 0
+end
+
+function E:InvalidateInventory(bagID, reason)
+    self.inventoryRevision=(self.inventoryRevision or 0)+1
+    if knownBag(bagID) then
+        self.bagRevisions=self.bagRevisions or {}
+        self.bagRevisions[bagID]=(self.bagRevisions[bagID] or 0)+1
+    else
+        -- Global or ambiguous signals invalidate every player bag.
+        self.bagRevisions=self.bagRevisions or {}
+        for id=0,4 do
+            self.bagRevisions[id]=(self.bagRevisions[id] or 0)+1
+        end
+    end
+    self.inventoryLastReason=reason or "inventory_invalidation"
+    self:MarkDirty("inventory") -- Existing 0.20s coalescing, no scans.
+    return self.inventoryRevision
+end
+
+-- Soulwell may not emit BAG_UPDATE_DELAYED. A confirmed interaction/item
+-- signal or an explicit UI/DevTools request can invalidate on demand.
+-- Does not register invented WoW events or poll bags each frame.
+function E:RequestInventoryRefresh(reason)
+    if type(reason)~="string" or reason=="" then
+        reason="explicit_inventory_refresh"
+    end
+    return self:InvalidateInventory(nil,reason)
+end
+
 function E:HandleEvent(event, unit)
     local channel=channels[event]
     if not channel or not relevant(event, unit) then return false end
+    if channel=="inventory" then
+        local bagID=(event=="BAG_UPDATE" or event=="BAG_CONTAINER_UPDATE")
+            and unit or nil
+        self:InvalidateInventory(bagID,event)
+        return true
+    end
     return self:MarkDirty(channel)
 end
 
@@ -155,6 +208,9 @@ function E:Status()
     end
     table.sort(unavailable)
     return {initialized=self.frame~=nil, revisions=self.revisions or {},
+        inventoryRevision=self:GetInventoryRevision(),
+        bagRevisions=self.bagRevisions or {},
+        inventoryLastReason=self.inventoryLastReason,
         unregistered=unavailable, listenerErrors=self.listenerErrors or 0}
 end
 -- Copyright notice: see repository LICENSE.
