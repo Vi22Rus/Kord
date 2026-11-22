@@ -6938,6 +6938,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-07:** DA-07: миграция профилей с диапазонами уровней сохраняет включительные границы и отвергает конфликтующие/невалидные диапазоны. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-08:** DA-08: PLAYER_LEVEL_UP запускает перепроверку профиля по диапазону и изученных максимальных рангов, а не только snapshot invalidation. Исторический аудит сохранён.
+
 ### EN-A9 — Несколько рекомендаций в очереди (главная и следующая)
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P2.**
@@ -7182,6 +7184,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-06:** DA-06 уточняет семантику burst/coalescing: revision повышается на каждое принятое событие, Flush объединяет уведомления, не скрывая stale state; reentrant events остаются на следующий Flush. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-08:** DA-08: identity/talents/spellbook/actionbar/bindings должны менять revisions сразу; смена спека/уровня требует атомарного пересмотра профиля, рангов и рекомендаций. Исторический аудит сохранён.
+
 ### DA-02 — Кэш на одну оценку и долгий кэш только с инвалидацией по событиям
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7244,6 +7248,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение DA-07:** DA-07: после изменения сохранённых настроек/миграции/сброса инвалидировать соответствующие кэши и revision-зависимые snapshots. Исторический аудит сохранён.
 
+**Ретроактивное уточнение DA-08:** DA-08: кэши рангов, доступных заклинаний, action slots и bindings должны иметь полный revision-vector; старый READY/keybind недопустим. Исторический аудит сохранён.
+
 ### DA-03 — Провайдеры данных подключаются через список Needs; без разрешения профиль данные не получит
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
@@ -7303,6 +7309,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение DA-05:** DA-05: провайдеры вызываются исключительно при фактическом разрешённом Needs-запросе; декларация Needs не запускает preload. Исторический аудит сохранён.
 
 **Ретроактивное уточнение DA-07:** DA-07: сохранённые Needs после миграции проходят строгую allowlist-валидацию, нельзя автоматически выдавать новые полномочия. Исторический аудит сохранён.
+
+**Ретроактивное уточнение DA-08:** DA-08: после смены спека/талантов/уровня разрешения Needs и профиль переопределяются без доступа к старому контексту. Исторический аудит сохранён.
 
 ### DA-04 — Бюджет времени на оценку, замер, предупреждение при превышении
 
@@ -7468,6 +7476,8 @@ Burst — отдельная типизированная настройка п�
 
 **Изменения Lua:** отсутствуют. Только аудит и документация.
 
+**Ретроактивное уточнение DA-08:** DA-08: шторм SPELLS_CHANGED/талантов/панелей coalesce, но немедленно инвалидирует прежний профиль и keybind; critical revision не теряется. Исторический аудит сохранён.
+
 ### DA-07 — Сохранение настроек, миграция схемы, сброс на дефолты
 
 **Раздел: 15. Данные, кэш, события, производительность. Приоритет: P1.**
@@ -7517,5 +7527,61 @@ Burst — отдельная типизированная настройка п�
 **ЧАСТИЧНО РЕАЛИЗОВАНО (P1):** SavedVariables, defaults, нормализация и per-spell reset существуют; полноценная версионированная миграция, общий scoped reset и доказанные round-trip тесты отсутствуют.
 
 **Архитектурные ссылки:** EN-A5, EN-A6, EN-A8, DA-02, DA-03, DA-04, Settings, RotationSettings, RotationProfiles. Ретроактивные уточнения добавлены в EN-A5, EN-A6, EN-A8, DA-02, DA-03, DA-04.
+
+**Изменения Lua:** отсутствуют. Только аудит и документация.
+
+**Ретроактивное уточнение DA-08:** DA-08: смена спека не должна перезаписывать настройки предыдущего class/spec профиля; требуется корректная привязка SavedVariables. Исторический аудит сохранён.
+
+### DA-08 — Реакция на смену спека, талантов, уровня, панели, привязок
+
+**Раздел: 15. Данные, кэш, события, производительность. Приоритет: P0.**
+
+#### Требование
+
+При смене специализации, талантов, уровня, панелей действий и привязок Kord должен немедленно считать соответствующие данные устаревшими, корректно пересматривать class/spec/level профиль, максимальные изученные ранги, пригодность способностей и отображаемые клавиши. Нельзя сохранять READY от предыдущего спека/ранга/цели, показывать старую клавишу как достоверную или записывать настройки в чужой профиль. Изменения только bindings не должны произвольно менять логику ротации. Обновления обрабатываются через единую EventBus revision систему (DA-01), с coalescing DA-06, без постоянных сканов DA-05; UNKNOWN→STOP для неподтверждённой пригодности. Отсутствие доступного события/секретность значений не заменять догадкой.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/EventBus.lua:8–11`: `PLAYER_LEVEL_UP→identity`, `TRAIT_CONFIG_UPDATED/PLAYER_TALENT_UPDATE/ACTIVE_TALENT_GROUP_CHANGED/PLAYER_SPECIALIZATION_CHANGED→talents`, `SPELLS_CHANGED→spellbook`.
+- `EventBus.lua:14–20`: ACTIONBAR_SLOT/PAGE/STATE, BONUS/OVERRIDE/VEHICLE/POSSESS, shapeshift, macros→actionbar; `UPDATE_BINDINGS→bindings`.
+- `EventBus.lua:59–66,92–109`: немедленная revision и coalesced notification.
+- `KordRotation/Core/RotationEngine.lua:105–110,116–145`: уровень из snapshot, выбор identity и `ResolveForEngine(identityID,level)`; при отсутствии достоверного спека/уровня UNKNOWN.
+- `RotationEngine.lua:89–103,245–252`: binding resolution при подготовке рекомендации; неизвестная привязка не должна маскироваться старым значением.
+- `KordRotation/Core/RotationProfiles.lua:233–257`: inclusive level range; `:265–285` атомарная Replace для обновлённого профиля, но нет доказательства реального вызова Replace при PLAYER_LEVEL_UP/SPELLS_CHANGED.
+- `KordRotation/Core/BindingResolver.lua:6,161–170`: subscriptions по bindings/actionbar/identity/talents; `:176–199` проверка ревизий до чтения command cache; `:206–240` проверка live buttons/slots.
+- `KordRotation/Core/RotationSettings.lua:64–88,203–214`: настройки привязаны к выбранному class/spec profile ID и level module.
+- **Пробелы:** регистрация событий не доказывает полный пересчёт learned-rank spellbook, actionbar/slot scanners и UI. Нет подтверждённого полного end-to-end теста всех смен в бою/вне боя, порядка событий, invalidation в середине оценки, границ уровня, изменений панели/макросов и сохранности профилей.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Auras.lua:213` сбрасывает кэш имён на `SPELLS_CHANGED`; `Sonah/UI/ActionBars.lua:1317` реагирует на `ACTIONBAR_SLOT_CHANGED`; `Sonah/UI/Display.lua:1680` — `PLAYER_LEVEL_UP`.
+2. **JustAC:** `JustAC/ActionBarScanner.lua:376–410` разделяет keybind/binding/state invalidation; `:391,401,410` — соответствующие функции. Полезно отделять изменение клавиши от изменения слота.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:720` подписывается на `PLAYER_TALENT_UPDATE`; `ForeverAuras/ActionRange.lua:88–89` регистрирует ACTIONBAR_SLOT/PAGE и SPELLS_CHANGED.
+4. **MaxDps:** `MaxDps/Core.lua:340,351` включает `PLAYER_TALENT_UPDATE` в наборы игровых событий. Регистрация сама по себе не доказывает корректный пересчёт всех рангов.
+5. **ForeverRotation:** `ForeverRotation/Core.lua:223` сбрасывает spell cache на `SPELLS_CHANGED`; `ForeverRotation/Engine.lua:888,892` обновляет learned casts на SPELLS_CHANGED/PLAYER_LEVEL_UP.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:134,136` регистрирует SPELLS_CHANGED и PLAYER_TALENT_UPDATE.
+7. **RotationMaster:** `RotationMaster/Platform/assisted_combat.lua:292,329` обновляет spell set при SPELLS_CHANGED и PLAYER_SPECIALIZATION_CHANGED; нельзя считать этот механизм полным решением привязок или профилей Kord.
+
+**Ограничение:** это проверенные механизмы в предоставленных ZIP, не доказательство исчерпывающего покрытия каждого референса.
+
+#### Выбранный путь Kord
+
+**Оставить EventBus каноническим источником ревизий, а существующие RotationProfiles/RotationEngine/BindingResolver/ActionBarScanner/GameState потребителями; новый SpecChangeManager не создавать.** Разделить цепочки invalidation: `identity/talents/spellbook` → перечитать class/spec/level и изученные ранги, заново выбрать профиль и перепроверить Eligibility; `actionbar` → перепроверить реальные слоты и доступность кнопок; `bindings` → обновить только доказанную привязку. Все цепочки должны инвалидировать отображаемую старую рекомендацию/клавишу до завершения пересчёта; если свежая проверка невозможна, UNKNOWN. Не смешивать профили и SavedVariables разных class/spec. Поддержать reorder событий и revision change во время EvaluateBoth без stale READY; no full polling.
+
+#### Требуемые изменения
+
+1. Создать полную матрицу event→revision→affected cache→profile/rank/slot/binding/UI и проверить подписчиков всех модулей.
+2. Проверить реальное обновление learned-rank resolver и вызов `RotationProfiles:Replace` после SPELLS_CHANGED/PLAYER_LEVEL_UP/смены талантов; исправить отсутствующие пути.
+3. Инвалидировать старый READY и keybind при смене identity/spec/level, slot/page/override/bindings до подтверждения нового.
+4. Разделить независимые изменения binding-only и actionbar-only, не запускать полный профильный пересчёт без необходимости.
+5. Обеспечить корректную область SavedVariables для class/spec и level ranges, защиту от межпрофильной записи.
+6. DevTools: event/channel, old/new profile ID (только безопасные данные), level boundary, revision, rank status, slot/binding invalidation, recompute result, UNKNOWN reason; без secret.
+7. Тесты: смена спека и талантов, уровень на границе, rank upgrade, перемещение кнопки, смена страницы/stance/vehicle/override, UPDATE_BINDINGS, macro update, события в разном порядке, storm, mid-evaluation, reload, in-combat secret, Lua 5.1/in-game.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО (P0):** маршрутизация событий, ревизии, выбор профиля по уровню и инвалидация BindingResolver есть. Полный end-to-end пересмотр рангов, профиля, слотов, UI и отсутствие stale READY при всех переходах не доказаны.
+
+**Архитектурные ссылки:** DA-01, DA-02, DA-03, DA-05, DA-06, DA-07, EN-A8, RotationProfiles, RotationEngine, BindingResolver, ActionBarScanner, EventBus. Ретроактивные уточнения добавлены в DA-01, DA-02, DA-03, EN-A8, DA-07, DA-06.
 
 **Изменения Lua:** отсутствуют. Только аудит и документация.
