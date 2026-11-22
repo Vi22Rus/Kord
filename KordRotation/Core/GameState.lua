@@ -1265,6 +1265,146 @@ function S:ReadSharedItemCooldownObservation(groupID)
     return result
 end
 
+-- IT-02/2.6: explicit, bounded member-cooldown evidence on demand.
+-- Inventory membership and shared-lockout semantics remain unverified.
+-- No scheduled scans, no item use, and NEVER a group READY decision.
+function S:ReadSharedItemCooldownMemberEvidence(groupID)
+    local result={status="UNKNOWN",groupStatus="UNKNOWN",
+        reason="item_cd_use_attribution_unknown",
+        source="GameState.SharedItemCooldownMemberEvidence"}
+    if not inventorySafeID(groupID,"family") then
+        result.reason="item_cd_group_id_unverified"
+        return result
+    end
+    result.groupID=groupID
+    local catalog=KR.SharedCooldownGroupCatalog
+    local api=KR.GameAPI
+    if not catalog or type(catalog.GetCandidateMembers)~="function"
+        or not api or type(api.IsSafeValue)~="function" then
+        result.reason="item_cd_group_catalog_missing"
+        return result
+    end
+    local ok,candidates=pcall(catalog.GetCandidateMembers,catalog,groupID)
+    if not ok or type(candidates)~="table" then
+        result.reason="item_cd_group_members_unverified"
+        return result
+    end
+    local valid,ids,catalogRevision=pcall(function()
+        if not api:IsSafeValue(candidates)
+            or candidates.status~="UNKNOWN"
+            or candidates.reason~="item_cd_use_attribution_unknown"
+            or candidates.groupID~=groupID
+            or not api:IsSafeValue(candidates.familyRevision)
+            or not finite(candidates.familyRevision,1)
+            or candidates.familyRevision~=math.floor(candidates.familyRevision) then
+            return nil
+        end
+        local members=candidates.candidateItemIDs
+        if type(members)~="table" or not api:IsSafeValue(members)
+            or #members<1 or #members>32
+            or candidates.candidateCount~=#members then return nil end
+        local seen,out={},{}
+        for i=1,#members do
+            local id=members[i]
+            if not inventorySafeID(id,"item") or seen[id] then return nil end
+            seen[id]=true
+            out[i]=id
+        end
+        for key in pairs(members) do
+            if type(key)~="number" or key~=math.floor(key)
+                or key<1 or key>#members then return nil end
+        end
+        return out,candidates.familyRevision
+    end)
+    if not valid or not ids then
+        result.reason="item_cd_group_members_unverified"
+        return result
+    end
+    local bus=KR.EventBus
+    local families=KR.ItemFamilyCatalog
+    if not bus or type(bus.GetItemCooldownRevision)~="function"
+        or type(bus.GetInventoryRevision)~="function"
+        or not families or type(families.GetRevision)~="function" then
+        result.reason="item_cd_revision_unavailable"
+        return result
+    end
+    local function revisions()
+        local readOK,itemRev,bagRev,familyRev=pcall(function()
+            return bus:GetItemCooldownRevision(),
+                bus:GetInventoryRevision(),families:GetRevision()
+        end)
+        if not readOK or not finite(itemRev,0)
+            or itemRev~=math.floor(itemRev) or not finite(bagRev,0)
+            or bagRev~=math.floor(bagRev) or not finite(familyRev,1)
+            or familyRev~=math.floor(familyRev) then return nil end
+        return {itemRev,bagRev,familyRev}
+    end
+    local before=revisions()
+    if not before or before[3]~=catalogRevision then
+        result.reason="item_cd_revision_changed"
+        return result
+    end
+    local active,inactive,unknown,coincident=0,0,0,0
+    local maxRemaining=0
+    local starts={}
+    for _,id in ipairs(ids) do
+        local readOK,record=pcall(self.ReadItemCooldownObservation,self,id)
+        local good,isActive,remaining,start,duration=pcall(function()
+            if not readOK or type(record)~="table"
+                or not api:IsSafeValue(record)
+                or record.status~="READY"
+                or not api:IsSafeValue(record.itemID) or record.itemID~=id
+                or record.cooldownScope~="ITEM_SPECIFIC"
+                or not api:IsSafeValue(record.active)
+                or type(record.active)~="boolean"
+                or not api:IsSafeValue(record.remaining)
+                or not finite(record.remaining,0)
+                or record.active~=(record.remaining>0)
+                or not api:IsSafeValue(record.revision)
+                or record.revision~=before[1] then
+                return nil
+            end
+            local start,duration=record.startTime,record.duration
+            local tupleSafe=api:IsSafeValue(start) and api:IsSafeValue(duration)
+                and finite(start,0) and finite(duration,0)
+            return true,record.active,record.remaining,
+                tupleSafe and start or nil,tupleSafe and duration or nil
+        end)
+        if not good or isActive==nil then
+            unknown=unknown+1
+        elseif isActive then
+            active=active+1
+            if remaining>maxRemaining then maxRemaining=remaining end
+            -- Coincidence is not proof of shared lockout. Never return
+            -- ESTIMATED_ACTIVE or CONFIRMED without item-use attribution.
+            if finite(start,0) and finite(duration,0)
+                and start>0 and duration>0 then
+                local key=tostring(start)..":"..tostring(duration)
+                starts[key]=(starts[key] or 0)+1
+                if starts[key]>coincident then coincident=starts[key] end
+            end
+        else
+            inactive=inactive+1
+        end
+    end
+    local after=revisions()
+    if not after or before[1]~=after[1] or before[2]~=after[2]
+        or before[3]~=after[3] then
+        result.reason="item_cd_revision_changed"
+        return result
+    end
+    result.candidateCount=#ids
+    result.knownActiveCount=active
+    result.knownInactiveCount=inactive
+    result.unknownCount=unknown
+    result.coincidentActiveCount=coincident
+    result.candidateMaxRemaining=active>0 and maxRemaining or nil
+    result.itemCooldownRevision=before[1]
+    result.inventoryRevision=before[2]
+    result.familyRevision=before[3]
+    return result
+end
+
 -- v14 #24: two independent Auto Shot flags; no invented swing/queued timing.
 function S:ReadAutoShot(spellID)
     if not KR.GameAPI or type(KR.GameAPI.IsSafeValue)~="function"

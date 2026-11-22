@@ -1,3 +1,15 @@
+## KR-20261122-104 — IT-02/2.6: bounded member cooldown evidence without false group readiness
+- Дата/время: 2026-11-22T15:51:56Z (UTC, время подготовки изменений); коммит: `git log --grep KR-20261122-104`, полный Git SHA из истории.
+- ID/этап/тип: IT-02 P0, этап 2 шаг 2.6; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст и причина: групповой reader уже получает 19 source-only candidate itemID, но не имеет bounded метода сопоставления индивидуальных наблюдений и revision race. Один список групп и событие `BAG_UPDATE_COOLDOWN` не подтверждают item-use или общий lockout. Клиентского отчёта об ошибке нет.
+- Реализация: `KordRotation/Core/GameState.lua`: новый read-only `S:ReadSharedItemCooldownMemberEvidence` читает только через существующий `ReadItemCooldownObservation`, валидирует identity/scope/activity, сверяет `itemCooldownRevision`, `inventoryRevision`, `familyRevision` и возвращает ограниченные агрегаты member facts. Совпадение таймеров отдельно отражено как кандидатная корреляция; status/groupStatus всегда UNKNOWN, без groupRemaining или READY. Нет protected action, второго сканера и новых WoW API.
+- Тест: `tests/shared_item_cooldown_member_evidence_mock.lua` — partial (2 active/1 inactive/16 unknown), 19 zeroes без group READY, secret field, revision race, missing revisions, undeclared group и duplicate itemID.
+- Референсы: исходные сравнения Sonah Items, JustAC StateHelpers, ForeverAuras GenericTrigger и RotationMaster item_conditions в IT-02; не копируются fail-open и вымышленные API. Использованы только текущие внутренние `GameAPI`, `GameState`, `SharedCooldownGroupCatalog`, `EventBus`.
+- Проверки: PASS — проверка исходниковых контрактов и точных якорей, включение исходников/тестов/docs в одну Git-tree транзакцию; NOT RUN — фактический Lua 5.1/mock/full regression (Lua 5.1 нет в текущей среде), GitHub Actions (manual-only по AGENTS), WoW Forever.
+- Выдано тестировщику: добавить в итоговый IT-02 QA счётчики и гонку ревизий, отдельную проверку никогда не объявлять group READY по нулевым членам; промежуточная установка не нужна.
+- Документация: `REQUIREMENTS.md` и `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` обновлены в ЭТОМ ЖЕ коммите; все исходные требования/статусы сохранены. Связи IT-01/IT-02/IT-03/IT-04, KR-20261122-090/101/102/103.
+- Осталось: item-use attribution, клиентская верификация групп, confidence CONFIRMED/ESTIMATED, Lua 5.1/mock regression, игровой QA.
+
 ## KR-20261122-103 — docs(IT-02/2.3,2.6): restore requirements and phased-plan records
 - Дата/время: 2026-11-22 UTC (полный timestamp по Git); SHA: `git log --grep KR-20261122-103`.
 - Этап/требование: 2, IT-02 P0; документационное восстановление обязательных записей после кодовых KR-20261122-100, -101, -102. Статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
