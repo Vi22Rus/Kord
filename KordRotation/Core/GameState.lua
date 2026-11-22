@@ -300,14 +300,50 @@ function S:ReadSignal(field,spellID,snapshot)
         return unknown("signal_field_unverified")
     end
     if field=="target.melee" then
-        local mod=KR.AbilityEligibility
-        if mod and type(mod.Fact)=="function" then
-            local ok,r=pcall(mod.Fact,mod,2973,"inRange",
-                {stateSnapshot=snapshot})
-            if ok and type(r)=="table" and r.status=="READY"
-                and type(r.value)=="boolean" and api:IsSafeValue(r.value) then
-                return {status="READY",value=r.value,source="RaptorStrikeRange"}
+        -- WoW Forever next-swing skills (including Raptor Strike) can
+        -- report IsSpellInRange=true far outside melee. Never use that
+        -- boolean to establish distance. JustAC's Forever reference
+        -- uses C_SwingTimer.IsTargetWithinSwingRange(0) instead.
+        local target=type(snapshot)=="table" and api:IsSafeValue(snapshot)
+            and api:ReadField(snapshot,"target","table") or nil
+        if not target or target.status~="READY" then
+            return unknown("melee_target_unverified")
+        end
+        local identity=api:ReadField(target.value,"guid","table")
+        local exists=api:ReadField(target.value,"exists","table")
+        if identity.status~="READY" or exists.status~="READY" then
+            return unknown("melee_target_unverified")
+        end
+        local guid=api:ReadField(identity.value,"value","string")
+        local gStatus=api:ReadField(identity.value,"status","string")
+        local present=api:ReadField(exists.value,"value","boolean")
+        local eStatus=api:ReadField(exists.value,"status","string")
+        if guid.status~="READY" or guid.value==""
+            or gStatus.status~="READY" or gStatus.value~="READY"
+            or present.status~="READY" or present.value~=true
+            or eStatus.status~="READY" or eStatus.value~="READY" then
+            return unknown("melee_target_unverified")
+        end
+        local function sameTarget()
+            local current=api:Read("UnitGUID","string","target")
+            return current.status=="READY" and current.value==guid.value
+        end
+        if not sameTarget() then return unknown("melee_target_changed") end
+        local swing=api:Read("C_SwingTimer.IsTargetWithinSwingRange","boolean",0)
+        local value,source
+        if swing.status=="READY" then
+            value,source=swing.value,"C_SwingTimer.IsTargetWithinSwingRange"
+        else
+            -- A confirmed OUTSIDE the ~10-yard duel interaction band
+            -- disproves melee. Being inside it does NOT prove 5 yards.
+            local interact=api:Read("CheckInteractDistance","boolean","target",3)
+            if interact.status=="READY" and interact.value==false then
+                value,source=false,"CheckInteractDistance"
             end
+        end
+        if not sameTarget() then return unknown("melee_target_changed") end
+        if type(value)=="boolean" and api:IsSafeValue(value) then
+            return {status="READY",value=value,source=source}
         end
         return unknown("melee_range_unverified")
     elseif field=="player.travelAspect" then
