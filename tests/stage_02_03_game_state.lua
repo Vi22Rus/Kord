@@ -213,6 +213,28 @@ eq(KR.AuraEvidence:Read(13165),nil,"switch invalidates old aspect")
 eq(KR.AuraEvidence:Read(13163).value,true,"new aspect cast tracked")
 KR.AuraEvidence:Reset()
 eq(KR.AuraEvidence:Read(13163),nil,"world/death reset removes evidence")
+-- Sonah address-by-name access is able to establish a clean negative
+-- even when the two list APIs cannot enumerate the client's auras.
+C_Spell={GetSpellInfo=function(id)
+ if id==12345 then return {name="Reference Test Aura"} end
+ return nil
+end}
+C_UnitAuras.GetAuraDataBySpellName=function(unit,name,filter)
+ if name=="Reference Test Aura" then return nil end
+ return nil
+end
+C_Secrets={ShouldAurasBeSecret=function() return false end}
+local namedAbsent=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(namedAbsent.status,"READY","clean by-name absence proven")
+eq(namedAbsent.value,false,"clean by-name negative kept")
+C_UnitAuras.GetAuraDataBySpellName=function(unit,name,filter)
+ return {spellId=12345,isHelpful=true,isHarmful=false}
+end
+local namedPresent=KR.GameState:ReadSignal("player.buff",12345,playerPresent)
+eq(namedPresent.status,"READY","by-name verified buff exists")
+eq(namedPresent.value,true,"by-name verified spell identity")
+C_UnitAuras.GetAuraDataBySpellName=nil
+C_Spell.GetSpellInfo=nil
 -- Sonah/ForeverAuras reference: when the client hides auras, do NOT
 -- attempt forbidden batch/index enumeration after a direct-ID miss.
 local deniedReads=0
