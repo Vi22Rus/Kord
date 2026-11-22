@@ -7,7 +7,8 @@ local function evidence(active,inactive,unknown,correlation,propagation)
     candidateCount=active+inactive+unknown,knownActiveCount=active,
     knownInactiveCount=inactive,unknownCount=unknown,
     useCorrelation=correlation,propagationEvidence=propagation,
-    alignedCandidateCount=active,divergentActiveCount=0,
+    alignedCandidateCount=active,alignedFamilyCount=active>=2 and 2 or 1,
+    divergentActiveCount=0,
     inactiveCandidateCount=inactive}
 end
 local good=C:Evaluate(evidence(2,0,17,"ESTIMATED","ALIGNED_CANDIDATES"))
@@ -15,6 +16,11 @@ assert(good.status=="UNKNOWN" and good.itemCooldownConfidence=="CONFIRMED")
 assert(good.groupLockoutConfidence=="ESTIMATED")
 assert(good.groupReadyConfidence=="UNKNOWN")
 assert(good.reason=="item_cd_group_estimated")
+local sameFamily=evidence(2,0,17,"ESTIMATED","ALIGNED_CANDIDATES")
+sameFamily.alignedFamilyCount=1
+assert(C:Evaluate(sameFamily).groupLockoutConfidence=="UNKNOWN")
+sameFamily.alignedFamilyCount="SECRET"
+assert(C:Evaluate(sameFamily).groupLockoutConfidence=="UNKNOWN")
 local idle=C:Evaluate(evidence(0,19,0,"UNKNOWN","UNKNOWN"))
 assert(idle.itemCooldownConfidence=="CONFIRMED")
 assert(idle.groupReadyConfidence=="UNKNOWN" and idle.groupLockoutConfidence=="UNKNOWN")

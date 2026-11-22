@@ -24,6 +24,7 @@ function C:Evaluate(evidence)
     knownInactiveCount=evidence.knownInactiveCount,unknownCount=evidence.unknownCount,
     useCorrelation=evidence.useCorrelation,propagationEvidence=evidence.propagationEvidence,
     alignedCandidateCount=evidence.alignedCandidateCount,
+    alignedFamilyCount=evidence.alignedFamilyCount,
     divergentActiveCount=evidence.divergentActiveCount,
     inactiveCandidateCount=evidence.inactiveCandidateCount}
  end)
@@ -48,7 +49,9 @@ function C:Evaluate(evidence)
        and x.propagationEvidence~="MIXED_CANDIDATES" then return unknown end
    if not count(aligned) or not count(divergent)
        or not count(reportedInactive) or aligned+divergent~=a
-       or reportedInactive~=i then return unknown end
+       or reportedInactive~=i or not count(x.alignedFamilyCount)
+       or x.alignedFamilyCount<1 or x.alignedFamilyCount>2
+       or x.alignedFamilyCount>aligned then return unknown end
  elseif x.propagationEvidence~="UNKNOWN" then
    return unknown
  end
@@ -57,6 +60,7 @@ function C:Evaluate(evidence)
  if x.useCorrelation=="ESTIMATED"
      and x.propagationEvidence=="ALIGNED_CANDIDATES"
      and count(x.alignedCandidateCount) and x.alignedCandidateCount>=2
+     and x.alignedFamilyCount==2
      and x.alignedCandidateCount==a
      and count(x.divergentActiveCount) and x.divergentActiveCount==0
      and count(x.inactiveCandidateCount) and x.inactiveCandidateCount==i

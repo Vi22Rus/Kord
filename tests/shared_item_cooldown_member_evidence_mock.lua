@@ -46,8 +46,9 @@ function S:ReadItemCooldownObservation(id)
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
             active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown,observedAt=sampleAt}
     end
-    if id==118 or id==858 then
-        if mode=="single" and id==858 then
+    if (mode=="cross_family" and id==2455) or id==118 or id==858 then
+        if (mode=="cross_family" and id==858)
+            or (mode=="single" and id==858) then
             return {status="UNKNOWN",reason="item_cd_unverified"}
         end
         if mode=="secret" and id==118 then
@@ -68,7 +69,7 @@ function S:ReadItemCooldownObservation(id)
             active=true,remaining=20,startTime=90,duration=30,revision=bus.cooldown,observedAt=sampleAt}
     end
     if id==929 then
-        if mode=="aligned_only" or mode=="single" then
+        if mode=="aligned_only" or mode=="single" or mode=="cross_family" then
             return {status="UNKNOWN",reason="item_cd_unverified"}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
@@ -101,10 +102,11 @@ assert(aligned.propagationEvidence=="ALIGNED_CANDIDATES")
 assert(aligned.alignedCandidateCount==2 and aligned.unknownCount==17)
 assert(aligned.status=="UNKNOWN" and aligned.remaining==nil)
 assert(aligned.itemCooldownConfidence=="CONFIRMED")
-assert(aligned.groupLockoutConfidence=="ESTIMATED")
+assert(aligned.alignedFamilyCount==1)
+assert(aligned.groupLockoutConfidence=="UNKNOWN")
 assert(aligned.groupReadyConfidence=="UNKNOWN")
 local publicAligned=S:ReadSharedItemCooldownObservation("POTION_SHARED")
-assert(publicAligned.groupLockoutConfidence=="ESTIMATED")
+assert(publicAligned.groupLockoutConfidence=="UNKNOWN")
 assert(publicAligned.useCorrelation=="ESTIMATED")
 assert(publicAligned.propagationEvidence=="ALIGNED_CANDIDATES")
 assert(publicAligned.itemCooldownConfidence=="CONFIRMED")
@@ -112,6 +114,14 @@ assert(publicAligned.groupReadyConfidence=="UNKNOWN")
 assert(publicAligned.groupStatus=="UNKNOWN" and publicAligned.status=="UNKNOWN")
 assert(publicAligned.groupRemaining==nil and publicAligned.active==nil)
 assert(publicAligned.itemCooldownRevision==5 and publicAligned.inventoryRevision==7)
+mode="cross_family"
+local crossFamily=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+assert(crossFamily.alignedCandidateCount==2 and crossFamily.alignedFamilyCount==2)
+assert(crossFamily.groupLockoutConfidence=="ESTIMATED")
+assert(crossFamily.groupReadyConfidence=="UNKNOWN" and crossFamily.remaining==nil)
+local publicCross=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(publicCross.groupLockoutConfidence=="ESTIMATED")
+assert(publicCross.groupStatus=="UNKNOWN" and publicCross.groupRemaining==nil)
 mode="single"
 local single=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(single.propagationEvidence=="SINGLE_CANDIDATE")
@@ -191,7 +201,8 @@ local originalCatalog=KR.SharedCooldownGroupCatalog
 KR.SharedCooldownGroupCatalog={GetCandidateMembers=function()
     return {status="UNKNOWN",groupID="POTION_SHARED",
         reason="item_cd_use_attribution_unknown",familyRevision=1,
-        candidateItemIDs={118,118},candidateCount=2}
+        candidateItemIDs={118,118},candidateFamilyByItemID={[118]="HEALTH_POTION"},
+        candidateCount=2}
 end}
 local duplicate=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(duplicate.reason=="item_cd_group_members_unverified")

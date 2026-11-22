@@ -1,3 +1,12 @@
+## KR-20261122-119 — IT-02/2.6: require distinct health/mana family evidence for estimated shared potion cooldown
+- Дата/время: 2026-11-22 UTC (точное время Git commit). SHA по `git log --grep KR-20261122-119`. Этап 2/2.6 IT-02 P0, fix/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст и причина: `SharedCooldownConfidence` допускал групповой ESTIMATED по двум совпавшим item-specific cooldown внутри HEALTH_POTION, хотя межсемейная блокировка здоровья и маны не наблюдалась. Это исходниковый пробел, не подтверждённая игровая ошибка.
+- Код: `KordRotation/Core/SharedCooldownGroupCatalog.lua:GetCandidateMembers` публикует внутреннюю candidateFamilyByItemID map и отказывает при коллизии разных семей; `KordRotation/Core/GameState.lua:ReadSharedItemCooldownMemberEvidence` защищённо проверяет полную map и считает alignedFamilyCount только среди сопоставленных active tuples; `KordRotation/Core/SharedCooldownConfidence.lua:Evaluate` требует два различных family при ESTIMATED, иначе UNKNOWN. Existing item CD observations и group READY/remaining не меняются.
+- Референсы: исходные JustAC `Data/Forever/Consumables.lua`, `BlizzardAPI/StateHelpers.lua`, Sonah `Core/Atoms/Items.lua`; эти реализации служат основанием для family classification и observed-use, не гарантируют group lockout. Новых WoW API нет, второго сканера нет.
+- Тесты: обновлены `tests/shared_item_cooldown_member_evidence_mock.lua` и `tests/shared_item_cooldown_confidence_mock.lua`: same-family UNKNOWN, cross-family ESTIMATED, secret invalid family; старые режимы сохранены. PASS static patch/anchors и Git publish. NOT RUN Lua 5.1 mock/full regression (исполняемый Lua недоступен), GitHub Actions manual-only, WoW Forever (нет клиента).
+- Тестировщику: в итоговом IT-02 QA отдельно сверить health vs mana item cooldown propagation и исключения, без промежуточной установки.
+- Результат: stronger source-only confidence, не реализует CONFIRMED_ACTIVE/READY/groupRemaining. REQUIREMENTS и план синхронизированы. Связи IT-01, IT-02/2.5–2.9, KR-20261122-118.
+
 ## KR-20261122-118 — IT-02/2.6: prevent short item GCD from becoming shared lockout evidence
 - Дата/время: 2026-11-22 UTC (точное время из Git); SHA по `git log --grep KR-20261122-118`.
 - Этап/ID: 2/2.6 IT-02 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.

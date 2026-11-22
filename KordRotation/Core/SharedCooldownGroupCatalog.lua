@@ -71,11 +71,11 @@ function C:GetCandidateMembers(groupID)
         result.reason="item_cd_group_family_missing"
         return result
     end
-    local ok,items,revision=pcall(function()
+    local ok,items,revision,familyByID=pcall(function()
         local rev=families:GetRevision()
         if not safe(rev) or type(rev)~="number" or rev~=math.floor(rev)
             or rev<1 or rev==math.huge then return nil end
-        local seen,out={},{}
+        local seen,out,familyByID={},{},{}
         for _,familyID in ipairs(CANDIDATES) do
             local family=families:GetFamily(familyID)
             if type(family)~="table" or not safe(family)
@@ -95,11 +95,11 @@ function C:GetCandidateMembers(groupID)
                 if not safe(itemID) or type(itemID)~="number"
                     or itemID~=math.floor(itemID) or itemID<1
                     or itemID>99999999 then return nil end
-                if not seen[itemID] then
-                    if #out>=32 then return nil end
-                    out[#out+1]=itemID
-                    seen[itemID]=true
-                end
+                if seen[itemID] then return nil end -- ambiguous family
+                if #out>=32 then return nil end
+                out[#out+1]=itemID
+                seen[itemID]=true
+                familyByID[itemID]=familyID
             end
             for key in pairs(list) do
                 if type(key)~="number" or key~=math.floor(key)
@@ -108,7 +108,7 @@ function C:GetCandidateMembers(groupID)
         end
         if families:GetRevision()~=rev then return nil end
         table.sort(out)
-        return out,rev
+        return out,rev,familyByID
     end)
     if not ok or not items then
         result.reason="item_cd_group_members_unverified"
@@ -117,6 +117,7 @@ function C:GetCandidateMembers(groupID)
     result.reason="item_cd_use_attribution_unknown"
     result.verification="SOURCE_ONLY"
     result.candidateItemIDs=items
+    result.candidateFamilyByItemID=familyByID
     result.candidateCount=#items
     result.familyRevision=revision
     return result

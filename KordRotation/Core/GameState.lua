@@ -1367,7 +1367,7 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
         result.reason="item_cd_group_members_unverified"
         return result
     end
-    local valid,ids,catalogRevision=pcall(function()
+    local valid,ids,catalogRevision,familyByID=pcall(function()
         if not api:IsSafeValue(candidates)
             or candidates.status~="UNKNOWN"
             or candidates.reason~="item_cd_use_attribution_unknown"
@@ -1381,18 +1381,27 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
         if type(members)~="table" or not api:IsSafeValue(members)
             or #members<1 or #members>32
             or candidates.candidateCount~=#members then return nil end
-        local seen,out={},{}
+        local seen,out,owned={},{},{}
+        local labels=candidates.candidateFamilyByItemID
+        if type(labels)~="table" or not api:IsSafeValue(labels) then return nil end
         for i=1,#members do
             local id=members[i]
             if not inventorySafeID(id,"item") or seen[id] then return nil end
+            if not api:IsSafeValue(labels[id])
+                or (labels[id]~="HEALTH_POTION"
+                    and labels[id]~="MANA_POTION") then return nil end
             seen[id]=true
             out[i]=id
+            owned[id]=labels[id]
         end
         for key in pairs(members) do
             if type(key)~="number" or key~=math.floor(key)
                 or key<1 or key>#members then return nil end
         end
-        return out,candidates.familyRevision
+        for key in pairs(labels) do
+            if not inventorySafeID(key,"item") or not seen[key] then return nil end
+        end
+        return out,candidates.familyRevision,owned
     end)
     if not valid or not ids then
         result.reason="item_cd_group_members_unverified"
@@ -1513,7 +1522,7 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 -- Keep only bounded, locally copied scalar tuples. Never
                 -- store raw API returns or use these to infer group READY.
                 activeTuples[#activeTuples+1]={itemID=id,
-                    startTime=start,duration=duration}
+                    familyID=familyByID[id],startTime=start,duration=duration}
                 local key=tostring(start)..":"..tostring(duration)
                 starts[key]=(starts[key] or 0)+1
                 if starts[key]>coincident then coincident=starts[key] end
@@ -1558,15 +1567,19 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     result.propagationEvidence="UNKNOWN"
     if matchedUse then
         local aligned,divergent=0,0
+        local alignedFamilies={}
         for _,tuple in ipairs(activeTuples) do
             if math.abs(tuple.startTime-originStart)<=2
                 and math.abs(tuple.duration-originDuration)<=2 then
                 aligned=aligned+1
+                alignedFamilies[tuple.familyID]=true
             else
                 divergent=divergent+1
             end
         end
         result.alignedCandidateCount=aligned
+        result.alignedFamilyCount=(alignedFamilies.HEALTH_POTION and 1 or 0)
+            +(alignedFamilies.MANA_POTION and 1 or 0)
         result.divergentActiveCount=divergent
         result.inactiveCandidateCount=inactive
         -- Divergent active tuples and idle candidate IDs are diagnostic
