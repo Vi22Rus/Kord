@@ -181,4 +181,19 @@ defenseOn=false
 D:Refresh(true)
 eq(D.defensiveReady,false,"disabled defensive does not force main icon")
 eq(D.defensePreview[1].data,nil,"disabled defensive clears aura")
+defenseOn=true
+local pairReads=0
+KR.RotationEngine.EvaluateBoth=function()
+ pairReads=pairReads+1
+ return ready(),{status="READY",source="RotationEngine",
+  channel="defensive",queue={{spellID=13165,texture=13165,
+   name="Aspect of the Hawk",source="verified_profile",keybind="7"}}}
+end
+KR.RotationEngine.EvaluateDefensive=function()
+ error("pair should suppress separate defensive pass")
+end
+D:Refresh(true)
+eq(pairReads,1,"display requests a single atomic two-channel snapshot")
+eq(D.defensePreview[1].data.name,"Aspect of the Hawk",
+ "display consumes paired defensive recommendation without extra scan")
 print("PASS 2.8.5 display mock: "..n.." assertions")
