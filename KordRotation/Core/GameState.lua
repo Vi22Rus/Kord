@@ -419,6 +419,56 @@ function S:ReadSignal(field,spellID,snapshot)
             r.reason=="api_call_failed") then
             return unknown("aura_lookup_unverified")
         end
+        -- Sonah/Core/Atoms/Auras.lua ReadApi: try an address-based
+        -- localized spell-name lookup before any list enumeration.
+        -- This is a documented third lookup, not a fabricated aura scan.
+        -- A nil by-name response only proves absence when the client
+        -- positively confirms that auras are not secret.
+        local spellInfo=api:Read("C_Spell.GetSpellInfo","table",spellID)
+        local localized
+        if spellInfo.status=="READY" then
+            local n=api:ReadField(spellInfo.value,"name","string")
+            if n.status=="READY" and n.value~="" then localized=n.value end
+        end
+        if not localized then
+            local legacy=api:ReadValues("GetSpellInfo",spellID)
+            if legacy.status=="READY" then
+                local n=legacy.value and legacy.value[1]
+                if type(n)=="string" and n~="" and api:IsSafeValue(n) then
+                    localized=n
+                end
+            end
+        end
+        if localized then
+            local byName=api:Read("C_UnitAuras.GetAuraDataBySpellName",
+                "table",unit,localized,unit=="target" and "HARMFUL" or "HELPFUL")
+            if byName.status=="READY" then
+                local spell=api:ReadField(byName.value,"spellId","number")
+                local kind=api:ReadField(byName.value,flag,"boolean")
+                if spell.status=="READY" and spell.value==spellID
+                    and kind.status=="READY" and kind.value==true then
+                    return {status="READY",value=true,
+                        source="GameState.ReadSignal.aura_name"}
+                end
+                -- A different rank/name collision is not proof.
+                return unknown("aura_identity_unverified")
+            end
+            -- A missing by-name aura is only absent when secret mode is
+            -- explicitly FALSE. In hidden mode, Sonah returns nil.
+            if byName.reason=="no_value" then
+                local mode=api:Read("C_Secrets.ShouldAurasBeSecret","boolean")
+                if mode.status=="READY" and mode.value==false then
+                    if unit=="target" then
+                        local current=api:Read("UnitGUID","string","target")
+                        if current.status~="READY" or current.value~=targetGUID then
+                            return unknown("aura_target_changed")
+                        end
+                    end
+                    return {status="READY",value=false,
+                        source="GameState.ReadSignal.aura_name"}
+                end
+            end
+        end
         -- Sonah Secret.AurasHidden and ForeverAuras BuffTrigger2 establish:
         -- while auras are secret, enumeration may throw even though the
         -- direct known-ID lookup returned no aura. This is UNKNOWN, not
