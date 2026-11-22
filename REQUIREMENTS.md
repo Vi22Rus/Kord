@@ -912,6 +912,8 @@
 
 ### SP-01 — Известно ли заклинание (книга, талант, руна). Отсутствие в каталоге — не доказательство незнания
 
+**Архитектурная актуализация CC-01:** ограничения игрока из контроля/немоты/обездвиживания читаются через общую `PlayerControlObservation` (см. CC-01); не выводить отсутствие контроля только из `IsUsableSpell` и не дублировать LoC scanner.
+
 **Архитектурная актуализация IT-10:** **См. IT-10: IT-10 must not mistake player aura absence for weapon coating absence; use distinct WeaponTemporaryEnchantObservation.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 extends the universal aura reader to player/friendly harmful auras, remaining, periodic damage and source-confidence; do not duplicate scanner.**
@@ -1591,6 +1593,8 @@
 
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
+
+**Архитектурная актуализация CC-01:** ограничения игрока из контроля/немоты/обездвиживания читаются через общую `PlayerControlObservation` (см. CC-01); не выводить отсутствие контроля только из `IsUsableSpell` и не дублировать LoC scanner.
 
 **Архитектурная актуализация IT-10:** **См. IT-10: IT-10 refresh decision is advisory; only AbilityEligibility can grant final READY.**
 
@@ -5607,5 +5611,59 @@ HP ниже порога и доступен камень; HP ниже поро�
 **ТРЕБУЕТ ПРОВЕРКИ И ДОРАБОТКИ (P0).** Требования к выбору, порогам и автоподбору сформулированы; степень реализации в Lua и совместимость конкретных API не подтверждены.
 
 **Архитектурные ссылки:** IT-01–IT-13. Обратные ссылки на IT-14 уже внесены в IT-01, IT-04, IT-06, IT-12 и IT-13; остальные должны быть добавлены при проверке соответствующих записей.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### CC-01 — Игрок под контролем: оглушён, испуган, обездвижен, обезмолвлен, не может кастовать
+
+**Раздел: 12. Состояния контроля и помехи. Приоритет: P0.**
+
+#### Требование
+
+Для игрока отдельно определять `STUN`, `FEAR`, `ROOT`, `SILENCE`, `INCAPACITATE/DISORIENT`, `CHARM/POSSESS`, `PACIFY`, `SCHOOL_INTERRUPT` и иные ограничения управления/каста. Результат — подтверждённое `TRUE/FALSE/UNKNOWN` по категориям, источник, причина, ревизия и при достоверном доступе время окончания. **Обездвиживание не запрещает все заклинания**, немота не запрещает автоматически все физические способности, а school lockout затрагивает конкретную школу; stun/fear/incapacitate обычно блокируют обычные действия, но возможны специально разрешённые способности освобождения от контроля. `canCast` определяется **для конкретной способности**, а не глобальным `isCC`. Не приравнивать `nil`, secret или отсутствие API к `FALSE`. Не делать protected actions; только рекомендации.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:26,35`: в allowlist есть `IsUsableSpell` и `C_Spell.IsSpellUsable`, но нет подтверждённых `C_LossOfControl.GetActiveLossOfControlDataCount`, `GetActiveLossOfControlData`, `C_Spell.GetSpellLossOfControlCooldownInfo`.
+- `KordRotation/Core/GameState.lua` (816 строк в проверенной версии): не найдено `LossOfControl`/универсального `PlayerControlObservation` или отдельных состояний stun/fear/root/silence.
+- `KordRotation/Core/AbilityEligibility.lua:175–177`: использует `C_Spell.IsSpellUsable`/legacy `IsUsableSpell`; их false не объясняет причину и не заменяет CC observation. Не маркировать все заклинания как permanently unusable во время краткого контроля.
+- `KordRotation/Core/EventBus.lua:22–42`: есть `SPELL_UPDATE_USABLE`, `UNIT_AURA`, spellcast события, но в просмотренной таблице нет специализированного `LOSS_OF_CONTROL_ADDED/REMOVED/UPDATE` invalidation; названия реально поддерживаемых Forever событий проверить на клиенте.
+- `KordRotation/Core/RotationConditions.lua` (347 строк): не найдено условий `player.stunned`, `player.feared`, `player.rooted`, `player.silenced`, `player.canCast` и `Needs.playerControl`.
+- **Итог аудита:** отдельная классификация контроля игрока и её связь с eligibility не подтверждены; текущий spell usability reader не покрывает постановку CC-01.
+
+#### Сравнение семи референсов (реальные Lua пути и строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Character.lua:27–57` определяет категории `stun/fear/root/silence/disarm/incapacitate`, читает `C_LossOfControl.GetActiveLossOfControlDataCount` и `GetActiveLossOfControlData` с secret-safe `nil`; `:59–76` поддерживает фильтр по spellID для специальных breakers. **Перенять typed tri-state и раздельные категории**, не копировать без проверки все Forever locType.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:188–221` различает общий lockout и причину временной некастуемости; `:223–237` проверяет **конкретное заклинание** через `C_Spell.GetSpellLossOfControlCooldownInfo(spellID).isActive`. **Перенять per-spell gating и сохранение диагностируемого кандидата**; fail-open `false` при неизвестном состоянии из референса не переносить как доказательство READY.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:4479,4548–4566` поддерживает `showlossofcontrol` при cooldown presentation; `ForeverAuras/SpellCooldown.lua:123–133` передаёт `showLossOfControl` в cooldown data. Полезно для визуализации lockout, но display-only не доказывает разрешение на каст.
+4. **MaxDps:** в проверенных основных Lua нет подтверждённого универсального `PlayerControlObservation` с полным набором stun/fear/root/silence/school lockout; отдельные профили и spell usability не заменяют его. Не считать это доказательством полного отсутствия контроля во всех модулях.
+5. **ForeverRotation:** `ForeverRotation/Sync.lua:33–54` нормализует `STUN/FEAR/SILENCE/SCHOOL_INTERRUPT` из `C_LossOfControl`; `:56–74` использует состояние в диагностике доступности interrupt. **Перенять категорийные locType mappings**, но не сводить все CC к общему статусу `CC` при принятии решения.
+6. **RotationGuide:** в 20 проверенных Lua-файлах не найдено явного `LossOfControl`/stun/fear/root/silence reader; нет подтверждённого аналога универсальной проверки. Отсутствие совпадений не доказывает отсутствия любых косвенных проверок.
+7. **RotationMaster:** `RotationMaster/Platform/loss_of_control.lua:11–34` проверяет count, ограничения политики чтения и бюджет 256; `:36–85` безопасно читает `locType`, `lockoutSchool` и отдельно `timeRemaining` с reason. **Основной референс для capability/secret-safe LoC adapter и school lockout**; не копировать произвольный лимит как ограничение клиента.
+
+#### Выбранный путь Kord
+
+**Один `PlayerControlObservation`** в GameState поверх read-only GameAPI adapter и `C_LossOfControl`, с tri-state per-category и списком активных событий, где доступны `locType`, `spellID`, `lockoutSchool`, `timeRemaining` и причина неизвестности. Использовать Sonah для typed mappings, RotationMaster для проверки доступности/secret и JustAC для per-spell lockout. Аура `UNIT_AURA` — только дополнительный сигнал; отсутствие найденного дебафа не означает отсутствие LoC. `C_Spell.GetSpellLossOfControlCooldownInfo` — дополнительный per-spell источник, его `isActive` не приравнивать к глобальной немоте; проверять реальную семантику и секретность на Forever.
+
+**Разделить наблюдение и право рекомендации:** `PlayerControlObservation` сообщает факты, `AbilityEligibility` решает доступность конкретного spell/item, учитывая школу, разрешённость использования под CC, ограничения передвижения/позиции, stun/fear/incapacitate, root, silence и spell-specific lockout. `ROOT` подавляет требующие перемещения действия, но не все касты; `SILENCE`/school lockout подавляют только затронутые заклинания. Для breaker/escape abilities не вводить общий запрет по `anyCC`, иначе нельзя рекомендовать освобождение. Если проверка неизвестна — `UNKNOWN` с reason, не `READY`; при подтверждённом BLOCKED по другому обязательному условию — BLOCKED.
+
+**UI и обновления:** не удалять очередь рекомендаций целиком при временном CC: показывать заблокированное состояние/причину либо рекомендовать допустимый breaker, согласно уже действующей политике слотов. EventBus проверяет поддерживаемые `LOSS_OF_CONTROL_*` события Forever, `UNIT_AURA`, `SPELL_UPDATE_USABLE`, смену формы/спека/цели и корректно инвалидирует `playerControl` revision; ограниченный heartbeat только при необходимости. `Needs.playerControl` ленивый, memo на оценку; не сканировать LoC отдельно для каждого правила. В логах различать `control_unknown`, `stunned`, `feared`, `rooted`, `silenced`, `incapacitated`, `school_locked`, `spell_loc_locked`, `control_api_missing`, `control_secret`.
+
+#### Требуемые изменения
+
+1. В `GameAPI` добавить capability-probed read-only `C_LossOfControl.GetActiveLossOfControlDataCount/GetActiveLossOfControlData` и `C_Spell.GetSpellLossOfControlCooldownInfo` только после проверки Forever API Matrix, сигнатур и secret semantics.
+2. В `GameState` реализовать единый `PlayerControlObservation` с `TRUE/FALSE/UNKNOWN` по типам и причинами, безопасным чтением locType/school/duration и ограниченным бюджетом.
+3. Расширить `AbilityEligibility` per-spell запретами stun/fear/incapacitate, silence/school lockout и исключениями для breaker; root не трактовать как запрет всех кастов.
+4. Добавить `RotationConditions` условия `player.stunned/feared/rooted/silenced/incapacitated`, `player.canCast(spellID)`, `Needs.playerControl`; использовать существующий общий порядок приоритетов.
+5. Добавить в EventBus подтверждённые Forever события контроля и ревизии, не считать `UNIT_AURA` достаточным универсальным источником.
+6. DevTools-only диагностика: тип, источник, доступность данных, школа, длительность (если читается), reason, per-spell decision, revision; не пытаться вычислять secret.
+7. Тесты: свободное состояние, stun/fear/root/silence/incapacitate, pacify, charm, school interrupt одной школы, несколько одновременных эффектов, breaker под CC, physical spell под silence, обычный каст под root, каст во время движения, missing/secret API, смена состояния между тиками, ложное `IsUsableSpell=false`, сохранение/серость иконки, отсутствие false READY и protected cast.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК УНИВЕРСАЛЬНАЯ ВОЗМОЖНОСТЬ — ДОРАБОТАТЬ (P0).** Есть базовая проверка пригодности заклинания, но нет подтверждённой typed LoC observation, per-school lockout и условий контроля.
+
+**Архитектурные ссылки:** SP-01, SP-14, EventBus/AbilityEligibility; обратные ссылки внесены непосредственно в SP-01 и SP-14 в этом коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
