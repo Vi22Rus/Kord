@@ -191,4 +191,32 @@ combat=false
 eq(E:EvaluateDefensive().status,"BLOCKED",
  "disabled Defensive window blocks its own recommendations")
 KR.IndicatorSettings.Get=function() return true end
+-- A high-priority optional defensive/cooldown with an UNKNOWN
+-- CONDITION cannot starve the normal rotation. Eligibility UNKNOWN
+-- remains a hard stop, even if a rule is marked optional.
+combat=true
+KR.IndicatorSettings.Get=function() return true end
+S:SetFlag("defensiveInCombatMain",true)
+profile.Rules={
+ {id="optional_trap",type="SPELL",spell="Feign",
+  category="defensive",target="none",cast="idle",
+  chargesRequired=false,onUnknown="skip",when=function()return nil end},
+ {id="optional_cooldown",type="SPELL",spell="Hawk",
+  category="cooldowns",target="none",cast="idle",
+  chargesRequired=false,onUnknown="skip",when=function()return nil end},
+ {id="arcane_fallback",type="SPELL",spell="Arcane",
+  category="damage",target="enemy",cast="idle",
+  chargesRequired=false,when=function()return true end}
+}
+eq(spell(E:Evaluate()),3044,
+ "unknown optional trap and cooldown conditions do not starve DPS")
+local originalCheck=KR.RotationConditions.Check
+KR.RotationConditions.Check=function(_,_,id)
+ if id==5384 then return {status="UNKNOWN",reason="cooldown_unavailable"} end
+ return {status="READY",reason="none",checks={}}
+end
+profile.Rules[1].when=function()return true end
+eq(E:Evaluate().status,"UNKNOWN",
+ "eligibility UNKNOWN stays blocking even for optional defensive")
+KR.RotationConditions.Check=originalCheck
 print("PASS global combat aura routing and dual engine channels")
