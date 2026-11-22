@@ -91,13 +91,13 @@ function KR.Pages:Advanced(parent)
             function() return A:Get(key) end,
             function(v) A:Set(key,v) end)
     end
-    local auraRouteRow=UI:ToggleRow(options,"ROT_BUFFS_IN_COMBAT_MAIN",
+    local defensiveRouteRow=UI:ToggleRow(options,"ROT_DEFENSIVE_IN_COMBAT_MAIN",
         13,-220,505,
         function()
-            return KR.RotationSettings:GetFlag("buffsInCombatMain")
+            return KR.RotationSettings:GetFlag("defensiveInCombatMain")
         end,
         function(v)
-            KR.RotationSettings:SetFlag("buffsInCombatMain",v)
+            KR.RotationSettings:SetFlag("defensiveInCombatMain",v)
         end)
     prose(options,"ADV_UNSUPPORTED_NOTE",15,-295,506)
 
@@ -128,7 +128,7 @@ function KR.Pages:Advanced(parent)
     local function refresh()
         language:Refresh()
         for _,row in ipairs(rows) do row:Refresh() end
-        auraRouteRow:Refresh()
+        defensiveRouteRow:Refresh()
         status:SetText(KR:Format("ADV_PENDING_COUNT",
             KR.SafeActions and KR.SafeActions:Status() or 0))
         compatText:SetText(D:CompatibilityText())
