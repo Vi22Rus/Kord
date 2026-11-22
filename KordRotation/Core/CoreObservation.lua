@@ -165,6 +165,97 @@ function O:ReadEngineDiagnostic()
     return out
 end
 
+-- The optional recorder requests a complete, bounded profile audit.
+-- This bridge strips spell IDs, GUIDs, player strings and all raw values;
+-- only fixed signal names, statuses, priorities and safe reason codes pass.
+local BM_SIGNALS={
+ ["player.level"]=true,["player.moving"]=true,
+ ["player.combat"]=true,["player.health.percent"]=true,
+ ["player.mounted"]=true,["player.hasAggro"]=true,
+ ["player.travelAspect"]=true,["target.exists"]=true,
+ ["target.dead"]=true,["target.attackable"]=true,
+ ["target.isPlayer"]=true,["target.threat"]=true,
+ ["target.classification"]=true,["target.melee"]=true,
+ ["target.targetsPlayer"]=true,["target.approaching"]=true,
+ ["target.slowed"]=true,["target.wingClip"]=true,
+ ["target.willSurviveBurst"]=true,["target.dyingSoon"]=true,
+ ["target.stingRemaining"]=true,["target.ttd"]=true,
+ ["target.debuff"]=true,["player.buff"]=true,
+ ["pet.exists"]=true,["pet.dead"]=true,
+ ["pet.health.percent"]=true,["pet.attackingTarget"]=true,
+ ["pet.mendActive"]=true,["context.inGroup"]=true,
+ ["context.inRaid"]=true,["context.inInstance"]=true,
+ ["context.instanceType"]=true,["resources.percent"]=true,
+ ["trap.profitable"]=true,["need.distance"]=true,
+ ["mongoose.usable"]=true,["autoShot.active"]=true,
+ ["autoShot.swing"]=true,["intimidation.profitable"]=true,
+ ["aoe.safe"]=true,["volley.profitable"]=true,
+ ["multi.profitable"]=true,["enemy.count"]=true,
+ ["hawk.count"]=true,["hawk.oldestRemaining"]=true,
+ ["aimed.profitable"]=true,["sting.profitable"]=true,
+ ["spell.range"]=true
+}
+local BM_CHECKS={
+ cast=true,usability=true,charges=true,cooldown=true,gcd=true,range=true
+}
+function O:ReadFullAudit()
+    local engine=KR.RotationEngine
+    if not engine or type(engine.AuditFull)~="function" then
+        return {status="UNAVAILABLE",reason="engine_unavailable",rules={}}
+    end
+    local ok,audit=pcall(engine.AuditFull,engine)
+    if not ok or not safe(audit) or type(audit)~="table" then
+        return {status="UNKNOWN",reason="engine_exception",rules={}}
+    end
+    local result={status=status(field(audit,"status")),
+        reason=reason(field(audit,"reason")) or "unknown",rules={}}
+    local source=field(audit,"rules")
+    if type(source)~="table" then return result end
+    local n=math.min(#source,64)
+    result.ruleCount=n
+    local module=field(audit,"profileID")
+    if module=="HUNTER_BM_LEVELING_PVE" then result.module="bm_leveling"
+    elseif module=="HUNTER_BM_PILOT_EXPERIMENTAL" then
+        result.module="bm_pilot"
+    elseif module=="HUNTER_BM_60_PVE" then result.module="bm_60"
+    else result.module="unavailable" end
+    for i=1,n do
+        local original=field(source,i)
+        if type(original)=="table" then
+            local item={priority=i,status=status(field(original,"status")),
+                reason=reason(field(original,"reason")) or "unknown",
+                signals={},checks={}}
+            local inputs=field(original,"signals")
+            if type(inputs)=="table" then
+                for j=1,math.min(#inputs,24) do
+                    local inp=field(inputs,j)
+                    local name=field(inp,"field")
+                    if BM_SIGNALS[name] then
+                        item.signals[#item.signals+1]={
+                            name=name,status=status(field(inp,"status")),
+                            reason=reason(field(inp,"reason")) or "unknown"}
+                    end
+                end
+            end
+            local checks=field(original,"checks")
+            if type(checks)=="table" then
+                for j=1,math.min(#checks,6) do
+                    local ch=field(checks,j)
+                    local name=field(ch,"name")
+                    if BM_CHECKS[name] then
+                        item.checks[#item.checks+1]={
+                            name=name,status=status(field(ch,"status")),
+                            reason=reason(field(ch,"reason")) or "none"}
+                    end
+                end
+            end
+            item.barReason=reason(field(original,"barReason"))
+            result.rules[#result.rules+1]=item
+        end
+    end
+    return result
+end
+
 -- Manual DevTools-only action-bar coverage inspection. No spell IDs,
 -- keys, button objects or action-slot numbers leave the core namespace.
 function O:ReadActionBar()
@@ -310,6 +401,12 @@ _G.KordRotationCoreObservation = {
     Diagnose=function()
         local ok,result=pcall(O.ReadEngineDiagnostic,O)
         if not ok then return {status="UNKNOWN",reason="engine_exception"} end
+        return result
+    end,
+    Audit=function()
+        local ok,result=pcall(O.ReadFullAudit,O)
+        if not ok then return {status="UNKNOWN",
+            reason="engine_exception",rules={}} end
         return result
     end,
     Target=function()
