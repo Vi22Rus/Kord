@@ -1,3 +1,31 @@
+## KR-20261122-003 — аудит UI-03: окно настроек из схемы CFG, группы, подсказки и конфликты
+- Дата/время: 2026-11-22T11:36:00Z (UTC; время записи документа, точное время Git-коммита смотреть в GitHub).
+- Коммит: определяется через \`git log --grep KR-20261122-003\`.
+- Этап/версия: аудит REQUIREMENTS / UI-03 P0; документация, SPEC ONLY.
+- Тип: docs.
+- Задача: UI-03, прямой запрос заказчика на последовательный аудит; предыдущий UI-02: \`720e2d743a98dff0fa8f9d521e45891538020ecd\`.
+- Изменённые файлы: \`REQUIREMENTS.md\`, \`CHANGELOG.md\`.
+
+### Контекст и воспроизведение
+Ожидалось: полная спецификация окна, формируемого из CFG, с группами, подсказками, provenance источника, детерминированным и безопасным разрешением конфликтов, тестами и обратными ссылками. Фактически: действующие \`RotationAbilities\` строят частичные поля Config; UI и движок имеют разные пути нормализации, а \`saved.config\` и \`saved.moduleConfigs\` не имеют подтверждённой conflict policy. Способ проверки: сопоставление актуальных исходников main, полного REQUIREMENTS, AGENTS.md и семи ZIP; клиент WoW не запускался.
+
+### Анализ причины
+Подтверждён недостаток единого provenance/field resolution contract и универсальных metadata groups/tooltip controls в проверенных файлах. Реальная порча сохранений/боевой сбой **не воспроизводились** и не утверждаются. Динамические страницы и сохранение уже существуют, создание второго движка не требуется.
+
+### Что изменено и почему
+- Добавлен развёрнутый \`UI-03\` по формату IT-03 с полной спецификацией, проверенными Lua-путями Kord/семи ZIP, выбранной архитектурой, machine reasons, 10 задачами и исчерпывающей test matrix.
+- В прежние \`EN-A5\`, \`EN-A7\`, \`DA-07\`, \`DA-08\`, \`UI-01\`, \`UI-02\` добавлены прямые обратные ссылки на UI-03 без удаления первоначального анализа.
+- Каноническое решение: неизменная схема \`RotationProfiles.Config\`, один resolution/normalization path через \`RotationSettings\`, UI как presentation, сохранение независимых владельцев \`Settings/IndicatorSettings/AppearanceProfiles\`; конфликты не замалчивать.
+
+### Проверки
+- [PASS] Прочитаны AGENTS.md и полный REQUIREMENTS (~1.06 млн символов), сверены эталон IT-03 и ранее записанный EN-A5.
+- [PASS] Сверены релевантные Lua-пути Kord main и все семь предоставленных ZIP; ссылки и scope проверки отмечены в UI-03.
+- [PASS] Статическая проверка присутствия заголовка UI-03, всех семи нумерованных референсов, шести обратных ссылок и отсутствия изменений Lua (по diff commit).
+- [NOT RUN] Lua 5.1/mocks, CI GitHub Actions, сборки ZIP и игровой тест WoW Forever; документация не меняет runtime.
+
+### Выдано пользователю и итог
+Ссылка на \`REQUIREMENTS.md#ui-03--окно-настроек-из-схемы-cfg-группы-подсказки-конфликты-источников\` и commit из истории. UI-03 **SPEC DOCUMENTED / IMPLEMENTATION PARTIAL / CLIENT NOT RUN**. Следующий пункт последовательного аудита — по запросу заказчика. Связи: EN-A5, EN-A7, DA-07, DA-08, UI-01, UI-02.
+
 ## 2026-11-22 — New journal 19148–19176: Defensive diagnostics and secret mana
 
 - In a logged precombat state (`19148`), Hawk aura was positively detected (`bm_signal_2_player_buff=fact_true`), so rule 2 was correctly false. No attack passed (`eligibility_ready_count=0`, `no_eligible_rule`), including `resources.percent=direct_field_unverified` from protected `UnitPower`.
