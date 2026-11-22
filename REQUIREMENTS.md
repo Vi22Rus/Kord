@@ -6470,6 +6470,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-06:** QA-06: при обнаружении запрещённого API или динамического обхода в профиле build gate FAIL; нельзя объявлять READY либо обойти UNKNOWN/STOP через прямой игровой вызов.
 
+**Ретроактивное уточнение QA-07:** QA-07 задаёт обязательные `UNKNOWN→STOP` и fail-closed сценарии с отсутствующими/secret фактами для каждого профиля; `UNKNOWN` не допускается маскировать как WAIT или BLOCKED ради совпадения.
+
 ### EN-A1 — Версия контракта профиля, реестр отклоняет несовпадения
 
 **Архитектурная актуализация EN-A3:** `S:all/S:any` принимают отложенные функции, не читают следующие факты после доказанного FALSE/TRUE и соблюдают трёхзначную логику; текущий ранний `all(nil, ...)` требует исправления (см. EN-A3). Не создавать второй condition evaluator.
@@ -6546,6 +6548,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение EN-A8:** EN-A8 уточняет, что levelMin/levelMax включительны, перекрытие диапазонов запрещено, а статус и версия профиля проверяются для конкретного диапазона. Исторический аудит сохранён.
 
 **Ретроактивное уточнение QA-06:** QA-06: статический контроль профилей проверяет исходники и замыкания `when` до допуска через реестр; runtime validation EN-A1 остаётся обязательной и не заменяет статическую проверку.
+
+**Ретроактивное уточнение QA-07:** QA-07 требует версионированный `scenarioID/profileID/profileVersion/contractVersion` для каждого профиля, включая draft/legacy с явным `NOT_RUN`; реестровая валидность не означает прохождение сценариев.
 
 ### EN-A2 — Упорядоченные правила: первое подходящее побеждает, остальные не вычисляются
 
@@ -6642,6 +6646,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение QA-06:** QA-06: запрещены прямые WoW API и скрытые вызовы через глобальные алиасы внутри `rule.when`; все факты читаются только через разрешённые `S` и `Needs`, сохраняя lazy first-match-wins.
 
+**Ретроактивное уточнение QA-07:** QA-07 проверяет выбор первого допустимого приоритета и невыполнение нижних правил через `evaluatedPriorities/NOT_EVALUATED` для каждого сценария.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6706,6 +6712,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **Ретроактивное уточнение QA-05:** differential fixtures проверяют точные API read counts и lazy short-circuit `all/any` для нового движка. Изменение старого eager порядка на lazy — `EXPECTED_DELTA` только с утверждённым контрактом и отсутствием ложного READY.
 
 **Ретроактивное уточнение QA-06:** QA-06: составные lazy predicates могут вызывать только разрешённые методы `S` и чистые локальные helper-функции; прямой `Unit*`/`C_*` и побочные эффекты в child closures запрещены.
+
+**Ретроактивное уточнение QA-07:** QA-07 добавляет в сценарные ожидания lazy `all/any`, фактические `providerReadCounts` и отсутствие чтения недостижимых ветвей; проверка обязательна в общей QA-03 инфраструктуре.
 
 ### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
 
@@ -7692,6 +7700,8 @@ Burst — отдельная типизированная настройка п�
 
 **Ретроактивное уточнение QA-05:** сравнение переходов после `PLAYER_TARGET_CHANGED`, смены спека/уровня/талантов/привязок/actionbar и EventBus revision должно охватывать одинаковый event trace и отсутствие stale snapshot; несовпадение на непроверенном API маркировать INCONCLUSIVE.
 
+**Ретроактивное уточнение QA-07:** QA-07 использует event/revision последовательности в сценариях смены цели, спека, уровня, талантов и панели; состояние после события должно проверяться отдельным ожидаемым результатом, без stale snapshot.
+
 ### UI-01 — Иконка рекомендуемого действия и следующая в очереди
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P0.**
@@ -7756,6 +7766,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-07:** подписи текущей/следующей рекомендации, пустого слота и прогнозного статуса UI-01 используют единый registry UI-07, не локализуют `SpellID`, source или машинные статусы `READY/PREDICTED/UNKNOWN`.
 
 **Ретроактивное уточнение UI-08:** основная рекомендация и её texture не зависят от наличия видимой actionbar-кнопки; доступность подсветки и клавиши определяется общими read-only `ActionBarScanner`/`BindingResolver` и `ActionBarPresentationState` UI-08. Скрытие сторонней панели не означает, что spell стал недоступен.
+
+**Ретроактивное уточнение QA-07:** QA-07 различает ожидаемое действие движка и ожидаемое отображение main/defensive/next; UI-01 не должен подменять engine decision фактом наличия иконки.
 
 ### UI-02 — Подсветка кнопки на панели (если разрешено), показ клавиши привязки
 
@@ -8432,6 +8444,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-06:** QA-06: добавить обязательный offline static profile purity gate в единый Lua 5.1 test manifest QA-03; синтаксический `luac -p` и runtime mocks не заменяют AST/scope проверку, а проверка исходника не подтверждает клиентский PASS.
 
+**Ретроактивное уточнение QA-07:** QA-07 задаёт единый обязательный `ScenarioCase`/`ScenarioResult` и матрицу `state → expected action` для каждого профиля; QA-03 запускает их через настоящий production engine на Lua 5.1, не заменяя семантические ожидания собственными mocks.
+
 ### QA-04 — Матрица API: каждый вызов с вердиктом подтверждён / не подтверждён / отличается в WoW Forever
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8494,6 +8508,8 @@ DevTools должен записывать **все достоверно сфо�
 **Изменения Lua:** отсутствуют. Только документация.
 
 **Ретроактивное уточнение QA-05:** QA-05 может сравнивать лишь source/mock поведение API adapters; дифференциальный PASS не повышает `CLIENT PASS` ни по одной из 101 строк v14. Неподтверждённые и различающиеся Forever API остаются отдельными `ApiEvidenceRecord` QA-04.
+
+**Ретроактивное уточнение QA-07:** QA-07 помечает mock-сценарии с непроверенными WoW Forever API как MOCK ONLY/CLIENT UNVERIFIED; они не повышают `CLIENT PASS` v14.
 
 ### QA-05 — Дифференциальные тесты старой и новой логики
 
@@ -8568,6 +8584,8 @@ DevTools должен записывать **все достоверно сфо�
 
 **Ретроактивное уточнение QA-06:** QA-06: парный differential replay обязан сначала проверять candidate profile static purity; legacy violations записываются как известные отклонения, а не переносятся в новый runtime ради MATCH. Статическая проверка не исполняет профили.
 
+**Ретроактивное уточнение QA-07:** QA-07 — канонический источник проверенных ожидаемых решений для candidate в дифференциальных тестах. Legacy output остаётся свидетельством, а не oracle; QA-05 привязывает каждое сравнение к `scenarioID` и approved expectation.
+
 ### QA-06 — Статическая проверка: профиль не обращается к игровым функциям
 
 **Раздел: 17. Диагностика и качество. Приоритет: P1.**
@@ -8633,5 +8651,86 @@ DevTools должен записывать **все достоверно сфо�
 **НЕ РЕАЛИЗОВАНО КАК ОБЯЗАТЕЛЬНЫЙ STATIC PURITY GATE / P1.** Контракт отсутствия прямого WoW API в профиле уже утверждён; runtime registry проверяет структуру, engine вызывает `when` под `pcall`, а Lua 5.1 runner проверяет синтаксис. Однако обязательный AST/scope/call-graph анализ всех подключённых production профилей и отрицательные обходные тесты в проверенных путях **не подтверждены**. Текущий исторический BM-файл нельзя считать мигрированным v1. **SOURCE AUDIT PASS; QA-06 CHECKER NOT IMPLEMENTED; LUA/CI/WOW FOREVER NOT RUN; CLIENT PASS=0/101.**
 
 **Архитектурные ссылки:** EN-A1, EN-A2, EN-A3, EN-A7, AC-07, QA-01, QA-03, QA-04, QA-05, `docs/rotation/Profile_Contract.md`, `KordRotation/Core/RotationProfiles.lua`, `RotationConditions.lua`, `RotationEngine.lua`, `scripts/run_local_lua_regression.sh`. **Обратные ссылки внесены в EN-A1, EN-A2, EN-A3, EN-A7, AC-07, QA-01, QA-03, QA-05.** QA-06 использует общую тестовую инфраструктуру QA-03, но не заменяет runtime реестр, QA-04 или differential oracle QA-05.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение QA-07:** QA-07 сценарные fixtures проходят QA-06 purity gate для реальных profile source; отсутствие прямого API не доказывает правильности выбранного действия, поэтому QA-07 остаётся отдельным обязательным поведенческим gate.
+
+### QA-07 — Сценарные таблицы «состояние → ожидаемое действие» для каждого профиля
+
+**Раздел: 17. Диагностика и качество. Приоритет: P0.**
+
+#### Требование
+
+**Для каждого профиля** Kord (каждый отдельный Class/Spec/Leveling|60/PVE|PVP, без подмены общим тестом класса) обязателен **версионированный набор исполняемых сценариев** `состояние → ожидаемое действие`. Это не список красивых примеров: каждый сценарий содержит воспроизводимый safe input, настройки, ожидаемое решение, причины, проверку приоритетов, UNKNOWN и статус фактического тестирования. Канонические ожидаемые результаты формируются из утверждённых `Priority_Matrix.md`, `Ability_Catalogue.md`, `GameData_Contract.md`, `Profile_Contract.md`, `Configuration_Registry.md` и подтверждённых фактов WoW Forever; **не выводить ожидаемый ответ из текущего результата движка** (иначе тест закрепляет ошибку). Любое изменение приоритетов или профильных условий требует обновления затронутых сценариев и явного review ожидаемых результатов. `P0` означает обязательный gate до объявления профиля `mock_tested`/готовым к релизу, а не утверждение, что тесты уже существуют.
+
+**Канонический `ScenarioCase`**: `schemaVersion`, `scenarioID` (стабильный, уникальный), `profileID`, `profileVersion`, `profileSourceSHA256`, `contractVersion`, `clientBuild` (если известен), `apiMatrixVersion`, `priorityMatrixRevision`, `sourceEvidenceIDs`, `category`, `context` (solo/dungeon/raid, PvE/PvP, pull/combat/OOC, ST/AoE), `level`, `talents`, `settings`, `inputState` (safe typed facts, включая отсутствие/UNKNOWN), `eventSequence`, `revisionSequence`, `expected`, `expectedReason`, `expectedPriority`, `expectedChannel`, `expectedEvaluatedPriorities`, `expectedProviderReads`, `expectedDisplay`, `expectedDeltaIDs`, `approval` (owner, evidence, revision), `testStatus`. Не записывать в fixtures настоящие имена, GUID, raw secret, protected значения, несуществующие SpellID или неподтверждённые клиентские факты. Неизвестность и отсутствие различаются; `nil` не превращается в `false`.
+
+**Канонический `ScenarioExpectedAction`**: `status=READY|BLOCKED|UNKNOWN`; `actionType=SPELL|ITEM|PET_COMMAND|TARGET|STANCE_OR_FORM|WAIT|STOP` только при фактической поддержке соответствующего AC; `spellID/itemID/commandID` (по проверенному каталогу), `rank`, `priority`, `channel=main|defensive|none`, `reason/subreasons`, `nextAction` только при подтверждённом контракте очереди, `noRecommendationReason`, `readBudget`. Для `UNKNOWN` результат — **STOP/no unsafe icon**, не вымышленное READY; `BLOCKED` означает безопасное отсутствие подходящего правила. `WAIT` — отдельное явно поддерживаемое действие AC-06, а не синоним UNKNOWN. Для неподдерживаемых AC-типов ожидание `NOT_IMPLEMENTED` и тестовый статус `BLOCKED_BY_CAPABILITY`, не фиктивный PASS. Значение `expected` может быть только **одним точным решением** для заданного состояния; если вход неоднозначен, сценарий разделяется на конкретные cases либо получает `SPEC_GAP`, но не допускает набор «любых приемлемых иконок».
+
+**Таблица сценариев (эталон формата, значения символические — НЕ подтверждённые игровые способности):**
+
+| Scenario ID | Профиль / контекст | Входное состояние и настройки | Ожидаемое действие | Приоритет / канал / причина | Статус |
+|---|---|---|---|---|---|
+| `CORE-UNKNOWN-001` | любой зарегистрированный v1 | `highestPriority.condition=nil`; нижнее правило иначе READY; `onUnknown=stop` | `UNKNOWN → STOP`, без иконки | верхний приоритет, `none`, `condition_unknown`; нижнее `NOT_EVALUATED` | SPECIFIED / NOT RUN |
+| `CORE-BLOCKED-002` | любой v1 | первый rule `false`, второй eligible READY, verified spell ID из каталога | второй `SPELL` | priority=2, `main`; первый BLOCKED | SPECIFIED / NOT RUN |
+| `CORE-ELIGIBILITY-003` | любой v1 | `when=true`, но range/GCD/target неизвестны | `UNKNOWN → STOP` | Eligibility unknown, без READY | SPECIFIED / NOT RUN |
+| `CORE-LAZY-004` | любой v1 | `S.all` получает `false` на первом child | следующий rule / `BLOCKED` по остальным данным | второй child не вызван, read count=0 | SPECIFIED / NOT RUN |
+| `HUNTER-BM-LVL-BOUNDARY` | BM Leveling PVE | level 59 → 60, event/revision changed | на 59 только подходящий Leveling; на 60 Leveling не допускается | `profileID`, `none` при отсутствии verified 60 | SPECIFIED / NOT RUN |
+| `HUNTER-BM-PET-UNKNOWN` | BM Leveling PVE | `petExists=nil`, pet-dependent rule high priority | `UNKNOWN → STOP` для обязательного факта | pet fact unknown, без ложной команды | SPEC GAP / NOT RUN |
+| `HUNTER-BM-CC-AOE` | BM Leveling PVE | breakable CC nearby, AoE threshold met | не рекомендовать разрушающее контроль AoE; точный fallback из утверждённой матрицы | AoE BLOCKED, fallback только если доказан | SPEC GAP / NOT RUN |
+
+**Важная оговорка:** таблица выше иллюстрирует структуру и инварианты, а не заявляет, что игровые сценарии Hunter уже утверждены. `HUNTER-BM-...` требуют конкретных `spellID`, приоритетов, условий и evidence из актуальных реестров; не использовать символические примеры как реальные fixture PASS.
+
+**Контракт `ScenarioResult`**: `scenarioID`, `profileSourceSHA256`, `engineSHA`, `fixtureSHA256`, `runtime=Lua5.1|WoWForever`, `actualAction`, `actualStatus`, `actualPriority`, `actualChannel`, `actualReason`, `evaluatedPriorities`, `providerReadCounts`, `differencePaths`, `verdict=PASS|FAIL|SPEC_GAP|BLOCKED_BY_CAPABILITY|INCONCLUSIVE|NOT_RUN`, `evidenceID`, `testedAt`. `PASS` только при точном совпадении семантического решения и всех обязательных safety-инвариантов. Не смешивать `MOCK PASS` с `CLIENT PASS`; неизвестные API матрицы v14 не становятся подтверждёнными.
+
+#### Аудит Kord (main)
+
+- `docs/rotation/Test_Matrix.md` уже содержит колонки `Test ID|Scope|Scenario|Inputs/setup|Expected action + reason|Static|Unit|Integration|In-game|Evidence/log`, общие `CORE-001…`, `HUNTER-001…`, `PROFILE-001…`; многие строки имеют `TODO/NOT RUN`. Это **начальный реестр**, но не исчерпывающая исполняемая матрица **каждого** profileID и не единый typed `ScenarioCase`.
+- `docs/rotation/Profile_Registry.md` перечисляет шесть Hunter PvE-файлов: BM/MM/SV × Leveling/60, но все шесть имеют `Registered/TOC=NO`, `Game verified=NO`. Нельзя объявлять существующие исходники действующими v1 профилями; для остальных классов не создавать пустые ложные PASS.
+- `docs/rotation/Priority_Matrix.md` имеет нормативные колонки `Profile ID|Context|Order|Phase|Preconditions|Action|Reason|UNKNOWN policy|Evidence ID|Test ID|Status`, но обнаруженные строки Hunter содержат `TODO` и `NEEDS RECONCILIATION`. **Недостающий oracle — реальный пробел**, его нельзя «достроить» произвольными приоритетами.
+- `docs/rotation/Profile_Contract.md §3–5,§9–11` задаёт lazy `all/any`, `UNKNOWN→STOP`, Eligibility, статусы профиля и 10 mock-сценариев, включая differential BM. Это инварианты для QA-07, но не готовая полная матрица всех профилей.
+- `KordRotation/Core/RotationProfiles.lua` проверяет contract v1, class/spec/level/Spells/Needs/Rules; `KordRotation/Core/RotationEngine.lua` исполняет правила по приоритетам и два канала; `RotationConditions.lua` и `AbilityEligibility.lua` дают безопасные результаты. Реальная полнота profile-specific scenario coverage не доказана.
+- `tests/profile_contract_v1.lua` использует production modules и mock-данные, а `scripts/run_local_lua_regression.sh` перечисляет 17 Lua suites; эти тесты проверяют ядро, но **не подтверждают** обязательный сценарный набор для каждого profileID. QA-03 остаётся общим runner, QA-07 становится **каноническим источником expected outcomes**, QA-05 сравнивает версии с этими expectations.
+- `KordRotation/Profiles/Hunter/Kord_Hunter_BM_Leveling_PVE.lua` содержит историческую `BM.Next(s,cfg)` и большой список приоритетов. Он **не** является мигрированным v1 контрактом; требуется отдельный инвентарь legacy scenarios и перенос ожиданий с review, не механическое копирование результатов старого кода.
+
+#### Сравнение семи референсов (исходники предоставленных ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/Profiles.lua`, `Engine.lua`, `SelfTest.lua`, `Sonah/Core/Molecules/Conditions.lua`. Видны отдельные профили, engine, условия и self-test слой. Для QA-07 полезно разделять сценарий профиля и тест условий, а не считать общий engine smoke test покрытием всех приоритетов. Наличие исчерпывающей матрицы state→action для каждого профиля **не подтверждено**.
+2. **JustAC:** `JustAC/Data/Forever/Rotations.lua`, `JustAC/Data/SimcRotations.lua`, `JustAC/RotationImport.lua`, `JustAC/DefensiveEngine.lua`. Разные источники правил и defensive-механика требуют source/version-specific expected outcomes и отдельного channel oracle. Нельзя переносить SimC-ожидания на WoW Forever без проверки.
+3. **ForeverAuras:** `ForeverAuras/Conditions.lua`, `SecretAuraConditions.lua`, `GenericTrigger.lua`. Подсказывает отдельные сценарии «аура отсутствует/есть/скоро истекает/неизвестна» и защиту от secret; тестирование trigger-ауры не доказывает корректность полного action priority.
+4. **MaxDps:** `MaxDps/Core.lua`, `MaxDps/Modules/Profiler.lua`, `MaxDps/Helper.lua`. Разделение вычисления/измерений полезно для независимого сравнения expected action и измерений; нельзя превращать runtime profiler в oracle. Полнота profile scenario tables не подтверждена.
+5. **ForeverRotation:** `ForeverRotation/Core.lua`, `ForeverRotation/Rotations/Signals.lua`, `ForeverRotation/Rotations/Buffs.lua`. Разделение сигналов и бафов подсказывает обязательные boundary cases для maintenance, AoE и неизвестных фактов; отдельная матрица по всем профилям в проверенных файлах не доказана.
+6. **RotationGuide:** `RotationGuide/Core/API.lua`, `Core/State.lua`, `Core/Engine.lua`. Для QA-07 полезен deterministic state snapshot, а также проверка event/revision переходов; нельзя сравнивать действие на разных snapshot.
+7. **RotationMaster:** `RotationMaster/Analytics/replay.lua`, `RotationMaster/Core/forecast.lua`, `RotationMaster/Core/rotation_scope.lua`, `RotationMaster/Core/condition_support.lua`. Разделение replay, forecast, scope и условий полезно для fixture/replay дизайна; прогнозная очередь и единственное текущее действие v1 **не** эквивалентны. Наличие универсального profile-by-profile сценарного тестового контракта не подтверждено.
+
+**Доказательная граница:** для этого пункта сверены имена и пути Lua в предоставленных семи ZIP, ранее собранные архитектурные сведения и текущие документы Kord; **полная построчная проверка всех семи реализаций не выполнялась**. Поэтому таблица — архитектурное сопоставление, а не утверждение о покрытии чужих тестов.
+
+#### Выбранный путь Kord
+
+**Единый `ProfileScenarioMatrix` (данные/контракт) и `ScenarioRunner` поверх общего QA-03 Lua 5.1 harness**; `Test_Matrix.md` остаётся человекочитаемым реестром, а machine-readable fixtures являются **единственным исполняемым источником** конкретных expected outcomes. Между реестром и fixtures — обязательная двусторонняя проверка ID/версии/expected/reason, запрещающая расхождение документов. Никакого второго игрового engine, отдельной логики выбора действий или копии profile rules в тестовом runner. Runner вызывает настоящие `RotationProfiles/RotationEngine/RotationConditions/AbilityEligibility` с контролируемыми safe provider mocks и fake clock; профили должны быть реальными version-pinned production Lua. `ProfileSourceManifest` QA-06 обеспечивает точный инвентарь и purity gate; QA-05 использует QA-07 как oracle, но не наоборот.
+
+Для каждого профиля формировать собственный coverage manifest с обязательными измерениями: каждое правило/ветка и skip/UNKNOWN, каждая категория действия и режим, 1/59/60 границы, solo/dungeon/raid, pull/combat/OOC, enemy/friendly/dead/no target, range/melee/dead-zone, ресурс/GCD/cooldown/charges/rank, ауры/дебафы present/absent/expiring/UNKNOWN, pet/no pet/dead/low HP, AoE count 0/1/N/threshold/CC, defensive/main routing, buffs/consumables, config flags и конфликтующие настройки, talent/spec/binding/actionbar changes, spell not learned, secret/invalid observations, lazy read counts, stale revision. **Применимость определяется реальными Needs/Rules профиля**, а неприменимые измерения помечаются `N/A` с доказанной причиной, не «пропускаются». Для несуществующего/неподключённого профиля — `NOT_IMPLEMENTED/NOT_RUN`, а не фиктивная пустая матрица.
+
+#### Требуемые изменения
+
+1. Создать `ProfileScenarioMatrix`/schema `ScenarioCase` и реестр `scenarioID` с профилем, версией, source SHA, evidence, приоритетом, входами, ожидаемым действием, reason/channel, test status; запретить дубли ID и неопределённые expected.
+2. Связать каждую строку `docs/rotation/Priority_Matrix.md` с хотя бы одним `scenarioID` для true/false/UNKNOWN, boundary и следующего приоритета; нерешённые `TODO` — `SPEC_GAP` и блокируют готовность профиля.
+3. Инвентаризировать `Profile_Registry.md` и `KordRotation/Profiles/**`: для шести Hunter PvE — отдельные coverage manifests, legacy status и конкретные gaps; другие классы/спеки не объявлять существующими. PvP — только отдельные ID после реального создания.
+4. Разработать deterministic fixtures с typed observations, fake clock, events/revisions, config, target/pet/aura/resource/range, подтверждёнными spellID/ranks, с `nil/UNKNOWN` и fail-closed secret. Синтетические spellID допускаются только для контрактных core-тестов и явно помечаются.
+5. Реализовать `ScenarioRunner` как QA-03 suite, исполняющий **настоящие** production modules/profile callbacks и сравнивающий `status/actionType/spellID/rank/priority/channel/reason/NOT_EVALUATED/readCounts` без повторной реализации ротации.
+6. Добавить scenario coverage checker: 100% зарегистрированных/активных профилей и 100% их правил/достижимых ветвей; каждый обязательный контекст покрыт или доказательно `N/A`; отдельно `SPEC_GAP`, `NOT_RUN`, `BLOCKED_BY_CAPABILITY`, `FAIL`.
+7. Обязательные negative/boundary suites: `UNKNOWN→STOP`, Eligibility UNKNOWN, first-match-wins, lazy all/any, no target/dead/friendly, неверный ранг, неполный ресурс, невалидный CFG, скрытая панель, смена level/spec/target, пет, AoE и ломаемый контроль, buffs и защитные действия.
+8. Добавить двухканальные scenarios для `EvaluateBoth`: main и defensive с одним snapshot, отсутствие ложного переноса ауры в main, настройка `defensiveInCombatMain`, independent UNKNOWN и отсутствие повторных API reads; UI outcome отдельно от engine recommendation.
+9. Встроить QA-06 static purity preflight и QA-05 differential replay: candidate expected action берётся из утверждённого QA-07 oracle; старое unsafe решение отмечается `EXPECTED_DELTA`, но не заменяет expected. Все несовпадения трассируются по `scenarioID`.
+10. Реализовать machine-readable report и документальный sync `Test_Matrix.md`/fixtures; gate профиля: `FAIL=0`, `SPEC_GAP=0` для обязательных сценариев, `NOT_RUN=0`, `BLOCKED_BY_CAPABILITY=0` для заявленных возможностей, полное покрытие; `MOCK PASS` отдельно от `WoW Forever CLIENT PASS`. GitHub Actions — только ручной совокупный запуск согласно AGENTS.
+
+**Причины диагностики QA-07:** `scenario_profile_missing`, `scenario_profile_version_mismatch`, `scenario_source_hash_mismatch`, `scenario_fixture_invalid`, `scenario_expected_missing`, `scenario_oracle_unapproved`, `scenario_spec_gap`, `scenario_action_mismatch`, `scenario_priority_mismatch`, `scenario_reason_mismatch`, `scenario_channel_mismatch`, `scenario_lazy_violation`, `scenario_unknown_unsafe_ready`, `scenario_api_read_mismatch`, `scenario_revision_stale`, `scenario_coverage_missing`, `scenario_not_run`, `scenario_client_unverified`. Статические reason codes без protected payload.
+
+#### Вердикт
+
+**ЧАСТИЧНО НА УРОВНЕ РЕЕСТРОВ / ОБЯЗАТЕЛЬНЫЕ СЦЕНАРНЫЕ ТАБЛИЦЫ ДЛЯ КАЖДОГО ПРОФИЛЯ НЕ РЕАЛИЗОВАНЫ / P0.** Существуют `Test_Matrix.md`, `Profile_Registry.md`, `Priority_Matrix.md` и core mock-тесты, но нет доказанного полного исполняемого `ScenarioCase` набора на **каждый** профиль, покрытия всех его правил и утверждённых точных ожиданий. Шесть Hunter PvE файлов — исторические, не зарегистрированы в TOC, игровая проверка отсутствует. В текущем проходе **SOURCE/DOC AUDIT PASS**, **SCENARIO RUNNER NOT IMPLEMENTED**, **LUA 5.1 NOT RUN**, **CI NOT RUN**, **WOW FOREVER NOT RUN**, **CLIENT PASS 0/101**.
+
+**Архитектурные ссылки:** QA-03, QA-04, QA-05, QA-06, EN-A1, EN-A2, EN-A3, AC-07, DA-08, UI-01, `docs/rotation/Test_Matrix.md`, `Profile_Registry.md`, `Priority_Matrix.md`, `Profile_Contract.md`, `Ability_Catalogue.md`, `GameData_Contract.md`. **Ретроактивные уточнения добавлены в QA-03, QA-04, QA-05, QA-06, EN-A1, EN-A2, EN-A3, AC-07, DA-08, UI-01.**
 
 **Изменения Lua:** отсутствуют. Только документация.

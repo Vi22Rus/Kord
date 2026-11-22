@@ -1,3 +1,14 @@
+## KR-20261122-016 — аудит QA-07: сценарные таблицы state → expected action по каждому профилю
+- Дата: 2026-11-22; точные Git timestamp/SHA — `git log --grep KR-20261122-016`.
+- Этап/тип: QA-07 / P0 / docs; изменены `REQUIREMENTS.md`, `CHANGELOG.md`, без изменений Lua, TOC, ZIP.
+- Контекст: `Test_Matrix.md` содержит частичные CORE/HUNTER сценарии и TODO, `Priority_Matrix.md` содержит непроверенные ожидания, а шесть Hunter PvE исходников не зарегистрированы в TOC. Нельзя выдавать core mock suites за полный state→expected action oracle каждого профиля.
+- Причина: нет утверждённой version-pinned схемы `ScenarioCase`, исполняемого profile-by-profile runner и покрытия правил/ветвей/UNKNOWN/каналов/переходов.
+- Решение: единый `ProfileScenarioMatrix` и `ScenarioRunner` поверх QA-03, канонический `ScenarioExpectedAction`/`ScenarioResult`, точный expected из утверждённых реестров, отдельные manifests для каждого профиля, coverage gate и sync с `Test_Matrix.md`; QA-05 использует QA-07 oracle, QA-06 проверяет исходники.
+- Семь референсов: Sonah, JustAC, ForeverAuras, MaxDps, ForeverRotation, RotationGuide, RotationMaster — подтверждены пути в ZIP, сопоставлены архитектурные границы; полного построчного аудита в этом проходе не было.
+- Ретроактивные ссылки: QA-03, QA-04, QA-05, QA-06, EN-A1, EN-A2, EN-A3, AC-07, DA-08, UI-01. Исторические требования сохранены.
+- Проверки: SOURCE/DOC PASS; LUA 5.1, CI, WoW Forever NOT RUN; никакой CLIENT PASS не присвоен.
+- Итог: QA-07 подробно документирован, исполняемая инфраструктура и полная матрица каждого профиля ещё не реализованы; следующий пункт — по запросу пользователя.
+
 ## KR-20261122-015 — аудит QA-06: static profile purity, no WoW API in profiles
 - Дата: 2026-11-22; точный timestamp и SHA — GitHub commit `KR-20261122-015`.
 - Тип: docs / P1 / QA-06; изменены только `REQUIREMENTS.md` и `CHANGELOG.md`; Lua, TOC, ZIP не менялись.
