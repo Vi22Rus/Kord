@@ -264,6 +264,9 @@ KR.GameAPI.ReadValues=function(self,name,...)
  if name=="GetSpellCooldown" then
   return {status="UNKNOWN",reason="no_value"}
  end
+ if name=="GetSpellCharges" then return {status="READY",value={1,2}} end
+ if name=="IsUsableSpell" then return {status="READY",value={true,false}} end
+ if name=="IsSpellInRange" then return {status="READY",value={1}} end
  return oldMulti(self,name,...)
 end
 eq(eval().reason,"gcd_unavailable","missing legacy GCD fails closed")
