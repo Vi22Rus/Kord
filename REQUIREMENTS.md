@@ -5117,6 +5117,15 @@
 - Незавершённое: фактические use attribution, подтверждение group semantics, проверенные member cooldown states, `CONFIRMED/ESTIMATED/UNKNOWN`, `CONFIRMED_READY` с полным набором, revision/provenance. Следующий независимый шаг 2.7 после проверки зависимостей; IT-02 остаётся PARTIALLY IMPLEMENTED.
 
 7. EventBus item cooldown revision по `BAG_UPDATE_COOLDOWN`, bag/actionbar/item-use/combat/zone events, coalescing и bounded refresh; не дублировать IT-01 bag scanner.
+
+**Реализация Kord — IT-02/2.7 (2026-11-22, P0, PARTIALLY IMPLEMENTED / TEST NOT RUN).**
+- `KordRotation/Core/EventBus.lua`: `GetItemCooldownRevision`, `InvalidateItemCooldown`, `RequestItemCooldownRefresh`; optional `BAG_UPDATE_COOLDOWN`, bag/actionbar/cast/combat/zone invalidations без item attribution или дополнительного bag scanner. `Tick/Flush` сохраняет coalescing 0.20s.
+- `KordRotation/Core/GameState.lua`: `ReadItemCooldownObservation` сверяет cooldown revision до/после чтения и не выдаёт READY при изменении; валидированная ревизия привязана к ответу.
+- `tests/item_cooldown_revision_mock.lua`: независимые ревизии, фильтрация событий и объединение notifications.
+- Референсы: задокументированные ForeverAuras/RotationMaster event handlers из IT-02; новых WoW API нет, `BAG_UPDATE_COOLDOWN` доступен только при успешной регистрации. Реальная Forever-совместимость NOT RUN.
+- PASS: статическая сверка source и test assertions. NOT RUN: Lua 5.1/mock execution/regression, manual GitHub Actions и WoW Forever.
+- Не выполнены TTL/cache, достоверная корреляция use-spell с itemID и проверка клиентских событий. Статус частичный, без подтверждённого общего cooldown.
+
 8. RotationConditions `items.cooldownActive(itemID)`, `items.cooldownRemaining(itemID)`, `items.sharedCooldownRemaining(groupID)` и lazy `Needs.items.cooldown`; AbilityEligibility единственный final READY.
 9. DevTools-only диагностика: `item_cd_api_missing`, `item_cd_secret`, `item_cd_disabled`, `item_cd_invalid_tuple`, `item_cd_gcd_only`, `item_cd_remaining_unknown`, `item_cd_group_unknown`, `item_cd_group_partial`, `item_cd_group_estimated`, `item_cd_group_conflict`, `item_cd_use_attribution_unknown`, `item_cd_ready_confirmed`.
 10. Тесты: cooldown zero/active/expired, enabled bool/0/1/false, nil/secret/invalid numbers, own CD vs GCD, health/mana potion shared cooldown, healthstone independence, bandage and food, multiple ranks, absent item but active group lockout, item moved/split, cooldown starts after use, use-spell collision, combat secret, estimated last-use timer, reload/zone/clock discontinuity, missed BAG_UPDATE_COOLDOWN, API fallback, no false ready/no protected uses.

@@ -19,6 +19,7 @@ local channels = {
     UPDATE_SHAPESHIFT_FORM="actionbar", UPDATE_BINDINGS="bindings",
     UPDATE_MACROS="actionbar", PLAYER_TARGET_CHANGED="target",
     SPELL_UPDATE_COOLDOWN="cooldowns", ACTIONBAR_UPDATE_COOLDOWN="cooldowns",
+    BAG_UPDATE_COOLDOWN="itemCooldown",
     SPELL_UPDATE_CHARGES="cooldowns", SPELL_UPDATE_USABLE="cooldowns",
     UNIT_AURA="auras", UNIT_HEALTH="health", UNIT_MAXHEALTH="health",
     UNIT_PET="pet", PET_BAR_UPDATE="pet",
@@ -33,6 +34,7 @@ local channels = {
     -- IT-01/1.6: optional inventory signals, registered through client probe.
     BAG_UPDATE="inventory", BAG_UPDATE_DELAYED="inventory",
     BAG_CONTAINER_UPDATE="inventory",
+    ZONE_CHANGED="identity", ZONE_CHANGED_NEW_AREA="identity",
 }
 local unitEvents = {
     UNIT_AURA=true, UNIT_HEALTH=true, UNIT_MAXHEALTH=true,
@@ -132,6 +134,20 @@ function E:RequestInventoryRefresh(reason)
     return self:InvalidateInventory(nil,reason)
 end
 
+-- IT-02/2.7: revisions are invalidation evidence, never proof of use.
+function E:GetItemCooldownRevision()
+    return self.itemCooldownRevision or 0
+end
+function E:InvalidateItemCooldown(reason)
+    self.itemCooldownRevision=(self.itemCooldownRevision or 0)+1
+    self.itemCooldownLastReason=type(reason)=="string" and reason or "item_cd_invalidation"
+    self:MarkDirty("itemCooldown")
+    return self.itemCooldownRevision
+end
+function E:RequestItemCooldownRefresh(reason)
+    return self:InvalidateItemCooldown(reason or "explicit_item_cd_refresh")
+end
+
 function E:HandleEvent(event, unit)
     local channel=channels[event]
     if not channel or not relevant(event, unit) then return false end
@@ -139,9 +155,26 @@ function E:HandleEvent(event, unit)
         local bagID=(event=="BAG_UPDATE" or event=="BAG_CONTAINER_UPDATE")
             and unit or nil
         self:InvalidateInventory(bagID,event)
-        return true
+    else
+        self:MarkDirty(channel)
     end
-    return self:MarkDirty(channel)
+    -- Optional cooldown event and conservative independent invalidations.
+    -- Neither a cast nor an inventory update establishes item identity.
+    if event=="BAG_UPDATE_COOLDOWN" or event=="BAG_UPDATE_DELAYED"
+        or event=="BAG_UPDATE" or event=="ACTIONBAR_UPDATE_COOLDOWN"
+        or event=="UNIT_SPELLCAST_SUCCEEDED"
+        or event=="PLAYER_REGEN_ENABLED" or event=="PLAYER_REGEN_DISABLED"
+        or event=="PLAYER_ENTERING_WORLD"
+        or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_NEW_AREA" then
+        if event=="BAG_UPDATE_COOLDOWN" then
+            -- MarkDirty above already coalesced this event.
+            self.itemCooldownRevision=(self.itemCooldownRevision or 0)+1
+            self.itemCooldownLastReason=event
+        else
+            self:InvalidateItemCooldown(event)
+        end
+    end
+    return true
 end
 
 -- Coalesce all events within a 0.20s update window. No scans from OnUpdate.
@@ -212,6 +245,8 @@ function E:Status()
     table.sort(unavailable)
     return {initialized=self.frame~=nil, revisions=self.revisions or {},
         inventoryRevision=self:GetInventoryRevision(),
+        itemCooldownRevision=self:GetItemCooldownRevision(),
+        itemCooldownLastReason=self.itemCooldownLastReason,
         bagRevisions=self.bagRevisions or {},
         inventoryLastReason=self.inventoryLastReason,
         unregistered=unavailable, listenerErrors=self.listenerErrors or 0}

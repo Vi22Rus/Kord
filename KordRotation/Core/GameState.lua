@@ -1098,6 +1098,14 @@ function S:ReadItemCooldownObservation(itemID)
     local api=KR.GameAPI
     if not api or type(api.ReadValues)~="function"
         or type(api.Read)~="function" then return result end
+    local bus=KR.EventBus
+    local function cooldownRevision()
+        if not bus or type(bus.GetItemCooldownRevision)~="function" then return nil end
+        local ok,value=pcall(bus.GetItemCooldownRevision,bus)
+        if ok and finite(value,0) and value==math.floor(value) then return value end
+        return nil
+    end
+    local initialRevision=cooldownRevision()
     -- Only fallback if the first API is absent; secret, error, malformed
     -- or disabled results must not become an invented READY via fallback.
     local candidates={"C_Item.GetItemCooldown","GetItemCooldown"}
@@ -1133,6 +1141,12 @@ function S:ReadItemCooldownObservation(itemID)
                 result.reason="item_cd_remaining_unknown"
                 return result
             end
+            local finalRevision=cooldownRevision()
+            if initialRevision~=finalRevision then
+                result.reason="item_cd_revision_changed"
+                return result
+            end
+            result.revision=finalRevision
             -- An individual zero does not clear shared potion lockout.
             result.status="READY"
             result.reason=nil

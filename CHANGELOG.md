@@ -1,3 +1,14 @@
+## KR-20261122-092 — IT-02/2.7: item cooldown event revisions and reader race guard
+- Дата/время: 2026-11-22 UTC, точный timestamp по Git. SHA: `git log --grep KR-20261122-092`.
+- Этап: 2.7 / IT-02 P0; feature/test/docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: GameState item cooldown reader не имел собственного ревизионного сигнала. Это пробел в исходном контракте, не подтверждённый баг клиента.
+- Код: `KordRotation/Core/EventBus.lua` добавляет независимые методы `GetItemCooldownRevision/InvalidateItemCooldown/RequestItemCooldownRefresh`, событие-кандидат `BAG_UPDATE_COOLDOWN`, bag/actionbar/cast/combat/zone invalidation и coalesced notifications без сканирования. `KordRotation/Core/GameState.lua` валидирует ревизию до/после read, избегает stale READY. Новый `tests/item_cooldown_revision_mock.lua`. Обновлены `REQUIREMENTS.md` и поэтапный план.
+- API и источники: новые WoW API не вызываются; event candidate по исходному сравнительному разделу IT-02 (ForeverAuras/RotationMaster), регистрации сохраняют существующую защиту, без доказанного item-use attribution.
+- Проверки: PASS статическая проверка целевых изменений и тестовых assertions; NOT RUN Lua 5.1 syntax/mock/full regression (Lua 5.1 в доступной среде отсутствует), GitHub Actions (manual-only перед QA), WoW Forever (клиент отсутствует). Отсутствие runtime теста не заменяется статической проверкой.
+- Для тестировщика: накопить регрессионные кейсы event storms, missed BAG_UPDATE_COOLDOWN, вызовы refresh, changed revision during read и no false READY. Промежуточный клиентский тест не требуется.
+- Ограничения: отсутствуют bounded TTL/cache, доказанный item-use event и групповая клиентская семантика. Следующий доступный шаг — доработки по 2.7/2.8, IT-02 остаётся PARTIALLY IMPLEMENTED.
+- Связи: IT-01/02/03, AC-02, KR-20261122-089–091.
+
 ## KR-20261122-091 — docs: synchronize IT-02/2.6 partial integration with requirements and roadmap
 - Дата/время: 2026-11-22 UTC, точный Git timestamp по истории; SHA: `git log --grep KR-20261122-091`.
 - Этап/ID: 2/2.6, IT-02 P0; тип docs; PARTIALLY IMPLEMENTED / CLIENT NOT RUN. Код не изменён этим коммитом.
