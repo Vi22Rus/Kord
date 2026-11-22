@@ -69,3 +69,11 @@ DevTools теперь пишет `KordRotationDevToolsDB.sessions` в SavedVaria
 
 Открытые блокировки: `action_slot_unconfirmed` для Hawk, `aura_scan_unverified` в бою, `pet.health.percent=direct_field_unverified`, а также TTD и эвристические сигналы без провайдеров. Нельзя пропускать UNKNOWN Eligibility или считать видимый по словам пользователя action slot программно подтверждённым. Последние изменения исходников: **LUA MOCK NOT RUN, CI NOT RUN, LATEST IN-GAME RETEST NOT RUN**.
 
+
+## Диагностика DevTools: 101 строк v14 (после последнего журнала)
+
+При явном начале записи DevTools сохраняет `API ... matrix_probe` **для каждой из 101 строк** `Canonical_API_Matrix.md`. `matrix` — номер строки; detail содержит результат безопасной проверки **наличия** метода, не игровой результат выполнения. Для составных возможностей, у которых нет отдельного безопасного probe, сохраняется `UNKNOWN/no_single_safe_probe`. Это не 101 динамический тест и не 101 CLIENT PASS.
+
+В per-rule журнале `bm_bar_2` больше не должен терять фиксированные детали `spell_not_confirmed_on_visible_bar` или `visible_spell_rank_mismatch`. Связь аудита остаётся `RULE → BAR → SIGNAL → STAGE` с номером приоритета и ограниченными кодами. Реальная причина отсутствия Hawk на UI пока **не доказана**; нужен новый клиентский тест новой версии.
+
+**Проверки новой версии:** `tests/devtools_probe.lua`, `tests/devtools_recorder.lua` обновлены, но **локально не выполнялись**. CLIENT NOT RUN для актуального SHA. 
