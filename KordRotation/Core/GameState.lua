@@ -469,6 +469,16 @@ function S:ReadSignal(field,spellID,snapshot)
                 end
             end
         end
+        -- Sonah Auras.lua tracks positive self-cast aspects when the live
+        -- aura API becomes unreadable. This is only positive evidence;
+        -- no history never means the aura is absent.
+        if unit=="player" and KR.AuraEvidence and
+            type(KR.AuraEvidence.Read)=="function" then
+            local past=KR.AuraEvidence:Read(spellID)
+            if past and past.status=="READY" and past.value==true then
+                return past
+            end
+        end
         -- Sonah Secret.AurasHidden and ForeverAuras BuffTrigger2 establish:
         -- while auras are secret, enumeration may throw even though the
         -- direct known-ID lookup returned no aura. This is UNKNOWN, not
