@@ -354,13 +354,50 @@ function S:ReadSignal(field,spellID,snapshot)
         end
         return unknown("auto_shot_state_unknown")
     elseif field=="target.targetsPlayer" or field=="player.hasAggro" then
-        local exists=api:Read("UnitExists","boolean","targettarget")
-        if exists.status~="READY" or exists.value~=true then
-            return unknown("target_target_unverified")
+        -- Tie the target-of-target query to the SAME target as the
+        -- evaluation snapshot. Otherwise a target switch between the
+        -- snapshot and UnitIsUnit may attribute aggro to another mob.
+        if type(snapshot)~="table" or not api:IsSafeValue(snapshot) then
+            return unknown("target_snapshot_unverified")
         end
-        local relation=api:Read("UnitIsUnit","boolean","targettarget","player")
-        if relation.status=="READY" and type(relation.value)=="boolean" then
-            return {status="READY",value=relation.value,source="UnitIsUnit"}
+        local target=api:ReadField(snapshot,"target","table")
+        if target.status~="READY" then
+            return unknown("target_snapshot_unverified")
+        end
+        local present=api:ReadField(target.value,"exists","table")
+        local identity=api:ReadField(target.value,"guid","table")
+        if present.status~="READY" or identity.status~="READY" then
+            return unknown("target_snapshot_unverified")
+        end
+        local pStatus=api:ReadField(present.value,"status","string")
+        local pValue=api:ReadField(present.value,"value","boolean")
+        local gStatus=api:ReadField(identity.value,"status","string")
+        local gValue=api:ReadField(identity.value,"value","string")
+        if pStatus.status~="READY" or pStatus.value~="READY"
+            or pValue.status~="READY" or pValue.value~=true
+            or gStatus.status~="READY" or gStatus.value~="READY"
+            or gValue.status~="READY" or gValue.value=="" then
+            return unknown("target_snapshot_unverified")
+        end
+        local function sameTarget()
+            local current=api:Read("UnitGUID","string","target")
+            return current.status=="READY" and current.value==gValue.value
+        end
+        if not sameTarget() then return unknown("target_changed") end
+        local exists=api:Read("UnitExists","boolean","targettarget")
+        local relation
+        if exists.status=="READY" and exists.value==false then
+            relation=false
+        elseif exists.status=="READY" and exists.value==true then
+            local check=api:Read("UnitIsUnit","boolean","targettarget","player")
+            if check.status=="READY" and type(check.value)=="boolean"
+                and api:IsSafeValue(check.value) then
+                relation=check.value
+            end
+        end
+        if not sameTarget() then return unknown("target_changed") end
+        if type(relation)=="boolean" then
+            return {status="READY",value=relation,source="UnitIsUnit"}
         end
         return unknown("target_target_unverified")
     end
