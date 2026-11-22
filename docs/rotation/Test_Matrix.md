@@ -244,3 +244,19 @@ CI: `tests/stage_02_08_rotation_engine.lua` и `tests/stage_02_08_v14_rotation_c
 
 ### Контрольная точка 2.9-C (KR-20261121-085)
 [Contract_v1_Status_2_9.md](Contract_v1_Status_2_9.md): единый фактический список внедрённого кода, проверенных статических инвариантов и блокирующих результатов Lua/игры. В исходниках добавлены сценарии false CFG, finite CFG, protected SpellID; их выполнение по точному SHA НЕ подтверждено. Оригинальный документ контракта v1 остался побайтово неизменным.
+
+## DevTools v14 — диагностика всех строк матрицы (2026-11-22)
+
+| Проверка | Ожидаемый результат | Фактический статус |
+|---|---|---|
+| На явном Start `ProbeAll` делает 101 запись `API / matrix_probe` | Последовательные `matrix=1..101`, стабильные status/detail, без client data | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| 79 записей с одиночным методом | Только `presence_only` / `api_missing` / guarded failure, никогда автоматический CLIENT PASS | SOURCE IMPLEMENTED; CLIENT NOT RUN |
+| 22 составные строки без безопасного одиночного метода | `UNKNOWN / no_single_safe_probe` | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| Сканер: `spell_not_confirmed_on_visible_bar` | Деталь `bm_bar_N` сохраняется | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| Сканер: `visible_spell_rank_mismatch` | Деталь `bm_bar_N` сохраняется | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| Новая внутренняя причина, отсутствующая в словаре | `diagnostic_code_unmapped`, без пустой строки/утечки исходного значения | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| Неизвестный/небезопасный detail | `diagnostic_detail_unmapped`, исходное значение не сохраняется | SOURCE IMPLEMENTED; LUA MOCK NOT RUN |
+| End-to-end BM рекомендует Aspect of the Hawk при Beast и видимой Ctrl+3 кнопке | Реальная READY рекомендация + корректное slot/binding подтверждение | **FAIL в последнем пользовательском журнале** (`action_slot_unconfirmed`); новый код ещё CLIENT NOT RETESTED |
+| Полный динамический вызов всех 101 составных сценариев | Не выдавать статистику presence за исполнение | NOT IMPLEMENTED / CLIENT NOT RUN |
+
+Данные source-level census идентифицируются по номеру утверждённой `Canonical_API_Matrix.md`; поиндексные результаты не означают, что вызов API был разрешён/выполнен в бою. Не менять статус CLIENT PASS без реального теста.
