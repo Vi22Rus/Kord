@@ -13,6 +13,7 @@ local reasons={none=true,unknown=true,unavailable=true,protected_value=true,
     action_slot_unconfirmed=true,spell_visual_data_unverified=true,
     matrix_probe=true,no_single_safe_probe=true,unlisted_method=true,
     method_call=true,method_total=true,method_trace_overflow=true,
+    method_trace_unavailable=true,
     diagnostic_code_unmapped=true,diagnostic_code_invalid=true,
     diagnostic_detail_unmapped=true,
     core_bridge_missing=true,probe_failed=true,
@@ -216,6 +217,7 @@ function D:SaveJournalPart(final)
             self.evictedParts=(self.evictedParts or 0)+1
         end
     end
+    kept.evictedParts=self.evictedParts or 0
     self.settings=db
     KordRotationDevToolsDB=db
     self.journalPart=kept.part
