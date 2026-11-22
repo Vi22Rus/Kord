@@ -160,15 +160,15 @@ local function run(channel,sharedSnapshot)
   local spellID=rule.type=="SPELL" and profile.Spells[rule.spell] or nil
   local status,reason
   local ruleChecks,ruleBarReason
-  -- Route ANY recommended maintenance effect, not selected spell IDs.
-  -- Profiles can override their semantic type; 'buffs' is the fallback.
-  -- Enemy debuffs and utility actions are not maintenance buffs.
-  local kind=rule.recommendationType
-  if kind==nil and rule.category=="buffs" and rule.target~="enemy" then
-   kind="buff"
+  -- The rule and effective category determine the window; spell identity
+  -- and the localized name never participate in this decision.
+  local overrides=type(saved.spells)=="table" and saved.spells[spellID] or nil
+  local category=rule.category
+  if type(overrides)=="table" and
+      type(overrides.category)=="string" then
+   category=overrides.category
   end
-  local maintenance=(kind=="buff" or kind=="aura" or
-      kind=="aspect" or kind=="stance")
+  local kind,maintenance=KR.RotationProfiles:RecommendationKind(rule,category)
   if (maintenance and ((channel=="main")~=auraInMain))
       or (not maintenance and channel=="defensive") then
    status,reason="BLOCKED","routed_to_other_channel"
@@ -177,10 +177,6 @@ local function run(channel,sharedSnapshot)
   elseif rule.mode~=nil and rule.mode~="any" and rule.mode~=mode then
    status,reason="BLOCKED","mode_not_selected"
   else
-   local overrides=type(saved.spells)=="table" and saved.spells[spellID] or nil
-   local category=rule.category
-   if type(overrides)=="table" and
-      type(overrides.category)=="string" then category=overrides.category end
    if rule.enabled==false or
        (type(overrides)=="table" and overrides.enabled==false) then
     status,reason="BLOCKED","rule_disabled"
@@ -235,7 +231,7 @@ local function run(channel,sharedSnapshot)
    local record={spellID=spellID,texture=texture,name=name,
     keybind=keybind,bindingSource=bindingSource,
     source=profile.status=="verified" and "verified_profile" or "experimental_profile",
-    priority=i,category=rule.category,mode=mode,
+    priority=i,category=category,mode=mode,
     recommendationType=kind,channel=channel}
    return {status="READY",source="RotationEngine",profileID=profile.id,
     mode=mode,channel=channel,queue={record},diagnostics=diagnostics}
