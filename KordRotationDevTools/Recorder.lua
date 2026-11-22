@@ -364,40 +364,55 @@ local function encode(v)
     if type(v)=="number" then return string.format("%.0f",v) end
     return type(v)=="string" and v or ""
 end
-function D:Export()
-    -- Strict whitelist, never tostring unknown game payloads.
-    local lines={"KordRotationDevTools\tmatrix="..self.matrix.."\tversion="..self.version}
-    -- Manual export still includes retained segments from this recording.
-    -- The SavedVariables journal itself is not limited by maxExport.
-    local chunks={}
+-- Pagination avoids silent 32 KB truncation while keeping the edit box
+-- bounded. Each page contains complete rows, in chronological order.
+-- The full archive still follows SavedVariables segment retention limits.
+function D:Export(page)
+    local records={}
     for _,part in ipairs(self.settings.sessions or {}) do
         if type(part)=="table" and part.sessionID==self.journalID
             and type(part.records)=="table" then
-            chunks[#chunks+1]=part.records
-        end
-    end
-    -- After Stop, the final part already lives in sessions. Do not
-    -- double-export the same records from the retained in-memory list.
-    if self.active then chunks[#chunks+1]=self.records end
-    local used=#table.concat(lines,"\n")
-    local full=false
-    for _,list in ipairs(chunks) do
-        for _,v in ipairs(list) do
-            local line=table.concat({encode(v.sequence),encode(v.kind),
-                encode(v.status),encode(v.reason),encode(v.matrix),
-                encode(v.elapsed),encode(v.time),encode(v.detail),
-                encode(v.method),encode(v.count)},"\t")
-            if used+#line+1>self.maxExport then
-                full=true
-                break
+            for _,item in ipairs(part.records) do
+                records[#records+1]=item
             end
-            lines[#lines+1]=line
-            used=used+#line+1
         end
-        if full then break end
     end
+    if self.active then
+        for _,item in ipairs(self.records or {}) do
+            records[#records+1]=item
+        end
+    end
+    local limit=type(self.maxExport)=="number"
+        and math.max(1024,math.floor(self.maxExport)) or 32768
+    -- Reserve room for the header/footer and printable page metadata.
+    local budget=math.max(512,limit-240)
+    local pages={{}}
+    local used=0
+    local function emit(line)
+        if used+#line+1>budget and #pages[#pages]>0 then
+            pages[#pages+1]={}
+            used=0
+        end
+        pages[#pages][#pages[#pages]+1]=line
+        used=used+#line+1
+    end
+    for _,v in ipairs(records) do
+        local line=table.concat({encode(v.sequence),encode(v.kind),
+            encode(v.status),encode(v.reason),encode(v.matrix),
+            encode(v.elapsed),encode(v.time),encode(v.detail),
+            encode(v.method),encode(v.count)},"\t")
+        emit(line)
+    end
+    local total=#pages
+    page=type(page)=="number" and page==math.floor(page)
+        and math.max(1,math.min(page,total)) or 1
+    local header="KordRotationDevTools\tmatrix="..self.matrix..
+        "\tversion="..self.version.."\tpage="..page.."/"..total
+    local lines={header}
+    for _,line in ipairs(pages[page]) do lines[#lines+1]=line end
     lines[#lines+1]="dropped="..encode(self.dropped)
     lines[#lines+1]="evicted_parts="..encode(self.evictedParts or 0)
-    lines[#lines+1]="truncated="..(full and "1" or "0")
-    return table.concat(lines,"\n")
+    lines[#lines+1]="page="..page.."/"..total
+    lines[#lines+1]="truncated="..(total>1 and "1" or "0")
+    return table.concat(lines,"\n"),page,total
 end
