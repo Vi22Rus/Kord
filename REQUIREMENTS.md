@@ -1590,6 +1590,8 @@
 
 ### SP-14 — Ограничения: нужна цель, нужна позиция, стелс, форма, ауры
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 need and food compatibility never grant final READY; AbilityEligibility remains sole final READY gate.**
+
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 bandage need/risk is advisory; only AbilityEligibility grants final READY and UNKNOWN cannot be promoted to safe.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 is an advisory buff-need observation; canonical AbilityEligibility remains sole final READY gate.**
@@ -4245,6 +4247,8 @@
 
 ### PE-02 — Здоровье, фокус/мана, настроение (для охотника)
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 pet feeding consumes the canonical pet happiness/vitals observation, not a second pet mood reader.**
+
 **Архитектурная актуализация SW-04:** **См. SW-04: SW-04 player resource reserve is separate from PE-02 pet typed resources; never borrow pet power values.**
 
 **Архитектурная актуализация PE-05:** **См. PE-05: PE-05 healing duration and recommendation use PE-02 confirmed pet health and resource facts; unknown health never becomes an emergency threshold.**
@@ -4419,6 +4423,8 @@
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### PE-05 — Время отзыва, воскрешения, лечения питомца
+
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 feeding and pet-care actions coordinate with pet cast/ability timing; feed pet is not mend pet or revive pet.**
 
 **Архитектурная актуализация IT-05:** **См. IT-05: IT-05 creation cast state and postcast item arrival reuse common timing/identity conventions, not pet-care timers.**
 
@@ -4771,6 +4777,8 @@
 
 ### IT-01 — Количество предмета в сумках по ID или по семейству (зелья, камни, бинты, еда)
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 uses the same bag-only InventoryObservation and ItemFamilyCatalog for FOOD/DRINK/COMBO/PET_FOOD; no parallel bag scanner.**
+
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-01 bandage family and bag-only counts, not another inventory scanner.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 reuses the IT-01 inventory and versioned item family catalog; extend its itemID-to-buffSpellID mappings, never add another bag scanner.**
@@ -4906,6 +4914,8 @@
 
 ### IT-03 — Предмет можно использовать: в бою, на цель, нужен уровень, нужна зона
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses item usability/level/zone/combat checks; pet-food compatibility is an additional separate gate.**
+
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-03 combat/target/level/zone/range item usability, with an additional bandage channel-risk gate.**
 
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 delegates combat/level/zone/target item use restrictions to IT-03; a missing buff does not prove item usable.**
@@ -4971,6 +4981,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-04 — Выбор лучшего предмета из семейства: зелье здоровья с максимальным уровнем, который игрок может применить
+
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses ranked family selection for recovery food/drink, but selects by verified recoverable deficit and eligibility, not merely highest itemID.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses IT-04 highest usable bandage tier selection, subject to healing need and no overheal policy.**
 
@@ -5091,6 +5103,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 
 ### IT-06 — Зелья маны и ресурса: порог процента, отличие боя и вне боя
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 supplies the out-of-combat drink/food alternative referenced by IT-06 mana potion conservation; same recovery threshold observation, distinct item policy.**
+
 **Архитектурная актуализация IT-07:** **См. IT-07: IT-07 maintenance of long-duration elixirs is distinct from IT-06 mana/resource potion thresholds; share inventory and eligibility only.**
 
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
@@ -5148,6 +5162,8 @@ Lazy `Needs.items.usability`, `Needs.worldContext` и per-evaluation memo; Event
 **Изменения Lua:** отсутствуют. Только документация.
 
 ### IT-07 — Зелья усиления и эликсиры: нужно ли обновить, остаток действия
+
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 reuses aura observations to distinguish active eating/drinking and Well Fed buff maintenance, not a second aura scanner.**
 
 **Архитектурная актуализация IT-08:** **См. IT-08: IT-08 reuses universal aura presence/duration observation, not a separate debuff timer scanner; hostile DoTs and Recently Bandaged differ from positive consumable buffs.**
 
@@ -5209,6 +5225,8 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 
 ### IT-08 — Бинты: необходимость и вероятность успешного применения («Недавно перевязан», DoT, яд)
 
+**Архитектурная актуализация IT-09:** **См. IT-09: IT-09 coordinates OOC health recovery preference versus bandages and channel interruption risk, sharing health and combat context.**
+
 **Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P2.**
 
 #### Требование
@@ -5259,5 +5277,62 @@ Lazy `Needs.items.buffMaintenance` с per-evaluation memo; invalidation по `UN
 **ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ HEALTH/AURA/CAST API — ДОРАБОТАТЬ (P2).** Kord имеет health, aura и cast primitives, но нет подтверждённой bandage family eligibility, Recently Bandaged target debuff, periodic-damage risk и safe-channel policy.
 
 **Архитектурные ссылки:** IT-01, IT-02, IT-03, IT-04, IT-07, SP-01, SP-14, GR-05, TH-01. Обратные ссылки внесены в эти требования в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+### IT-09 — Еда и питьё вне боя, пища питомца
+
+**Раздел: 11. Предметы, зелья, камни здоровья, расходники. Приоритет: P1.**
+
+#### Требование
+
+Вне боя рекомендовать **еду для здоровья**, **питьё для маны**, **комбинированную еду/питьё** для двух ресурсов и **кормление питомца охотника** как разные политики поверх общего инвентаря. `OutOfCombatRecoveryObservation` содержит `mode=OUT_OF_COMBAT/COMBAT/UNKNOWN`, `healthNeed`, `manaNeed`, `activeEating`, `activeDrinking`, `activeCombinedRecovery`, `bestFoodItemID`, `bestDrinkItemID`, `bestCombinedItemID`, `decision=EAT/DRINK/EAT_DRINK/WAIT/SUPPRESS/UNKNOWN`, `reason/source/revisions`. `PetFeedingNeedObservation` содержит `classIsHunter`, `petExists`, `petAlive`, `petHappiness`, `petDietTypes`, `compatibleFoodItemID`, `feedPetKnown`, `feedPetUsable`, `feedInProgress`, `decision=FEED/WAIT/NONE/UNKNOWN/NOT_APPLICABLE`. Настраиваемые `healthThresholdPct`, `manaThresholdPct`, `petHappinessThreshold`, `minimumMissingHealth/Mana`, `preferCombined`, `conserveExpensiveFood`, `allowDuringCombat=false` (по умолчанию), `avoidWhileMoving`, `avoidWhileMounted`, `avoidWhileCasting`. Условия не должны выдавать READY на основании secret/display-only percent или неизвестного mood/diet.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–18,44–50,247–266`: `UnitClass`, health/power, `IsMounted`, `UnitCastingInfo`, `UnitChannelInfo`, aura APIs присутствуют; нет подтверждённого `GetPetFoodTypes`/`C_PetInfo.GetPetFoodTypes`, `GetPetHappiness`/pet diet read adapter, item bag APIs.
+- `KordRotation/Core/GameState.lua:64–90,124–127,162–163,184–196,224–243,793–797`: player health/mana/combat/cast и pet snapshot, но нет active eating/drinking state, pet-food compatibility и recovery decision.
+- `KordRotation/Core/RotationConditions.lua:11,27,66–67`: health/power/aura Needs есть, `recovery.need`/`pet.feedNeed` нет.
+- `KordRotation/Core/EventBus.lua:21–35`: `UNIT_AURA`, health, power, combat и pet events присутствуют, bag/item metadata/diet/happiness changes требуют отдельной проверенной инвалидации.
+- **IT-01–IT-04, IT-06–IT-08, PE-02, PE-05, SP-14** уже определяют общий inventory/eligibility/ranking/resource/aura/pet contracts; IT-09 не должен дублировать их.
+
+#### Сравнение семи референсов (реальные Lua пути/строки ZIP)
+
+1. **Sonah:** `Sonah/Core/Molecules/Conditions.lua:1082–1107` объединяет известные aura IDs `Food`, `Drink`, `Food & Drink`, `Refreshment`, проверяет eating только OOC и только при live API evidence; `Sonah/Classes/Hunter.lua:66,155–160` рекомендует `Feed Pet` (6991) при OOC, существующем питомце и счастье ниже 3; `Sonah/Core/Atoms/Units.lua:1188–1192` guarded `GetPetHappiness`. Перенять class/pet/mood gates и OOC aura check, но `Feed Pet` без подтверждённой совместимой еды **не доказывает применимость**.
+2. **JustAC:** `JustAC/Data/Forever/Consumables.lua:96–105,245–253,480–490` содержит Forever food/drink/aura/recovery catalogs; `JustAC/PrecombatEngine.lua:265–287` реализует OOC recovery с 70% health и 50% mana, suppress при mounted/dead/eating; `JustAC/SpellDB.lua:473–490,493–508` ищет active eating aura и различает Well Fed acquisition window vs continued regeneration. Перенять catalog, combined recovery и anti-spam; 70/50 — пример **не универсальные defaults**; secret time/threshold requires capability proof.
+3. **ForeverAuras:** `ForeverAuras/Prototypes.lua:7010–7033` item counts, `ForeverAuras/GenericTrigger.lua:3715–3730` cooldown, `ForeverAuras/SecretAuraConditions.lua:382–404` guarded aura remaining; в проверенных Lua нет подтверждённого готового OOC food/drink + pet food selector. Перенять aura/item substrate, не UI-only secret logic.
+4. **MaxDps:** `MaxDps/SpellData.lua:8835,11451,11545,11639` содержит `FeedPet=6991` как spell mapping, `MaxDps/Helper.lua:2776` item usable; в проверенных Lua нет подтверждённой проверки pet diet/food item compatibility и OOC recovery policy. Spell ID не доказывает кормление.
+5. **ForeverRotation:** в проверенных Lua не подтверждён универсальный OOC food/drink/pet food observation; combat rotation не заменяет OOC recovery.
+6. **RotationGuide:** в проверенных Lua не подтверждён универсальный OOC food/drink/pet food observation; static spell priorities не заменяют pet diet validation.
+7. **RotationMaster:** `RotationMaster/init.lua:57–65,75–99` хранит expansion-aware `combination_food`, `conjured_food`, `conjured_water`, `purchased_water`; `RotationMaster/Conditions/edition_state.lua:58–95`, `RotationMaster/Platform/edition_state.lua:86–97` читают pet happiness с edition/capability guards; `RotationMaster/Platform/items.lua:337–344` item count, `RotationMaster/Core/item_sets.lua:120–181` ordered selection. Перенять единые family selector и pet mood capability gates; не считать family item автоматически съедобным питомцем.
+
+#### Выбранный путь Kord
+
+**Один `OutOfCombatRecoveryObservation`/`RecoveryConsumablePolicy` и `PetFeedingNeedObservation`/`PetFeedingPolicy` поверх IT-01 `InventoryObservation`/`ItemFamilyCatalog`, IT-03 `ItemUseEligibilityObservation`, IT-04 `ItemFamilySelectionObservation`, SP-01 общего aura reader, GameState player health/mana/combat и PE-02 `PetHappinessObservation`.** Это два логических policy consumers **одних универсальных источников**, а не два новых inventory/aura/pet engines. В том же `ItemFamilyCatalog` расширить `FOOD`, `DRINK`, `FOOD_AND_DRINK`, `PET_FOOD` с verified `itemID`, `requiredLevel`, `healthRestore`, `manaRestore`, `duration`, `dietType`, `petLevelCompatibility`, `auraSpellIDs`, `clientEdition`, `source`. Не выводить pet diet из human food family; `PET_FOOD` — подтверждённая совместимость вида еды с diet текущего pet, а не просто любой мясной предмет. Учитывать уровень/тип питомца и изменения Forever, не предполагать что pet can eat everything.
+
+**Player recovery:** OOC должен быть подтверждён `UnitAffectingCombat`, `InCombatLockdown` использовать только по его собственной семантике; `COMBAT`/UNKNOWN suppress OOC recovery. Проверять alive, not mounted/moving, no active cast/channel, не предлагать повторно при `EATING`/`DRINKING`/`COMBINED` auras; если aura secret/partial — UNKNOWN, не считать absent. Оценивать health/mana пороги **только branchable** (см. IT-06); raw/secret UI alpha не использовать в Lua. Учитывать combined item при обоих дефицитах, separate item при одном, rank/restore amount/minimum missing resources и conserve policy. `Well Fed` stat buff — отдельная IT-07 maintenance policy, не смешивать с фактом текущего eating; наличие Well Fed не доказывает, что player всё ещё ест. Включить recovery items в **внебоевую** рекомендацию, не выдавать их как боевую ability, не рекомендовать новую еду во время действующего восстановления.
+
+**Pet feeding:** только `UnitClass=HUNTER`, pet exists/alive/confirmed own hunter pet, `GetPetHappiness`/validated `C_PetInfo.GetPetHappiness` на Forever с tri-state, и изученный `Feed Pet` spellID 6991. Если happiness < threshold (по умолчанию цель HAPPY, но не выдумывать клиентский numeric scale) и pet diet/level compatibility подтверждены, выбрать подходящую `PET_FOOD` из **того же** bag snapshot; если pet dead/missing/unknown mood/diet/food data — не рекомендовать FEED. Проверить `GetPetFoodTypes`/pet family diet или клиентский эквивалент и item subtype/tooltip только после capability probe; отсутствующий API не означает, что любая еда подходит. Feed Pet может требовать последующего выбора предмета/cursor action: **аддон не должен пытаться программно использовать protected spell/item или симулировать клики**, а должен показывать допустимую подсказку, при необходимости отдельно spell и compatible item, с UI контрактом `requiresManualFoodSelection`. После подтверждённого spellcast/aura/mood change suppress повторную рекомендацию на bounded grace, но не считать кормление успешным без evidence. Вне боя, pet care PE-05 и другие более приоритетные pet actions координировать через общий priority policy; голод питомца не равен низкому pet HP.
+
+**Инвалидация:** EventBus player health/power/combat, `UNIT_AURA`, `UNIT_PET`, `PET_BAR_UPDATE`, pet happiness/diet events если подтверждены, bag/metadata/spellbook/level revisions, cast/move/mount transitions; bounded refresh и lazy `Needs.items.recovery`/`Needs.pet.feeding`. Item selection и eligibility — IT-01–04, final READY только AbilityEligibility. DevTools не сериализует secret.
+
+#### Требуемые изменения
+
+1. Ввести `OutOfCombatRecoveryObservation`/`RecoveryConsumablePolicy` и `PetFeedingNeedObservation`/`PetFeedingPolicy`, без нового item scanner.
+2. Расширить **тот же IT-01 ItemFamilyCatalog** Forever food/drink/combined/pet food, recovery amount, level/diet/aura metadata, edition and provenance.
+3. Реиспользовать IT-06 health/mana branchable thresholds и OOC mode; не принимать secret percent или UI-only curve за условие Lua.
+4. Расширить SP-01 общий aura reader для eating/drinking/combined и Well Fed (IT-07 отдельно), UNKNOWN при неполной/secret ауре.
+5. Реиспользовать IT-04 ranked item selection и IT-03 item usability, учитывая дефицит ресурсов, restore amount, class/powerType, level и conserve policy.
+6. Реиспользовать PE-02 pet happiness и PE-01 pet identity, проверить на Forever `GetPetFoodTypes`/pet diet/food compatibility/level; без второго pet reader.
+7. Проверить learned `Feed Pet` 6991, class HUNTER, alive pet, OOC, manual cursor food-selection contract и anti-repeat после подтверждённого результата.
+8. EventBus bag/health/power/aura/combat/pet/diet/spellbook/cast revisions; lazy Needs, per-evaluation memo и bounded refresh, no protected actions.
+9. DevTools-only диагностика: `recovery_combat_blocked`, `recovery_percent_unknown`, `recovery_active_eating`, `recovery_aura_unknown`, `recovery_food_unavailable`, `recovery_drink_unavailable`, `recovery_combined_selected`, `recovery_mount_moving_blocked`, `pet_feed_not_hunter`, `pet_feed_pet_missing`, `pet_feed_mood_unknown`, `pet_feed_diet_unknown`, `pet_feed_food_incompatible`, `pet_feed_food_missing`, `pet_feed_spell_unknown`, `pet_feed_manual_item_required`, `pet_feed_pending_result`.
+10. Тесты: OOC/combat/unknown, health-only/mana-only/both, mana vs rage/energy, low/high thresholds and secret percent, food/drink/combined item choices, already eating/drinking/Well Fed, interrupted meal, moving/mounted/dead/casting, bag count unknown/zero, wrong item level, conjured/custom Forever items, hunter/non-hunter, pet missing/dead/low mood/happy/unknown mood, diet compatible/incompatible/unknown, food level requirement, Feed Pet learned/unlearned, pending cursor selection, pet mood change and bag arrival, no duplicate recommendations/no false READY/protected actions.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО НА УРОВНЕ ОБЩИХ PLAYER/PET/RESOURCE/AURA API — ДОРАБОТАТЬ (P1).** В Kord есть player health/mana/combat, pet snapshot и aura primitives, но нет подтверждённого OOC food/drink selector, active eating suppression, pet diet/food compatibility и Feed Pet lifecycle policy.
+
+**Архитектурные ссылки:** IT-01, IT-03, IT-04, IT-06, IT-07, IT-08, PE-02, PE-05, SP-14. Обратные ссылки внесены в эти требования в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
