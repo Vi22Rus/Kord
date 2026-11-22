@@ -3261,6 +3261,9 @@
 
 ### EN-03 — Распознавание одной и той же цели в разных источниках (без двойного счёта)
 
+**Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
+
+
 **Архитектурная актуализация PE-06:** **См. PE-06: PE-06 GUID dedup and summon ownership should reuse the common enemy/entity identity index where a summon GUID is actually observable.**
 
 **Архитектурная актуализация TH-03:** **См. TH-03: TH-03 uses canonical GUID identity and addressable aliases for enemy/tank/pet, with recycled-token invalidation.**
@@ -3334,6 +3337,9 @@
 
 
 ### EN-04 — Есть ли рядом цели под ломаемым контролем (овца, ловушка), чтобы не задеть их AoE
+
+**Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
+
 
 **Архитектурная актуализация IT-03:** **См. IT-03: IT-03 item targeting and area effects must respect EN-04 breakable CC safety; target validity alone is insufficient.**
 
@@ -5932,6 +5938,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-01 — SPELL: заклинание или способность (первый обязательный тип действия)
 
+**Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
+
+
 **Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
 
 
@@ -5989,6 +5998,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 
 ### AC-02 — ITEM: предмет, зелье, камень (после IT-01–IT-04)
+
+**Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
+
 
 **Архитектурная актуализация AC-03:** после PE-04 команды питомцу оформлять отдельным `actionType="PET_COMMAND"` через общий маршрут рекомендаций (см. AC-03), используя наблюдение питомца PE-01–PE-04; не подменять команду заклинанием игрока и не создавать отдельный pet rotation engine.
 
@@ -6050,6 +6062,9 @@ EventBus инвалидирует по подтверждённым Forever `LOS
 
 ### AC-03 — PET_COMMAND: команда питомцу (после PE-04)
 
+**Архитектурная актуализация AC-04:** смену цели показывать только как `actionType="TARGET"` — информационную рекомендацию, без автоматического выбора/переключения цели (см. AC-04). Использовать общий контракт рекомендаций и наблюдение целей EN, не создавать второй target scanner.
+
+
 **Раздел: 13. Типы действий, которые движок умеет рекомендовать. Статус: после реализации PE-04.**
 
 #### Требование
@@ -6103,5 +6118,61 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 **НЕ РЕАЛИЗОВАНО КАК САМОСТОЯТЕЛЬНЫЙ ТИП РЕКОМЕНДАЦИИ — ДОБАВИТЬ ПОСЛЕ PE-04.** Частичные pet observations уже есть, но typed command dispatch, command-state eligibility и вывод PET_COMMAND отсутствуют.
 
 **Архитектурные ссылки:** PE-01–PE-04, AC-01, AC-02, EN-04, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки внесены в PE-04, AC-01 и AC-02.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### AC-04 — TARGET: смена цели (рекомендация, не действие)
+
+**Раздел: 13. Типы действий, которые движок умеет рекомендовать. Приоритет: P2.**
+
+#### Требование
+
+Поддержать `TARGET` как **информационную рекомендацию игроку** сменить текущую цель, а не как команду аддона. Примеры: текущая цель умерла/недоступна, приоритетная опасная цель требует прерывания (CC-04), подходящий противник для мультидота (EN-06), выбранная цель находится под ломаемым контролем (EN-04), требуется переключиться на конкретную цель для разрешённого действия. Никаких автоматических `TargetUnit`, `TargetNearestEnemy`, `AssistUnit`, `RunMacroText`, `/target`, смены secure target, программного клика или скрытого управления таргетом.
+
+Контракт: `actionType="TARGET"`, `intent=SWITCH_TO/ACQUIRE/CLEAR_OR_AVOID`, `targetRef` (только разрешённый безопасный unit token/идентификатор), `displayName` (если читается), `reason`, `priority`, `status=READY/BLOCKED/UNKNOWN`, `source/revision`, `channel`, `requiresManualAction=true`. `READY` означает «достоверно обоснована подсказка», **не** «аддон может переключить цель». Если конкретную цель нельзя достоверно назвать/показать, разрешено лишь общее «выберите другую цель» с явно обозначенной неопределённостью, без выдуманного GUID/nameplate. Не скрывать основную SPELL-рекомендацию без осознанной политики арбитража.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/RotationEngine.lua:161,185`: основная обработка ограничена `rule.type="SPELL"`; `TARGET` не является поддержанным типом рекомендаций.
+- `RotationEngine.lua:214–251`: вывод READY ориентирован на `spellID`, название, иконку и канал; информационная рекомендация без spellID не имеет подтверждённого typed пути.
+- `KordRotation/Core/GameState.lua:184–197`: есть наблюдения питомца и его цели, но это не список безопасно выбираемых врагов и не алгоритм смены player target.
+- `KordRotation/Core/GameAPI.lua:250,260`: проверенные unit-read paths допускают `player/target/pet`; нельзя предполагать, что nameplate/focus GUID доступны тем же способом.
+- `KordRotation/Core/EventBus.lua`: нужен отдельный пересчёт при `PLAYER_TARGET_CHANGED`, `UNIT_HEALTH`, `NAME_PLATE_UNIT_ADDED/REMOVED` только если они поддержаны и уже нормализованы; не добавлять сканер поверх EN-01–EN-06.
+- **Итог:** отдельный тип информационной рекомендации TARGET не подтверждён, хотя базовые target observations существуют.
+
+#### Сравнение семи референсов (реальные Lua пути ZIP)
+
+1. **Sonah:** `Sonah/Core/Organisms/HealTarget.lua:4,25,53` — выбор подходящего союзника для лечения с настройками smartTargeting; `Sonah/Core/Organisms/Macros.lua:569` содержит текст макроса target-of-focus. Для Kord переносить только **идею выбора кандидата**, не макрос/автоматическую смену.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:1164–1172` прямо предупреждает, что `UnitGUID` и `UnitIsUnit` могут быть secret в бою; `:1387–1404` — сброс состояния при смене цели. Для TARGET важны UNKNOWN и строгая инвалидация.
+3. **ForeverAuras:** `ForeverAuras/BuffTrigger2.lua:144–160` использует `UnitGUID`/`UnitIsUnit` для unit-сопоставления; это триггер, а не разрешение менять target.
+4. **MaxDps:** `MaxDps/Helper.lua:279–284` сопоставляет `UnitGUID(unitTarget)` с текущей целью; `:2230` читает GUID unit. Использовать только безопасную идентификацию, не предполагать branchability GUID в Forever combat.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua:322` проверяет `UnitIsUnit("targettarget","player")`; `ForeverRotation/Immune.lua:197` содержит предупреждение о `UnitGUID("target")` в dungeon. Это аргумент против выдуманной точной target identity.
+6. **RotationGuide:** `RotationGuide/Core/State.lua:121` читает `UnitGUID("target")` через `Clean`; полезна нормализация неизвестного GUID, но не готовый TARGET recommendation.
+7. **RotationMaster:** `RotationMaster/Conditions/combat_events.lua:39–44` использует enemy nameplates для условий; `RotationMaster/buttons.lua:348` предупреждает о taint игрового targeting при неправильных frame relations. Нельзя создавать target-clicking UI, который вмешивается в protected targeting.
+
+#### Выбранный путь Kord
+
+Расширить **общий `ActionRecommendation`** (AC-01–AC-03) типом `TARGET`, с отдельным `TargetSuggestionPolicy` и `TargetSuggestionEligibility` внутри существующего `RotationEngine/RotationConditions/AbilityEligibility` маршрута. Не создавать второй target engine и не вызывать protected actions. Источник кандидатов — общие EN-01–EN-06 enemy observations с дедупликацией EN-03, фильтрами враждебности/живости/доступности, защитой ломаемого CC EN-04 и приоритетом конкретной задачи. Если EN-06 не предоставляет надёжной идентичности кандидата, возвращать обобщённую подсказку или UNKNOWN; не подменять её последним GUID из предыдущего боя.
+
+Разделять `targetSuggestion` и обычный `spellRecommendation`: TARGET может отображаться в отдельном информационном канале, а SPELL/ITEM/PET_COMMAND продолжают оцениваться по своим правилам. Если политика требует приоритета TARGET, арбитраж должен быть явным, не заставлять основной фрейм зависать на `UNKNOWN` или пустой иконке. После ручной смены цели и обновления `PLAYER_TARGET_CHANGED` рекомендация немедленно пересчитывается и исчезает, если причина устранена. Не использовать названия/иконки из secret значения; при отсутствии читаемого unit/nameplate — нейтральный текст «смените цель», не выдумывать точное имя/дистанцию.
+
+Учитывать ручной контроль пользователя: `enableTargetSuggestions`, `allowInCombat`, `minimumPriority`, `protectCC`, `suggestionCooldown`/anti-spam, `manualOnly=true`. EventBus target/nameplate/combat/health/CC revisions, lazy `Needs.targetSuggestion`, memo и bounded refresh. DevTools reasons: `target_dead`, `target_invalid`, `target_cc_protected`, `higher_priority_target`, `interrupt_target_needed`, `candidate_unknown`, `identity_secret`, `target_already_correct`, `suggestion_suppressed`.
+
+#### Требуемые изменения
+
+1. Добавить typed `TARGET` в общий recommendation contract с `requiresManualAction=true`; не выдавать TARGET как SPELL, ITEM или исполняемую команду.
+2. Реализовать `TargetSuggestionPolicy/Eligibility` поверх EN-01–EN-06, без отдельного сканирования nameplates/GUID и без автоматической смены цели.
+3. Проверять существование, враждебность, живость, CC-защиту, приоритет и подтверждённую идентичность предлагаемого кандидата; secret/nil → UNKNOWN.
+4. Добавить информационный UI канал и текст/иконку смены цели, не блокирующие обычные боевые рекомендации без явной настройки.
+5. Пересчитывать при смене цели, смерти/исчезновении врага, изменении контроля/приоритетов и событиях EN; убрать устаревшие предложения.
+6. Добавить настройки enable/priority/anti-spam и DevTools причины с source/revision.
+7. Тесты: нет цели, цель мертва, target already correct, опасный каст у другой цели, несколько врагов, CC на соседней цели, неизвестный GUID/nameplate, secret UnitIsUnit, смена цели вручную, combat/OOC, pet target не равен player target, SPELL/ITEM/PET_COMMAND не подавлены, отсутствие protected actions и taint.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ТИП ИНФОРМАЦИОННОЙ РЕКОМЕНДАЦИИ — ДОБАВИТЬ (P2).** Требуется только подсказка пользователю, а не управление его целью.
+
+**Архитектурные ссылки:** AC-01–AC-03, EN-01–EN-06, CC-04, `RotationEngine`, `RotationConditions`, `AbilityEligibility`. Обратные ссылки внесены в AC-01–AC-03, EN-03 и EN-04.
 
 **Изменения Lua:** отсутствуют. Только документация.
