@@ -1,3 +1,13 @@
+## KR-20261122-011 — аудит QA-02: полный журнал причин и подпричин
+- Дата: 2026-11-22; commit SHA — GitHub.
+- Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.
+- Подтверждён дефект: `Recorder.lua:194–202` заменяет валидные новые внутренние reasons на `diagnostic_code_unmapped`, `:166–175` — новые details на `diagnostic_detail_unmapped`; `Trace.lua` использует BM-specific fixed stages.
+- Утверждён единый trusted `DiagnosticReasonEnvelope`, generic bounded codes, nested subreasons, source/priority/revision, NOT_EVALUATED для ленивых непрочитанных проверок, explicit loss metadata и opt-in QA-01.
+- Добавлены 10 задач/тестов и обратные ссылки QA-01, UI-06, DA-03, EN-A2, EN-A3, UI-08.
+- PASS: статический аудит и конкретные кодовые доказательства. NOT RUN: Lua, CI, WoW Forever.
+- Вердикт: P0 NOT SATISFIED; исправление в Lua ещё требуется.
+
+
 ## KR-20261122-010 — аудит QA-01: отдельный DevTools и побайтовое ядро
 - Дата: 2026-11-22; SHA через GitHub commit.
 - Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.

@@ -6626,6 +6626,8 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение UI-02:** UI-02: только AbilityEligibility/RotationEngine выдаёт READY; UI glow и keybind не являются альтернативным решателем пригодности. Исторический аудит сохранён.
 
+**Ретроактивное уточнение QA-02:** полнота журнала означает все **реально выполненные** проверки и причины; ленивое правило «первое подходящее побеждает» остаётся обязательным. DevTools `Audit()` не вправе выполнять пропущенные правила в живом бою ради полной таблицы; ставить `NOT_EVALUATED`.
+
 ### EN-A3 — Ленивые all/any: следующая проверка не читает данные, если ответ уже известен
 
 **Раздел: 14. Ядро профиля и движка. Приоритет: P0.**
@@ -6683,6 +6685,7 @@ EventBus: `UNIT_PET`, `PET_BAR_UPDATE`, `PET_BAR_UPDATE_USABLE`, `PET_BAR_UPDATE
 
 **Ретроактивное уточнение EN-A4:** UNKNOWN по умолчанию останавливает приоритетную цепочку. Продолжение возможно только для `condition_unknown` с проверенной записью `SkipExceptions[rule.id]`; одного `rule.onUnknown="skip"` недостаточно. Ошибки и UNKNOWN пригодности способности не пропускаются. Исторический аудит сохранён.
 
+**Ретроактивное уточнение QA-02:** lazy `all/any` сохраняет short-circuit. В журнале QA-02 отражаются фактические checked child predicates и `NOT_EVALUATED` для непрочитанных; не запускать API-проверки заново ради подпричин.
 
 ### EN-A4 — Политика UNKNOWN: stop по умолчанию, skip только из таблицы исключений
 
@@ -7354,6 +7357,8 @@ Burst — отдельная типизированная настройка п�
 **Ретроактивное уточнение UI-06:** пользовательское краткое объяснение отсутствия иконки строится из того же snapshot/status/reason, что DevTools диагностика DA-03; подробные traces, запись и экспорт остаются исключительно в DevTools, без второго логгера в пользовательской сборке.
 
 **Ретроактивное уточнение QA-01:** все подробные event/engine/eligibility/API traces, opt-in recorder, performance samples и экспорт должны жить исключительно в отдельном `KordRotationDevTools` согласно QA-01; `KordRotation/Core/Diagnostics.lua` оставляет только bounded read-only support snapshot. Не создавать второй production recorder.
+
+**Ретроактивное уточнение QA-02:** диагностический журнал DA-03 обязан сохранять валидные новые reason/subreason из trusted core bridge без ручного whitelist кодов; не подменять их `diagnostic_code_unmapped`/`diagnostic_detail_unmapped`. Проверки, которые движок не исполнял, маркировать `NOT_EVALUATED`, а не пересчитывать.
 
 ### DA-04 — Бюджет времени на оценку, замер, предупреждение при превышении
 
@@ -8058,6 +8063,8 @@ Kord Rotation должен позволять создавать, именова
 
 **Ретроактивное уточнение QA-01:** пользовательское «почему нет иконки» остаётся компактным read-only explanation, а подробная трасса по evaluationID/reason/priority — в отдельном DevTools QA-01, через безопасный observation bridge. Никакой зависимости пользовательской сборки от DevTools.
 
+**Ретроактивное уточнение QA-02:** `RecommendationAbsenceExplanation` UI-06 берёт полный verified primary/subreason chain из безопасного `DiagnosticReasonEnvelope` QA-02, а не из усечённого списка `Recorder.lua`. Пользовательский summary остаётся коротким, полный список доступен только в opt-in DevTools.
+
 ### UI-07 — Локализация (ru, en), единые ключи
 
 **Раздел: 16. Вывод и интерфейс. Приоритет: P1.**
@@ -8184,6 +8191,8 @@ Kord должен корректно реагировать на фактиче�
 
 **Изменения Lua:** отсутствуют. Только документация.
 
+**Ретроактивное уточнение QA-02:** для скрытых actionbar кнопок и сторонних панелей UI-08 записывать полный структурный chain `visibility→button→slot→binding→glow` только по реально наблюдённым фактам, с source/revision, без второго scanner и без raw frame refs.
+
 ### QA-01 — DevTools: запись, трассировка, зонды API. Отдельный аддон, ядро побайтово то же, что у пользователя
 
 **Раздел: 17. Диагностика и качество. Приоритет: P0.**
@@ -8243,5 +8252,71 @@ Kord должен корректно реагировать на фактиче�
 
 **Архитектурные ссылки:** DA-03, DA-04, DA-05, UI-06, UI-07, AC-07, `docs/BUILD_VARIANTS_AND_DIAGNOSTICS.md`, `docs/rotation/Canonical_API_Matrix.md`, `KordRotationDevTools/*`, `scripts/build_variants.py`. **Обратные ссылки добавлены в DA-03, DA-04, DA-05, UI-06, UI-07, AC-07**; повторно создавать ранее предусмотренные инструменты запрещено.
 
+**Изменения Lua:** отсутствуют. Только документация.
+
+**Ретроактивное уточнение QA-02:** DevTools `Recorder` обязан сохранять **все проверенные внутренние machine reason codes** через безопасный общий `DiagnosticReasonEnvelope` QA-02, без ручного whitelist каждого кода и без `diagnostic_code_unmapped` для валидного доверенного reason. Подпричины, фактическая панель, evaluated stages и `NOT_EVALUATED` должны сохраняться структурно; untrusted строки по-прежнему отбрасываются. Независимый `Audit()` не должен повторно вычислять пропущенные ленивым движком правила и менять игровой результат.
+
+### QA-02 — Журнал с полным списком причин, а не обрезанным белым списком; подпричины для панели и проверок
+
+**Раздел: 17. Диагностика и качество. Приоритет: P0.**
+
+#### Требование
+
+DevTools должен записывать **все достоверно сформированные внутренние причины и вложенные подпричины** отказа, остановки, скрытия панели, неудачного выбора способности, eligibility, actionbar/keybind/glow и API-проверок. Нельзя превращать новый безопасный машинный код `cooldown_unknown` или `button_not_visible` в `diagnostic_code_unmapped` только потому, что разработчик забыл добавить его в статический список. При этом «полный» означает **все реально вычисленные в рамках канонической оценки причины**, а не принудительное исполнение пропущенных приоритетов или чтение секретных данных. Сохраняются P0 правила `EN-A2/EN-A3` lazy short-circuit, `UNKNOWN→STOP` AC-07, ограничения безопасности QA-01 и `AbilityEligibility` как единственный финальный источник READY.
+
+**Канонический контракт:** `DiagnosticReasonEnvelope(schemaVersion,evaluationID,channel,component,source,profileID,priority,checkPath,status,reason,subreasons,observed,revision,notEvaluated,limited,dropped)`. `status=READY|BLOCKED|UNKNOWN|UNAVAILABLE|ERROR|NOT_EVALUATED`; `reason` — доверенный внутренний код `^[a-z][a-z0-9_]*$` ограниченной длины (например, 64 байта), но **не перечисленный вручную список допустимых значений**. `subreasons` — ограниченный по глубине/числу упорядоченный массив безопасных записей `{stage,field,status,reason,source,revision}`; каждое поле — enum, проверенный scalar или зарегистрированный технический идентификатор. `observed` отличает реально вызванную проверку от `NOT_EVALUATED`; `limited/dropped` явно сообщает о лимите, не молча обрезает причины. Разделять доверенные reason codes из санитизированного `KordRotationCoreObservation` и **недоверенные** пользовательские/игровые строки: второй класс не записывать, даже если он подходит regex. Никаких raw player/target names, GUID, chat, spell names, frame refs, секретных значений, arbitrary error strings или SavedVariables. Проверка secret/taint — **до** `type`, сравнения, конкатенации, `tostring` и pattern matching. Числа (SpellID, slot, priority, matrix ID) — только из разрешённого источника и допустимого диапазона; не сохранять произвольные идентификаторы персонажей.
+
+**Структура цепочки:** `DISPLAY(main|defensive): enabled→visibility policy→target/combat→frame lifecycle→engine status→accepted recommendation→texture/icon`; `ENGINE: profile→mode→rule priority→conditions→eligibility→READY/BLOCKED/UNKNOWN`; `ELIGIBILITY: learned/rank→target→range/LOS→resource→GCD/cooldown/charges→cast/movement→pet/item constraints` **только для реально исполненных проверок**; `ACTIONBAR: discovery→parent/child visible→active slot/page→spell ID→binding reverse check→glow`; `API: v14 row→method presence→safe call→sanitized reason`. Стадии — **семантические пути**, не инструкция вызвать все API; непроверенная стадия отмечается `NOT_EVALUATED`, а недоступная `UNAVAILABLE`. Порядок, source, channel, revision и приоритет должны сохраняться для сопоставления одного кадра/оценки, но запись не может вмешиваться в игровой pipeline. При нескольких независимых причинах сохранять primary decisive reason и подтверждённые secondary reasons, без догадок.
+
+**Полнота и лимиты:** в одном evaluation snapshot сохранять все реально полученные причины в рамках ограничений памяти/времени; при переполнении `limited=true`, `droppedCount`, диапазон sequence/priority и отдельный `reason_capture_limited` — никогда не объявлять `complete=true` после потери. Между событиями дедуплицировать одинаковые записи с count/firstSeen/lastSeen, но не сливать разные subreason/revision; не подменять исходный code локализованным текстом. UI-06 получает компактный primary explanation, а QA-02 DevTools — полный доступный tree; UI-07 обеспечивает переводы для display, но машинные коды не переводятся в журнале. User ZIP не содержит full recorder; только безопасный bounded summary. Журнал включается вручную и остаётся OFF после reload.
+
+#### Аудит Kord (main)
+
+- `KordRotationDevTools/Recorder.lua:5–154`: большой ручной `reasons={...}`, дополнительные `fixedRefusals`, `scannerFailures`, `bm_rule_*`, `bm_signal_*`, `bm_stage_*`; добавление нового кода требует синхронизации нескольких списков.
+- `Recorder.lua:155–175`: `detailWords` и `safeDetail` принимают только известные слова/коды или число 0..1200; новая валидная подпричина превращается в `diagnostic_detail_unmapped`. Секретные/недоверенные значения по-прежнему должны блокироваться.
+- `Recorder.lua:194–202`: `sanitizeReason` проверяет формат, затем требует `reasons[v]`; неизвестный корректно сформированный внутренний код заменяется `diagnostic_code_unmapped`. **Это подтверждённая потеря диагностической информации**, а не теоретическая проблема.
+- `Recorder.lua:291–360`: `D:Record(kind,status,reason,matrix,elapsed,detail,method,count)` записывает один основной reason и один `detail`, без структурного массива подпричин, evaluationID, checkPath и loss metadata; буфер/сессии ограничены, cooldown storms coalesce. В ветке `METHOD` (`:324–345`) уже допускается generic bounded token для `detail`, но **основной reason** всё равно фильтруется ручным списком.
+- `KordRotationDevTools/Trace.lua:210–255`: `ObserveDetails` имеет throttling, dedup по `kind:reason` и одному detail; не сохраняет произвольный набор подтверждённых подпричин. `:255–305` содержит отдельные fixed Arcane rank-4 checks; `:307–383` — BM-specific `Audit`, `bm_rule_1..64`, шесть `cast/usability/charges/cooldown/gcd/range` stages и до 24 signals. Такая модель не универсальна для всех профилей и произвольных контрактных проверок.
+- `Trace.lua:307–309` прямо заявляет «evaluate every registered rule independently». **Архитектурный риск:** если `KordRotationCoreObservation.Audit` действительно вычисляет дополнительные правила в live state, это конфликтует с EN-A2/EN-A3 и P0 safety. Нужно исследовать реализацию bridge, заменить повторные вычисления read-only observation фактического обхода, а не объявлять конфликт уже доказанным runtime поведением.
+- `Trace.lua:384–440`: фиксированные поля `profile_ui`, счётчики eligibility, `actionbar_scan`, `panel_enabled/test_mode/visibility_allowed/frame_shown/ui_engine_status`; подпричины скрытия, приоритеты проверки видимости и actionbar route не представлены единым деревом.
+- `KordRotation/Core/RotationEngine.lua:153–255`: канонический evaluator уже формирует `diagnostics[]` с `priority/status/reason`, иногда `barReason` и `ruleChecks`; на UNKNOWN останавливается (кроме явного `condition_unknown_skipped`). Это **правильный источник фактических причин**, который нужно безопасно расширить observation adapter без повторного обхода.
+- `KordRotation/Core/Diagnostics.lua:14–31` предоставляет ограниченный user snapshot, не full recorder; граница QA-01 должна сохраниться. `KordRotationDevTools/Core.lua:8,50` задаёт лимит и выключает запись после reload.
+- **Пробел:** существующая реализация **не соответствует P0** по полноте кодов и вложенных подпричин. Требуются проверяемый trusted-source envelope, структурные reason chains, loss metadata и отказ от BM-specific whitelist. Ни Lua тесты, ни игровой клиент в этом аудите не запускались.
+
+#### Сравнение семи референсов (проверенные Lua в ZIP)
+
+1. **Sonah:** `Sonah/Classes/Hunter.lua`, `Sonah/Classes/Priest.lua` передают отдельные `reason` у решений; полезна конкретика причины, но не подтверждён универсальный безопасный nested diagnostic envelope.
+2. **JustAC:** `JustAC/DebugCommands.lua` содержит inspect/debug workflow, `JustAC/ActionBarScanner.lua` возвращает диагностируемые причины маршрута. Заимствовать отделение проверенного факта от presentation, не копировать чужой debug engine.
+3. **ForeverAuras:** `ForeverAurasOptions/InformationOptions.lua` реализует Debug Log UI; `ForeverAuras/BlizzardAuraDisplay.lua` учитывает видимость. Не принимать aura log за полный reason chain движка.
+4. **MaxDps:** `MaxDps/Options.lua` имеет debugMode, `MaxDps/Buttons.lua` — разные сценарии поиска кнопок. Подтверждает потребность в button subreasons, но не изолированную схему QA-01.
+5. **ForeverRotation:** `ForeverRotation/Engine.lua` поддерживает trace, `ForeverRotation/Rotations/Signals.lua` — `note` и `/fr why`. Полезна привязка reason к фактическому решению; избегать повторного вычисления приоритетов.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua` показывает status, `RotationGuide/Core/State.lua` — проверки combat state. Status без provenance/checkPath недостаточен для полного QA-02.
+7. **RotationMaster:** `RotationMaster/Core/rotation_scope.lua`, `Core/forecast.lua`, `Core/assisted_highlight.lua` используют причины и guards. Заимствовать структурную диагностику, не переносить второй evaluator или непроверенные API.
+
+**Границы доказательств:** сравнение опирается на проверенные ранее и указанные Lua референсов; не утверждать, что у референса отсутствует возможность вне просмотренных файлов. Никакой чужой API не считается подтверждённым для WoW Forever без клиентского теста.
+
+#### Выбранный путь Kord
+
+**Единый `DiagnosticReasonEnvelope` и безопасный read-only observation bridge в уже существующем QA-01, с generic bounded machine reason validation и структурными subreasons.** Убрать **ручной словарь как обязательное условие сохранения доверенного reason**, но не убирать границу доверия/allowlist источников, secret guards, ограничения формата и размеров. Не создавать второй recorder, engine, API probe, второй журнал или BM-specific runtime evaluator. Отдельные адаптеры источников (DISPLAY/ENGINE/ELIGIBILITY/ACTIONBAR/API) только отображают **фактически вычисленные** проверки. В DevTools journal хранить reason chain и coverage flags, в user UI — краткое объяснение UI-06. Переходный compatibility decoder для старых сессий не должен выдумывать потерянные причины: помечать legacy `diagnostic_code_unmapped` как `UNRECOVERABLE_LEGACY_LOSS`.
+
+#### Требуемые изменения
+
+1. Ввести versioned `DiagnosticReasonEnvelope` с primary reason, массивом `subreasons`, channel, source, priority, evaluationID, revision, observed/notEvaluated, complete/limited/dropped и лимитами глубины/длины.
+2. Изменить `Recorder.sanitizeReason/safeDetail`: любой доверенный bounded internal reason сохранять дословно без ручного whitelist; недоверенные произвольные строки не принимать, даже при корректном regex. Добавить тест на новый ранее неизвестный код.
+3. Передавать trusted source metadata через `KordRotationCoreObservation` и отдельные adapters, чтобы DevTools не принимал любой внешний addon string за внутреннюю причину. Secret safety выполнять до чтения/сравнения/сериализации.
+4. В `RotationEngine` observation сохранять все **реально исполненные** `ruleChecks`, decisive priority, eligibility/barReason и `NOT_EVALUATED` для пропущенных; не выполнять `Audit()` повторно по всем правилам, если это изменяет lazy execution или нагрузку.
+5. Убрать BM/Arcane-specific жёсткие списки `bm_rule_*`, `bm_stage_*`, `arcane_check_*` как единственный путь получения причин; заменить generic profile/rule/checkPath и metadata из зарегистрированных схем.
+6. Для main/defensive панели записывать проверенные подпричины `panelEnabled/visibilityMode/combat/target/frameCreated/frameShown/engine/texture`, с отдельными каналами, используя UI-05/UI-06; не выдумывать «нет цели» при UNKNOWN.
+7. Для eligibility, actionbar, binding/glow и API v14 записывать реальные подпричины по этапам с source/revision и `NOT_EVALUATED` для непрочитанных; не дублировать AbilityEligibility, ActionBarScanner, BindingResolver.
+8. Сохранить кольцевой буфер, opt-in, dropped counters, dedup/rate-limit и SavedVariables; при частичной потере явно выводить `limited` и счётчик/диапазон потерянных записей, не маркировать неполный журнал COMPLETE.
+9. Добавить в DevTools просмотр цепочки причин и безопасный ручной экспорт (machine code + локализованное UI-07 объяснение), без raw GUID/имён/ошибок/секретов; legacy-сессии с unmapped помечать невосстановимыми.
+10. Тесты: новый код без whitelist, nested reasons, multiple subreasons, проверка панели при скрытии, main/defensive независимо, 40 приоритетов с ранним READY/UNKNOWN, short-circuit all/any, проверка реально непрочитанных стадий, protected/secret, untrusted malicious string, buffer overflow, /reload, throttling, cross-profile BM/non-BM, API v14, Lua 5.1, обе ZIP и реальный WoW Forever. Отдельно сравнить до/после рекомендации и число API calls.
+
+#### Вердикт
+
+**НЕ СООТВЕТСТВУЕТ ПОЛНОМУ ТРЕБОВАНИЮ / P0 / ПОДТВЕРЖДЁННАЯ ПОТЕРЯ REASON И SUBREASON.** В `Recorder.lua` ручной whitelist действительно заменяет новые внутренние причины на `diagnostic_code_unmapped`, а неизвестные детали на `diagnostic_detail_unmapped`. `Trace.lua` сохраняет часть причин, но структура BM-specific и не универсальна. Исправление должно сохранить безопасность и lazy semantics. **Lua, CI и игровой QA NOT RUN**; это документальный аудит, не реализация.
+
+**Архитектурные ссылки:** QA-01, UI-06, UI-08, DA-03, EN-A2, EN-A3, AC-07, `RotationEngine`, `AbilityEligibility`, `ActionBarScanner`, `KordRotationCoreObservation`, `KordRotationDevTools/Recorder.lua`, `Trace.lua`. **Обратные ссылки внесены в QA-01, UI-06, DA-03, EN-A2, EN-A3, UI-08**; существующий DevTools должен быть исправлен, не заменён новым.
+ 
 **Изменения Lua:** отсутствуют. Только документация.
 
