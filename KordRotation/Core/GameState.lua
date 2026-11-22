@@ -427,6 +427,16 @@ function S:ReadSignal(field,spellID,snapshot)
         if secrecy.status=="READY" and secrecy.value==true then
             return unknown("aura_hidden_by_client")
         end
+        -- Sonah Secret.RestrictionsActive falls back to combat lockdown
+        -- when the dedicated aura secrecy predicate is unreadable.
+        -- This only makes the decision more conservative; no claimed
+        -- absent aura can be produced from hidden combat state.
+        if secrecy.status~="READY" then
+            local lockdown=api:Read("InCombatLockdown","boolean")
+            if lockdown.status~="READY" or lockdown.value==true then
+                return unknown("aura_secrecy_unverified")
+            end
+        end
         -- Prefer a single validated batch read, as in the ForeverAuras /
         -- JustAC reference implementations. A protected field is UNKNOWN,
         -- never evidence of aura absence. A completed plain list is
