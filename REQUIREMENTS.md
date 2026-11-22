@@ -1210,6 +1210,8 @@
 
 ### SP-07 — Стоимость: ресурс и количество, скидки (проки, талант)
 
+**Архитектурная актуализация GR-02:** **См. GR-02: GR-02 per-member resource facts must distinguish power type and valid current/max; never reuse player resource type for another member.**
+
 **Приоритет: не указан пользователем; требуется назначить.**
 
 #### Требование
@@ -2489,6 +2491,8 @@
 
 ### TG-02 — Здоровье цели: процент, текущее (если не защищено)
 
+**Архитектурная актуализация GR-02:** **См. GR-02: GR-02 member health reuses the existing secret-safe health observation and percent validation; no independent health formula.**
+
 
 **Архитектурная актуализация EN-06:** **См. EN-06: use shared UnitHealthObservation(unit) for every GUID alias, not a separate multi-dot health reader.**
 
@@ -3547,6 +3551,8 @@
 
 ### TH-01 — Состояние угрозы: есть ли агро у игрока, питомца, танка
 
+**Архитектурная актуализация GR-02:** **См. GR-02: GR-02 role evidence comes from the canonical group roster and is not proof of threat ownership; tank identity and aggro remain distinct.**
+
 **Архитектурная актуализация GR-01:** **См. GR-01: GR-01 shared roster/role index supplies actor aliases for tank threat observation; membership or assigned role does not prove aggro.**
 
 **Архитектурная актуализация TH-03:** **См. TH-03: TH-03 taunt necessity consumes canonical per-actor/per-enemy ThreatObservation, not a new threat reader; taunt readiness is separate from taunt necessity.**
@@ -3660,6 +3666,8 @@
 
 ### TH-03 — Таунт и способности танка: готовы, нужны ли, цель вне агро
 
+**Архитектурная актуализация GR-02:** **См. GR-02: GR-02 role observations can gate tank-only recommendations but never alone prove taunt necessity or readiness.**
+
 **Раздел: 7. Угроза и агро. Приоритет: P2.**
 
 #### Требование
@@ -3714,6 +3722,8 @@
 
 ### GR-01 — Члены группы: существует, жив, в зоне видимости, в радиусе способности
 
+**Архитектурная актуализация GR-02:** **См. GR-02: GR-02 consumes the single GUID-keyed GroupRosterObservation and its revision/aliases; do not create a second roster scan for health, power or roles.**
+
 **Раздел: 8. Группа и рейд. Приоритет: P1.**
 
 #### Требование
@@ -3759,5 +3769,56 @@
 **ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые existence/death/GUID и target spell-range API, но не подтверждён единый roster-wide provider с жизнью/видимостью/connected и spell-specific range по каждому члену группы/рейда.
 
 **Архитектурные ссылки:** TG-01, TG-09, TG-11, SP-08, SP-14, TH-01. Обратные ссылки внесены в перечисленные ранее задачи в том же коммите.
+
+**Изменения Lua:** отсутствуют. Только документация.
+
+
+### GR-02 — Здоровье и ресурс членов группы, роль (танк, лекарь, ДД)
+
+**Раздел: 8. Группа и рейд. Приоритет: P1.**
+
+#### Требование
+
+Для каждого подтверждённого `memberGUID` из единого GR-01 roster возвращать независимые `health` (current/max/percent), `power` (powerType/current/max/percent), `assignedRole` (`TANK/HEALER/DAMAGER/NONE/UNKNOWN`) с provenance, observedAt, freshness, reason и безопасной семантикой `READY/UNKNOWN`. Различать назначенную роль, фактическую специализацию, классовую способность и реальное удержание агро (TH-01): ни одно не подменяет другое. Не считать `NONE` автоматически `DAMAGER`, не выводить `TANK` из класса или формы. Secret/nil/недоступный max не превращать в нулевое здоровье/ресурс. Не предполагать, что все участники используют mana или что `UnitPowerType(player)` подходит другому unit. Не считать отсутствие данных доказательством отсутствия члена группы.
+
+#### Аудит Kord (main)
+
+- `KordRotation/Core/GameAPI.lua:9–12,16,234–265`: allowlist поддерживает `UnitClass`, `UnitHealth/Max/Percent`, `UnitPower/Max/Percent/Type`; `GetGroupRolesAssigned`/`UnitGroupRolesAssigned` и roster-specific role API в проверенном allowlist не подтверждены. Адаптер явно отказывается разыменовывать secret и выдумывать процент.
+- `KordRotation/Core/GameState.lua:65–74`: `cleanHealth(unit)` валидирует current/max и percent; `:81–94` ресурс `playerPower` привязан к `player` и его powerType; `:108–124` unit snapshot обрабатывает player/target/pet, но не полный roster.
+- `KordRotation/Core/RotationConditions.lua:11,17,27`: есть `player.health.percent`, `pet.health.percent`, `resources.percent`, но не общие `group.memberHealth`, `group.memberPower`, `group.memberRole` и их lazy Needs.
+- `KordRotation/Core/EventBus.lua`: нет подтверждённой реализации общей GUID-keyed инвалидации group-member health/power/role; GR-01 roster provider также пока только спроектирован.
+- `KordRotation/Core/AbilityEligibility.lua`: финальная проверка применимости дружественной способности должна использовать реальный адресуемый member GUID, а не переносить player/target eligibility без валидации.
+
+#### Сравнение семи референсов (проверены предоставленные ZIP)
+
+1. **Sonah:** `Sonah/Core/Atoms/Units.lua:1002,1064` читает `UnitGroupRolesAssigned(unit)` через `Secret.Plain(Secret.Call(...))`, инвалидирует roster по `GROUP_ROSTER_UPDATE`; `Sonah/Core/Organisms/HealTarget.lua:98` сбрасывает heal-target state при изменении группы. Перенять secret-safe role resolution и общий roster revision; не делать вывод, что роль доказывает готовность лечения или удержание агро.
+2. **JustAC:** `JustAC/BlizzardAPI/StateHelpers.lua:1664,1698` проверяет player/pet `UnitHealthMax`, `JustAC/UI/UIHealthBar.lua:331,638,784` отдельно читает здоровье и power; `JustAC/DebugCommands.lua:5510–5519` диагностирует групповые роли/угрозу. Перенять раздельные проверки здоровья и power и диагностику; в проверенных местах нет доказанного полного roster-wide role/health/power provider.
+3. **ForeverAuras:** `ForeverAuras/BlizzardAuraDisplay.lua:747`, `BuffTrigger2.lua:1423,1553`, `GenericTrigger.lua:4211` используют `UnitGroupRolesAssigned(unit)`; `BlizzardAuraDisplay.lua:4593,4643` обрабатывает roster lifecycle. Перенять role-per-unit и событийную инвалидизацию; роль UI-триггера не равна достоверному фактическому tank/healer behavior.
+4. **MaxDps:** `MaxDps/Helper.lua:2072` получает health max для unit, `:2093` вычисляет mana по `UnitPowerMax('player',0)`; `MaxDps/SecretHelper.lua:399` читает power maximum по типу. Перенять типизированное чтение ресурса и secret guards, но не применять player mana к членам группы и не считать классовую специализацию назначенной ролью.
+5. **ForeverRotation:** `ForeverRotation/Sync.lua:206` инвалидирует синхронизацию по `GROUP_ROSTER_UPDATE`; в проверенных Lua нет подтверждённого общего per-member health/power/role observation. Sync roster не доказывает наличие данных здоровья и ресурса.
+6. **RotationGuide:** `RotationGuide/Core/Init.lua:144,161` инвалидирует состояние по `GROUP_ROSTER_UPDATE`, `RotationGuide/Core/State.lua:264` читает `UnitPowerMax('player',Mana)`; в проверенных местах нет доказанного общего per-member role/health/power provider. Не переносить player-only ресурс на рейд.
+7. **RotationMaster:** `RotationMaster/Platform/group_units.lua:3–26,52–105` реализует общий resolver group aliases/roles с secret-safe reason-rich контрактом; `RotationMaster/Core/condition_support.lua:451` проверяет доступность `UnitGroupRolesAssigned`. Перенять платформенное разрешение member/role, lazy observation и UNKNOWN; добавить в Kord общий per-member health/power provider, а не копировать разрозненные условия.
+
+#### Выбранный путь Kord (решение по результатам сравнения)
+
+**Основа — единый GR-01 `GroupRosterObservation` + role resolver RotationMaster/Sonah + секретобезопасные независимые health/power observations по существующему Kord GameAPI/GameState и паттерну ForeverAuras.** Не создавать второй список группы, class-specific roster, отдельный healing scanner или собственный вывод ролей по классам. Ввести логические `GroupMemberVitalsObservation(memberGUID)` и `GroupMemberRoleObservation(memberGUID)` поверх общего roster snapshot с per-pass memo и GUID guards. Для здоровья отдавать validated current/max и percent; если численные поля secret, использовать подтверждённый native percent API с самостоятельным статусом, не восстанавливать скрытые current/max. Для ресурса сначала проверять `UnitPowerType(memberUnit)`, затем `UnitPower/Max` с правильным типом и клиентскими исключениями; отсутствие power/max=0 не является «мана закончилась» без проверки. Для ролей использовать подтверждённый клиентский `UnitGroupRolesAssigned`/roster-role source; `NONE` сохранять как NONE и не угадывать DPS. Изменение состава, GUID, роли, unit state, power type и фазы инвалидирует соответствующую ревизию. При отсутствии подтверждённой поддержки API на Forever вернуть UNKNOWN с reason, не подменять speculative role inference.
+
+#### Требуемые изменения
+
+1. Расширить GR-01 общим GUID-keyed roster member observation, переиспользовать его aliases/revision/coverage и lifecycle; не создавать дублирующий сканер.
+2. Валидировать на Forever `UnitHealth/Max/Percent`, `UnitPower/Max/Type/Percent`, `UnitGroupRolesAssigned`, roster-role alternatives, значения `NONE`, secret/nil и доступность `partyN/raidN`.
+3. Реализовать `GroupMemberVitalsObservation` с отдельными health/power statuses, powerType, current/max/percent, source, observedAt и reason; не смешивать ресурсы и не делить на 0.
+4. Реализовать `GroupMemberRoleObservation`: `TANK/HEALER/DAMAGER/NONE/UNKNOWN`, source и revision, без выводов по классу, специализации или threat.
+5. Ввести lazy `Needs` для member health/power/role, per-evaluation cache, bounded group refresh; не читать здоровье/ресурсы 40 человек при каждом запросе без потребности.
+6. EventBus invalidation для roster/role changes, `UNIT_HEALTH`/power events, смены GUID, power type, disconnect/phase и heartbeat только после подтверждения поддержки событий; не считать событие гарантией наличия plain данных.
+7. Связать будущие healing/dispel/buff/raid решения и TH-01/TH-03 tank role с единым GR-02; окончательная пригодность способности — через AbilityEligibility.
+8. DevTools-only диагностика: `member_health_unknown`, `member_health_secret`, `member_health_invalid`, `member_power_type_unknown`, `member_power_secret`, `member_power_max_zero`, `member_role_unknown`, `member_role_none`, `member_role_changed`, `member_guid_changed`, `group_vitals_stale`.
+9. Тесты: solo/party/raid, player duplicated in raid, 40 members, dead/ghost/disconnected, class with multiple power types, mana/energy/rage/focus, zero max, secret numeric vs native percent, nil, health > max, roles tank/healer/damage/none, assigned tank not holding aggro, role swap, roster reorder, recycled alias, rapid health/power events, multiple consumers share snapshot, stale coverage, unavailable API.
+
+#### Вердикт
+
+**ЧАСТИЧНО РЕАЛИЗОВАНО — ДОРАБОТАТЬ (P1).** Kord имеет базовые health/power adapters для отдельных units, но не общий per-member roster-wide health/resource/role provider.
+
+**Архитектурные ссылки:** GR-01, TH-01, TH-03, TG-02, SP-07. Обратные ссылки внесены в эти ранее существовавшие задачи в том же коммите.
 
 **Изменения Lua:** отсутствуют. Только документация.
