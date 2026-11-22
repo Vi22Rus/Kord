@@ -262,7 +262,9 @@ local function traceFact(ctx,kind,value,why)
  if #ctx.observations>=256 then return end
  local state=value==true and "READY" or
      (value==false and "BLOCKED" or "UNKNOWN")
- local reason=why or (value==false and "not_learned"
+ local falseReason=kind=="known" and "not_learned"
+    or kind=="inRange" and "out_of_range" or "none"
+ local reason=why or (value==false and falseReason
      or value==true and "none" or "fact_value_unverified")
  ctx.observations[#ctx.observations+1]={
    field="fact."..kind,status=state,reason=reason}
