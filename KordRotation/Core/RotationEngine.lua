@@ -173,10 +173,13 @@ local function run(channel,sharedSnapshot,sharedContext)
   -- Defensive actions have their own recommendation channel. Aura
   -- promotion changes only maintenance spells, never actual defenses.
   local defensiveAction=category=="defensive"
-  local defensiveInMain=defensiveAction and inCombat and
+  -- Aspects use the same one-window combat preference as Defensive
+  -- abilities. Other maintenance effects retain their independent policy.
+  local defensivePlacement=defensiveAction or kind=="aspect"
+  local defensiveInMain=defensivePlacement and inCombat and
       KR.RotationSettings:GetFlag("defensiveInCombatMain")==true
-  local routedDefensive=(defensiveAction and not defensiveInMain)
-      or (not defensiveAction and maintenance and not auraInMain)
+  local routedDefensive=(defensivePlacement and not defensiveInMain)
+      or (not defensivePlacement and maintenance and not auraInMain)
   if (channel=="defensive")~=routedDefensive then
    status,reason="BLOCKED","routed_to_other_channel"
   elseif rule.type~="SPELL" then
