@@ -1,3 +1,38 @@
+## KR-20261122-052 — documentation: reconcile IT-01/1.6 implementation history
+- Дата: 2026-11-22 (точное время по Git), этап 1/шаг 1.6, P0; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Задача: восстановить единый след реализации по IT-01 после последовательных GitHub Contents API коммитов; исторические разделы сохраняются. Изменены CHANGELOG.md, REQUIREMENTS.md и поэтапный план отдельными техническими операциями.
+- Причина: доступный интерфейс GitHub выполняет однопутевые обновления отдельными коммитами, а не атомарную многофайловую транзакцию. В коммитах 048–051 не было одновременной записи CHANGELOG.md: **это отклонение от docs/CHANGELOG_RULES.md**, исправляемое ретроспективной записью, не выдаётся за исходное соответствие.
+- Проверки: PASS — сверены реальные GitHub SHA коммитов 048–051 и исходники; NOT RUN — Lua 5.1/mock, CI (ручной режим), WoW Forever, полный regression suite.
+- Остаток: проверить фактическую регистрацию optional BAG_* в Forever, семантику BAG_CONTAINER_UPDATE, последовательность событий, Soulwell сигнал и консистентность при изменении во время чтения. Client QA на завершающем этапе.
+- Для тестировщика: пополнен общий IT-01 test debt; отдельная установка после каждого подшага не требуется.
+- Связи: IT-01/1.6, IT-02, IT-05, CL-08, KR-20261122-048–051.
+
+## KR-20261122-051 — test: inventory event revisions mock
+- Дата: 2026-11-22 (время Git); SHA: `962a8dee1974e4eb56298350730a92391399d30c`.
+- IT-01/1.6 P0; файл `tests/inventory_event_revisions_mock.lua`. Добавлены сценарии per-bag revision, глобальных BAG_UPDATE_DELAYED, coalesced Flush/Tick, explicit Soulwell refresh, unknown bag, unsubscribe и отсутствие сканирования.
+- PASS: статическая проверка ассертов и используемых имен EventBus. NOT RUN: запуск Lua 5.1/CI/Forever. В тесте нет фактических данных игрового клиента.
+- Для тестировщика: включить refresh без BAG_UPDATE_DELAYED в финальный IT-01 QA; статус SOURCE TEST ADDED.
+
+## KR-20261122-050 — fix: protect inventory bag parameter checks
+- Дата: 2026-11-22 (время Git); SHA: `81f2527ff7bccbf5aeec61bdb2fdf6f6fc23f95e`.
+- IT-01/1.6 P0; `KordRotation/Core/EventBus.lua`, `knownBag`: pcall вокруг проверки границ и math.floor, чтобы ошибочное/protected event-поле не приводило к Lua exception. Не меняет выбор известных bagID 0..4.
+- PASS: статическая сверка guarded code. NOT RUN: Lua/client; совместимость type/protected API не доказана.
+- Для тестировщика: проверить тайное/нестандартное событие как UNKNOWN invalidation, не аварийное завершение.
+
+## KR-20261122-049 — feat: revision-safe inventory observation boundaries
+- Дата: 2026-11-22 (время Git); SHA: `3d2cbfc65bd6cec7a0c9669962a0537512e9a81b`.
+- IT-01/1.6 P0; `KordRotation/Core/GameState.lua`: `inventoryBagRevision`, `ReadInventoryObservation`, `ReadInventoryItemObservation`, `ReadInventoryBagSnapshot`, `ReadInventoryFamilyObservation`. Ревизия EventBus читается до/после операции. Изменение или пропажа источника => UNKNOWN `item_bag_revision_changed`, без count READY/полного family count. Старые readers сохранены.
+- WoW API: новых нет; прежние C_Item и C_Container используются через GameAPI; модель ревизий не гарантирует событийные сигналы Forever.
+- PASS: статическое сопоставление границ операций и fail-closed причин. NOT RUN: Lua 5.1, мок, CI, Forever.
+- Для тестировщика: добавить гонку BAG_UPDATE во время считывания и отсутствие EventBus как ограничение наблюдаемости.
+
+## KR-20261122-048 — feat: shared EventBus inventory revisions
+- Дата: 2026-11-22 (время Git); SHA: `46f38f8d493d4c39e440c40bcdb0da9228fe0019`.
+- IT-01/1.6 P0; `KordRotation/Core/EventBus.lua`: опциональные `BAG_UPDATE`, `BAG_UPDATE_DELAYED`, `BAG_CONTAINER_UPDATE`, `GetInventoryRevision`, `GetBagRevision`, `InvalidateInventory`, `RequestInventoryRefresh`, `Status`. Использована существующая проверка C_EventUtils.IsEventValid/pcall(RegisterEvent), канал coalescing 0.20s. Soulwell refresh только по явному вызову/сигналу, не OnUpdate сканированию.
+- Референсы: IT-01 аудит ForeverAuras Prototypes.lua/GenericTrigger.lua, JustAC SpellDB.lua, RotationMaster inventory.lua; первичные архивы в этой операции НЕ перечитывались, источник — задокументированный ранее аудит.
+- PASS: статическая сверка связности канала и отсутствия второго scanner. NOT RUN: Lua 5.1, client event probe, CI (ручной режим).
+- Для тестировщика: проверить поддержку события и согласованность ревизий с реальными изменениями сумок; наличие кода не доказывает получение событий.
+
 ## KR-20261122-047 — test: correct ItemFamilyCatalog mock safe-value contract for IT-01/1.5
 - Дата: 2026-11-22 UTC (точное время по Git). SHA: `git log --grep KR-20261122-047`. Тип test/fix, IT-01/1.5 P0; продолжение KR-20261122-046.
 - Контекст: при статической повторной проверке нового mock-теста обнаружено несоответствие `KR.GameAPI:IsSafeValue` каталогу: заглушка разрешала number/string, но `ItemFamilyCatalog:ReplaceFamily` проверяет и table для списка пользовательских itemID. До исправления первая операция `setFamily` возвращала бы UNKNOWN; это дефект тестового стенда, не доказанный игровой дефект.
