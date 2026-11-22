@@ -1,3 +1,11 @@
+## 2026-11-22 — Adapt Rotation Master aura presence in Kord without replacing engine
+
+- Inspected Rotation Master `Platform/auras.lua`, `Core/aura_conditions.lua` and `Platform/cooldown_viewer.lua` (Preston A. Elder / PreZ). Source-derived strategy: targeted aura lookups first; Cooldown Manager tracked-item presence when raw aura details become secret; remember clean reads, never walk secret aura lists.
+- Added read-only `Core/AuraCooldownViewer.lua` to Kord's canonical load order. Uses Blizzard `BuffIconCooldownViewer` / `BuffBarCooldownViewer`, confirms spell IDs via `C_CooldownViewer.GetCooldownViewerCooldownInfo`, extracts ONLY the secret/absent bit of `auraInstanceID`, hooks OnShow/OnHide, and invalidates/refreshes on relevant events outside lockdown.
+- `GameState` uses confirmed viewer presence for `player.buff` / `target.debuff` before returning hidden-aura UNKNOWN. Remembers explicit out-of-combat absence and may reuse it when hidden. Unlike RM's heuristic of assuming initial no-history absence, Kord v14 keeps unobserved hidden auras UNKNOWN.
+- Added two regression suites, updated manual Lua 5.1 workflow, six-language About attribution and copied upstream license with author credits to `THIRD_PARTY_NOTICES.md`.
+- **Not yet Lua 5.1 tested or in-game verified.** Blizzard Cooldown Manager must actually track the aura; no information is invented for untracked items.
+
 ## 2026-11-22 — Fix in-game BM Hawk action-slot rank mismatch
 
 - Latest user test after travel-aspect fix reaches BM rule #2 in combat, then fails `action_slot_unconfirmed` with `bm_bar_2 visible_spell_rank_mismatch` (t9912). Unlike prior `condition_unknown`, this is a precise rank/slot issue.
