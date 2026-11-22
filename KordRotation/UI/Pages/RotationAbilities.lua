@@ -131,6 +131,9 @@ function KR.Pages:Rotation(parent)
             return
         end
         displayedModule=selected
+        local height=math.max(1170,90+#(module and module.Config or {})*45)
+        moduleCard:SetHeight(height)
+        body:SetHeight(1075+height+45)
         for _,row in ipairs(moduleRows) do row.frame:Hide() end
         moduleRows={}
         moduleName:SetText(module and module.id or KR:L("ROT_NO_PROFILE"))
