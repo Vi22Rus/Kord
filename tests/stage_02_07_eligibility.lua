@@ -229,7 +229,10 @@ local fallbackSpellId
 KR.GameAPI.ReadValues=function(self,name,...)
  if name=="GetSpellCooldown" then
   fallbackSpellId=(...)
-  return {status="READY",value={now-0.3,1.5,1}}
+  if fallbackSpellId==29515 then
+   return {status="READY",value={now-0.3,1.5,1}}
+  end
+  return {status="READY",value={0,0,1}}
  end
  return oldMulti(self,name,...)
 end
