@@ -5120,6 +5120,11 @@
 5. Создать `SharedCooldownGroupCatalog` с верифицированной на Forever группой `POTION_SHARED` и исключениями; не смешивать healthstones/bandages/mana gems/trinkets без доказательства.
 6. Реализовать group inference из проверенных cooldown states и observed item-use, с `CONFIRMED/ESTIMATED/UNKNOWN` и no false-ready при неполном наборе.
 
+**Реализация Kord — IT-02/2.6 и 2.7: сброс устаревшей корреляции использования, KR-20261122-113 (2026-11-22; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- `KordRotation/Core/EventBus.lua`, `HandleEvent`: `ZONE_CHANGED` и `PLAYER_DEAD` очищают временное source-only `ReadObservedItemUse` через существующий `GameState:ClearObservedItemUse`; `PLAYER_DEAD` также повышает `itemCooldownRevision`. Исключает корреляцию нового cooldown со старым событием после перехода/смерти, не добавляя сканер, WoW API или ложный group READY. События только инвалидируют данные.
+- `tests/item_use_spell_attribution_mock.lua` и `tests/item_cooldown_revision_mock.lua`: synthetic boundary transitions, повторный player-use, revision increments; исходные сценарии сохранены. PASS статическая проверка; NOT RUN реальное Lua 5.1 mock/full regression, manual Actions и WoW Forever. Group semantics по-прежнему NOT VERIFIED; IT-02/2.6 не закрыт.
+- SHA определяется через `git log --grep KR-20261122-113`. Связи IT-02/2.6, IT-02/2.7, KR-20261122-105/112.
+
 **Реализация Kord — IT-02/2.6, KR-20261122-112 (2026-11-22; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - Публичный `GameState:ReadSharedItemCooldownObservation` передаёт валидированные `useCorrelation` и `propagationEvidence` из единого bounded member-evidence reader, наряду с тремя confidence fields. `groupLockoutConfidence=ESTIMATED` требует соответствующих `useCorrelation=ESTIMATED` и `ALIGNED_CANDIDATES`. Source-only наблюдения не дают group READY или groupRemaining. Test: `tests/shared_item_cooldown_member_evidence_mock.lua`, public aligned/mixed/stable-after-race assertions.
 - PASS: статическая проверка исходного кода и Git публикация; NOT RUN: Lua 5.1/mock/full regression, manual GitHub Actions, WoW Forever. Не подтверждены реальные Forever shared group semantics; статус остаётся частичным.

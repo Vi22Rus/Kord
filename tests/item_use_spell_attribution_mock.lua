@@ -49,6 +49,18 @@ assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==nil)
 now=100
 assert(E:HandleEvent("UNIT_SPELLCAST_SUCCEEDED","player","g",10118))
 assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==118)
+-- A small zone transition must not reuse the previous use-spell estimate.
+assert(E:HandleEvent("ZONE_CHANGED"))
+assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==nil)
+assert(E:HandleEvent("UNIT_SPELLCAST_SUCCEEDED","player","g",10118))
+assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==118)
+-- Death also invalidates a pre-death correlation.
+local beforeDeath=E:GetItemCooldownRevision()
+assert(E:HandleEvent("PLAYER_DEAD"))
+assert(E:GetItemCooldownRevision()==beforeDeath+1)
+assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==nil)
+assert(E:HandleEvent("UNIT_SPELLCAST_SUCCEEDED","player","g",10118))
+assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==118)
 assert(E:HandleEvent("PLAYER_REGEN_ENABLED"))
 assert(S:ReadObservedItemUse("POTION_SHARED").candidateItemID==nil)
 -- Explicit re-index after source changes MUST fail closed.

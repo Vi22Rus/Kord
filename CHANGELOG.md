@@ -1,3 +1,11 @@
+## KR-20261122-113 — IT-02/2.6+2.7: expire item-use correlation on zone/death boundaries
+- Дата: 2026-11-22 UTC (время Git commit); SHA: `git log --grep KR-20261122-113`. ID IT-02 P0, этап 2/2.6, 2.7. Тип fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: `EventBus` инвалидировал item cooldown на `ZONE_CHANGED`, но оставлял последнюю оценку item-use в памяти. На `PLAYER_DEAD` наблюдение не очищалось и item cooldown revision не повышалась. Это source-level defect, не подтверждённый баг WoW Forever.
+- Причина: неполный список lifecycle transitions в `EventBus:HandleEvent`. Исправление: дополнены `ZONE_CHANGED` и `PLAYER_DEAD` для `ClearObservedItemUse`; смерть вызывает `InvalidateItemCooldown`. Существующие функции переиспользованы, новых WoW API, защищённых действий или сканеров не добавлено.
+- Тесты: `tests/item_use_spell_attribution_mock.lua` — повторная use attribution и сброс на zone/death; `tests/item_cooldown_revision_mock.lua` — точные revision increments на zone/death. PASS: static anchors, matching source/test/doc and Git publication. NOT RUN: Lua 5.1/mock/full regression (нет Lua 5.1 runtime), GitHub Actions (manual only), WoW Forever (клиент недоступен).
+- Передано тестировщику: в итоговой IT-02 матрице проверить item use → small-zone change / death → stale attribution исчезает, revision растёт, новые player events работают. Промежуточной установки не требуется.
+- Документы: REQUIREMENTS.md и поэтапный план синхронизированы атомарно. Риски: client lifecycle event behavior not tested, подтверждённый group ACTIVE/READY/remaining отсутствует. Связи KR-20261122-105/112, IT-02/2.6–2.7.
+
 ## KR-20261122-112 — IT-02/2.6: verified use/propagation provenance on group confidence
 - Дата/время: 2026-11-22 UTC (точное время Git commit), SHA: `git log --grep KR-20261122-112`. IT-02 P0, 2.6, feature/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: public group confidence не сообщал диагностические причины своей оценки; source gap, а не баг клиента. Причина — bridge KR-110 копировал уровни confidence без validated evidence enums.

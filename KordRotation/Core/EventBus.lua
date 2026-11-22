@@ -168,7 +168,8 @@ function E:HandleEvent(event, unit, castGUID, spellID)
         and KR.GameState and type(KR.GameState.ObserveSuccessfulItemUseSpell)=="function" then
         pcall(KR.GameState.ObserveSuccessfulItemUseSpell,KR.GameState,spellID)
     elseif (event=="PLAYER_REGEN_ENABLED" or event=="PLAYER_ENTERING_WORLD"
-        or event=="ZONE_CHANGED_NEW_AREA")
+        or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_NEW_AREA"
+        or event=="PLAYER_DEAD")
         and KR.GameState and type(KR.GameState.ClearObservedItemUse)=="function" then
         pcall(KR.GameState.ClearObservedItemUse,KR.GameState)
     end
@@ -176,7 +177,7 @@ function E:HandleEvent(event, unit, castGUID, spellID)
         or event=="BAG_UPDATE" or event=="ACTIONBAR_UPDATE_COOLDOWN"
         or event=="UNIT_SPELLCAST_SUCCEEDED"
         or event=="PLAYER_REGEN_ENABLED" or event=="PLAYER_REGEN_DISABLED"
-        or event=="PLAYER_ENTERING_WORLD"
+        or event=="PLAYER_DEAD" or event=="PLAYER_ENTERING_WORLD"
         or event=="ZONE_CHANGED" or event=="ZONE_CHANGED_NEW_AREA" then
         self:InvalidateItemCooldown(event)
     end
