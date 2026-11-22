@@ -27,7 +27,7 @@ local profile={
  Rules={
   {id="hawk",type="SPELL",spell="Hawk",category="buffs",
    recommendationType="aura",target="none",cast="idle",
-   chargesRequired=false,when=function()return auraKnown and false or true end},
+   chargesRequired=false,when=function()return not auraKnown end},
   {id="arcane",type="SPELL",spell="Arcane",category="damage",
    target="enemy",cast="idle",chargesRequired=false,
    when=function()return true end}
