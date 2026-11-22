@@ -1578,3 +1578,51 @@
 7. Тесты: обычный каст, канал, empower, прерывание/отмена, pushback/delay, нулевой/отрицательный остаток, разные индексы кортежа, secret time/ID/flag, отсутствующий API, быстрый переход cast→channel, смена ранга/override, подтверждённое отсутствие каста. Диагностика не должна раскрывать secret значения.
 
 **Изменения кода:** не выполнялись; внесён аудит CA-01.
+
+
+### CA-02 — Очередь способности на следующий удар (Heroic Strike, Raptor Strike и т. д.)
+
+**Приоритет: P1.**
+
+#### Требование
+
+Наблюдать факт, что способность **поставлена в очередь на следующий автоудар**, не путая её с обычным кастом/каналом (CA-01), очередью GCD, автоатакой, автострельбой, рекомендацией аддона или внутренней очередью ротации. Для подтверждённого spellID/семейства выдавать `isNextSwingAbility`, `queued`, `queuedSpellID` (только когда установлен), `swingHand` (если подтверждено), `timeToSwing` (только достоверное), `status/reason/source`. `C_Spell.IsCurrentSpell` — сигнал текущей/очередной способности, который **нельзя без контекста** трактовать как именно next-swing очередь. Не выдумывать таймер и не предполагать, что отсутствие сигнала доказывает отсутствие очереди, если API недоступен.
+
+#### Аудит Kord (main)
+
+- [`KordRotation/Core/GameAPI.lua`](KordRotation/Core/GameAPI.lua), строки 20, 51–52: разрешены `C_SwingTimer.IsTargetWithinSwingRange`, `C_Spell.IsCurrentSpell`, `C_Spell.IsAutoRepeatSpell`; нет отдельного контракта очереди на удар.
+- [`KordRotation/Core/GameState.lua`](KordRotation/Core/GameState.lua), строки 303–345: `C_SwingTimer.IsTargetWithinSwingRange(0)` проверяет **дистанцию**, а не момент следующего удара и не queued action.
+- `GameState.lua`, строки 767–790: `IsCurrentSpell` и `IsAutoRepeatSpell` читаются для Auto Shot; комментарий 767 прямо запрещает выдуманные swing/queued timing. Эти факты нельзя переиспользовать как доказательство queued melee ability.
+- [`KordRotation/Core/AbilityEligibility.lua`](KordRotation/Core/AbilityEligibility.lua): нет самостоятельной проверки `nextSwingQueued` и защиты от повторной рекомендации уже поставленного на удар заклинания.
+- [`KordRotation/Core/RotationConditions.lua`](KordRotation/Core/RotationConditions.lua), строка 74: `autoShot.swing` — иной сигнал, не наблюдение next-swing melee queue.
+- [`KordRotation/Core/EventBus.lua`](KordRotation/Core/EventBus.lua): отсутствует выделенная событийная инвалидация next-swing очереди; обычные события каста не доказывают её состояние.
+
+#### Семь референсов (проверены локальные Lua ZIP)
+
+1. **Sonah** — классовые правила и локализация знают Heroic Strike/Raptor Strike; при проверке выбранных исходников не подтверждён отдельный общеклассовый `nextSwingQueued` reader. Не считать рекомендацию Heroic Strike доказательством состояния очереди.
+2. **JustAC** — `JustAC/SpellDB.lua:2194–2198` определяет `NEXT_SWING_SPELLS` (Heroic Strike, Cleave, Raptor Strike, Maul); `Data/Forever/Defaults.lua:742` заполняет все ранги для Forever; `UI/UIRenderer.lua:2750+` проверяет `C_Spell.IsCurrentSpell` для таких spellID и подавляет повторную рекомендацию. **Самый прямой образец для определения membership и queued state**.
+3. **ForeverAuras** — `ForeverAuras/Compatibility.lua:89–99` предоставляет `IsQueuedSpell` через `C_Spell.IsCurrentSpell` с secret guard; `Prototypes.lua:10459–10467` описывает queued action, включая Heroic Strike, и поддерживает отдельный trigger. Важно не переносить `secret→false` как достоверное отсутствие очереди.
+4. **MaxDps** — `MaxDps/SecretHelper.lua:462` содержит Raptor Strike (2973) для отдельных проверок; в просмотренных исходниках нет подтверждённого универсального `NEXT_SWING_SPELLS` и очереди как отдельного факта.
+5. **ForeverRotation** — `Rotations/Warrior.lua:34,52–53`, `Rotations/Hunter.lua:65` рекомендуют Heroic Strike/Cleave/Raptor Strike по профильным условиям; не подтверждено наблюдение, уже поставлено ли действие на следующий удар.
+6. **RotationGuide** — `Data/Warrior.lua:48,68,84` и `Data/Hunter.lua:31` содержат Heroic Strike/Raptor Strike в приоритетах; отдельного подтверждённого общего queued-state reader не обнаружено.
+7. **RotationMaster** — `RotationMaster/Conditions/spell.lua:661` использует `Platform.IsCurrentSpell`; `Conditions/swing_timer.lua:33–98` регистрирует универсальное `NEXT_SWING` по `Platform/swing_timer.lua:GetNextSwingObservation`. Эти **два независимых источника** можно объединить, но `NEXT_SWING` сам по себе измеряет время, а не очередь заклинания.
+
+#### Сравнение и рекомендация
+
+**Основа — JustAC + ForeverAuras + RotationMaster, встроить в Kord.** JustAC даёт проверенные для Forever наборы spellID/рангов и проверку текущего состояния; ForeverAuras — совместимый queued trigger; RotationMaster — отдельное защищённое наблюдение времени следующего удара. В существующих общих `GameState`/`GameAPI`/`AbilityEligibility` добавить **логический общеклассовый контракт** `NextSwingQueueObservation(spellID)` (не обязательный отдельный Lua-файл). Принадлежность способности к next-swing семейству — **данные**, не код конкретного класса.
+
+#### Вердикт
+
+**НЕ РЕАЛИЗОВАНО КАК ОТДЕЛЬНЫЙ КОНТРАКТ — ЕСТЬ ЧАСТИЧНЫЕ API-ПРИМИТИВЫ (P1).** В Kord есть `IsCurrentSpell` и melee-range observation, но нет доказательного queued-state, membership и защиты от повторной рекомендации.
+
+#### Требуемые изменения
+
+1. Добавить проверенные Forever `nextSwingSpellFamilies` с рангами и override alias (SP-02/SP-11), включая Heroic Strike/Cleave/Raptor Strike/Maul только для реально подтверждённых клиентских вариантов; без классовых движков.
+2. Ленивая `NextSwingQueueObservation(spellID)`: отдельно проверять membership и `C_Spell.IsCurrentSpell(effectiveSpellID)`; если невозможно отличить queued от иных current состояний, возвращать `UNKNOWN` о queued, сохраняя исходный API-факт.
+3. Не использовать `C_SwingTimer.IsTargetWithinSwingRange` для времени. Отдельно проверять наличие Forever `C_SwingTimer`/другого защищённого источника remaining до next swing; при отсутствии — `UNKNOWN`, без расчёта по несуществующим событиям.
+4. В `AbilityEligibility` не рекомендовать повторно **подтверждённо queued** способность, сохраняя единственного арбитра READY. При UNKNOWN не заявлять «уже queued» и не выдавать ложную уверенность.
+5. Инвалидация по обновлению current spell, autoattack, swing, target, form/stance, spellbook/override и доступным событиям Forever; не полагаться только на `UNIT_SPELLCAST_START`.
+6. Диагностика: `not_next_swing_ability`, `queued_confirmed`, `queued_unknown`, `current_spell_unavailable`, `swing_time_unknown`; не раскрывать secret.
+7. Тесты: Heroic Strike/Cleave/Raptor Strike/Maul всех подтверждённых рангов; нажата кнопка до удара; очередь погашена ударом/отменена; повторное нажатие; смена цели/стойки; override; обычный `IsCurrentSpell` не next-swing; secret API; отсутствие swing timer; переход в бой и выход.
+
+**Изменения кода:** не выполнялись; внесён аудит CA-02.
