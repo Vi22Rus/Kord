@@ -68,7 +68,7 @@ end
 -- License notice (2/3): advanced controls do not imply a real minimap icon,
 -- a running combat scheduler, or a completed protected-frame queue.
 function KR.Pages:Advanced(parent)
-    local body=scrolled(parent,1040)
+    local body=scrolled(parent,1100)
     local intro=panel(body,-14,126)
     prose(intro,"ADV_TITLE",16,-12,510,true)
     prose(intro,"ADV_LANGUAGE_AUTO",16,-39,510)
@@ -76,7 +76,7 @@ function KR.Pages:Advanced(parent)
     local language=UI:ChoiceRow(intro,"ADV_LANGUAGE_LABEL",13,-76,505,
         function() return A:Get("language") end,
         function(value) A:Set("language",value) end,choices)
-    local options=panel(body,-159,345)
+    local options=panel(body,-159,389)
     prose(options,"ADV_OPTIONS_TITLE",16,-13,510,true)
     local flags={
         {"ADV_SHOW_LOGIN","showAtLogin"},
@@ -91,9 +91,17 @@ function KR.Pages:Advanced(parent)
             function() return A:Get(key) end,
             function(v) A:Set(key,v) end)
     end
-    prose(options,"ADV_UNSUPPORTED_NOTE",15,-251,506)
+    local auraRouteRow=UI:ToggleRow(options,"ROT_BUFFS_IN_COMBAT_MAIN",
+        13,-220,505,
+        function()
+            return KR.RotationSettings:GetFlag("buffsInCombatMain")
+        end,
+        function(v)
+            KR.RotationSettings:SetFlag("buffsInCombatMain",v)
+        end)
+    prose(options,"ADV_UNSUPPORTED_NOTE",15,-295,506)
 
-    local reset=panel(body,-524,209)
+    local reset=panel(body,-568,209)
     prose(reset,"ADV_RESET_TITLE",15,-12,510,true)
     prose(reset,"ADV_RESET_CAUTION",15,-43,510)
     local status=value(reset,15,-75,510)
@@ -113,13 +121,14 @@ function KR.Pages:Advanced(parent)
     click(reset,"ADV_RESET_BRANCH",270,-115,245,function()branch:Show()end)
     click(reset,"ADV_RESET_ALL",15,-162,500,function()all:Show()end)
 
-    local compat=panel(body,-752,190)
+    local compat=panel(body,-796,190)
     prose(compat,"ADV_COMPAT_TITLE",15,-12,510,true)
     local compatText=value(compat,15,-44,510)
     prose(compat,"ADV_COMPAT_NOTE",15,-123,510)
     local function refresh()
         language:Refresh()
         for _,row in ipairs(rows) do row:Refresh() end
+        auraRouteRow:Refresh()
         status:SetText(KR:Format("ADV_PENDING_COUNT",
             KR.SafeActions and KR.SafeActions:Status() or 0))
         compatText:SetText(D:CompatibilityText())
