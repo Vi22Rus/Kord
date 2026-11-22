@@ -165,17 +165,29 @@ function D:ObserveDetails(diagnosis,force,summary)
                 "arcane_rank_4_bar_failure",diag.arcaneR4BarReason)
         end
         local checks=diag.arcaneR4Checks
-        local allowed={cast=true,usability=true,charges=true,
-            cooldown=true,gcd=true,range=true}
+        local names={"cast","usability","charges","cooldown","gcd","range"}
+        local observed={}
         if D:Safe(checks) and type(checks)=="table"
             and #checks<=6 then
             for _,check in ipairs(checks) do
                 if D:Safe(check) and type(check)=="table"
-                    and D:Safe(check.name) and allowed[check.name] then
-                    add("CHECK",check.status,
-                        "arcane_check_"..check.name,check.reason)
+                    and D:Safe(check.name) then
+                    for _,name in ipairs(names) do
+                        if name==check.name then
+                            observed[name]={status=check.status,reason=check.reason}
+                            break
+                        end
+                    end
                 end
             end
+        end
+        -- A BLOCKED stops the canonical lazy evaluator. Mark unvisited
+        -- checks as not_evaluated so prior UNKNOWN results cannot linger.
+        for _,name in ipairs(names) do
+            local check=observed[name]
+            add("CHECK",check and check.status or "UNAVAILABLE",
+                "arcane_check_"..name,
+                check and check.reason or "not_evaluated")
         end
     end
     local core=summary or self:ReadCore()
