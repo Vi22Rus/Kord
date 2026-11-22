@@ -31,6 +31,7 @@ local spec={
  {"Revive","Revive Pet",982,"buffs","none"},
  {"AspectHawk","Aspect of the Hawk",13165,"buffs","none"},
  {"AspectMonkey","Aspect of the Monkey",13163,"buffs","none"},
+ {"Trueshot","Trueshot Aura",19506,"buffs","none"},
 }
 local defaults={
  {"mark","enum","all",{"all","elite","instance","elite_or_instance","smart","off"},"debuffs","Hunter's Mark"},
@@ -59,7 +60,7 @@ local defaults={
 local arcaneRanks={{14287,60},{14286,52},{14285,44},{14284,36},
  {14283,28},{14282,20},{14281,12},{3044,6}}
 local hawkRanks={1293527,1293526,1293525,1293241}
-local function cfgTable()
+local function cfgTable(is60)
  local config={}
  for _,row in ipairs(defaults) do
   local record={key=row[1],type=row[2],default=row[3],
@@ -69,6 +70,20 @@ local function cfgTable()
    record.min=row[4].min
    record.max=row[4].max end
   config[#config+1]=record
+ end
+ if is60 then
+  config[#config+1]={key="cooldowns",type="enum",default="on_cd",
+      values={"on_cd","boss","off"},group="cooldowns",
+      label="Cooldowns",desc="BM 60 v1.2: cooldown policy"}
+  config[#config+1]={key="trueshot_aura",type="bool",default=true,
+      group="buffs",label="Trueshot Aura",
+      desc="BM 60 v1.2: maintain aura"}
+  config[#config+1]={key="pull_cast",type="bool",default=true,
+      group="damage",label="Pre-pull Aimed Shot",
+      desc="BM 60 v1.2: requires confirmed pull timing"}
+  config[#config+1]={key="traps",type="enum",default="aoe",
+      values={"aoe","always","off"},group="traps",
+      label="Trap policy",desc="BM 60 v1.2: control trap usage"}
  end
  return config
 end
@@ -109,7 +124,7 @@ end
 local function enabledFeature(cfg,key)
  return cfg[key]~=false
 end
-local function makeRules(spells)
+local function makeRules(spells,is60)
  local rules={}
  local function add(id,key,condition,mode,category,actionType)
   local data
@@ -197,6 +212,12 @@ local function makeRules(spells)
   if maintenance(S,c)~=true then return maintenance(S,c) end
   return S:isNot("player.buff",spells.AspectMonkey)
  end)
+ if is60 then
+  add("trueshot_aura","Trueshot",function(S,c)
+   if not c.trueshot_aura then return false end
+   return S:isNot("player.buff",spells.Trueshot)
+  end,nil,"buffs")
+ end
  add("revive_pet","Revive",function(S,c)
   if not c.summon_pet or combat(S)~=false then return false end
   return and2(not3(signal(S,"pet.exists")),signal(S,"pet.dead"))
@@ -458,7 +479,7 @@ function M:Register()
   return false,"registry_unavailable"
  end
  local spells=resolveSpells(readLearned())
- local rules=makeRules(spells)
+ local rules=makeRules(spells,false)
  local skips={}
  for _,rule in ipairs(rules) do
   if rule.onUnknown=="skip" then
@@ -474,6 +495,31 @@ function M:Register()
   Needs={auras={spells.Mark,spells.Sting,spells.AspectHawk,
       spells.AspectMonkey},ranges={spells.Arcane},
       enemyCount=true,ttd=true,swing=true},
-  Config=cfgTable(),SkipExceptions=skips
+  Config=cfgTable(false),SkipExceptions=skips
+ })
+end
+function M:Register60()
+ if not KR.RotationProfiles or not KR.RotationProfiles.Replace then
+  return false,"registry_unavailable"
+ end
+ local spells=resolveSpells(readLearned())
+ local rules=makeRules(spells,true)
+ local skips={}
+ for _,rule in ipairs(rules) do
+  if rule.onUnknown=="skip" then
+   skips[rule.id]={safeOptional=true,
+      reason="Optional BM 60 legacy improvement with unavailable provider",
+      testID="BM_60_DIAG_"..rule.id}
+  end
+ end
+ local auras={spells.Mark,spells.Sting,spells.AspectHawk,
+     spells.AspectMonkey,spells.Trueshot}
+ return KR.RotationProfiles:Replace("HUNTER",1,{
+  contractVersion=1,id="HUNTER_BM_60_PVE",version="1.2.0-contract1",
+  classToken="HUNTER",specIndex=1,levelMin=60,levelMax=60,
+  status="experimental",Spells=spells,Rules=rules,
+  Needs={auras=auras,ranges={spells.Arcane},
+      enemyCount=true,ttd=true,swing=true},
+  Config=cfgTable(true),SkipExceptions=skips
  })
 end
