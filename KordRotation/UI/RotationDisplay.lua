@@ -53,6 +53,7 @@ function KR.RotationDisplay:Create()
     marker:SetPoint("BOTTOM", frame, "TOP", 0, 6)
     marker:SetTextColor(C.cyan[1], C.cyan[2], C.cyan[3])
     marker:SetText(KR:L("PANEL_TEST_BADGE"))
+    self.testMarker=marker
 
     local slots = {}
     for i = 1, 5 do
@@ -185,7 +186,7 @@ function KR.RotationDisplay:RefreshLayout()
     -- Extra areas are TEST-only empty previews, not actual defensive recommendations.
     local pref=KR.IndicatorSettings
     local testing=p.showPanel and p.testMode
-    local hasDefense=testing and pref and pref:Get("defensiveEnabled")==true
+    local hasDefense=p.showPanel and pref and pref:Get("defensiveEnabled")==true
     local countDefense=hasDefense and pref:Get("defensiveSlots") or 0
     local defenseSize=pref and pref:Get("defensiveSize") or 52
     for i,slot in ipairs(self.defensePreview or {}) do
@@ -195,7 +196,7 @@ function KR.RotationDisplay:RefreshLayout()
         slot:ApplyAppearance("minimal",false,100,p)
         slot:SetShown(i<=countDefense)
     end
-    local interruptEnabled=testing and pref and pref:Get("interruptEnabled")==true
+    local interruptEnabled=p.showPanel and pref and pref:Get("interruptEnabled")==true
     local interruptSize=pref and pref:Get("interruptSize") or 52
     if self.interruptPreview then
         self.interruptPreview:ClearAllPoints()
@@ -232,7 +233,9 @@ end
 
 function KR.RotationDisplay:ShouldShow()
     local p = ensurePosition(KR.db)
-    if not p.showPanel or (not p.testMode and not self.productionReady) then return false end
+    -- Visibility is a user layout choice, not a side effect of engine READY.
+    -- Empty slots remain visible so the panel never jumps during combat.
+    if not p.showPanel then return false end
     local combat = safeBoolean(InCombatLockdown)
     if combat == nil then combat = safeBoolean(UnitAffectingCombat, "player") end
     if combat == nil then
@@ -363,13 +366,23 @@ function KR.RotationDisplay:Refresh(skipLayout)
             self:SetSlotData(1,{texture=item.texture,name=item.name,
                 keybind=item.keybind})
         else self:SetSlotData(1,nil) end
-        -- Stage 2.8 does not predict a future spell queue. Never show
-        -- empty question-mark placeholders as production recommendations.
+        -- Never fabricate future recommendations. Keep the configured
+        -- slot shells visible, but clear icons when engine provides no data.
         for i=2,5 do self:SetSlotData(i,nil) end
         if self.slots then
-            for i=2,5 do self.slots[i]:Hide() end
+            for i=1,5 do
+                local slot=self.slots[i]
+                if i<=(p.slotCount or 3) then slot:Show() end
+            end
         end
+        -- Defense/interrupt slots remain fixed but EMPTY until supported
+        -- independent recommendation providers are implemented.
+        for _,slot in ipairs(self.defensePreview or {}) do slot:ClearDisplayData() end
+        if self.interruptPreview then self.interruptPreview:ClearDisplayData() end
     end
+    -- In preview the marker explains synthetic icons; in live mode it must
+    -- not imply that empty shells are actual spell recommendations.
+    if self.testMarker then self.testMarker:SetShown(p.testMode) end
     if self:ShouldShow() then self.frame:Show() else self.frame:Hide() end
 end
 
