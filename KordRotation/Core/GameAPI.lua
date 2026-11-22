@@ -16,6 +16,8 @@ local allowed = {
     UnitCanAttack=true, UnitClassification=true, UnitPower=true, UnitPowerMax=true,
     UnitCastingInfo=true, UnitChannelInfo=true, UnitAura=true,
     InCombatLockdown=true, IsMounted=true,
+    CheckInteractDistance=true,
+    ["C_SwingTimer.IsTargetWithinSwingRange"]=true,
     GetNumSpellTabs=true, GetSpellTabInfo=true,
     GetSpellBookItemInfo=true, GetSpellBookItemName=true,
     GetSpellBookItemTexture=true,
