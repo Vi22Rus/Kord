@@ -1,3 +1,14 @@
+## KR-20261122-008 — аудит UI-07: единые ключи локализации
+- Дата: 2026-11-22; commit SHA определяется через `git log --grep KR-20261122-008`.
+- Изменены только `REQUIREMENTS.md`, `CHANGELOG.md`; Lua не изменялся.
+- Контекст: UI-07 требует ru/en, но действующий AGENTS требует шесть языков. Сохранён более строгий контракт без противоречий.
+- Аудит: `Locale.lua`, `KordRotationDevTools/Locale.lua`, страницы AdvancedDiagnostics/RotationAbilities, полный REQUIREMENTS, AGENTS и семь ZIP референсов.
+- Обнаружены generic placeholder tooltip и динамические locale keys; нет доказанного полного semantic/runtime QA.
+- Добавлены единый registry, fallback, aliases, 6-language validation, format-safety, 10 задач и тестовая матрица. Обратные ссылки UI-01, UI-03, UI-04, UI-05, UI-06, DA-07.
+- PASS: документационный аудит, семь референсов, обратные ссылки. NOT RUN: полный automated key inventory, игровой клиент, Lua 5.1, CI.
+- Вердикт: частично реализовано, P1; 100% покрытия не заявляется.
+
+
 ## KR-20261122-007 — аудит UI-06: причины отсутствия иконки
 - Дата: 2026-11-22 (точный timestamp — GitHub); SHA через `git log --grep KR-20261122-007`.
 - Файлы: `REQUIREMENTS.md`, `CHANGELOG.md`. Lua не изменён.
