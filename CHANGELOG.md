@@ -1,3 +1,21 @@
+## KR-20261122-065 — docs: post-review guards for IT-01/1.7
+- Дата: 2026-11-22 (timestamp по Git). Тип docs, IT-01/1.7 P0, файл CHANGELOG.md.
+- Контекст: при статическом повторном разборе обнаружены операции с потенциальными secret значениями до проверки безопасности. Не подтверждён игровой баг, устранён исходный риск.
+- Ретроспективно документированы коммиты 063 и 064. В их однопутевых GitHub коммитах не было CHANGELOG; это явное отклонение от обязательного атомарного правила, а не скрытое соответствие ему.
+- PASS: статическая сверка pcall guards; NOT RUN: Lua 5.1/mock, CI (manual-only), WoW Forever.
+- Для тестировщика: финальные negative secret cases при проверке Needs и item condition.
+- Результат: дополнительные source guards, общий IT-01 ещё не завершён, следующий 1.8. Связанные 056–064, IT-01.
+
+## KR-20261122-064 — fix: safe inventory observation reason extraction
+- Дата: 2026-11-22 (время Git). SHA `d8c630c0e098e93d9939d939c3d56889bf998f90`.
+- IT-01/1.7 P0, тип fix. `KordRotation/Core/RotationConditions.lua`, `readItemFact`: извлечение `record.reason` теперь внутри pcall; секретное значение/ошибка дают UNKNOWN `item_count_unverified`. Работа GameState readers не изменена, новые WoW API отсутствуют.
+- PASS — статическая проверка nil/protected guard. NOT RUN — Lua 5.1, mock, CI, Forever. Клиентскому тестировщику: проверить защищённый reason. Следующий IT-01/1.8.
+
+## KR-20261122-063 — fix: secret-safe Needs.items validation
+- Дата: 2026-11-22 (время Git). SHA `2a3dd860df5a1c5237c86b3296afbaad4d04e4c6`.
+- IT-01/1.7 P0, тип fix. `KordRotation/Core/RotationProfiles.lua`, `itemNeeds`: до обхода массива подтверждается `IsSafeValue` таблицы через pcall, семейные строки проверяются в pcall до #/индексирования; секретная запись не должна разрешаться. Не меняет схему Needs.items или старые профили.
+- PASS — статическая сверка защищённых веток; NOT RUN — Lua 5.1, mock, CI, Forever. Тестировщику: invalid/protected family names. Следующий IT-01/1.8.
+
 ## KR-20261122-062 — docs: reconcile IT-01/1.7 source changes and status
 - Дата: 2026-11-22 (точное время Git), этап 1/шаг 1.7 P0. Тип docs. Изменён CHANGELOG.md.
 - Контекст: независимые GitHub Contents API операции 056–061 не могли обновить несколько путей одним коммитом. Это **нарушает норму CHANGELOG_RULES о журнале в каждом коммите**. Фиксируем факты позднее, не объявляем исторические коммиты соответствующими правилу и не переписываем Git history.
