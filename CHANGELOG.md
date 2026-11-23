@@ -1,3 +1,13 @@
+## KR-20261123-135 — IT-02/2.6: reject disabled and unauthenticated member cooldown records
+- Дата/время: 2026-11-23 UTC (точное время Git); Git SHA `git log --grep KR-20261123-135`. IT-02/2.6 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: групповой member-evidence reader проверял READY/identity/scope/time/revision, но не проверял `enabled` и конкретный `source`. Синтетический READY с disabled=true или неподтверждённым источником мог повлиять на source-only confidence и use correlation.
+- Код: `KordRotation/Core/GameState.lua:ReadSharedItemCooldownMemberEvidence` — secret-safe `enabled=true`, source allowlist `C_Item.GetItemCooldown` / `GetItemCooldown` до любого доверия к члену. Никакой групповой READY/remaining не добавлен; существующие WoW API прежние.
+- Тест: `tests/shared_item_cooldown_member_evidence_mock.lua` — source/enabled в положительных fixtures, негативные disabled member / forged source, неизменность fail-closed group/public result.
+- Документы: REQUIREMENTS.md + поэтапный план + CHANGELOG одним Git Tree commit.
+- PASS: проверка точных source anchors, сохранение исходных частей и Git Blob/Tree fast-forward. NOT RUN: Lua 5.1 mocks/full suite, GitHub Actions (ручные), WoW Forever (нет клиента).
+- Тестировщику: итоговый IT-02 QA item-specific enabled/provenance и отсутствия ложного общего кулдауна; промежуточная установка не требуется.
+- Остаток: client-verified shared potion semantics, group producer/known ready rules, полный QA. Связи KR-20261123-134, IT-02/2.6.
+
 ## KR-20261123-134 — IT-02/2.3: guard protected cooldown status/reason
 - Дата/время: 2026-11-23 UTC (точное время Git); SHA по `git log --grep KR-20261123-134`. P0 fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Причина: `ReadValues` был под pcall, но `raw.status/raw.reason` читались вне него. Защищённый return table мог прервать адаптер.

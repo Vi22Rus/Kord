@@ -1639,6 +1639,14 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
                 or record.status~="READY"
                 or not api:IsSafeValue(record.itemID) or record.itemID~=id
                 or record.cooldownScope~="ITEM_SPECIFIC"
+                -- Group member evidence must not promote forged or disabled
+                -- READY records. The canonical individual reader only
+                -- accepts these two source-backed item cooldown adapters.
+                or not api:IsSafeValue(record.source)
+                or (record.source~="C_Item.GetItemCooldown"
+                    and record.source~="GetItemCooldown")
+                or not api:IsSafeValue(record.enabled)
+                or record.enabled~=true
                 or not api:IsSafeValue(record.active)
                 or type(record.active)~="boolean"
                 or not api:IsSafeValue(record.remaining)

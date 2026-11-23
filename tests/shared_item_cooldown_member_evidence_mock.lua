@@ -44,6 +44,7 @@ function S:ReadItemCooldownObservation(id)
     if mode=="backward_sample" and id==858 then sampleAt=98 end
     if mode=="all_zero" then
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source="C_Item.GetItemCooldown",enabled=true,
             active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown,observedAt=sampleAt}
     end
     if (mode=="cross_family" and id==2455) or id==118 or id==858 then
@@ -53,19 +54,25 @@ function S:ReadItemCooldownObservation(id)
         end
         if mode=="secret" and id==118 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source="C_Item.GetItemCooldown",enabled=true,
                 active="SECRET",remaining=20,revision=bus.cooldown,observedAt=sampleAt}
         end
         if mode=="short_gcd" then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source="C_Item.GetItemCooldown",enabled=true,
                 active=true,remaining=1,startTime=99,duration=1,
                 revision=bus.cooldown,observedAt=sampleAt}
         end
         if mode=="divergent" and id==858 then
             return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source="C_Item.GetItemCooldown",enabled=true,
                 active=true,remaining=20,startTime=70,duration=50,
                 revision=bus.cooldown,observedAt=sampleAt}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source=mode=="forged_source" and id==118 and "FORGED" or
+                "C_Item.GetItemCooldown",
+            enabled=mode~="disabled_member" or id~=118,
             active=true,remaining=20,startTime=90,duration=30,revision=bus.cooldown,observedAt=sampleAt}
     end
     if id==929 then
@@ -73,6 +80,7 @@ function S:ReadItemCooldownObservation(id)
             return {status="UNKNOWN",reason="item_cd_unverified"}
         end
         return {status="READY",itemID=id,cooldownScope="ITEM_SPECIFIC",
+            source="C_Item.GetItemCooldown",enabled=true,
             active=false,remaining=0,startTime=0,duration=0,revision=bus.cooldown,observedAt=sampleAt}
     end
     return {status="UNKNOWN",reason="item_cd_unverified"}
@@ -192,6 +200,20 @@ assert(publicMixed.groupLockoutConfidence=="UNKNOWN")
 assert(publicMixed.useCorrelation=="ESTIMATED")
 assert(publicMixed.propagationEvidence=="MIXED_CANDIDATES")
 assert(publicMixed.groupReadyConfidence=="UNKNOWN")
+-- A disabled item or a fabricated API source cannot supply the
+-- positive origin required for correlated group-lockout evidence.
+for _,variant in ipairs({"disabled_member","forged_source"}) do
+    mode=variant
+    local rejected=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
+    assert(rejected.groupStatus=="UNKNOWN" and rejected.remaining==nil)
+    assert(rejected.knownActiveCount==1 and rejected.unknownCount==17)
+    assert(rejected.useCorrelation=="UNKNOWN")
+    assert(rejected.groupLockoutConfidence=="UNKNOWN")
+    assert(rejected.groupReadyConfidence=="UNKNOWN")
+    local public=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+    assert(public.useAttribution==nil and public.groupStatus=="UNKNOWN")
+    assert(public.groupLockoutConfidence=="UNKNOWN")
+end
 mode="short_gcd"
 local shortGcd=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(shortGcd.knownActiveCount==0 and shortGcd.unknownCount==18)
