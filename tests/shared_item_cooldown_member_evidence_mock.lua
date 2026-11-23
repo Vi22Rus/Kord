@@ -141,6 +141,22 @@ assert(eventReads==2)
 assert(shiftedEvent.useCorrelation=="ESTIMATED")
 assert(shiftedEvent.useAttribution==nil and shiftedEvent.useObservedAt==nil)
 assert(shiftedEvent.groupStatus=="UNKNOWN" and shiftedEvent.remaining==nil)
+-- Same timestamp is insufficient: the two reads may refer to different
+-- items sharing a cooldown start. Bind the attribution to the itemID too.
+mode="aligned_only"
+eventReads=0
+S.ReadObservedItemUse=function(self,groupID)
+    eventReads=eventReads+1
+    local evidence=realUseReader(self,groupID)
+    if eventReads==2 then evidence.candidateItemID=858 end
+    return evidence
+end
+local shiftedItem=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+S.ReadObservedItemUse=realUseReader
+assert(eventReads==2 and shiftedItem.useCorrelation=="ESTIMATED")
+assert(shiftedItem.useAttribution==nil and shiftedItem.useObservedAt==nil)
+assert(shiftedItem.groupStatus=="UNKNOWN" and shiftedItem.remaining==nil)
+mode="cross_family"
 -- A revision may change after the internal reader returns its stable record.
 -- Public observation must refuse the now-stale confidence (no false READY).
 local actualMemberReader=S.ReadSharedItemCooldownMemberEvidence

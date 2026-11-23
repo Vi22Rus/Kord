@@ -1260,7 +1260,7 @@ function S:ReadSharedItemCooldownObservation(groupID)
         if type(catalog.PrepareUseSpellIndex)=="function" then
             pcall(catalog.PrepareUseSpellIndex,catalog,groupID)
         end
-        local pendingUseObservedAt=nil
+        local pendingUseObservedAt,pendingUseItemID=nil,nil
         local useOK,observed=pcall(self.ReadObservedItemUse,self,groupID)
         if useOK and type(observed)=="table" then
             local valid,accepted,observedAt=pcall(function()
@@ -1284,6 +1284,7 @@ function S:ReadSharedItemCooldownObservation(groupID)
                 -- Retain source-only evidence privately until the member
                 -- snapshot and its revisions have also been accepted.
                 pendingUseObservedAt=observedAt
+                pendingUseItemID=observed.candidateItemID
             end
         end
         -- Reuse the single bounded member-evidence pipeline. Source-only
@@ -1322,7 +1323,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         -- refer to the same exact event timestamp.
                         or (evidence.useCorrelation=="ESTIMATED"
                             and (not api:IsSafeValue(evidence.matchedUseObservedAt)
-                                or not finite(evidence.matchedUseObservedAt,0)))
+                                or not finite(evidence.matchedUseObservedAt,0)
+                                or not inventorySafeID(evidence.matchedUseItemID,"item")))
                         or not api:IsSafeValue(evidence.itemCooldownRevision)
                         or not api:IsSafeValue(evidence.inventoryRevision)
                         or not api:IsSafeValue(evidence.familyRevision)
@@ -1363,7 +1365,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         itemRev=evidence.itemCooldownRevision,
                         bagRev=evidence.inventoryRevision,
                         familyRev=evidence.familyRevision,
-                        matchedUseAt=evidence.matchedUseObservedAt}
+                        matchedUseAt=evidence.matchedUseObservedAt,
+                        matchedUseItemID=evidence.matchedUseItemID}
                 end)
                 if checked and fields then
                     result.itemCooldownConfidence=fields.item
@@ -1378,7 +1381,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     -- snapshot or without a matching item cooldown.
                     if pendingUseObservedAt
                         and fields.useCorrelation=="ESTIMATED"
-                        and fields.matchedUseAt==pendingUseObservedAt then
+                        and fields.matchedUseAt==pendingUseObservedAt
+                        and fields.matchedUseItemID==pendingUseItemID then
                         result.useAttribution="ESTIMATED"
                         result.useObservedAt=pendingUseObservedAt
                     end
@@ -1613,6 +1617,7 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     -- This scalar binds the internal use read to the public use read;
     -- it is not group cooldown proof or a READY claim.
     result.matchedUseObservedAt=matchedUse and observedAt or nil
+    result.matchedUseItemID=matchedUse and observedID or nil
     result.useCorrelationReason=matchedUse
         and "item_cd_use_member_time_match"
         or "item_cd_use_attribution_unknown"

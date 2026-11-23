@@ -1,3 +1,12 @@
+## KR-20261123-128 — IT-02/2.6: require same item identity across use attribution reads
+- Дата/время: 2026-11-23 UTC (Git); SHA определяется `git log --grep KR-20261123-128`; этап IT-02/2.6 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст и причина: между двумя чтениями player use может смениться itemID при том же `observedAt`, что делает timestamp-only correlation из KR-127 недостаточной. Выявленный source-level риск, не подтверждённый баг WoW Forever.
+- Код: `KordRotation/Core/GameState.lua` — `ReadSharedItemCooldownMemberEvidence` публикует scalar `matchedUseItemID` только для действительной item-specific use correlation; `ReadSharedItemCooldownObservation` удерживает `pendingUseItemID` и требует совпадение ID и timestamp; сохранились secret-safe, проверка ревизий и `UNKNOWN` для неподтверждённых групп. Новых игровых API, фоновых сканеров, групповый READY или remaining нет.
+- Тест: `tests/shared_item_cooldown_member_evidence_mock.lua` — два разных itemID одной семьи при одинаковом timestamp, отрицательная публичная атрибуция. Существующие positive/cross-family/race tests сохранены.
+- Документы: `REQUIREMENTS.md` и полный поэтапный план синхронизированы через исходные Git Blob SHA тем же коммитом; прежние [x] и [ ] сохранены. `CHANGELOG.md` — этот самостоятельный лог.
+- Проверки: PASS — source anchors, точечный diff, Git blob/tree and fast-forward publication; NOT RUN — выполнение Lua 5.1/mock/full regression (Lua 5.1 отсутствует), ручной CI, WoW Forever.
+- Тестировщику: включить случай два разных предмета с одним timestamp в итоговый IT-02 QA; промежуточная установка не нужна. Остаток: реальные Forever group semantics, group-state producer, estimated-active по подтверждённому контракту, общий QA. Связи KR-20261123-126/127, IT-02.
+
 ## KR-20261123-127 — IT-02/2.6: bind public item-use attribution to matched event timestamp
 - Дата: 2026-11-23 UTC (точное время Git); SHA `git log --grep KR-20261123-127`. Этап IT-02/2.6 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Дефект: между двумя чтениями `ReadObservedItemUse` может смениться наблюдаемое событие при неизменной ревизии item cooldown; публичная атрибуция первого события ошибочно использует корреляцию второго. Выявлено сравнением source-contract; клиентская ошибка не заявлена.
