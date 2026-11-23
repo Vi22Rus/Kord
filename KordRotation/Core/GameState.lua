@@ -1317,6 +1317,12 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         or (evidence.groupLockoutConfidence=="ESTIMATED"
                             and (evidence.useCorrelation~="ESTIMATED"
                                 or evidence.propagationEvidence~="ALIGNED_CANDIDATES"))
+                        -- A second event can arrive between the public and
+                        -- internal reads. Accept attribution only if both
+                        -- refer to the same exact event timestamp.
+                        or (evidence.useCorrelation=="ESTIMATED"
+                            and (not api:IsSafeValue(evidence.matchedUseObservedAt)
+                                or not finite(evidence.matchedUseObservedAt,0)))
                         or not api:IsSafeValue(evidence.itemCooldownRevision)
                         or not api:IsSafeValue(evidence.inventoryRevision)
                         or not api:IsSafeValue(evidence.familyRevision)
@@ -1356,7 +1362,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         propagation=evidence.propagationEvidence,
                         itemRev=evidence.itemCooldownRevision,
                         bagRev=evidence.inventoryRevision,
-                        familyRev=evidence.familyRevision}
+                        familyRev=evidence.familyRevision,
+                        matchedUseAt=evidence.matchedUseObservedAt}
                 end)
                 if checked and fields then
                     result.itemCooldownConfidence=fields.item
@@ -1370,7 +1377,8 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     -- Never publish a use estimate from a rejected/racing
                     -- snapshot or without a matching item cooldown.
                     if pendingUseObservedAt
-                        and fields.useCorrelation=="ESTIMATED" then
+                        and fields.useCorrelation=="ESTIMATED"
+                        and fields.matchedUseAt==pendingUseObservedAt then
                         result.useAttribution="ESTIMATED"
                         result.useObservedAt=pendingUseObservedAt
                     end
@@ -1601,6 +1609,10 @@ function S:ReadSharedItemCooldownMemberEvidence(groupID)
     result.inventoryRevision=before[2]
     result.familyRevision=before[3]
     result.useCorrelation=matchedUse and "ESTIMATED" or "UNKNOWN"
+    -- Exact event timestamp used for the matched item-specific tuple.
+    -- This scalar binds the internal use read to the public use read;
+    -- it is not group cooldown proof or a READY claim.
+    result.matchedUseObservedAt=matchedUse and observedAt or nil
     result.useCorrelationReason=matchedUse
         and "item_cd_use_member_time_match"
         or "item_cd_use_attribution_unknown"

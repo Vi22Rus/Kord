@@ -123,6 +123,24 @@ local publicCross=S:ReadSharedItemCooldownObservation("POTION_SHARED")
 assert(publicCross.groupLockoutConfidence=="ESTIMATED")
 assert(publicCross.groupStatus=="UNKNOWN" and publicCross.groupRemaining==nil)
 assert(publicCross.useAttribution=="ESTIMATED" and publicCross.useObservedAt==90)
+assert(crossFamily.matchedUseObservedAt==90)
+-- A second valid player-use event may arrive between public attribution
+-- and the member-evidence read. Its own matching cooldown must not
+-- launder the older timestamp into the public attribution.
+local realUseReader=S.ReadObservedItemUse
+local eventReads=0
+S.ReadObservedItemUse=function(self,groupID)
+    eventReads=eventReads+1
+    local evidence=realUseReader(self,groupID)
+    if eventReads==2 then evidence.observedAt=91 end
+    return evidence
+end
+local shiftedEvent=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+S.ReadObservedItemUse=realUseReader
+assert(eventReads==2)
+assert(shiftedEvent.useCorrelation=="ESTIMATED")
+assert(shiftedEvent.useAttribution==nil and shiftedEvent.useObservedAt==nil)
+assert(shiftedEvent.groupStatus=="UNKNOWN" and shiftedEvent.remaining==nil)
 -- A revision may change after the internal reader returns its stable record.
 -- Public observation must refuse the now-stale confidence (no false READY).
 local actualMemberReader=S.ReadSharedItemCooldownMemberEvidence

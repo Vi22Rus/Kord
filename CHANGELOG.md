@@ -1,3 +1,12 @@
+## KR-20261123-127 — IT-02/2.6: bind public item-use attribution to matched event timestamp
+- Дата: 2026-11-23 UTC (точное время Git); SHA `git log --grep KR-20261123-127`. Этап IT-02/2.6 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Дефект: между двумя чтениями `ReadObservedItemUse` может смениться наблюдаемое событие при неизменной ревизии item cooldown; публичная атрибуция первого события ошибочно использует корреляцию второго. Выявлено сравнением source-contract; клиентская ошибка не заявлена.
+- Код: `KordRotation/Core/GameState.lua` — `ReadSharedItemCooldownMemberEvidence` возвращает bounded `matchedUseObservedAt` только при настоящей source-only корреляции; `ReadSharedItemCooldownObservation` проверяет безопасность timestamp и точное совпадение с первичным `pendingUseObservedAt` перед публикацией; при несовпадении нет `useAttribution`. Никаких новых WoW API, true group READY/remaining, auto-use или сканеров.
+- Регрессия: `tests/shared_item_cooldown_member_evidence_mock.lua` — positive (same event 90) и negative (первое 90 / второе 91) при сохранённой внутренней ESTIMATED-корреляции. Предыдущие тесты не удалены.
+- Документы: `REQUIREMENTS.md` и поэтапный план обновлены через Git Blob SHA в том же tree/commit; прежние 24 закрытых строки и открытые пункты сохранены.
+- Проверки: PASS — точные исходные anchors, добавление полей и assertions, совпадение ID документов/коммита и Git tree публикация; NOT RUN — Lua 5.1 mocks/full regression (нет исполняемого Lua 5.1), GitHub Actions (manual-only), WoW Forever (игровой клиент недоступен).
+- Тестировщику: в итоговом IT-02 QA проверить back-to-back item-use без ложной связи первого события с последующим cooldown; промежуточная установка не требуется. Остаётся Forever semantics, подтверждённый producer и QA. Связи KR-20261123-120/122/124/126, IT-02/2.6.
+
 ## KR-20261123-126 — IT-02/2.6: publish item-use attribution only from validated snapshot
 - Дата: 2026-11-23 UTC (время Git); SHA по `git log --grep KR-20261123-126`. IT-02 P0, этап 2/2.6; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: после введённой KR-124 финальной защиты ревизий `useAttribution` могла остаться установленной из предварительного события, даже если member confidence отклонена из-за гонки. Подтверждённый source-level defect, не воспроизведённый клиентский баг.
