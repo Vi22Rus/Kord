@@ -1092,6 +1092,15 @@ local function itemCooldownTuple(api,raw)
     return {startTime=start,duration=duration,enabled=true}
 end
 
+-- IT-02/2.7: family revision is cache identity, not shared cooldown proof.
+local function itemFamilyRevision()
+    local families=KR.ItemFamilyCatalog
+    if not families or type(families.GetRevision)~="function" then return nil end
+    local ok,value=pcall(families.GetRevision,families)
+    if ok and finite(value,0) and value==math.floor(value) then return value end
+    return nil
+end
+
 function S:ReadItemCooldownObservation(itemID)
     local result=unknownItemCooldown("item_cd_api_missing",
         "GameState.ItemCooldownObservation")
@@ -1116,6 +1125,45 @@ function S:ReadItemCooldownObservation(itemID)
     if initialRevision==nil then
         result.reason="item_cd_revision_unavailable"
         return result
+    end
+    -- Bounded active-only memo: itemID + item/bag/family revisions + clock TTL.
+    -- Never memoize idle/UNKNOWN; expiration must fall back to the live reader.
+    local bagRevision=inventoryBagRevision()
+    local familyRevision=itemFamilyRevision()
+    local cached=self.itemCooldownCache and self.itemCooldownCache[itemID]
+    if cached and bagRevision~=nil and familyRevision~=nil
+        and cached.itemRevision==initialRevision
+        and cached.bagRevision==bagRevision
+        and cached.familyRevision==familyRevision then
+        local clockOK,clock=pcall(api.Read,api,"GetTime","number")
+        if clockOK and type(clock)=="table" and clock.status=="READY"
+            and finite(clock.value,0) then
+            local now=clock.value
+            local expires=cached.startTime+cached.duration
+            if finite(expires,0) and now>=cached.observedAt
+                and now-cached.observedAt<=0.10 and expires>now
+                and cooldownRevision()==initialRevision
+                and inventoryBagRevision()==bagRevision
+                and itemFamilyRevision()==familyRevision then
+                result.status="READY"
+                result.reason=nil
+                result.source=cached.source
+                result.revision=initialRevision
+                result.startTime=cached.startTime
+                result.duration=cached.duration
+                result.remaining=expires-now
+                result.enabled=true
+                result.active=true
+                result.cooldownScope="ITEM_SPECIFIC"
+                result.gcdStatus="UNKNOWN"
+                result.combatUseStatus="UNKNOWN"
+                result.inventoryStatus="UNKNOWN"
+                result.chargesStatus="UNKNOWN"
+                result.usabilityStatus="UNKNOWN"
+                result.observedAt=now
+                return result
+            end
+        end
     end
     -- Only fallback if the first API is absent; secret, error, malformed
     -- or disabled results must not become an invented READY via fallback.
@@ -1167,6 +1215,12 @@ function S:ReadItemCooldownObservation(itemID)
                 result.reason="item_cd_revision_changed"
                 return result
             end
+            -- An inventory/catalog revision race invalidates the cache key.
+            if (bagRevision~=nil and inventoryBagRevision()~=bagRevision)
+                or (familyRevision~=nil and itemFamilyRevision()~=familyRevision) then
+                result.reason="item_cd_dependency_revision_changed"
+                return result
+            end
             result.revision=finalRevision
             -- An individual zero does not clear shared potion lockout.
             result.status="READY"
@@ -1186,6 +1240,21 @@ function S:ReadItemCooldownObservation(itemID)
             result.chargesStatus="UNKNOWN"
             result.usabilityStatus="UNKNOWN"
             result.observedAt=now
+            -- Cache only proven active cooldowns. Max 32 itemIDs and 0.10s.
+            -- Stale/expired keys cause fresh API reads; no false idle READY.
+            if remaining>0 and bagRevision~=nil and familyRevision~=nil then
+                local memo=self.itemCooldownCache or {}
+                if memo[itemID]==nil then
+                    local count=(self.itemCooldownCacheCount or 0)+1
+                    if count>32 then memo={} count=1 end
+                    self.itemCooldownCacheCount=count
+                end
+                memo[itemID]={itemRevision=finalRevision,
+                    bagRevision=bagRevision,familyRevision=familyRevision,
+                    startTime=fields.startTime,duration=fields.duration,
+                    observedAt=now,source=name}
+                self.itemCooldownCache=memo
+            end
             -- Revision follows in IT-02/2.7; absent revision is not zero.
             return result
         end

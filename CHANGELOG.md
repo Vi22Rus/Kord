@@ -1,3 +1,13 @@
+## KR-20261123-130 — IT-02/2.7 bounded active-only item cooldown memo
+- Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-130`. Этап IT-02/2.7 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: ранее существовали EventBus item cooldown revisions и bounded periodic refresh, но не bounded identity-aware item cooldown memo. Повторные запросы читали один и тот же API при неизменных ревизиях.
+- Изменения: `KordRotation/Core/GameState.lua` — активный cooldown кэшируется только по itemID+itemCooldown/inventory/family revisions, с TTL 0.10s, пределом 32 entries и без кеширования idle/UNKNOWN. Cache-hit проверяет clock и ревизии и пересчитывает remaining; live-read отклоняет гонку bag/family revisions. `tests/item_cooldown_integration_mock.lua` — cache reuse, TTL, bag/family invalidation. Предыдущие mock-сценарии сохранены.
+- API: существующий guarded `GameAPI:ReadValues("C_Item.GetItemCooldown")` / legacy, `GameAPI:Read("GetTime")`; новые WoW API отсутствуют. Shared cooldown и конечный AbilityEligibility READY не изменены.
+- Документы: `REQUIREMENTS.md` и поэтапный план — запись KR-20261123-130; исходные шаги сохранены.
+- Проверки: PASS — static exact anchor validation, Git blob/tree fast-forward; NOT RUN — Lua 5.1 execution/mock/full regression, manual GitHub Actions, WoW Forever (клиент отсутствует).
+- Тестировщику: итоговый IT-02 QA — многократное чтение активного item cooldown, истечение TTL, смена сумки/каталога и события cooldown; промежуточная установка не требуется.
+- Остаток: Forever semantics и итоговые Lua/CI/client проверки, IT-02/2.6 verified group inference. Связи KR-20261123-129, IT-02/2.7.
+
 ## KR-20261123-129 — IT-02/2.7: fail closed when item cooldown revision is unavailable
 - Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-129`. Этап IT-02/2.7 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: `ReadItemCooldownObservation` принимал `nil == nil` при отсутствии revision-provider и мог выдавать item-specific `READY` без контролируемой ревизии. Это подтверждённый риск исходников, не зарегистрированный игровой баг.

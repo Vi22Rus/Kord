@@ -46,6 +46,31 @@ local first=KR.GameState:ReadItemCooldownObservation(118)
 assert(first.status=="READY" and first.revision==0)
 assert(first.gcdStatus=="UNKNOWN" and first.usabilityStatus=="UNKNOWN")
 assert(first.cooldownScope=="ITEM_SPECIFIC")
+-- Same bounded active observation is reused without a second cooldown API read.
+assert(callCount==1)
+local cached=KR.GameState:ReadItemCooldownObservation(118)
+assert(cached~=first and cached.status=="READY" and cached.remaining==20)
+assert(callCount==1)
+now=100.05
+local countingDown=KR.GameState:ReadItemCooldownObservation(118)
+assert(countingDown.status=="READY"
+    and math.abs(countingDown.remaining-19.95)<0.00001)
+assert(callCount==1)
+-- TTL expiry and bag revision changes both force a fresh observation.
+now=100.20
+assert(KR.GameState:ReadItemCooldownObservation(118).status=="READY")
+assert(callCount==2)
+KR.EventBus:InvalidateInventory(nil,"mock_bag_revision")
+assert(KR.GameState:ReadItemCooldownObservation(118).status=="READY")
+assert(callCount==3)
+-- Family catalog revision is part of the key, not item-family group evidence.
+local originalFamilyRevision=KR.ItemFamilyCatalog.GetRevision
+KR.ItemFamilyCatalog.GetRevision=function(self)
+    return originalFamilyRevision(self)+1
+end
+assert(KR.GameState:ReadItemCooldownObservation(118).status=="READY")
+assert(callCount==4)
+KR.ItemFamilyCatalog.GetRevision=originalFamilyRevision
 assert(KR.EventBus:HandleEvent("BAG_UPDATE_COOLDOWN"))
 assert(KR.EventBus:GetItemCooldownRevision()==1)
 now=130
