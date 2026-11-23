@@ -1111,6 +1111,12 @@ function S:ReadItemCooldownObservation(itemID)
         return nil
     end
     local initialRevision=cooldownRevision()
+    -- An absent or invalid revision is not a stable snapshot: nil==nil
+    -- must never promote an item-specific cooldown observation to READY.
+    if initialRevision==nil then
+        result.reason="item_cd_revision_unavailable"
+        return result
+    end
     -- Only fallback if the first API is absent; secret, error, malformed
     -- or disabled results must not become an invented READY via fallback.
     local candidates={"C_Item.GetItemCooldown","GetItemCooldown"}
@@ -1153,6 +1159,10 @@ function S:ReadItemCooldownObservation(itemID)
                 return result
             end
             local finalRevision=cooldownRevision()
+            if finalRevision==nil then
+                result.reason="item_cd_revision_unavailable"
+                return result
+            end
             if initialRevision~=finalRevision then
                 result.reason="item_cd_revision_changed"
                 return result

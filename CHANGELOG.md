@@ -1,3 +1,14 @@
+## KR-20261123-129 — IT-02/2.7: fail closed when item cooldown revision is unavailable
+- Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-129`. Этап IT-02/2.7 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: `ReadItemCooldownObservation` принимал `nil == nil` при отсутствии revision-provider и мог выдавать item-specific `READY` без контролируемой ревизии. Это подтверждённый риск исходников, не зарегистрированный игровой баг.
+- Причина: существовала проверка только неравенства `initialRevision~=finalRevision`, а отсутствующую initial/final revision как отдельное недостоверное состояние не обрабатывали.
+- Изменения: `KordRotation/Core/GameState.lua` — guard `initialRevision==nil` до API-чтения и `finalRevision==nil` после него; оба случая `UNKNOWN/item_cd_revision_unavailable`. Остальные item-specific поля и исходные API не изменялись; отсутствует автоматическое использование предметов и выдуманное group READY.
+- Тесты: `tests/item_cooldown_integration_mock.lua` — отсутствует EventBus, `SECRET`, throwing getter, исчезновение revision после API, нормальный reader после восстановления. Существующие тесты сохранены.
+- Документы: `REQUIREMENTS.md` и `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` дополнены единой записью ID/статусов через Git Blob SHA; `CHANGELOG.md` — эта запись.
+- Проверки: PASS — source/test anchor verification, точечное добавление без удаления исторического текста и атомарный Git tree/fast-forward. NOT RUN — Lua 5.1 execution/mock/full regression, GitHub Actions (manual-only), WoW Forever (клиент недоступен). В окружении имеется LuaTeX Lua 5.3, но не 5.1.
+- Тестировщику: итоговый IT-02 QA дополнить отсутствующей/пропадающей revision и проверкой отсутствия false READY; промежуточная установка не требуется.
+- Остаток: bounded TTL/identity caching, подтверждение Forever сигналов, общий QA. Связи KR-20261122-096 и IT-02/2.7, IT-02/2.6.
+
 ## KR-20261123-128 — IT-02/2.6: require same item identity across use attribution reads
 - Дата/время: 2026-11-23 UTC (Git); SHA определяется `git log --grep KR-20261123-128`; этап IT-02/2.6 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст и причина: между двумя чтениями player use может смениться itemID при том же `observedAt`, что делает timestamp-only correlation из KR-127 недостаточной. Выявленный source-level риск, не подтверждённый баг WoW Forever.

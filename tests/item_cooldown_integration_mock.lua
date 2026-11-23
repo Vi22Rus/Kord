@@ -62,6 +62,37 @@ local raced=KR.GameState:ReadItemCooldownObservation(118)
 assert(raced.status=="UNKNOWN" and raced.reason=="item_cd_revision_changed")
 assert(raced.active==nil and raced.remaining==nil)
 assert(C:Create(profile,{}).items:cooldownActive(118)==nil)
+-- Missing/broken revision provider must never become READY because
+-- both pre-read and post-read revisions happen to evaluate to nil.
+mode="active"
+local originalBus=KR.EventBus
+KR.EventBus=nil
+local withoutBus=KR.GameState:ReadItemCooldownObservation(118)
+assert(withoutBus.status=="UNKNOWN"
+    and withoutBus.reason=="item_cd_revision_unavailable")
+assert(withoutBus.active==nil and withoutBus.remaining==nil)
+KR.EventBus={GetItemCooldownRevision=function() return "SECRET" end}
+local secretRevision=KR.GameState:ReadItemCooldownObservation(118)
+assert(secretRevision.status=="UNKNOWN"
+    and secretRevision.reason=="item_cd_revision_unavailable")
+KR.EventBus={GetItemCooldownRevision=function() error("simulated") end}
+local failedRevision=KR.GameState:ReadItemCooldownObservation(118)
+assert(failedRevision.status=="UNKNOWN"
+    and failedRevision.reason=="item_cd_revision_unavailable")
+-- Mid-read disappearance is also UNKNOWN rather than stale READY.
+local reads=0
+KR.EventBus={GetItemCooldownRevision=function()
+    reads=reads+1
+    if reads==1 then return 123 end
+    return nil
+end}
+local vanishedRevision=KR.GameState:ReadItemCooldownObservation(118)
+assert(vanishedRevision.status=="UNKNOWN"
+    and vanishedRevision.reason=="item_cd_revision_unavailable")
+assert(vanishedRevision.active==nil and vanishedRevision.remaining==nil)
+KR.EventBus=originalBus
+local afterRestore=KR.GameState:ReadItemCooldownObservation(118)
+assert(afterRestore.status=="READY" and afterRestore.active==false)
 local before=callCount
 assert(C:Create(profile,{}).items:cooldownActive(999)==nil)
 assert(callCount==before)
