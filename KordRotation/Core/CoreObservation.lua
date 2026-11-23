@@ -594,6 +594,57 @@ function O:ReadSharedCooldownDiagnostic()
         active=active,inactive=inactive,unknown=unknown}
 end
 
+-- IT-02/2.9: explicit item-specific cooldown diagnostics for DevTools.
+-- Only fixed reason/source enums cross the bridge; no item IDs, raw
+-- cooldown tables, player identifiers, or final ability READY claims.
+function O:ReadItemCooldownDiagnostic(itemID)
+    local fallback={status="UNKNOWN",code="item_cd_remaining_unknown",
+        source="UNKNOWN",activity="UNKNOWN"}
+    if not nonnegativeInt(itemID) or itemID==0 then
+        fallback.code="item_cd_id_unverified"
+        return fallback
+    end
+    local state=KR.GameState
+    if not state or type(state.ReadItemCooldownObservation)~="function" then
+        fallback.code="item_cd_api_missing"
+        return fallback
+    end
+    local ok,value=pcall(state.ReadItemCooldownObservation,state,itemID)
+    if not ok or type(value)~="table" or not safe(value) then
+        fallback.code="item_cd_read_failed"
+        return fallback
+    end
+    local origins={["C_Item.GetItemCooldown"]=true,["GetItemCooldown"]=true}
+    local source=field(value,"source")
+    if not origins[source] then source="UNKNOWN" end
+    local stateStatus=field(value,"status")
+    local activity=field(value,"active")
+    local remaining=field(value,"remaining")
+    if stateStatus=="READY" and type(remaining)=="number"
+        and safe(remaining) and remaining==remaining and remaining>=0
+        and remaining<math.huge then
+        if activity==true and remaining>0 then
+            return {status="UNKNOWN",code="item_cd_item_active",
+                source=source,activity="ACTIVE"}
+        end
+        if activity==false and remaining==0 then
+            return {status="READY",code="item_cd_ready_confirmed",
+                source=source,activity="IDLE"}
+        end
+    end
+    local codes={
+        item_cd_api_missing=true,item_cd_secret=true,
+        item_cd_disabled=true,item_cd_invalid_tuple=true,
+        item_cd_remaining_unknown=true,item_cd_revision_unavailable=true,
+        item_cd_revision_changed=true,
+        item_cd_dependency_revision_changed=true,
+        item_cd_read_failed=true,item_cd_id_unverified=true
+    }
+    local code=field(value,"reason")
+    if not codes[code] then code="item_cd_remaining_unknown" end
+    return {status="UNKNOWN",code=code,source=source,activity="UNKNOWN"}
+end
+
 -- A deliberately tiny public bridge: callers cannot mutate the KR namespace.
 -- The diagnostic extension is a separate WoW addon namespace.
 _G.KordRotationCoreObservation = {
@@ -636,6 +687,12 @@ _G.KordRotationCoreObservation = {
     SharedCooldownDiagnostic=function()
         local ok,result=pcall(O.ReadSharedCooldownDiagnostic,O)
         if not ok then return {status="UNKNOWN",code="item_cd_group_partial"} end
+        return result
+    end,
+    ItemCooldownDiagnostic=function(_,itemID)
+        local ok,result=pcall(O.ReadItemCooldownDiagnostic,O,itemID)
+        if not ok then return {status="UNKNOWN",code="item_cd_read_failed",
+            source="UNKNOWN",activity="UNKNOWN"} end
         return result
     end,
     BeginAPITrace=function()

@@ -111,6 +111,61 @@ function D:InventoryDiagnostic(kind,id)
 end
 
 
+-- Explicit manual item-specific snapshot; no item ID is recorded or
+-- returned. Unlike the shared-group diagnostic, this has no group inference.
+function D:ItemCooldownDiagnostic(itemID)
+    local fallback={status="UNKNOWN",code="item_cd_remaining_unknown",
+        source="UNKNOWN",activity="UNKNOWN"}
+    if not self:Safe(itemID) or type(itemID)~="number"
+        or itemID~=math.floor(itemID) or itemID<=0
+        or itemID>1000000000 then
+        fallback.code="item_cd_id_unverified"
+        return fallback
+    end
+    local bridge=_G.KordRotationCoreObservation
+    if type(bridge)~="table"
+        or type(bridge.ItemCooldownDiagnostic)~="function" then
+        fallback.code="item_cd_api_missing"
+        return fallback
+    end
+    local ok,response=pcall(bridge.ItemCooldownDiagnostic,bridge,itemID)
+    if not ok or type(response)~="table" or not self:Safe(response) then
+        return fallback
+    end
+    local valid,clean=pcall(function()
+        local codes={item_cd_item_active=true,item_cd_ready_confirmed=true,
+            item_cd_api_missing=true,item_cd_secret=true,
+            item_cd_disabled=true,item_cd_invalid_tuple=true,
+            item_cd_remaining_unknown=true,item_cd_revision_unavailable=true,
+            item_cd_revision_changed=true,
+            item_cd_dependency_revision_changed=true,item_cd_read_failed=true,
+            item_cd_id_unverified=true}
+        local sources={UNKNOWN=true,["C_Item.GetItemCooldown"]=true,
+            ["GetItemCooldown"]=true}
+        local activities={UNKNOWN=true,ACTIVE=true,IDLE=true}
+        if not self:Safe(response.status) or not self:Safe(response.code)
+            or not self:Safe(response.source) or not self:Safe(response.activity)
+            or not codes[response.code] or not sources[response.source]
+            or not activities[response.activity] then return nil end
+        local expectedStatus=response.code=="item_cd_ready_confirmed"
+            and "READY" or "UNKNOWN"
+        if response.status~=expectedStatus then return nil end
+        if response.activity=="IDLE"
+            and response.code~="item_cd_ready_confirmed" then return nil end
+        if response.activity=="ACTIVE"
+            and response.code~="item_cd_item_active" then return nil end
+        if response.code=="item_cd_ready_confirmed"
+            and response.activity~="IDLE" then return nil end
+        return {status=response.status,code=response.code,
+            source=response.source,activity=response.activity}
+    end)
+    if not valid or not clean then return fallback end
+    if self.active and type(self.RecordItemCooldownDiagnostic)=="function" then
+        self:RecordItemCooldownDiagnostic(clean.code)
+    end
+    return clean
+end
+
 -- IT-02: user-initiated, aggregate-only evidence collection for Forever.
 -- No persistent itemIDs, names, raw API results or automated polling.
 function D:SharedCooldownDiagnostic()

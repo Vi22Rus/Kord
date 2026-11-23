@@ -139,6 +139,22 @@ function D:CreateUI()
             end
             return
         end
+        -- Explicit item-specific cooldown inspection; the supplied ID
+        -- is never written to the report or diagnostic records.
+        local cooldownItem=message:match("^cooldown%s+item%s+(%d+)$")
+        if cooldownItem and type(D.ItemCooldownDiagnostic)=="function" then
+            local result=D:ItemCooldownDiagnostic(tonumber(cooldownItem))
+            if D.ui and D.ui.report then
+                D.ui.report:SetText("Item-specific cooldown: "..result.status
+                    .." / "..result.code
+                    .."\nActivity / source: "..result.activity
+                    .." / "..result.source
+                    .."\nOnly item-specific cooldown; NOT final item usability or shared READY")
+                D.ui.frame:Show()
+                D:RefreshUI()
+            end
+            return
+        end
         if message=="cooldown" and type(D.SharedCooldownDiagnostic)=="function" then
             local result=D:SharedCooldownDiagnostic()
             if D.ui and D.ui.report then

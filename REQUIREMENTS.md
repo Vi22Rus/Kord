@@ -5126,6 +5126,12 @@
 - Доказательство: [KR-20261123-130](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-130); `KordRotation/Core/GameState.lua`, `tests/item_cooldown_integration_mock.lua`. Новых WoW API, фоновых scans, group READY и item-use actions нет.
 - PASS: статическая проверка точечных anchors, сохранения исходного текста и Git SHA/commit. NOT RUN: исполнение Lua 5.1 mock/full regression, ручной CI, WoW Forever. Реальные Forever API semantics остаются не подтверждены; общий IT-02 частичный.
 
+**Реализация Kord — IT-02/2.9, KR-20261123-131 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- [x] **DONE (CODE MERGED):** ручной `/krdev cooldown item <itemID>` через `KordRotationDevTools/Probe.lua` и UI вызывает `CoreObservation:ReadItemCooldownDiagnostic` только по запросу разработчика. Мост возвращает лишь заранее разрешённые `status/code/source/activity`; не отдаёт itemID, raw cooldown tuple, имя игрока, имена предметов, timing/remaining. Проверяются secret, nil, некорректные статусы/источники; active отдельного предмета не становится final READY/общей группой. `Recorder.lua` получил фиксированные диагностические коды.
+- [x] **Mock added (NOT EXECUTED):** `tests/item_cooldown_item_diagnostic_mock.lua` — active/idle, protected source, отсутствующая revision, invalid ID, forged bridge response и отсутствие ID в записанной строке.
+- Доказательство: [KR-20261123-131](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-131); `KordRotation/Core/CoreObservation.lua`, `KordRotationDevTools/{Probe,Recorder,UI}.lua` и mock test. Нет новых игровых API, polling и protected item actions.
+- PASS: static anchors и публикация Git Blob/Tree; NOT RUN: исполнение Lua 5.1, CI (manual), WoW Forever. Клиентская проверка provenance и group semantics остаётся открытой; IT-02/2.9 частичный.
+
 **Учёт завершённых подзадач IT-02/2.6 (KR-20261123-120):** канонические чекбоксы `[x] DONE (CODE MERGED)` для коммитов KR-20261122-090/093/101–119 и `[ ]` остатка добавлены в [раздел «Шаг 2.6» поэтапного плана](PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md). Уже реализованные чтение/каталог/атрибуция/корреляция/confidence/защиты/DevTools и потребитель `CONFIRMED_ACTIVE/CONFIRMED_READY` не считать незавершёнными. `DONE` обозначает подтверждённый Git-код; Lua 5.1, CI и WoW Forever остаются `NOT RUN`. Основной критерий 2.6 — `PARTIALLY IMPLEMENTED`, поскольку production-вывод подтверждённых групповых состояний и реальные правила Forever не завершены.
 
 

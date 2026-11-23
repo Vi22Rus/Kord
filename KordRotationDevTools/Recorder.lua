@@ -78,6 +78,9 @@ local itemCooldownReasons={
  item_cd_scope_unverified=true,item_cd_activity_unverified=true,
  item_cd_unverified=true,item_cd_provider_error=true,
  item_cd_provider_missing=true,item_cd_group_unverified=true,
+ item_cd_item_active=true,item_cd_revision_unavailable=true,
+ item_cd_dependency_revision_changed=true,item_cd_id_unverified=true,
+ item_cd_read_failed=true,
 }
 for reason in pairs(itemCooldownReasons) do reasons[reason]=true end
 

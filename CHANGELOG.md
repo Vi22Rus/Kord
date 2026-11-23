@@ -1,3 +1,14 @@
+## KR-20261123-131 — IT-02/2.9: opt-in item-specific cooldown DevTools provenance
+- Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-131`. IT-02/2.9 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: group diagnostic source existed, but no manual item-specific provenance view. Explicit ID read is authorized only as user-invoked DevTools, not automatic game action.
+- Код: `KordRotation/Core/CoreObservation.lua` — bounded scalar allowlist bridge; `KordRotationDevTools/Probe.lua` — sanitizing client; `KordRotationDevTools/UI.lua` — `/krdev cooldown item <itemID>`; `KordRotationDevTools/Recorder.lua` — fixed reason vocabulary. No itemID/raw tuple/private data crosses the bridge or is exported; active item cooldown is UNKNOWN for final eligibility.
+- Тест: `tests/item_cooldown_item_diagnostic_mock.lua` — provenance, ACTIVE/IDLE, revision unavailable, secret source, forged bridge output, invalid ID and no leaked ID.
+- API: existing read-only GameState observation only; no new WoW API.
+- Документы: `REQUIREMENTS.md`, staged plan and this CHANGELOG entry.
+- Проверки: PASS — static source/anchor checks, Git blob/tree/fast-forward; NOT RUN — Lua 5.1 execution/mock/full suite, manual GitHub Actions, WoW Forever.
+- Тестировщику: `/krdev cooldown item 118` as explicit diagnostic, compare active/idle and source with item cooldown only (not group or AbilityEligibility READY). No intermediary installation request.
+- Остаток: test in-game, full QA and other IT-02/2.6 group semantic work; links KR-20261123-131, IT-02/2.9.
+
 ## KR-20261123-130 — IT-02/2.7 bounded active-only item cooldown memo
 - Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-130`. Этап IT-02/2.7 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: ранее существовали EventBus item cooldown revisions и bounded periodic refresh, но не bounded identity-aware item cooldown memo. Повторные запросы читали один и тот же API при неизменных ревизиях.
