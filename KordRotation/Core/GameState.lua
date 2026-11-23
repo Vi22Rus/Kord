@@ -1191,10 +1191,25 @@ function S:ReadItemCooldownObservation(itemID)
             result.reason="item_cd_read_failed"
             return result
         end
-        if raw.status~="UNAVAILABLE" or raw.reason~="api_missing" then
+        -- Structured results may expose protected status and reason fields.
+        local fieldsOK,rawStatus,rawReason=pcall(function()
+            return raw.status,raw.reason
+        end)
+        if not fieldsOK then
+            result.reason="item_cd_secret"
+            return result
+        end
+        local okStatus,safeStatus=pcall(api.IsSafeValue,api,rawStatus)
+        local okReason,safeReason=pcall(api.IsSafeValue,api,rawReason)
+        if not okStatus or safeStatus~=true
+            or (rawReason~=nil and (not okReason or safeReason~=true)) then
+            result.reason="item_cd_secret"
+            return result
+        end
+        if rawStatus~="UNAVAILABLE" or rawReason~="api_missing" then
             result.source=name
-            if raw.status~="READY" then
-                result.reason=raw.reason=="protected_value"
+            if rawStatus~="READY" then
+                result.reason=rawReason=="protected_value"
                     and "item_cd_secret" or "item_cd_invalid_tuple"
                 return result
             end

@@ -11,6 +11,19 @@ local function readValues(_,name,id)
     if mode=="fallback" and name=="C_Item.GetItemCooldown" then
         return {status="UNAVAILABLE",reason="api_missing"}
     end
+    if mode=="raw_status_fault" then
+        return setmetatable({}, {__index=function() error("secret status") end})
+    end
+    if mode=="raw_reason_fault" then
+        return setmetatable({status="UNAVAILABLE"},
+            {__index=function() error("secret reason") end})
+    end
+    if mode=="raw_status_secret" then
+        return {status="SECRET",reason="api_missing"}
+    end
+    if mode=="raw_reason_secret" then
+        return {status="UNAVAILABLE",reason="SECRET"}
+    end
     if mode=="secret" then return {status="UNKNOWN",reason="protected_value"} end
     if mode=="broken" then return {status="ERROR",reason="api_call_failed"} end
     if mode=="invalid" then
@@ -43,7 +56,7 @@ local function readValues(_,name,id)
     return {status="READY",value={90,30,1}}
 end
 local api={
-    IsSafeValue=function() return true end,
+    IsSafeValue=function(_,v) return v~="SECRET" end,
     ReadValues=readValues,
     Read=function(_,name,kind)
         assert(name=="GetTime" and kind=="number")
@@ -89,7 +102,9 @@ local expired=observe("zero")
 assert(expired.status=="READY" and expired.active==false and expired.remaining==0)
 local structured=observe("struct")
 assert(structured.status=="READY" and structured.remaining==20)
-for _,selected in ipairs({"secret","broken","invalid","disabled","bad_enabled","future",
+for _,selected in ipairs({"secret","raw_status_fault","raw_reason_fault",
+        "raw_status_secret","raw_reason_secret",
+        "broken","invalid","disabled","bad_enabled","future",
         "clock_unknown","clock_throw","clock_fault","struct_read_fault",
         "mixed_zero_start","mixed_zero_duration"}) do
     local got=observe(selected)
@@ -101,6 +116,10 @@ assert(observe("secret").reason=="item_cd_secret")
 assert(observe("disabled").reason=="item_cd_disabled")
 assert(observe("future").reason=="item_cd_remaining_unknown")
 assert(observe("clock_fault").reason=="item_cd_remaining_unknown")
+for _,case in ipairs({"raw_status_fault","raw_reason_fault",
+    "raw_status_secret","raw_reason_secret"}) do
+    assert(observe(case).reason=="item_cd_secret",case)
+end
 assert(S:ReadItemCooldownObservation("bad").status=="UNKNOWN")
 assert(S:ReadSharedItemCooldownObservation("POTION_SHARED").status=="UNKNOWN")
 print("item_cooldown_adapter_mock PASS")

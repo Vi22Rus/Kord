@@ -1,3 +1,12 @@
+## KR-20261123-134 — IT-02/2.3: guard protected cooldown status/reason
+- Дата/время: 2026-11-23 UTC (точное время Git); SHA по `git log --grep KR-20261123-134`. P0 fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Причина: `ReadValues` был под pcall, но `raw.status/raw.reason` читались вне него. Защищённый return table мог прервать адаптер.
+- Код: `KordRotation/Core/GameState.lua` — pcall для статус/причина и проверка IsSafeValue; ошибка/secret → UNKNOWN/item_cd_secret; fallback только для `UNAVAILABLE/api_missing`. Новых WoW API нет.
+- Тесты: `tests/item_cooldown_adapter_mock.lua` — throwing status/reason, SECRET fields, отсутствие fallback; существующие кейсы сохранены.
+- Документы: REQUIREMENTS.md, поэтапный план и CHANGELOG синхронизированы одним коммитом.
+- PASS: статические якоря и Git Blob/Tree/fast-forward. NOT RUN: Lua 5.1 mock/full regression, manual GitHub Actions, WoW Forever.
+- Тестировщику: итоговый IT-02 QA protected status/reason и отсутствие ложного READY/fallback. Остаток: Forever signatures, shared group inference и регрессия. Связь IT-02/2.3 и KR-20261123-132.
+
 ## KR-20261123-133 — IT-02/2.9: verify diagnostic cooldown identity before READY
 - Дата/время: 2026-11-23 UTC (точное время Git); Git SHA определяется по `git log --grep KR-20261123-133`. Этап IT-02/2.9 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Причина: в KR-131 диагностический мост мог принять READY-like table без проверки itemID, cooldownScope, enabled, revision, provenance. Это дефект статического контракта; воспроизведение в WoW Forever не заявлено.

@@ -5126,6 +5126,11 @@
 - Доказательство: [KR-20261123-130](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-130); `KordRotation/Core/GameState.lua`, `tests/item_cooldown_integration_mock.lua`. Новых WoW API, фоновых scans, group READY и item-use actions нет.
 - PASS: статическая проверка точечных anchors, сохранения исходного текста и Git SHA/commit. NOT RUN: исполнение Lua 5.1 mock/full regression, ручной CI, WoW Forever. Реальные Forever API semantics остаются не подтверждены; общий IT-02 частичный.
 
+**Реализация Kord — IT-02/2.3, KR-20261123-134 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- [x] **DONE (CODE MERGED):** `GameState:ReadItemCooldownObservation` защищает `ReadValues.status/reason` через `pcall` и проверяет оба значения `GameAPI:IsSafeValue` до legacy fallback. Ошибка доступа / secret → `UNKNOWN/item_cd_secret`, не ложный READY.
+- [x] **Mock added (NOT EXECUTED):** `tests/item_cooldown_adapter_mock.lua` — throwing status/reason, SECRET status/reason, запрет fallback, ранее существовавшие сценарии сохранены.
+- Файлы: `KordRotation/Core/GameState.lua`, `tests/item_cooldown_adapter_mock.lua`; Git [KR-20261123-134](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-134). PASS — статические якоря, публикация. NOT RUN — Lua 5.1, manual CI, WoW Forever. Общий IT-02 частичный.
+
 **Реализация Kord — IT-02/2.9, KR-20261123-133 (2026-11-23; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - [x] **DONE (CODE MERGED):** `CoreObservation:ReadItemCooldownDiagnostic` проверяет точный itemID, cooldownScope=ITEM_SPECIFIC, enabled=true, валидную revision и разрешённый API source перед публикацией `READY/item_cd_ready_confirmed`. Недоказанное READY возвращает `UNKNOWN/item_cd_identity_unverified` без itemID, raw tuple или remaining; финальный `AbilityEligibility` и shared cooldown не меняются.
 - [x] **Mock added (NOT EXECUTED):** `tests/item_cooldown_item_diagnostic_mock.lua`: wrong/secret itemID, GCD/nil scope, secret/nil revision, disabled, unknown source, сохранённые positive active/idle. `KordRotationDevTools/Probe.lua` разрешает новый фиксированный код.
