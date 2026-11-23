@@ -5124,6 +5124,14 @@
 
 
 
+**Реализация Kord — IT-02/2.6, KR-20261123-126 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- **Дефект и причина:** публичный `GameState:ReadSharedItemCooldownObservation` мог выставить source-only `useAttribution="ESTIMATED"` ещё до завершения внутреннего `ReadSharedItemCooldownMemberEvidence` и после отклонения его ревизий оставить атрибуцию без согласованного cooldown evidence. Это source-code race/provenance inconsistency, не заявленный игровой баг.
+- **Код и метод:** `KordRotation/Core/GameState.lua:ReadSharedItemCooldownObservation` удерживает предварительно подтверждённое событие `UNIT_SPELLCAST_SUCCEEDED` в локальном `pendingUseObservedAt` и публикует `useAttribution/useObservedAt` только после проверенного member snapshot, актуальных трёх ревизий и `fields.useCorrelation=="ESTIMATED"`. Невалидные события, несовпадающие по времени item cooldown и revision race остаются `UNKNOWN`. Контракты `GameAPI:IsSafeValue`, `pcall`, fail-closed и отсутствие group READY/remaining сохранены. Новых WoW API нет.
+- **Тесты:** `tests/shared_item_cooldown_member_evidence_mock.lua` дополнен positive проверкой принятого cross-family attribution и отрицательными проверками post-read cooldown/inventory revision race и `wrong_time`. Сценарии написаны, но не исполнялись.
+- **Доказательства:** код и mock — [коммит KR-20261123-126](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-126); точный SHA определяется из Git по KR-20261123-126, после публикации. Исходные требования IT-02/2.6 и реестр 2.6 сохранены.
+- **Проверки:** PASS статическая точечная сверка исходников/guards и test assertions, Git blob/tree consistency; NOT RUN Lua 5.1 mock/full regression (нет интерпретатора), manual CI, WoW Forever (нет клиента).
+- **Остаток:** production group semantics/verified active-ready-remaining, условный bounded estimated-active, итоговые проверки. Факт добавления этого guard НЕ переоткрывает выполненные KR-090/093/101–124.
+
 **Реализация Kord — IT-02/2.6, KR-20261123-124 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - **Что реализовано:** устранена гонка ревизий между возвратом `GameState:ReadSharedItemCooldownMemberEvidence` и публикацией его confidence из `GameState:ReadSharedItemCooldownObservation`. Ранее внутренний reader имел revision guards, а внешний consumer мог опубликовать уже устаревшую confidence. Это дефект исходников, а не подтверждённая ошибка игрового клиента.
 - **Где:** `KordRotation/Core/GameState.lua:ReadSharedItemCooldownObservation` — перед публикацией выполняется повторное guarded чтение `EventBus:GetItemCooldownRevision()`, `EventBus:GetInventoryRevision()`, `ItemFamilyCatalog:GetRevision()`, проверка `GameAPI:IsSafeValue`, `finite` и равенства трёх значений ревизиям sample. Имеющийся `pcall` сохраняет fail-closed при ошибках. Не появляется новый group-state producer, READY или remaining; никаких новых WoW API.

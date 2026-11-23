@@ -1,3 +1,12 @@
+## KR-20261123-126 — IT-02/2.6: publish item-use attribution only from validated snapshot
+- Дата: 2026-11-23 UTC (время Git); SHA по `git log --grep KR-20261123-126`. IT-02 P0, этап 2/2.6; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: после введённой KR-124 финальной защиты ревизий `useAttribution` могла остаться установленной из предварительного события, даже если member confidence отклонена из-за гонки. Подтверждённый source-level defect, не воспроизведённый клиентский баг.
+- Код: `KordRotation/Core/GameState.lua:ReadSharedItemCooldownObservation` — staged локальное `pendingUseObservedAt`, публикация только при принятом `ReadSharedItemCooldownMemberEvidence`, совпавших cooldown/inventory/family revisions и `useCorrelation=="ESTIMATED"`; соответствующий `UNIT_SPELLCAST_SUCCEEDED` остаётся проверяемым, но одного события недостаточно. Новых WoW API, таймеров, shared READY/remaining и отдельных сканеров нет.
+- Тест: `tests/shared_item_cooldown_member_evidence_mock.lua` — genuine cross-family атрибуция, post-read cooldown/inventory races и wrong-time case, отсутствие атрибуции при отклонении доказательств.
+- Документы: `REQUIREMENTS.md` — статус, методы, доказательства, ограничения и проверки; `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` — новая строка [x] с этим уникальным ID. Все ранее отмеченные DONE и OPEN сохранены.
+- Проверки: PASS static source/test anchors и публикация единого Git tree; NOT RUN — исполнение Lua 5.1/mock/full regression (нет runtime), GitHub Actions (manual), WoW Forever (клиент недоступен).
+- Тестировщику: проверить item use attribution при гонках cooldown/inventory и несовпадении времени в итоговом IT-02 QA, промежуточная установка не требуется. Остаток: доказательство Forever shared lockout, verified producer и общий QA. Связи KR-20261123-122/124/125; IT-02/2.6.
+
 ## KR-20261123-125 — IT-02/2.6: sync KR-124 in REQUIREMENTS and staged plan
 - Дата/время: 2026-11-23 UTC (Git); SHA: `git log --grep KR-20261123-125`. Этап 2/2.6 IT-02 P0; docs, status PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: кодовая защита post-read revision races внесена коммитом KR-20261123-124; для обязательной прослеживаемости требуются записи в полных требованиях и каноническом чеклисте плана. Гигантские документы прочитаны по Blob SHA, стандартный contents reader возвращает пустое содержимое.

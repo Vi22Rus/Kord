@@ -1260,6 +1260,7 @@ function S:ReadSharedItemCooldownObservation(groupID)
         if type(catalog.PrepareUseSpellIndex)=="function" then
             pcall(catalog.PrepareUseSpellIndex,catalog,groupID)
         end
+        local pendingUseObservedAt=nil
         local useOK,observed=pcall(self.ReadObservedItemUse,self,groupID)
         if useOK and type(observed)=="table" then
             local valid,accepted,observedAt=pcall(function()
@@ -1280,8 +1281,9 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     and finite(observed.observedAt,0),observed.observedAt
             end)
             if valid and accepted then
-                result.useAttribution="ESTIMATED"
-                result.useObservedAt=observedAt
+                -- Retain source-only evidence privately until the member
+                -- snapshot and its revisions have also been accepted.
+                pendingUseObservedAt=observedAt
             end
         end
         -- Reuse the single bounded member-evidence pipeline. Source-only
@@ -1365,6 +1367,13 @@ function S:ReadSharedItemCooldownObservation(groupID)
                     result.itemCooldownRevision=fields.itemRev
                     result.inventoryRevision=fields.bagRev
                     result.familyRevision=fields.familyRev
+                    -- Never publish a use estimate from a rejected/racing
+                    -- snapshot or without a matching item cooldown.
+                    if pendingUseObservedAt
+                        and fields.useCorrelation=="ESTIMATED" then
+                        result.useAttribution="ESTIMATED"
+                        result.useObservedAt=pendingUseObservedAt
+                    end
                 end
             end
         end

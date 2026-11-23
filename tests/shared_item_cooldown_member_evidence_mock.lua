@@ -122,6 +122,7 @@ assert(crossFamily.groupReadyConfidence=="UNKNOWN" and crossFamily.remaining==ni
 local publicCross=S:ReadSharedItemCooldownObservation("POTION_SHARED")
 assert(publicCross.groupLockoutConfidence=="ESTIMATED")
 assert(publicCross.groupStatus=="UNKNOWN" and publicCross.groupRemaining==nil)
+assert(publicCross.useAttribution=="ESTIMATED" and publicCross.useObservedAt==90)
 -- A revision may change after the internal reader returns its stable record.
 -- Public observation must refuse the now-stale confidence (no false READY).
 local actualMemberReader=S.ReadSharedItemCooldownMemberEvidence
@@ -137,6 +138,7 @@ local function postReadRace(field)
     assert(public.groupLockoutConfidence==nil and public.itemCooldownConfidence==nil)
     assert(public.useCorrelation==nil and public.propagationEvidence==nil)
     assert(public.groupStatus=="UNKNOWN" and public.remaining==nil)
+    assert(public.useAttribution==nil and public.useObservedAt==nil)
 end
 postReadRace("cooldown")
 postReadRace("inventory")
@@ -177,6 +179,8 @@ local forged=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(forged.useCorrelation=="UNKNOWN" and forged.propagationEvidence=="UNKNOWN")
 assert(forged.groupLockoutConfidence=="UNKNOWN" and forged.groupReadyConfidence=="UNKNOWN")
 mode="wrong_time"
+local publicWrongTime=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+assert(publicWrongTime.useAttribution==nil and publicWrongTime.useObservedAt==nil)
 local wrongTime=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(wrongTime.useCorrelation=="UNKNOWN")
 assert(wrongTime.propagationEvidence=="UNKNOWN")
