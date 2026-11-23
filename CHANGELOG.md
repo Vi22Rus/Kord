@@ -1,3 +1,11 @@
+## KR-20261123-125 — IT-02/2.6: sync KR-124 in REQUIREMENTS and staged plan
+- Дата/время: 2026-11-23 UTC (Git); SHA: `git log --grep KR-20261123-125`. Этап 2/2.6 IT-02 P0; docs, status PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Контекст: кодовая защита post-read revision races внесена коммитом KR-20261123-124; для обязательной прослеживаемости требуются записи в полных требованиях и каноническом чеклисте плана. Гигантские документы прочитаны по Blob SHA, стандартный contents reader возвращает пустое содержимое.
+- Изменения: `REQUIREMENTS.md` — целевой ID/шаг, методы, причина, Git SHA и постоянные ссылки, тесты PASS/NOT RUN и ограничения. `PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md` — ровно одна новая [x] DONE строка для KR-124 с SHA-ссылкой, прежние 22 закрытые пункта и все [ ] открытые пункты сохранены. `CHANGELOG.md` — эта самостоятельная запись. Lua-код в этом коммите не меняется.
+- Источники API: существующий `GameState`, `EventBus`, `ItemFamilyCatalog`, `GameAPI:IsSafeValue`. Новых WoW API нет.
+- Проверки: PASS — прочитаны полные документы через Git blob, вставлены записи по уникальным якорям без удаления строк, Git tree/commit; NOT RUN — Lua 5.1 mocks, full regression, manual Actions, WoW Forever. Тестировщику: добавить post-read race к итоговому IT-02 QA; отдельная установка не требуется.
+- Остаток: client semantics shared cooldown, безопасный production group-state producer, условный bounded estimated-active contract, финальные проверки. Связи KR-20261123-120/122/123/124, IT-02/2.6.
+
 ## KR-20261123-124 — IT-02/2.6: reject public cooldown confidence after revision race
 - Дата/время: 2026-11-23 UTC (точное время см. Git); Git SHA: `git log --grep KR-20261123-124`. Этап 2/2.6 IT-02 P0, fix/test; PARTIALLY IMPLEMENTED / WoW CLIENT NOT RUN.
 - Контекст: `ReadSharedItemCooldownMemberEvidence` стабилизирует ревизии внутри своего вызова, но между возвратом и публикацией `ReadSharedItemCooldownObservation` изменение cooldown/inventory/family revision могло сделать публикуемый confidence устаревшим. Это source-code race, не подтверждённая ошибка WoW Forever.
