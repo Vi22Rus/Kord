@@ -122,6 +122,24 @@ assert(crossFamily.groupReadyConfidence=="UNKNOWN" and crossFamily.remaining==ni
 local publicCross=S:ReadSharedItemCooldownObservation("POTION_SHARED")
 assert(publicCross.groupLockoutConfidence=="ESTIMATED")
 assert(publicCross.groupStatus=="UNKNOWN" and publicCross.groupRemaining==nil)
+-- A revision may change after the internal reader returns its stable record.
+-- Public observation must refuse the now-stale confidence (no false READY).
+local actualMemberReader=S.ReadSharedItemCooldownMemberEvidence
+local function postReadRace(field)
+    S.ReadSharedItemCooldownMemberEvidence=function(self,groupID)
+        local sample=actualMemberReader(self,groupID)
+        bus[field]=bus[field]+1
+        return sample
+    end
+    local public=S:ReadSharedItemCooldownObservation("POTION_SHARED")
+    S.ReadSharedItemCooldownMemberEvidence=actualMemberReader
+    bus[field]=bus[field]-1
+    assert(public.groupLockoutConfidence==nil and public.itemCooldownConfidence==nil)
+    assert(public.useCorrelation==nil and public.propagationEvidence==nil)
+    assert(public.groupStatus=="UNKNOWN" and public.remaining==nil)
+end
+postReadRace("cooldown")
+postReadRace("inventory")
 mode="single"
 local single=S:ReadSharedItemCooldownMemberEvidence("POTION_SHARED")
 assert(single.propagationEvidence=="SINGLE_CANDIDATE")

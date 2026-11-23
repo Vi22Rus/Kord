@@ -1323,6 +1323,30 @@ function S:ReadSharedItemCooldownObservation(groupID)
                         or not finite(evidence.familyRevision,1) then
                         return nil
                     end
+                    -- A stable internal read can race with an event immediately
+                    -- after returning. Recheck all three current revisions
+                    -- before publishing any confidence to consumers.
+                    local bus=KR.EventBus
+                    local families=KR.ItemFamilyCatalog
+                    if not bus or type(bus.GetItemCooldownRevision)~="function"
+                        or type(bus.GetInventoryRevision)~="function"
+                        or not families or type(families.GetRevision)~="function" then
+                        return nil
+                    end
+                    local itemRev=bus:GetItemCooldownRevision()
+                    local bagRev=bus:GetInventoryRevision()
+                    local familyRev=families:GetRevision()
+                    if not api:IsSafeValue(itemRev)
+                        or not api:IsSafeValue(bagRev)
+                        or not api:IsSafeValue(familyRev)
+                        or not finite(itemRev,0)
+                        or not finite(bagRev,0)
+                        or not finite(familyRev,1)
+                        or itemRev~=evidence.itemCooldownRevision
+                        or bagRev~=evidence.inventoryRevision
+                        or familyRev~=evidence.familyRevision then
+                        return nil
+                    end
                     return {item=evidence.itemCooldownConfidence,
                         group=evidence.groupLockoutConfidence,
                         ready=evidence.groupReadyConfidence,

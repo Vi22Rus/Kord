@@ -1,3 +1,14 @@
+## KR-20261123-124 — IT-02/2.6: reject public cooldown confidence after revision race
+- Дата/время: 2026-11-23 UTC (точное время см. Git); Git SHA: `git log --grep KR-20261123-124`. Этап 2/2.6 IT-02 P0, fix/test; PARTIALLY IMPLEMENTED / WoW CLIENT NOT RUN.
+- Контекст: `ReadSharedItemCooldownMemberEvidence` стабилизирует ревизии внутри своего вызова, но между возвратом и публикацией `ReadSharedItemCooldownObservation` изменение cooldown/inventory/family revision могло сделать публикуемый confidence устаревшим. Это source-code race, не подтверждённая ошибка WoW Forever.
+- Причина: отсутствовала повторная проверка актуальных трёх ревизий публичным потребителем.
+- Код: `KordRotation/Core/GameState.lua`, `ReadSharedItemCooldownObservation`: после валидации item-specific evidence guarded через существующий `pcall` чтение `EventBus:GetItemCooldownRevision`, `GetInventoryRevision`, `ItemFamilyCatalog:GetRevision`; secret-safe/finite guards и равенство с ревизиями evidence до публикации confidence; race → не публиковать stale confidence. Никаких новых WoW API, producer групповых READY/remaining или второго сканера.
+- Тесты: `tests/shared_item_cooldown_member_evidence_mock.lua`: синтетические post-read races item cooldown и inventory, сохраняются group `UNKNOWN` и отсутствие публичной confidence.
+- Референс: внутренний безопасный revision contract самого Kord; новые API отсутствуют. Сохранены fail-closed UNKNOWN, исходное поведение item-specific наблюдений.
+- Проверки: PASS — точечная сверка исходных якорей, проверки наличия guard/test и атомарная Git публикация; NOT RUN — фактическое исполнение Lua 5.1 mocks/full regression (Lua 5.1 runtime недоступен в среде), manual GitHub Actions, WoW Forever.
+- Тестировщику: включить в итоговый IT-02 QA события inventory/cooldown во время чтения; промежуточная установка не нужна.
+- Результат: дополнительная защита race в публичном наблюдении. Открыты Forever group semantics, group-state producer, условный estimated-active contract и итоговый QA. Связи: KR-20261123-120/122/123, IT-02/2.6. Документация REQUIREMENTS и план синхронизируется следующей записью через Git Blob SHA.
+
 ## KR-20261123-123 — IT-02/2.6: synchronize REQUIREMENTS and canonical plan via Git blobs
 - Дата/время: 2026-11-23 UTC (точное время в Git); SHA: `git log --grep KR-20261123-123`. Этап 2/2.6 IT-02 P0; docs; статус PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: кодовый коммит KR-20261123-122 опубликован, но его записи отсутствовали в REQUIREMENTS.md и поэтапном плане из-за ограниченного чтения больших файлов стандартным fetch_file. Причина: крупные документы возвращались пустыми из обычного contents reader; прямой Git Blob SHA успешно возвращает полное содержимое.
