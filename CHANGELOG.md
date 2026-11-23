@@ -1,3 +1,12 @@
+## KR-20261123-133 — IT-02/2.9: verify diagnostic cooldown identity before READY
+- Дата/время: 2026-11-23 UTC (точное время Git); Git SHA определяется по `git log --grep KR-20261123-133`. Этап IT-02/2.9 P0, fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Причина: в KR-131 диагностический мост мог принять READY-like table без проверки itemID, cooldownScope, enabled, revision, provenance. Это дефект статического контракта; воспроизведение в WoW Forever не заявлено.
+- Изменения: `KordRotation/Core/CoreObservation.lua` — строгая identity/scope/revision/source проверка перед diagnostic READY; при отклонении — `UNKNOWN/item_cd_identity_unverified`. `KordRotationDevTools/Probe.lua` — whitelist кода. Ни новых игровых API, ни автоматического использования предмета, ни raw payload экспорта.
+- Тесты: `tests/item_cooldown_item_diagnostic_mock.lua` — отрицательные mismatch itemID, secret ID, GCD/nil scope, secret/nil revision, disabled и unrecognized source; положительные fixtures приведены к актуальному GameState.
+- Документы: REQUIREMENTS.md, поэтапный план и CHANGELOG в одном коммите. PASS — source anchors, Git Blob/Tree fast-forward. NOT RUN — Lua 5.1/mock/full suite, manual Actions, WoW Forever.
+- Тестировщику: итоговый IT-02 QA ручного `/krdev cooldown item 118` с wrong identity/scope/revision и отсутствием ложного READY; промежуточная установка не требуется.
+- Остаток: клиентские проверки item и shared semantics и полная регрессия. Связи KR-20261123-131 и IT-02/2.9.
+
 ## KR-20261123-132 — IT-02/2.3+2.7+2.10: guarded cooldown clock and revision-aware adapter fixture
 - Дата/время: 2026-11-23 UTC (точное время Git); SHA `git log --grep KR-20261123-132`; P0 fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Причина: безопасный вызов GameAPI:Read не защищал все последующие чтения полей clock table, включая новый cache hit; adapter mock продолжал ожидать revision=nil после запрета такого READY в KR-129.

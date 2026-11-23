@@ -5126,6 +5126,12 @@
 - Доказательство: [KR-20261123-130](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-130); `KordRotation/Core/GameState.lua`, `tests/item_cooldown_integration_mock.lua`. Новых WoW API, фоновых scans, group READY и item-use actions нет.
 - PASS: статическая проверка точечных anchors, сохранения исходного текста и Git SHA/commit. NOT RUN: исполнение Lua 5.1 mock/full regression, ручной CI, WoW Forever. Реальные Forever API semantics остаются не подтверждены; общий IT-02 частичный.
 
+**Реализация Kord — IT-02/2.9, KR-20261123-133 (2026-11-23; PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- [x] **DONE (CODE MERGED):** `CoreObservation:ReadItemCooldownDiagnostic` проверяет точный itemID, cooldownScope=ITEM_SPECIFIC, enabled=true, валидную revision и разрешённый API source перед публикацией `READY/item_cd_ready_confirmed`. Недоказанное READY возвращает `UNKNOWN/item_cd_identity_unverified` без itemID, raw tuple или remaining; финальный `AbilityEligibility` и shared cooldown не меняются.
+- [x] **Mock added (NOT EXECUTED):** `tests/item_cooldown_item_diagnostic_mock.lua`: wrong/secret itemID, GCD/nil scope, secret/nil revision, disabled, unknown source, сохранённые positive active/idle. `KordRotationDevTools/Probe.lua` разрешает новый фиксированный код.
+- Файлы: `KordRotation/Core/CoreObservation.lua`, `KordRotationDevTools/Probe.lua`, `tests/item_cooldown_item_diagnostic_mock.lua`. Git: [KR-20261123-133](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-133).
+- PASS: проверка уникальных якорей, Git Blob/Tree и fast-forward. NOT RUN: Lua 5.1/mock/full regressions, manual CI, WoW Forever. Общий IT-02 всё ещё PARTIALLY IMPLEMENTED.
+
 **Реализация Kord — IT-02/2.9, KR-20261123-131 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
 - [x] **DONE (CODE MERGED):** ручной `/krdev cooldown item <itemID>` через `KordRotationDevTools/Probe.lua` и UI вызывает `CoreObservation:ReadItemCooldownDiagnostic` только по запросу разработчика. Мост возвращает лишь заранее разрешённые `status/code/source/activity`; не отдаёт itemID, raw cooldown tuple, имя игрока, имена предметов, timing/remaining. Проверяются secret, nil, некорректные статусы/источники; active отдельного предмета не становится final READY/общей группой. `Recorder.lua` получил фиксированные диагностические коды.
 - [x] **Mock added (NOT EXECUTED):** `tests/item_cooldown_item_diagnostic_mock.lua` — active/idle, protected source, отсутствующая revision, invalid ID, forged bridge response и отсутствие ID в записанной строке.

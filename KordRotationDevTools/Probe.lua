@@ -139,7 +139,7 @@ function D:ItemCooldownDiagnostic(itemID)
             item_cd_remaining_unknown=true,item_cd_revision_unavailable=true,
             item_cd_revision_changed=true,
             item_cd_dependency_revision_changed=true,item_cd_read_failed=true,
-            item_cd_id_unverified=true}
+            item_cd_id_unverified=true,item_cd_identity_unverified=true}
         local sources={UNKNOWN=true,["C_Item.GetItemCooldown"]=true,
             ["GetItemCooldown"]=true}
         local activities={UNKNOWN=true,ACTIVE=true,IDLE=true}

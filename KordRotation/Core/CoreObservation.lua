@@ -620,7 +620,16 @@ function O:ReadItemCooldownDiagnostic(itemID)
     local stateStatus=field(value,"status")
     local activity=field(value,"active")
     local remaining=field(value,"remaining")
-    if stateStatus=="READY" and type(remaining)=="number"
+    -- READY diagnostics require identity, scope, source and revision evidence.
+    local identityOK=nonnegativeInt(field(value,"itemID"))==itemID
+        and nonnegativeInt(field(value,"revision"))~=nil
+        and field(value,"cooldownScope")=="ITEM_SPECIFIC"
+        and field(value,"enabled")==true and origins[source]==true
+    if stateStatus=="READY" and not identityOK then
+        return {status="UNKNOWN",code="item_cd_identity_unverified",
+            source="UNKNOWN",activity="UNKNOWN"}
+    end
+    if identityOK and stateStatus=="READY" and type(remaining)=="number"
         and safe(remaining) and remaining==remaining and remaining>=0
         and remaining<math.huge then
         if activity==true and remaining>0 then

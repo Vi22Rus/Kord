@@ -4,7 +4,8 @@ local KR={
  GameState={ReadItemCooldownObservation=function(_,id)
     assert(id==118)
     return {status="READY",source="C_Item.GetItemCooldown",
-        active=true,remaining=15, itemID=118,rawItemName="private"}
+        active=true,remaining=15,itemID=118,revision=7,
+        cooldownScope="ITEM_SPECIFIC",enabled=true,rawItemName="private"}
  end}
 }
 assert(loadfile("KordRotation/Core/CoreObservation.lua"))("KordRotation",KR)
@@ -14,11 +15,34 @@ assert(safe.status=="UNKNOWN" and safe.code=="item_cd_item_active")
 assert(safe.source=="C_Item.GetItemCooldown" and safe.activity=="ACTIVE")
 assert(safe.itemID==nil and safe.remaining==nil and safe.rawItemName==nil)
 KR.GameState.ReadItemCooldownObservation=function()
- return {status="READY",source="GetItemCooldown",active=false,remaining=0}
+ return {status="READY",source="GetItemCooldown",active=false,remaining=0,
+    itemID=118,revision=7,cooldownScope="ITEM_SPECIFIC",enabled=true}
 end
 local idle=bridge.ItemCooldownDiagnostic(bridge,118)
 assert(idle.status=="READY" and idle.code=="item_cd_ready_confirmed"
     and idle.activity=="IDLE")
+-- Guard against forged READY, wrong item, GCD and unstable provenance.
+local base={status="READY",source="C_Item.GetItemCooldown",
+    itemID=118,revision=7,cooldownScope="ITEM_SPECIFIC",
+    enabled=true,active=false,remaining=0}
+local function refuse(key,value)
+    local fixture={}
+    for k,v in pairs(base) do fixture[k]=v end
+    fixture[key]=value
+    KR.GameState.ReadItemCooldownObservation=function() return fixture end
+    local v=bridge.ItemCooldownDiagnostic(bridge,118)
+    assert(v.status=="UNKNOWN" and v.code=="item_cd_identity_unverified")
+    assert(v.activity=="UNKNOWN" and v.source=="UNKNOWN")
+    assert(v.itemID==nil and v.remaining==nil)
+end
+refuse("itemID",858)
+refuse("itemID","SECRET")
+refuse("cooldownScope","GCD")
+refuse("cooldownScope",nil)
+refuse("revision","SECRET")
+refuse("revision",nil)
+refuse("enabled",false)
+refuse("source","unrecognized_provider")
 KR.GameState.ReadItemCooldownObservation=function()
  return {status="UNKNOWN",reason="item_cd_revision_unavailable",
     source="SECRET",itemID=118}
