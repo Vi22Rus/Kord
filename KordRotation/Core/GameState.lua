@@ -1092,6 +1092,25 @@ local function itemCooldownTuple(api,raw)
     return {startTime=start,duration=duration,enabled=true}
 end
 
+-- IT-02: read-only monotonic clock validation. Field accesses may
+-- throw on Forever protected values; never expose raw secret clock values.
+local function itemCooldownClock(api)
+    local ok,clock=pcall(api.Read,api,"GetTime","number")
+    if not ok or type(clock)~="table" then return nil end
+    local valid,value=pcall(function()
+        if clock.status~="READY" then return nil end
+        local now=clock.value
+        if not finite(now,0) or type(api.IsSafeValue)~="function" then
+            return nil
+        end
+        local safeOK,allowed=pcall(api.IsSafeValue,api,now)
+        if not safeOK or allowed~=true then return nil end
+        return now
+    end)
+    if valid then return value end
+    return nil
+end
+
 -- IT-02/2.7: family revision is cache identity, not shared cooldown proof.
 local function itemFamilyRevision()
     local families=KR.ItemFamilyCatalog
@@ -1135,10 +1154,8 @@ function S:ReadItemCooldownObservation(itemID)
         and cached.itemRevision==initialRevision
         and cached.bagRevision==bagRevision
         and cached.familyRevision==familyRevision then
-        local clockOK,clock=pcall(api.Read,api,"GetTime","number")
-        if clockOK and type(clock)=="table" and clock.status=="READY"
-            and finite(clock.value,0) then
-            local now=clock.value
+        local now=itemCooldownClock(api)
+        if now~=nil then
             local expires=cached.startTime+cached.duration
             if finite(expires,0) and now>=cached.observedAt
                 and now-cached.observedAt<=0.10 and expires>now
@@ -1189,13 +1206,11 @@ function S:ReadItemCooldownObservation(itemID)
                 return result
             end
             if not fields then result.reason=reason return result end
-            local clockOK,clock=pcall(api.Read,api,"GetTime","number")
-            if not clockOK or type(clock)~="table" or clock.status~="READY"
-                or not finite(clock.value,0) then
+            local now=itemCooldownClock(api)
+            if now==nil then
                 result.reason="item_cd_remaining_unknown"
                 return result
             end
-            local now=clock.value
             -- Discontinuous/foreign epoch: never turn it into READY.
             if fields.startTime>now or not finite(fields.startTime+fields.duration,0) then
                 result.reason="item_cd_remaining_unknown"

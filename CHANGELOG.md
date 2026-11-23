@@ -1,3 +1,14 @@
+## KR-20261123-132 — IT-02/2.3+2.7+2.10: guarded cooldown clock and revision-aware adapter fixture
+- Дата/время: 2026-11-23 UTC (точное время Git); SHA `git log --grep KR-20261123-132`; P0 fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
+- Причина: безопасный вызов GameAPI:Read не защищал все последующие чтения полей clock table, включая новый cache hit; adapter mock продолжал ожидать revision=nil после запрета такого READY в KR-129.
+- Код: `KordRotation/Core/GameState.lua` — `itemCooldownClock` под pcall проверяет clock.status/value, finite и GameAPI:IsSafeValue; один читатель для прямого API и bounded cache. Protected error → UNKNOWN, не READY.
+- Тесты: `tests/item_cooldown_adapter_mock.lua` — реальный контракт с revision=0, исключение на чтении clock.status, проверка `item_cd_remaining_unknown`. Исходные сценарии сохраняются.
+- API: существующие read-only `GameAPI.Read("GetTime")`, `GameAPI.IsSafeValue`; новых WoW API нет.
+- Документы: `REQUIREMENTS.md`, полный поэтапный план и CHANGELOG синхронизированы одним tree commit.
+- PASS — exact source/test anchor checks, Git blob/tree, fast-forward; NOT RUN — Lua 5.1 mocks/full regression, ручной CI, WoW Forever (клиент недоступен).
+- Тестировщику: финальный IT-02 QA для пропавшего/защищённого значения GetTime, восстановления и отсутствия ложного READY.
+- Остаток: клиентские проверки сигнатур/секретов, итоговая регрессия и shared group semantics (2.6).
+
 ## KR-20261123-131 — IT-02/2.9: opt-in item-specific cooldown DevTools provenance
 - Дата/время: 2026-11-23 UTC (точное время Git); Git SHA: `git log --grep KR-20261123-131`. IT-02/2.9 P0; fix/test/docs, PARTIALLY IMPLEMENTED / CLIENT NOT RUN.
 - Контекст: group diagnostic source existed, but no manual item-specific provenance view. Explicit ID read is authorized only as user-invoked DevTools, not automatic game action.

@@ -48,6 +48,9 @@ local api={
     Read=function(_,name,kind)
         assert(name=="GetTime" and kind=="number")
         if mode=="clock_throw" then error("synthetic clock adapter failure") end
+        if mode=="clock_fault" then
+            return setmetatable({}, {__index=function() error("protected clock") end})
+        end
         if mode=="clock_unknown" then return {status="UNKNOWN"} end
         return {status="READY",value=now}
     end,
@@ -57,7 +60,7 @@ local api={
         return {status="READY",value=record[key]}
     end
 }
-local KR={GameAPI=api}
+local KR={GameAPI=api,EventBus={GetItemCooldownRevision=function() return 0 end}}
 assert(loadfile("KordRotation/Core/GameState.lua"))("KordRotation",KR)
 local S=KR.GameState
 local function observe(selected)
@@ -71,7 +74,7 @@ assert(#calls==2)
 local active=observe("active")
 assert(active.status=="READY" and active.active==true)
 assert(active.remaining==20 and active.startTime==90 and active.duration==30)
-assert(active.enabled==true and active.revision==nil)
+assert(active.enabled==true and active.revision==0)
 -- Item-only READY must not launder unrelated gates into READY.
 assert(active.cooldownScope=="ITEM_SPECIFIC")
 for _,key in ipairs({"gcdStatus","combatUseStatus","inventoryStatus",
@@ -87,7 +90,8 @@ assert(expired.status=="READY" and expired.active==false and expired.remaining==
 local structured=observe("struct")
 assert(structured.status=="READY" and structured.remaining==20)
 for _,selected in ipairs({"secret","broken","invalid","disabled","bad_enabled","future",
-        "clock_unknown","clock_throw","struct_read_fault","mixed_zero_start","mixed_zero_duration"}) do
+        "clock_unknown","clock_throw","clock_fault","struct_read_fault",
+        "mixed_zero_start","mixed_zero_duration"}) do
     local got=observe(selected)
     assert(got.status=="UNKNOWN" and got.active==nil and got.remaining==nil,
         selected.." must remain UNKNOWN")
@@ -96,6 +100,7 @@ end
 assert(observe("secret").reason=="item_cd_secret")
 assert(observe("disabled").reason=="item_cd_disabled")
 assert(observe("future").reason=="item_cd_remaining_unknown")
+assert(observe("clock_fault").reason=="item_cd_remaining_unknown")
 assert(S:ReadItemCooldownObservation("bad").status=="UNKNOWN")
 assert(S:ReadSharedItemCooldownObservation("POTION_SHARED").status=="UNKNOWN")
 print("item_cooldown_adapter_mock PASS")

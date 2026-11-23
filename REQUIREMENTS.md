@@ -5132,6 +5132,12 @@
 - Доказательство: [KR-20261123-131](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-131); `KordRotation/Core/CoreObservation.lua`, `KordRotationDevTools/{Probe,Recorder,UI}.lua` и mock test. Нет новых игровых API, polling и protected item actions.
 - PASS: static anchors и публикация Git Blob/Tree; NOT RUN: исполнение Lua 5.1, CI (manual), WoW Forever. Клиентская проверка provenance и group semantics остаётся открытой; IT-02/2.9 частичный.
 
+**Реализация Kord — IT-02/2.3/2.7/2.10, KR-20261123-132 (2026-11-23, PARTIALLY IMPLEMENTED / CLIENT NOT RUN).**
+- [x] **DONE (CODE MERGED):** `GameState.lua:itemCooldownClock` защищает обращения к `GetTime` result.status/value через `pcall` и повторно проверяет source scalar посредством `GameAPI:IsSafeValue`. Единый clock reader используется и при live item cooldown, и на bounded cache-hit; secret/metatable error возвращает `UNKNOWN/item_cd_remaining_unknown` без ложного READY.
+- [x] **Mock исправлен (NOT EXECUTED):** `tests/item_cooldown_adapter_mock.lua` теперь предоставляет обязательный EventBus cooldown revision=0 и ожидает revision=0 вместо устаревшего nil. Дополнен throwing protected clock table; прочие исходные сценарии сохранены.
+- Доказательство: [KR-20261123-132](https://github.com/Vi22Rus/Kord/commits/main/?q=KR-20261123-132); `KordRotation/Core/GameState.lua` и `tests/item_cooldown_adapter_mock.lua`.
+- PASS: статическая проверка якорей и Git blob/tree publication. NOT RUN: Lua 5.1 mock/full regressions, manual CI, WoW Forever; клиентский clock/API tuple остаётся неподтверждённым. Общий IT-02 частичный.
+
 **Учёт завершённых подзадач IT-02/2.6 (KR-20261123-120):** канонические чекбоксы `[x] DONE (CODE MERGED)` для коммитов KR-20261122-090/093/101–119 и `[ ]` остатка добавлены в [раздел «Шаг 2.6» поэтапного плана](PLAN/ПОЭТАПНЫЙ_ПЛАН_РЕАЛИЗАЦИИ_ДОРАБОТКИ_ДВИЖКА.md). Уже реализованные чтение/каталог/атрибуция/корреляция/confidence/защиты/DevTools и потребитель `CONFIRMED_ACTIVE/CONFIRMED_READY` не считать незавершёнными. `DONE` обозначает подтверждённый Git-код; Lua 5.1, CI и WoW Forever остаются `NOT RUN`. Основной критерий 2.6 — `PARTIALLY IMPLEMENTED`, поскольку production-вывод подтверждённых групповых состояний и реальные правила Forever не завершены.
 
 
